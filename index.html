@@ -227,6 +227,11 @@
         <div class="row"><label class="m" style="width:80px;">开班门槛</label><input id="pMin" type="number" min="1" onchange="setNum('minOpen',this.value)"><span class="m">人</span></div>
         <div class="row"><label class="m" style="width:80px;">班额上限</label><input id="pCap" type="number" min="1" onchange="setNum('capMax',this.value)"><span class="m">人</span></div>
         <div class="row"><label class="m" style="width:80px;">课程课次</label><input id="pLes" type="number" min="1" onchange="setNum('lessonsTotal',this.value)"><span class="m">课</span></div>
+        <div class="row" style="align-items:flex-start;"><label class="m" style="width:80px;"></label>
+          <div style="flex:1;">
+            <div id="pCurri" class="m" style="font-size:11.5px;color:var(--hint);line-height:1.5;">课程体系：读取中…</div>
+            <button class="mini" style="margin-top:5px;" onclick="syncCurri()">同步课程体系</button>
+          </div></div>
         <div class="row"><label class="m" style="width:80px;">单次时长</label><input id="pMin2" type="number" min="5" onchange="setNum('minutes',this.value)"><span class="m">分钟</span></div>
         <div class="row"><label class="m" style="width:80px;">每周课次</label><input id="pWk" type="number" min="1" onchange="setNum('perWeek',this.value)"><span class="m">次</span></div>
         <div class="row"><label class="m" style="width:80px;">进度同步</label>
@@ -366,6 +371,248 @@ function money(v){
   const s = Math.abs(n).toLocaleString(CUR.locale,
     { minimumFractionDigits: CUR.decimals, maximumFractionDigits: CUR.decimals });
   return (n < 0 ? '−' : '') + (CUR.after ? (s + ' ' + CUR.sym) : (CUR.sym + s));
+}
+
+/* ==================== 课程体系（A 侧）：课次目录 ====================
+   A = 课程体系（~/hsk.html，线上 tony80-del.github.io/hsk）—— 课程内容的唯一来源。
+   C = 本页（排课系统）—— 只引用 A 的「课次目录」，不复制任何课文内容。
+
+   目录两级获取（与 A 的 cloudSync 同构）：
+     1) CURRI_FALLBACK 内置兜底 —— 断网 / file:// 被 CORS 拦时照常可用；
+     2) 启动时从云上 meta/curriculum 拉最新，拿到了就覆盖，拿不到静默退回兜底。
+   兜底骨架由 build/sync-curriculum.mjs 从 A 生成，不要手改。
+
+   级别 id 保持 L1/L2/L3 —— 本机已存数据（zhops.sched.v2）里就是这个，
+   改了会让老数据全部对不上。只在「显示」时映射成 HSK1/HSK2/HSK3。 */
+
+/* 云上目录的读取端点。这是 Firebase Web API Key —— 它本身不是凭证，
+   真正决定能不能读的是 Firestore 规则（本项目：课程内容公开只读、任何人不可写）。
+   留空则整段云端同步不生效，只走内置兜底。 */
+const FSCONF = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c' };
+
+/* >>> CURRICULUM-FALLBACK · 由 build/sync-curriculum.mjs 生成，请勿手改 <<< */
+const CURRI_FALLBACK = {
+ "schema": 1,
+ "source": "hsk.html / DATA",
+ "levels": [
+  {
+   "id": "hsk1",
+   "name": "HSK1",
+   "zh": "HSK 1 中文课程",
+   "vi": "Khóa học tiếng Trung HSK 1",
+   "lessons": 42,
+   "stages": 6,
+   "status": "ready"
+  },
+  {
+   "id": "hsk2",
+   "name": "HSK2",
+   "zh": "HSK 2 中文课程",
+   "vi": "Khóa học tiếng Trung HSK 2",
+   "lessons": 42,
+   "stages": null,
+   "status": "pending"
+  },
+  {
+   "id": "hsk3",
+   "name": "HSK3",
+   "zh": "HSK 3 中文课程",
+   "vi": "Khóa học tiếng Trung HSK 3",
+   "lessons": 42,
+   "stages": null,
+   "status": "pending"
+  }
+ ],
+ "stages": [
+  {
+   "id": "s1",
+   "lv": "hsk1",
+   "no": 1,
+   "cn": "一",
+   "zh": "第一阶段 · 发音与基础",
+   "short": "发音与基础",
+   "vi": "Giai đoạn 1 · Phát âm và nền tảng"
+  },
+  {
+   "id": "s2",
+   "lv": "hsk1",
+   "no": 2,
+   "cn": "二",
+   "zh": "第二阶段 · 日常生活",
+   "short": "日常生活",
+   "vi": "Giai đoạn 2 · Sinh hoạt hằng ngày"
+  },
+  {
+   "id": "s3",
+   "lv": "hsk1",
+   "no": 3,
+   "cn": "三",
+   "zh": "第三阶段 · 学习与工作",
+   "short": "学习与工作",
+   "vi": "Giai đoạn 3 · Học tập và công việc"
+  },
+  {
+   "id": "s4",
+   "lv": "hsk1",
+   "no": 4,
+   "cn": "四",
+   "zh": "第四阶段 · 出行与地点",
+   "short": "出行与地点",
+   "vi": "Giai đoạn 4 · Đi lại và địa điểm"
+  },
+  {
+   "id": "s5",
+   "lv": "hsk1",
+   "no": 5,
+   "cn": "五",
+   "zh": "第五阶段 · 动作与表达",
+   "short": "动作与表达",
+   "vi": "Giai đoạn 5 · Hành động và diễn đạt"
+  },
+  {
+   "id": "s6",
+   "lv": "hsk1",
+   "no": 6,
+   "cn": "六",
+   "zh": "第六阶段 · 虚词与语法",
+   "short": "虚词与语法",
+   "vi": "Giai đoạn 6 · Hư từ và ngữ pháp"
+  }
+ ],
+ "stageLessons": {
+  "s1": [
+   "L01",
+   "L02",
+   "L03",
+   "L04",
+   "L05",
+   "L06",
+   "L07",
+   "L08",
+   "L09",
+   "L10",
+   "L11",
+   "L12"
+  ],
+  "s2": [
+   "L13",
+   "L14",
+   "L15",
+   "L16",
+   "L17",
+   "L18",
+   "L19",
+   "L20",
+   "L21"
+  ],
+  "s3": [
+   "L22",
+   "L23",
+   "L24",
+   "L25",
+   "L26",
+   "L27"
+  ],
+  "s4": [
+   "L28",
+   "L29",
+   "L30",
+   "L31",
+   "L32",
+   "L33",
+   "L34"
+  ],
+  "s5": [
+   "L35",
+   "L36",
+   "L37",
+   "L38",
+   "L39",
+   "L40"
+  ],
+  "s6": [
+   "L41",
+   "L42"
+  ]
+ }
+};
+/* <<< CURRICULUM-FALLBACK <<< */
+
+let CURRI = CURRI_FALLBACK;      /* 运行时以云上那份为准 */
+let CURRI_SRC = 'fallback';      /* 'fallback' | 'cloud' */
+
+const LV = {
+  L1:{ hsk:'hsk1', name:'HSK1' },
+  L2:{ hsk:'hsk2', name:'HSK2' },
+  L3:{ hsk:'hsk3', name:'HSK3' }
+};
+const lvName = lv => (LV[lv] || {}).name || lv || '?';
+function lvMeta(lv){
+  const m = LV[lv]; if(!m) return null;
+  return (CURRI.levels || []).find(x => x.id === m.hsk) || null;
+}
+/* 该级别总课次：以 A 的目录为准；A 还没同步就退回参数页的设置 */
+function levelTotal(lv){
+  const m = lvMeta(lv);
+  return (m && m.lessons) || S.settings.lessonsTotal || 42;
+}
+/* 第 n 课落在哪个阶段 */
+function stageOf(lv, n){
+  const m = LV[lv]; if(!m) return null;
+  const id = 'L' + String(n).padStart(2, '0');
+  const stages = CURRI.stages || [];
+  for(let i = 0; i < stages.length; i++){
+    if(stages[i].lv !== m.hsk) continue;
+    if(((CURRI.stageLessons || {})[stages[i].id] || []).indexOf(id) >= 0) return stages[i];
+  }
+  return null;
+}
+/* 「课程节」的显示口径 —— 全站只此一处。默认全称；short=true 用阶段简称（窄格子用）。
+   A 侧还没有阶段结构的级别（HSK2/HSK3 目前 status=pending），退回旧的「第 N / 总数 课」——
+   免得显示一个光秃秃的 L13，让人误以为是 HSK1 的第 13 课。 */
+function lessonLabel(lv, n, short){
+  const total = levelTotal(lv);
+  const no = Math.min(Math.max(1, parseInt(n, 10) || 1), total);
+  const st = stageOf(lv, no);
+  if(!st) return '第 ' + no + ' / ' + total + ' 课';
+  return 'L' + String(no).padStart(2, '0') + ' · ' + ((short && st.short) ? st.short : st.zh);
+}
+/* 目录来源说明，参数页用 */
+function curriNote(){
+  const m = lvMeta(S.boardLevel);
+  const tag = CURRI_SRC === 'cloud' ? '云端最新' : '内置兜底';
+  if(!m) return '课程体系：未同步（' + tag + '）';
+  return '课程体系：' + m.name + ' · ' + m.lessons + ' 课 · ' + (m.stages || '—') + ' 阶段（' + tag + '）';
+}
+
+/* Firestore REST 的字段是 {类型:值} 包装，递归拆包（与 A 的 fsDec 同款） */
+function fsDec(v){
+  if(v === null || v === undefined) return null;
+  const k = Object.keys(v)[0];
+  if(k === 'nullValue') return null;
+  if(k === 'stringValue' || k === 'booleanValue') return v[k];
+  if(k === 'integerValue' || k === 'doubleValue') return Number(v[k]);
+  if(k === 'arrayValue') return (v[k].values || []).map(fsDec);
+  if(k === 'mapValue'){ const o = {}; for(const [a,b] of Object.entries(v[k].fields || {})) o[a] = fsDec(b); return o; }
+  return v[k];
+}
+/* 从云上拉最新目录。失败一律静默 —— 断网、file:// 下都必须照常能用。 */
+function curriSync(){
+  if(!FSCONF || !FSCONF.key || typeof fetch !== 'function') return Promise.resolve(false);
+  const url = 'https://firestore.googleapis.com/v1/projects/' + FSCONF.pid +
+    '/databases/(default)/documents/meta/curriculum?key=' + encodeURIComponent(FSCONF.key);
+  return fetch(url).then(r => {
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(raw => {
+    const o = {};
+    for(const [a,b] of Object.entries(raw.fields || {})) o[a] = fsDec(b);
+    if(!o.levels || !o.levels.length) throw new Error('目录为空');
+    CURRI = { schema:o.schema || 1, source:'firestore / meta/curriculum',
+              levels:o.levels, stages:o.stages || [], stageLessons:o.stageLessons || {} };
+    CURRI_SRC = 'cloud';
+    return true;
+  }).catch(() => { CURRI = CURRI_FALLBACK; CURRI_SRC = 'fallback'; return false; });
 }
 
 /* 按进度与每周课次估算结课周数 */
@@ -554,6 +801,28 @@ function renderSettings(){
   $('pMin').value = s.minOpen;  $('pCap').value = s.capMax;
   $('pLes').value = s.lessonsTotal; $('pMin2').value = s.minutes;
   $('pWk').value = s.perWeek;   $('pSync').value = s.sync;
+  /* 课程体系来自 A。课次总数以 A 为准；两边不一致就地提示，不偷偷改用户的设置。 */
+  const el = $('pCurri');
+  if(el){
+    const m = lvMeta(S.boardLevel);
+    let msg = curriNote();
+    if(m && m.lessons && s.lessonsTotal !== m.lessons){
+      msg += ' ｜ 本页写的是 ' + s.lessonsTotal + ' 课，与 A 不一致';
+      el.style.color = 'var(--warn)';
+    }else{
+      el.style.color = 'var(--hint)';
+    }
+    el.textContent = msg;
+  }
+}
+/* 手动重拉一次课程体系目录（参数页按钮） */
+function syncCurri(){
+  if(!FSCONF || !FSCONF.key){ toast('云端目录未配置，用的是内置兜底'); return; }
+  toast('正在同步课程体系…');
+  curriSync().then(ok => {
+    render();
+    toast(ok ? ('已同步：' + curriNote()) : '同步失败（断网或 file:// 被拦），继续用内置兜底');
+  });
 }
 
 function renderSlots(){
@@ -597,7 +866,7 @@ function renderStudents(){
     const c = s.classId ? cls(s.classId) : null;
     const srcTag = s.source === 'teacher' ? '教师自带' : '平台招生';
     return '<div class="item"><span class="g">' + esc(s.name) +
-      ' <span class="lv ' + s.level + '">' + s.level + '</span>' +
+      ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
       '<div class="m">' + srcTag + ' · ' +
       (c ? ('已编入 ' + esc(c.name)) : '未编班') + '</div></span>' +
       '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
@@ -665,9 +934,9 @@ function renderMatrix(){
         const full = n >= cp;
         h += '<div class="mcell full">' +
           '<div class="mc-top"><span class="mc-id">' + esc(c.name) + '</span>' +
-          '<span class="lv ' + c.level + '">' + c.level + '</span></div>' +
+          '<span class="lv ' + c.level + '">' + lvName(c.level) + '</span></div>' +
           '<div class="mc-sub">' + n + '/' + cp + ' 人' + (full ? ' · <span class="tag bad">已满</span>' : '') +
-          '<br>第 ' + c.lesson + '/' + totalLessons() + ' 课</div>' +
+          '<br>' + lessonLabel(c.level, c.lesson) + '</div>' +
           '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
           '<div style="margin-top:6px;display:flex;gap:5px;">' +
             '<button class="mini" onclick="advance(\'' + c.id + '\')">+1 课</button>' +
@@ -693,12 +962,12 @@ function renderClassList(){
     const full = n >= cp;
     const enough = n >= minOpen();
     return '<div class="item"><span class="g">' +
-      '<b>' + esc(c.name) + '</b> <span class="lv ' + c.level + '">' + c.level + '</span> ' +
+      '<b>' + esc(c.name) + '</b> <span class="lv ' + c.level + '">' + lvName(c.level) + '</span> ' +
       '<span class="src ' + c.src + '">' + srcCN(c.src) + '</span> ' +
       (full ? '<span class="tag bad">已满</span>' : (enough ? '<span class="tag ok">可开班</span>'
             : '<span class="tag warn">差 ' + (minOpen() - n) + ' 人</span>')) +
       '<div class="m">' + (t ? esc(t.name) : '?') + ' · ' + slotLabel(c.slotId) +
-      ' · ' + n + '/' + cp + ' 人 · 第 ' + c.lesson + '/' + totalLessons() + ' 课 · 约剩 ' + weeksLeft(c.lesson) + ' 周' +
+      ' · ' + n + '/' + cp + ' 人 · ' + lessonLabel(c.level, c.lesson) + ' · 约剩 ' + weeksLeft(c.lesson) + ' 周' +
       (c.link ? ' · <a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">视讯链接</a>' : '') +
       '</div></span>' +
       '<button class="mini" onclick="editClass(\'' + c.id + '\')">改</button>' +
@@ -714,7 +983,7 @@ function renderPool(){
   $('poolCnt').textContent = pool.length ? pool.length + ' 人待编班' : '';
   if(!pool.length){ host.innerHTML = '<div class="empty-note">候选池为空。</div>'; return; }
   host.innerHTML = pool.map(s =>
-    '<div class="item"><span class="g">' + esc(s.name) + ' <span class="lv ' + s.level + '">' + s.level + '</span>' +
+    '<div class="item"><span class="g">' + esc(s.name) + ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
     '<div class="m">可选 ' + (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置时段') + '</div></span></div>').join('');
 }
 
@@ -744,9 +1013,9 @@ function renderTeacherTimetable(){
   }else{
     h += '<table><tr><th>时段</th><th>班级</th><th>级别</th><th class="num">人数</th><th class="num">进度</th><th>视讯</th></tr>' +
       mine.map(c => '<tr><td>' + slotLabel(c.slotId) + '</td><td>' + esc(c.name) + '</td>' +
-        '<td><span class="lv ' + c.level + '">' + c.level + '</span></td>' +
+        '<td><span class="lv ' + c.level + '">' + lvName(c.level) + '</span></td>' +
         '<td class="num">' + c.studentIds.length + '/' + cap() + '</td>' +
-        '<td class="num">' + c.lesson + '/' + totalLessons() + '</td>' +
+        '<td class="num">' + lessonLabel(c.level, c.lesson) + '</td>' +
         '<td>' + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">打开</a>' : '<span class="m">—</span>') + '</td></tr>').join('') +
       '</table>';
   }
@@ -766,9 +1035,9 @@ function renderStudentTimetable(){
     '<div class="row" style="max-width:320px;margin-bottom:14px;">' +
     '<select onchange="S.selStudent=this.value;renderMain()">' +
     list.map(x => '<option value="' + x.id + '"' + (x.id === s.id ? ' selected' : '') + '>' +
-      esc(x.name) + '（' + x.level + '）</option>').join('') + '</select></div>' +
+      esc(x.name) + '（' + lvName(x.level) + '）</option>').join('') + '</select></div>' +
     '<div class="box"><div class="kv">' +
-    '<div class="k">学员</div><div>' + esc(s.name) + ' <span class="lv ' + s.level + '">' + s.level + '</span></div>' +
+    '<div class="k">学员</div><div>' + esc(s.name) + ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span></div>' +
     '<div class="k">来源</div><div>' + (s.source === 'teacher' ? '教师自带' : '平台招生') + '</div>' +
     '<div class="k">可上课时段</div><div>' + (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置') + '</div>' +
     '</div></div>';
@@ -777,10 +1046,10 @@ function renderStudentTimetable(){
     h += '<div class="empty-note">尚未编班，等待候选池匹配。</div>';
   }else{
     h += '<div class="box"><div class="kv">' +
-      '<div class="k">班级</div><div><b>' + esc(c.name) + '</b> <span class="lv ' + c.level + '">' + c.level + '</span></div>' +
+      '<div class="k">班级</div><div><b>' + esc(c.name) + '</b> <span class="lv ' + c.level + '">' + lvName(c.level) + '</span></div>' +
       '<div class="k">教师</div><div>' + (t ? esc(t.name) : '?') + ' <span class="src ' + c.src + '">' + srcCN(c.src) + '</span></div>' +
       '<div class="k">上课时段</div><div>' + slotLabel(c.slotId) + (slot(c.slotId) ? '（' + esc(slot(c.slotId).time) + '）' : '') + '</div>' +
-      '<div class="k">进度</div><div>第 ' + c.lesson + ' / ' + totalLessons() + ' 课 · 约剩 ' + weeksLeft(c.lesson) + ' 周</div>' +
+      '<div class="k">进度</div><div>' + lessonLabel(c.level, c.lesson) + ' · 约剩 ' + weeksLeft(c.lesson) + ' 周</div>' +
       '<div class="k">视讯链接</div><div>' + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">' + esc(c.link) + '</a>' : '未填写') + '</div>' +
       '<div class="k">同班同学</div><div>' + c.studentIds.map(id => { const x = stu(id); return x ? esc(x.name) : ''; }).filter(Boolean).join('、') + '</div>' +
       '</div></div>';
@@ -958,7 +1227,7 @@ function renderSettle(){
   }else{
     h += '<table><tr><th>班级</th><th>师资</th><th>教师</th><th class="num">人数</th>' +
       '<th class="num">已上课次</th><th class="num">单价</th><th class="num">小计</th></tr>' +
-      rows.map(r => '<tr><td>' + esc(r.c.name) + ' <span class="lv ' + r.c.level + '">' + r.c.level + '</span></td>' +
+      rows.map(r => '<tr><td>' + esc(r.c.name) + ' <span class="lv ' + r.c.level + '">' + lvName(r.c.level) + '</span></td>' +
         '<td><span class="src ' + r.c.src + '">' + srcCN(r.c.src) + '</span></td>' +
         '<td>' + (r.t ? esc(r.t.name) : '?') + '</td>' +
         '<td class="num">' + r.n + '</td>' +
@@ -1165,7 +1434,7 @@ function drawClassForm(){
     '<div class="g2">' +
       fld({ k:'level', label:'级别', type:'select', value:f.level,
             on:'onClassFormChange(\'level\')',
-            opts:[['L1','L1'],['L2','L2'],['L3','L3']],
+            opts:[['L1','HSK1'],['L2','HSK2'],['L3','HSK3']],
             hint:'同级别平行班进度会对齐到第 ' + levelProgress(f.level) + ' 课。' }) +
       fld({ k:'link', label:'视讯链接（选填）', value:f.link, ph:'腾讯会议 / Zoom' }) +
     '</div>';
@@ -1487,7 +1756,7 @@ function editStudent(id){
       fld({ k:'name', label:'姓名', value:s.name }) +
       '<div class="g2">' +
         fld({ k:'level', label:'级别', type:'select', value:s.level,
-              opts:[['L1','L1'],['L2','L2'],['L3','L3']] }) +
+              opts:[['L1','HSK1'],['L2','HSK2'],['L3','HSK3']] }) +
         fld({ k:'source', label:'来源', type:'select', value:s.source,
               opts:[['self','平台招生'],['teacher','教师自带']] }) +
       '</div>' +
@@ -1547,7 +1816,7 @@ function editClass(id){
       '</div>' +
       '<div class="g2">' +
         fld({ k:'level', label:'级别', type:'select', value:c.level,
-              opts:[['L1','L1'],['L2','L2'],['L3','L3']],
+              opts:[['L1','HSK1'],['L2','HSK2'],['L3','HSK3']],
               hint:'改级别后进度会重新对齐到该级别的当前进度。' }) +
         fld({ k:'lesson', label:'当前进度（第几课）', type:'number', min:1, value:c.lesson }) +
       '</div>' +
@@ -1613,7 +1882,7 @@ function drawManageClass(id){
       (full ? '（已满）' : '') + '</label>' +
       (inside.length ? inside.map(s =>
         '<div class="item"><span class="g">' + esc(s.name) +
-        ' <span class="lv ' + s.level + '">' + s.level + '</span>' +
+        ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
         '<div class="m">' + (s.source === 'teacher' ? '教师自带' : '平台招生') +
         ' · 可选 ' + (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置') + '</div></span>' +
         '<button class="mini danger" onclick="kickStudent(\'' + id + '\',\'' + s.id + '\')">移出</button></div>').join('')
@@ -1622,7 +1891,7 @@ function drawManageClass(id){
     '<div class="fld"><label>候选池里级别与时段都匹配的（' + pool.length + ' 人）</label>' +
       (pool.length ? pool.map(s =>
         '<div class="item"><span class="g">' + esc(s.name) +
-        ' <span class="lv ' + s.level + '">' + s.level + '</span>' +
+        ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
         '<div class="m">可选 ' + s.slots.map(slotLabel).join('、') + '</div></span>' +
         '<button class="mini" onclick="putStudent(\'' + id + '\',\'' + s.id + '\')"' + (full ? ' disabled' : '') + '>加入</button></div>').join('')
         : '<div class="empty-note">没有匹配的待编学员</div>') +
@@ -1696,7 +1965,7 @@ function editApply(id){
         fld({ k:'count', label:'学生人数', type:'number', min:0, value:(a.count || 0) }) +
       '</div>' +
       fld({ k:'level', label:'级别', type:'select', value:(a.level || 'L1'),
-            opts:[['L1','L1'],['L2','L2'],['L3','L3']] }) +
+            opts:[['L1','HSK1'],['L2','HSK2'],['L3','HSK3']] }) +
       mChips('可上课时段', a.slots || (a.slotId ? [a.slotId] : [])) +
       fld({ k:'startDate', label:'期望开课日期', type:'date', value:(a.startDate || '') }) +
       fld({ k:'note', label:'备注', type:'textarea', value:(a.note || '') }),
@@ -1905,6 +2174,13 @@ function reset(){
 
 /* ==================== 启动 ==================== */
 render();
+
+/* 课程体系目录：先用手上那份（内置兜底）把首屏渲染出来，再后台拉一次云上最新 ——
+   拿到了就重渲染，拉不到就保持原样。绝不因为网络问题卡住页面。
+   弹窗开着时不重渲染，免得把用户正在填的表单冲掉。 */
+curriSync().then(ok => {
+  if(ok && $('mask').style.display !== 'flex') render();
+});
 </script>
 </body>
 </html>
