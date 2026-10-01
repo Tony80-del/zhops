@@ -146,13 +146,9 @@
   code{display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px;
     background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 11px;
     word-break:break-all; line-height:1.5; max-height:150px; overflow:auto;}
-  .gate{max-width:430px; margin:64px auto; padding:0 22px;}
-  .gate h2{font-size:16px; font-weight:500; margin:0 0 6px;}
-  .gate p{font-size:12.5px; color:var(--muted); margin:0 0 18px;}
-  .gate label{display:block; font-size:12px; color:var(--muted); margin:0 0 5px;}
-  .gate .fld{margin-bottom:12px;}
-  .cur{display:flex; align-items:center; gap:9px; font-size:12px; color:var(--muted); white-space:nowrap;}
-  .cur b{color:var(--text); font-weight:500;}
+  /* 2026-10-01：登录门 + 顶栏成员条（.gate / .cur）整段删除 —— Tony：直接删干净，以后需要再重新增加。
+     下面这条 .cklab 是原来 .cur 承担的「行内复选框标签」样式，给还留着的那处勾选框用。 */
+  .cklab{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); margin:0 0 10px; cursor:pointer;}
   .err{color:var(--bad); font-size:12.5px; min-height:19px; margin:8px 0 0;}
   .hint2{font-size:11.5px; color:var(--hint); margin:6px 0 0;}
   /* ---- 通用模态编辑器 ---- */
@@ -173,7 +169,36 @@
   .g2 .fld{margin-bottom:12px;}
   @media (max-width:600px){ .g2{grid-template-columns:1fr;} }
   @media (max-width:980px){ main{grid-template-columns:1fr;} .col.left{border-right:0; border-bottom:1px solid var(--line); min-height:0;} }
-  @media print{ .col.left,.tabs,button,.toast{display:none!important;} main{grid-template-columns:1fr;} }
+  @media print{ .col.left,.tabs,.subtabs,button,.toast{display:none!important;} main{grid-template-columns:1fr;} }
+
+  /* ---- 板块重排新增（2026-10-01）---- */
+  .subtabs{display:flex; gap:2px; flex-wrap:wrap; margin:0 0 14px; border-bottom:1px solid var(--line);}
+  .subtab{font-size:12px; padding:6px 12px; cursor:pointer; color:var(--muted);
+    border-bottom:2px solid transparent; user-select:none;}
+  .subtab:hover{color:var(--text);}
+  .subtab.on{color:var(--acc); border-bottom-color:var(--acc);}
+  .dot{display:inline-block; width:8px; height:8px; border-radius:50%; vertical-align:middle;}
+  .dot.own{background:var(--acc);}
+  .dot.out{background:var(--warn);}
+  .tgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:9px; margin-bottom:12px;}
+  .tcard{background:var(--card); border:1px solid var(--line); border-left:3px solid var(--line);
+    border-radius:10px; padding:10px 12px; cursor:pointer;}
+  .tcard.own{border-left-color:var(--acc);}
+  .tcard.out{border-left-color:var(--warn);}
+  .tcard.on{border-color:var(--acc); background:var(--accb);}
+  .tcard-h{display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:5px;}
+  .tcard-m{font-size:11.5px; color:var(--muted); line-height:1.55;}
+  .tcard-m b{color:var(--text); font-weight:500;}
+  .tcard-m.m{color:var(--hint);}
+  .item.on{background:var(--accb); border-radius:8px;}
+  .cal{width:100%; border-collapse:collapse; font-size:12px;}
+  .cal th{font-size:11.5px; color:var(--muted); font-weight:500; text-align:center;
+    padding:6px 4px; border-bottom:1px solid var(--line);}
+  .cal td{border:1px solid var(--line); padding:5px; vertical-align:top; min-width:84px; text-align:center;}
+  .cal td.calh{text-align:left; color:var(--muted); background:var(--panel); min-width:80px;}
+  .calc{background:var(--accb); border-left:3px solid var(--acc); border-radius:6px;
+    padding:4px 6px; text-align:left; cursor:pointer; font-size:11.5px; margin-bottom:3px; line-height:1.45;}
+  .calc.out{background:var(--warnb); border-left-color:var(--warn);}
 </style>
 </head>
 <body>
@@ -182,18 +207,12 @@
   <div class="hdrow">
     <div class="g">
       <h1>中文课 · 线上排课系统</h1>
-      <p class="sub">时段 × 教师 → 开班 → 编班。1 位教师 + 6~10 位学员，线上视讯授课，课程为 HSK1 共 42 课。</p>
-    </div>
-    <div class="cur" id="whoBox" style="display:none;">
-      <span>当前成员 <b id="whoName"></b></span>
-      <button class="mini ghost" onclick="logout()">退出登录</button>
+      <p class="sub">教师 → 学生 → 排课 → 数据 → 结算 → 成员。1 位教师 + 6~10 位学生，线上视讯授课，课程为 HSK1 共 42 课。</p>
     </div>
   </div>
   <div class="stats" id="stats"></div>
   <div class="tabs" id="tabs"></div>
 </header>
-
-<div id="gate" style="display:none;"></div>
 
 <div class="mask" id="mask" style="display:none;">
   <div class="modal" id="modal">
@@ -243,14 +262,15 @@
       </div>
 
       <div class="sec" id="secStudent">
-        <div class="sec-h"><span class="sec-n">三</span>学员 <span class="cnt" id="stuCnt"></span></div>
+        <div class="sec-h"><span class="sec-n">三</span>学生 <span class="cnt" id="stuCnt"></span></div>
         <div id="stuList" style="max-height:240px;overflow:auto;"></div>
-        <div class="row" style="margin-top:8px;"><input id="stName" placeholder="学员姓名" />
+        <div class="row" style="margin-top:8px;"><select id="stTeacher"></select></div>
+        <div class="row"><input id="stName" placeholder="学生姓名" />
           <select id="stLevel" style="width:74px;"><option>L1</option><option>L2</option><option>L3</option></select></div>
         <div class="row"><select id="stSource"><option value="self">平台招生</option><option value="teacher">教师自带</option></select></div>
         <p class="m" style="font-size:11.5px;color:var(--muted);margin:9px 0 6px;">可上课时段</p>
         <div class="chips" id="stSlots"></div>
-        <div class="row" style="margin-top:10px;"><button class="primary" style="width:100%;" onclick="addStudent()">添加学员</button></div>
+        <div class="row" style="margin-top:10px;"><button class="primary" style="width:100%;" onclick="addStudent()">添加学生</button></div>
       </div>
 
       <div class="sec" id="secSlot">
@@ -288,21 +308,35 @@ const FRUITS = [
   ['木瓜班','Đu đủ'],['番石榴班','Ổi']
 ];
 
+/* 主要板块 = L0 主机层的排列（2026-10-01 Tony 定，顺序即他给的顺序）
+   教师 → 学生 → 排课 → 数据 → 结算 → 成员
+   「教师课表」「学员课表」不再是独立板块 —— 收进「教师 / 学生」的详情页；
+   「申请管理」收进「排课」的子页签（申请的结果就是开班）。
+   2026-10-01 追加：登录门整段删除，结算不再需要权限（原 need:'canSettle'）；
+   「成员」降级为纯名单（只记姓名）—— 它原来是管登录账号的，登录没了就没有账号可管。 */
 const VIEWS = [
-  {id:'board',   name:'排课'},
-  {id:'teacher', name:'教师课表'},
-  {id:'student', name:'学员课表'},
-  {id:'apply',   name:'申请管理'},
-  {id:'members', name:'成员'},
-  {id:'data',    name:'数据'},
-  {id:'settle',  name:'结算', need:'canSettle'}
+  {id:'teachers', name:'教师'},
+  {id:'students', name:'学生'},
+  {id:'board',    name:'排课'},
+  {id:'data',     name:'数据'},
+  {id:'settle',   name:'结算'},
+  {id:'members',  name:'成员'}
+];
+
+/* 排课板块的内部子页签 */
+const BOARD_TABS = [
+  {id:'matrix',   name:'排课矩阵'},
+  {id:'classes',  name:'班级'},
+  {id:'pool',     name:'候选池'},
+  {id:'calendar', name:'日历'},
+  {id:'apply',    name:'开班申请'}
 ];
 
 /* ==================== 状态 ==================== */
 function blank(){
   return {
     settings:{ minOpen:6, capMax:10, lessonsTotal:42, minutes:45, perWeek:2, sync:'level' },
-    members:[],                       /* 可登录的指定成员（由 Tony 自己增删，人数不限）*/
+    members:[],                       /* 成员名单 —— 纯名单，只记 {id,name}（登录门已删）*/
     slots:[
       {id:'s1', code:'S1', name:'早班', time:'07:30–08:15'},
       {id:'s2', code:'S2', name:'午间', time:'12:00–12:45'},
@@ -310,10 +344,14 @@ function blank(){
       {id:'s4', code:'S4', name:'周末', time:'09:00–10:30'}
     ],
     teachers:[], students:[], classes:[], applications:[],
+    log:[],                           /* 推进课次的日志 {at,classId,lesson} —— 「今天 / 本月」结算靠它 */
     pickT:[], pickS:[],
     boardLevel:'L1',
     view:'board', selTeacher:'', selStudent:'',
-    login:''                          /* 当前登录成员 id —— 会话态，不落盘 */
+    tchFilter:'all',                  /* 教师板块的筛选：all | own | out */
+    boardTeacher:'',                  /* 排课 / 数据板块的教师筛选：'' = 全部，否则是教师 id */
+    boardTab:'matrix',                /* 排课板块的子页签 */
+    stuTeacher:''                     /* 学生板块：当前筛选的教师（填写学生资料前必须先选教师）*/
   };
 }
 let S = load();
@@ -326,18 +364,39 @@ function load(){
     const b = blank();
     const merged = Object.assign(b, o);
     merged.settings = Object.assign(b.settings, o.settings || {});
-    delete merged.settings.pin;       /* 旧版口令机制已废弃，登录取代之 */
-    merged.login = '';                /* 登录态不持久化，刷新即需重新登录 */
+    delete merged.settings.pin;       /* 旧版口令机制已废弃（2026-10-01 连登录门一起删掉）*/
     merged.pickT = []; merged.pickS = [];
     if(!merged.members) merged.members = [];
-    if(!merged.view || merged.view === 'settle') merged.view = 'board';
+    /* 成员名单（2026-10-01）：只留 id + 姓名 —— 老数据里的 user / pass / canSettle 一律丢掉 */
+    merged.members = merged.members.map(m => ({
+      id: m.id || ('m' + Math.random().toString(36).slice(2,7)),
+      name: m.name || m.user || '成员'
+    }));
+    /* 板块重排（2026-10-01 Tony 定）：教师 / 学生 / 排课 / 数据 / 结算 / 成员
+       旧 id 迁移：teacher→teachers、student→students、apply→board(子页签 apply)。
+       settle 与未知值一律回排课（避免刷新后停在一个子视图上）。 */
+    const VMAP = { teachers:'teachers', students:'students', board:'board', data:'data',
+                   members:'members', teacher:'teachers', student:'students' };
+    if(o.view === 'apply') merged.boardTab = 'apply';
+    merged.view = VMAP[merged.view] || 'board';
+    if(!merged.boardTab) merged.boardTab = 'matrix';
+    if(!merged.tchFilter) merged.tchFilter = 'all';
+    if(merged.boardTeacher == null) merged.boardTeacher = '';
+    /* 老数据迁移：学生归属教师 —— 从已编入的班级回填。
+       教师板块 / 学生板块 / 数据板块都按「归属教师」聚合，缺了会全落空。 */
+    (merged.students || []).forEach(s => {
+      if(!s.teacherId && s.classId){
+        const c = (merged.classes || []).filter(x => x.id === s.classId)[0];
+        if(c) s.teacherId = c.teacherId;
+      }
+    });
     return merged;
   }catch(e){ return blank(); }
 }
 function save(){
   try{
     const o = JSON.parse(JSON.stringify(S));
-    delete o.login; delete o.pickT; delete o.pickS;
+    delete o.pickT; delete o.pickS;
     localStorage.setItem(KEY, JSON.stringify(o));
   }catch(e){}
 }
@@ -725,35 +784,25 @@ function mChips(label, picked, hint){
   return '<div class="fld"><label>' + esc(label) + '</label><div class="chips">' + inner + '</div>' +
     (hint ? '<p class="hint2">' + hint + '</p>' : '') + '</div>';
 }
+/* 模态内的星期多选 —— 与 mChips 同构，只是数据源换成星期表（排课日历用） */
+function mDayChips(label, picked, hint){
+  const inner = WEEKDAYS.map(d => '<span class="chip' + (picked.indexOf(d[0]) >= 0 ? ' on' : '') +
+    '" onclick="mToggleDay(\'' + d[0] + '\')">' + d[1] + '</span>').join('');
+  return '<div class="fld"><label>' + esc(label) + '</label><div class="chips">' + inner + '</div>' +
+    (hint ? '<p class="hint2">' + hint + '</p>' : '') + '</div>';
+}
+function mToggleDay(id){
+  const i = MED.pick.indexOf(id);
+  if(i >= 0) MED.pick.splice(i, 1); else MED.pick.push(id);
+  mRedraw();
+}
 const mCancel = '<button class="mini" onclick="closeModal()">取消</button>';
 
-/* ==================== 渲染入口（先过登录门） ==================== */
-function currentMember(){
-  return S.members.filter(m => m.id === S.login)[0] || null;
-}
+/* ==================== 渲染入口 ====================
+   2026-10-01：登录门 / 成员登录态 / 免登录开关整段删除
+   —— Tony：直接删干净，以后需要再重新增加。
+   现在 render() 无条件渲染：页面一打开就能看，不再有任何遮挡与登录分支。 */
 function render(){
-  const me = currentMember();
-  if(!me){
-    if(MED.open) closeModal();          /* 登出时不能留一个开着的编辑窗 */
-    $('hd').style.display = 'none';
-    $('mainWrap').style.display = 'none';
-    $('gate').style.display = 'block';
-    /* 未登录时把数据从 DOM 里清掉 —— 只隐藏不清空，数据仍留在源码里 */
-    $('stats').innerHTML = '';
-    $('tabs').innerHTML = '';
-    $('main').innerHTML = '';
-    $('whoBox').style.display = 'none';
-    renderGate();
-    save();
-    return;
-  }
-  $('hd').style.display = '';
-  $('mainWrap').style.display = '';
-  $('gate').style.display = 'none';
-  $('gate').innerHTML = '';
-  $('whoName').textContent = me.name || me.user;
-  $('whoBox').style.display = '';
-  if(S.view === 'settle' && !me.canSettle) S.view = 'board';
   renderStats();
   renderTabs();
   renderSettings();
@@ -787,11 +836,9 @@ function renderStats(){
 }
 
 function renderTabs(){
-  const me = currentMember();
-  const list = VIEWS.filter(v => !v.need || (me && me[v.need]));
-  $('tabs').innerHTML = list.map(v => {
+  $('tabs').innerHTML = VIEWS.map(v => {
     let n = '';
-    if(v.id === 'apply'){ const p = S.applications.filter(a => a.status === 'pending').length; if(p) n = '<span class="n">' + p + '</span>'; }
+    if(v.id === 'board'){ const p = S.applications.filter(a => a.status === 'pending').length; if(p) n = '<span class="n">' + p + '</span>'; }
     return '<div class="tab' + (S.view === v.id ? ' on' : '') + '" onclick="setView(\'' + v.id + '\')">' + v.name + n + '</div>';
   }).join('');
 }
@@ -864,14 +911,24 @@ function renderStudents(){
   $('stuCnt').textContent = S.students.length + ' 人 · 待编 ' + pool;
   $('stuList').innerHTML = S.students.length ? S.students.map(s => {
     const c = s.classId ? cls(s.classId) : null;
-    const srcTag = s.source === 'teacher' ? '教师自带' : '平台招生';
-    return '<div class="item"><span class="g">' + esc(s.name) +
+    const t = tch(s.teacherId);
+    return '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t ? t.src : 'own') +
       ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
-      '<div class="m">' + srcTag + ' · ' +
+      '<div class="m">' + (t ? esc(t.name) : '未归属教师') + ' · ' + goalCN(s.goal) + ' · ' +
       (c ? ('已编入 ' + esc(c.name)) : '未编班') + '</div></span>' +
       '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
       '<button class="mini danger" onclick="delStudent(\'' + s.id + '\')">删</button></div>';
-  }).join('') : '<div class="empty-note">还没有学员</div>';
+  }).join('') : '<div class="empty-note">还没有学生</div>';
+
+  /* 归属教师下拉 —— 学生必须先归到某位教师（Tony：填写学生资料前先筛选教师） */
+  const sel = $('stTeacher');
+  if(sel){
+    sel.innerHTML = S.teachers.length
+      ? S.teachers.map(t => '<option value="' + t.id + '"' +
+          (t.id === S.stuTeacher ? ' selected' : '') + '>' +
+          esc(t.name) + '（' + srcCN(t.src) + '）</option>').join('')
+      : '<option value="">（先到上面添加教师）</option>';
+  }
 
   $('stSlots').innerHTML = S.slots.map(s => {
     const on = S.pickS.indexOf(s.id) >= 0 ? ' on' : '';
@@ -881,19 +938,58 @@ function renderStudents(){
 
 function renderMain(){
   const v = S.view;
-  if(v === 'teacher') return renderTeacherTimetable();
-  if(v === 'student') return renderStudentTimetable();
-  if(v === 'apply')   return renderApply();
-  if(v === 'members') return renderMembers();
-  if(v === 'data')    return renderData();
-  if(v === 'settle')  return renderSettle();
+  if(v === 'teachers') return renderTeachersView();
+  if(v === 'students') return renderStudentsView();
+  if(v === 'data')     return renderData();
+  if(v === 'settle')   return renderSettle();
+  if(v === 'members')  return renderMembers();
   return renderBoard();
 }
 
-/* ==================== 视图：排课 ==================== */
+/* ==================== 板块 3：排课（2026-10-01 Tony 定） ====================
+   Tony 原话口径：
+     · 从教师筛选开始 —— 筛选之后就能看到哪一位教师配置了哪些学生
+       （学生的归属默认在学生板块里就已经定了）。
+     · 开始排课：编辑班名（如「苹果班」）。已有默认学生；编过的班不用重复筛选，改名称即可。
+     · 系统自动默认「哪个教师 + 哪个班」，并且还可以更改 ——
+       为应对学生退学 / 更换教师 / 临时替补。（必须注明）
+     · 需要有日历的编排：知道日期、时间、教师、每一个班。 */
+function setBoardTeacher(id){ S.boardTeacher = (S.boardTeacher === id ? '' : id); save(); render(); }
+function setBoardTab(t){ S.boardTab = t; save(); render(); }
+/* 当前教师筛选下的教师 / 班级 —— 排课与数据板块共用 */
+function filteredTeachers(){ return S.teachers.filter(t => !S.boardTeacher || t.id === S.boardTeacher); }
+function filteredClasses(){ return S.classes.filter(c => !S.boardTeacher || c.teacherId === S.boardTeacher); }
+/* 教师筛选条（排课 / 数据板块的入口 —— Tony：从教师筛选开始） */
+function teacherFilterBar(){
+  return '<div class="row" style="margin-bottom:12px;">' +
+    '<span class="m" style="font-size:11.5px;color:var(--hint);">教师筛选</span>' +
+    '<span class="chip' + (!S.boardTeacher ? ' on' : '') + '" onclick="setBoardTeacher(\'\')">全部 <span class="m">' +
+      S.teachers.length + '</span></span>' +
+    S.teachers.map(t => '<span class="chip' + (S.boardTeacher === t.id ? ' on' : '') +
+      '" onclick="setBoardTeacher(\'' + t.id + '\')">' + esc(t.name) + ' ' + srcDot(t.src) +
+      ' <span class="m">' + S.students.filter(s => s.teacherId === t.id).length + '</span></span>').join('') +
+    '</div>';
+}
+
 function renderBoard(){
   $('main').innerHTML =
-    '<h2>排课矩阵 <span class="cnt">时段 × 教师 · 点空格开班</span></h2>' +
+    '<h2>排课 <span class="cnt">时段 × 教师 → 开班 → 编班</span></h2>' +
+    teacherFilterBar() +
+    '<div class="subtabs">' + BOARD_TABS.map(b =>
+      '<div class="subtab' + (S.boardTab === b.id ? ' on' : '') +
+      '" onclick="setBoardTab(\'' + b.id + '\')">' + b.name + '</div>').join('') + '</div>' +
+    '<div id="boardBody"></div>';
+
+  if(S.boardTab === 'apply')    return renderApply();
+  if(S.boardTab === 'calendar') return renderCalendar();
+  if(S.boardTab === 'classes')  return renderClassesTab();
+  if(S.boardTab === 'pool')     return renderPoolTab();
+  return renderMatrixTab();
+}
+
+function renderMatrixTab(){
+  const host = $('boardBody'); if(!host) return;
+  host.innerHTML =
     '<div class="row" style="margin-bottom:10px;">' +
       '<button class="mini primary" onclick="openClassForm()">+ 开班</button>' +
       '<span class="m" style="font-size:11.5px;color:var(--hint);">点矩阵里的空格可以直接带入该教师与该时段</span>' +
@@ -904,27 +1000,85 @@ function renderBoard(){
     '<h2 style="margin-top:24px;">候选池 <span class="cnt" id="poolCnt"></span></h2>' +
     '<div class="row" style="margin-bottom:8px;"><button class="mini primary" onclick="autoAssign()">一键自动编班</button></div>' +
     '<div class="box" id="poolList"></div>';
-
-  renderMatrix();
+  renderMatrix(); renderClassList(); renderPool();
+}
+function renderClassesTab(){
+  const host = $('boardBody'); if(!host) return;
+  host.innerHTML =
+    '<div class="row" style="margin-bottom:10px;">' +
+      '<button class="mini primary" onclick="openClassForm()">+ 开班</button>' +
+      '<span class="m" style="font-size:11.5px;color:var(--hint);">开班后教师 / 时段 / 星期都还能改（学生退学 · 换教师 · 临时替补）</span>' +
+    '</div>' +
+    '<h2>班级列表 <span class="cnt" id="classCnt"></span></h2>' +
+    '<div class="box" id="classList"></div>';
   renderClassList();
+}
+function renderPoolTab(){
+  const host = $('boardBody'); if(!host) return;
+  host.innerHTML =
+    '<h2>候选池 <span class="cnt" id="poolCnt"></span></h2>' +
+    '<div class="row" style="margin-bottom:8px;"><button class="mini primary" onclick="autoAssign()">一键自动编班</button></div>' +
+    '<div class="box" id="poolList"></div>';
   renderPool();
+}
+
+/* 日历编排：行 = 时段，列 = 周一~周日。班级落在它设好的星期上。 */
+const WEEKDAYS = [['1','周一'],['2','周二'],['3','周三'],['4','周四'],['5','周五'],['6','周六'],['7','周日']];
+function renderCalendar(){
+  const host = $('boardBody'); if(!host) return;
+  const list = filteredClasses();
+  const placed = list.filter(c => c.days && c.days.length);
+  const loose  = list.filter(c => !c.days || !c.days.length);
+
+  let h = '<h2>日历编排 <span class="cnt">行 = 时段 · 列 = 星期 · 点格子里的班可改</span></h2>';
+  if(!S.slots.length){
+    host.innerHTML = h + '<div class="empty-note">还没有时段 —— 先到左侧「四 时段」添加。</div>';
+    return;
+  }
+  h += '<table class="cal"><tr><th>时段</th>' + WEEKDAYS.map(d => '<th>' + d[1] + '</th>').join('') + '</tr>';
+  S.slots.forEach(s => {
+    h += '<tr><td class="calh">' + esc(s.code) + '<br><span class="m">' + esc(s.time) + '</span></td>';
+    WEEKDAYS.forEach(d => {
+      const here = placed.filter(c => c.slotId === s.id && (c.days || []).indexOf(d[0]) >= 0);
+      h += '<td>' + (here.length ? here.map(c => {
+        const t = tch(c.teacherId);
+        return '<div class="calc ' + c.src + '" onclick="editClass(\'' + c.id + '\')">' +
+          '<b>' + esc(c.name) + '</b><br><span class="m">' + (t ? esc(t.name) : '?') +
+          ' · ' + c.studentIds.length + ' 人</span></div>';
+      }).join('') : '<span class="m">—</span>') + '</td>';
+    });
+    h += '</tr>';
+  });
+  h += '</table>';
+
+  if(loose.length){
+    h += '<h2 style="margin-top:22px;">未排星期 <span class="cnt">' + loose.length + ' 个班</span></h2>' +
+      '<div class="box"><p class="hint2">这些班还没有设上课星期，日历上落不下去。点「改」设置。</p>' +
+      loose.map(c => '<div class="item"><span class="g">' + esc(c.name) +
+        ' <span class="lv ' + c.level + '">' + lvName(c.level) + '</span>' +
+        '<div class="m">' + slotLabel(c.slotId) + ' · ' +
+        (tch(c.teacherId) ? esc(tch(c.teacherId).name) : '?') + '</div></span>' +
+        '<button class="mini" onclick="editClass(\'' + c.id + '\')">改</button></div>').join('') + '</div>';
+  }
+  host.innerHTML = h;
 }
 
 function renderMatrix(){
   const host = $('matrix');
   if(!host) return;
-  if(!S.teachers.length || !S.slots.length){
+  const fts = filteredTeachers();
+  if(!fts.length || !S.slots.length){
     host.innerHTML = '<div class="empty-note">请先添加教师和时段</div>';
     host.setAttribute('style','');
     return;
   }
   let h = '<div class="mcell head">时段 \\ 教师</div>';
-  h += S.teachers.map(t => '<div class="mcell head">' + esc(t.name) +
+  h += fts.map(t => '<div class="mcell head">' + esc(t.name) +
         '<br><span style="font-weight:400;font-size:11px;">' + srcCN(t.src) + '</span></div>').join('');
   S.slots.forEach(s => {
     h += '<div class="mcell rowhead">' + esc(s.code) +
          '<br><span style="font-weight:400;font-size:11px;color:var(--hint);">' + esc(s.name) + '</span></div>';
-    S.teachers.forEach(t => {
+    fts.forEach(t => {
       const c = S.classes.find(x => x.teacherId === t.id && x.slotId === s.id);
       if(!c){
         h += '<div class="mcell empty" onclick="quickOpen(\'' + t.id + '\',\'' + s.id + '\')">+ 开班</div>';
@@ -945,18 +1099,22 @@ function renderMatrix(){
       }
     });
   });
-  host.setAttribute('style','grid-template-columns:96px repeat(' + S.teachers.length + ',minmax(0,1fr));');
+  host.setAttribute('style','grid-template-columns:96px repeat(' + fts.length + ',minmax(0,1fr));');
   host.innerHTML = h;
 }
 
+const daysCN = d => (d || []).map(x => (WEEKDAYS.filter(w => w[0] === x)[0] || [])[1]).filter(Boolean).join('/');
+
 function renderClassList(){
   const host = $('classList'); if(!host) return;
-  $('classCnt').textContent = S.classes.length ? S.classes.length + ' 个' : '';
-  if(!S.classes.length){
-    host.innerHTML = '<div class="empty-note">还没有班级。在排课矩阵点空格即可开班。</div>';
+  const list = filteredClasses();
+  $('classCnt').textContent = list.length ? list.length + ' 个' : '';
+  if(!list.length){
+    host.innerHTML = '<div class="empty-note">' +
+      (S.classes.length ? '该教师筛选下没有班级。' : '还没有班级。在排课矩阵点空格即可开班。') + '</div>';
     return;
   }
-  host.innerHTML = S.classes.map(c => {
+  host.innerHTML = list.map(c => {
     const n = c.studentIds.length, cp = cap();
     const t = tch(c.teacherId), s = slot(c.slotId);
     const full = n >= cp;
@@ -967,6 +1125,7 @@ function renderClassList(){
       (full ? '<span class="tag bad">已满</span>' : (enough ? '<span class="tag ok">可开班</span>'
             : '<span class="tag warn">差 ' + (minOpen() - n) + ' 人</span>')) +
       '<div class="m">' + (t ? esc(t.name) : '?') + ' · ' + slotLabel(c.slotId) +
+      (c.days && c.days.length ? ' · ' + daysCN(c.days) : '') +
       ' · ' + n + '/' + cp + ' 人 · ' + lessonLabel(c.level, c.lesson) + ' · 约剩 ' + weeksLeft(c.lesson) + ' 周' +
       (c.link ? ' · <a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">视讯链接</a>' : '') +
       '</div></span>' +
@@ -979,82 +1138,198 @@ function renderClassList(){
 
 function renderPool(){
   const host = $('poolList'); if(!host) return;
-  const pool = S.students.filter(s => !s.classId);
+  const pool = S.students.filter(s => !s.classId && (!S.boardTeacher || s.teacherId === S.boardTeacher));
   $('poolCnt').textContent = pool.length ? pool.length + ' 人待编班' : '';
   if(!pool.length){ host.innerHTML = '<div class="empty-note">候选池为空。</div>'; return; }
-  host.innerHTML = pool.map(s =>
-    '<div class="item"><span class="g">' + esc(s.name) + ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
-    '<div class="m">可选 ' + (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置时段') + '</div></span></div>').join('');
+  host.innerHTML = pool.map(s => {
+    const t = tch(s.teacherId);
+    return '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t ? t.src : 'own') +
+    ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
+    '<div class="m">' + (t ? esc(t.name) : '未归属教师') + ' · ' + goalCN(s.goal) + ' · 可选 ' +
+    (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置时段') + '</div></span></div>';
+  }).join('');
 }
 
-/* ==================== 视图：教师课表 ==================== */
-function renderTeacherTimetable(){
-  const list = S.teachers;
-  if(!list.length){ $('main').innerHTML = '<h2>教师课表</h2><div class="empty-note">还没有教师。</div>'; return; }
-  if(!S.selTeacher || !tch(S.selTeacher)) S.selTeacher = list[0].id;
+/* ==================== 板块 1：教师（2026-10-01 Tony 定） ====================
+   Tony 原话口径：
+     · 教师板块必须要有教师的个人资料。
+     · 教师基本分两种：自家的 / 外包的（用颜色分，不靠文字标注）。
+     · 每位教师有自己的存档，记录在系统里；系统里会有很多教师（教师1/2/3/4），可筛选。
+     · 每位教师有独立页面，记录：学生人数 / 教课班次数 / 教师教课的表现。 */
+function setTchFilter(k){ S.tchFilter = k; save(); render(); }
+function pickTeacherCard(id){ S.selTeacher = (S.selTeacher === id ? '' : id); save(); renderMain(); }
+function setStuTeacher(id){ S.stuTeacher = id; save(); render(); }
+
+/* 学习要求（Tony 2026-10-01）：关系到怎么配教课体系，是学生档案的必填项之一 */
+const GOALS = [['listen', '能听能讲'], ['all', '能听、能讲、能写']];
+const goalCN = g => { const f = GOALS.filter(x => x[0] === g)[0]; return f ? f[1] : '未填'; };
+/* 自家 / 外包 的颜色点 —— 不写文字，用颜色分（Tony 明确要求） */
+const srcDot = src => '<span class="dot ' + (src === 'out' ? 'out' : 'own') + '" title="' + srcCN(src) + '"></span>';
+
+function renderTeachersView(){
+  const all  = S.teachers;
+  const list = all.filter(t => S.tchFilter === 'all' || t.src === S.tchFilter);
+  const ownN = all.filter(t => t.src === 'own').length;
+  const outN = all.filter(t => t.src === 'out').length;
+
+  let h = '<h2>教师 <span class="cnt">' + all.length + ' 位 · 自有 ' + ownN + ' / 外包 ' + outN + '</span></h2>' +
+    '<div class="row" style="margin-bottom:12px;">' +
+      '<span class="m" style="font-size:11.5px;color:var(--hint);">筛选</span>' +
+      [['all','全部',all.length],['own','自有',ownN],['out','外包',outN]].map(k =>
+        '<span class="chip' + (S.tchFilter === k[0] ? ' on' : '') + '" onclick="setTchFilter(\'' + k[0] + '\')">' +
+        k[1] + ' <span class="m">' + k[2] + '</span></span>').join('') +
+      '<button class="mini primary" style="margin-left:auto;" onclick="editTeacher()">+ 添加教师</button>' +
+    '</div>';
+
+  if(!list.length){
+    h += '<div class="empty-note">' + (all.length ? '该筛选下没有教师。' : '还没有教师。点右上角「+ 添加教师」。') + '</div>';
+  }else{
+    h += '<div class="tgrid">' + list.map(t => {
+      const n = S.classes.filter(c => c.teacherId === t.id).length;
+      const stuN = S.students.filter(s => s.teacherId === t.id).length;
+      const on = S.selTeacher === t.id;
+      return '<div class="tcard ' + t.src + (on ? ' on' : '') + '" onclick="pickTeacherCard(\'' + t.id + '\')">' +
+        '<div class="tcard-h"><b>' + esc(t.name) + '</b>' +
+        '<span class="src ' + t.src + '">' + srcCN(t.src) + '</span></div>' +
+        '<div class="tcard-m">学生 <b>' + stuN + '</b> 人 · 带 <b>' + n + '</b> 班</div>' +
+        '<div class="tcard-m m">' + (t.slots && t.slots.length ? esc(t.slots.map(slotLabel).join('、')) : '可授时段未设置') + '</div>' +
+        '</div>';
+    }).join('') + '</div>';
+  }
+
   const t = tch(S.selTeacher);
+  if(t) h += teacherDetail(t);
+  $('main').innerHTML = h;
+}
+
+/* 某位教师的独立页面（存档） */
+function teacherDetail(t){
   const mine = S.classes.filter(c => c.teacherId === t.id)
     .sort((a,b) => S.slots.findIndex(s => s.id === a.slotId) - S.slots.findIndex(s => s.id === b.slotId));
-  const totalStu = mine.reduce((a,c) => a + c.studentIds.length, 0);
+  const myStu  = S.students.filter(s => s.teacherId === t.id);
+  const taught = mine.reduce((a,c) => a + (c.lesson || 0), 0);
+  const p = t.profile || {}, perf = t.perf || {};
 
-  let h = '<h2>教师课表</h2>' +
-    '<div class="row" style="max-width:320px;margin-bottom:14px;">' +
-    '<select onchange="S.selTeacher=this.value;renderMain()">' +
-    list.map(x => '<option value="' + x.id + '"' + (x.id === t.id ? ' selected' : '') + '>' +
-      esc(x.name) + '（' + srcCN(x.src) + '）</option>').join('') + '</select></div>' +
-    '<div class="box"><div class="kv">' +
-    '<div class="k">教师</div><div>' + esc(t.name) + ' <span class="src ' + t.src + '">' + srcCN(t.src) + '</span></div>' +
+  let h = '<h2 style="margin-top:26px;">' + esc(t.name) + ' 的独立页面' +
+    '<span class="cnt">' + srcCN(t.src) + ' · 个人存档</span></h2>';
+
+  h += '<div class="stats" style="margin-bottom:14px;">' +
+    '<div class="stat"><p class="lb">学生人数</p><p class="vl">' + myStu.length + ' 人</p></div>' +
+    '<div class="stat"><p class="lb">教课班次数</p><p class="vl">' + mine.length + ' 班 · ' + taught + ' 课次</p></div>' +
+    '<div class="stat"><p class="lb">教课表现</p><p class="vl">' + (perf.score ? (perf.score + ' / 5') : '未评') + '</p></div>' +
+    '</div>';
+
+  h += '<div class="box"><b>个人资料</b><div class="kv" style="margin-top:8px;">' +
+    '<div class="k">身份</div><div><span class="src ' + t.src + '">' + srcCN(t.src) + '</span></div>' +
+    '<div class="k">联系方式</div><div>' + (p.contact ? esc(p.contact) : '<span class="m">未填</span>') + '</div>' +
+    '<div class="k">国籍 / 语言</div><div>' + (p.lang ? esc(p.lang) : '<span class="m">未填</span>') + '</div>' +
+    '<div class="k">资历</div><div>' + (p.exp ? esc(p.exp) : '<span class="m">未填</span>') + '</div>' +
     '<div class="k">可授时段</div><div>' + (t.slots.length ? t.slots.map(slotLabel).join('、') : '未设置') + '</div>' +
-    '<div class="k">带班</div><div>' + mine.length + ' 个 · 共 ' + totalStu + ' 人</div>' +
+    '<div class="k">单价</div><div>' + (t.rate ? money(t.rate) + (t.rateUnit === 'perStudent' ? '/人·课' : '/课') : '未设') + '</div>' +
+    '<div class="k">备注</div><div>' + (p.note ? esc(p.note) : '<span class="m">未填</span>') + '</div>' +
+    '<div class="k">表现记录</div><div>' + (perf.note ? esc(perf.note) : '<span class="m">未填</span>') + '</div>' +
+    '</div><div class="row" style="margin-top:10px;">' +
+      '<button class="mini primary" onclick="editTeacher(\'' + t.id + '\')">改资料 / 表现</button>' +
+      '<button class="mini danger" onclick="delTeacher(\'' + t.id + '\')">删教师</button>' +
     '</div></div>';
 
-  if(!mine.length){
-    h += '<div class="empty-note">该教师暂无班级。</div>';
-  }else{
-    h += '<table><tr><th>时段</th><th>班级</th><th>级别</th><th class="num">人数</th><th class="num">进度</th><th>视讯</th></tr>' +
+  h += '<h2 style="margin-top:22px;">' + esc(t.name) + ' 的学生 <span class="cnt">' + myStu.length + ' 人</span></h2>' +
+    '<div class="box">' + (myStu.length ? myStu.map(s => {
+      const c = s.classId ? cls(s.classId) : null;
+      return '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t.src) +
+        ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
+        '<div class="m">' + goalCN(s.goal) + ' · ' + (c ? ('已编入 ' + esc(c.name)) : '未编班') +
+        (s.job ? ' · ' + esc(s.job) : '') + '</div></span>' +
+        '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button></div>';
+    }).join('') : '<div class="empty-note">该教师名下还没有学生。</div>') + '</div>';
+
+  h += '<h2 style="margin-top:22px;">' + esc(t.name) + ' 的课表 <span class="cnt">' + mine.length + ' 个班</span></h2>' +
+    '<div class="box">' + (mine.length ?
+      '<table><tr><th>时段</th><th>班级</th><th>级别</th><th class="num">人数</th><th class="num">进度</th><th>视讯</th></tr>' +
       mine.map(c => '<tr><td>' + slotLabel(c.slotId) + '</td><td>' + esc(c.name) + '</td>' +
         '<td><span class="lv ' + c.level + '">' + lvName(c.level) + '</span></td>' +
         '<td class="num">' + c.studentIds.length + '/' + cap() + '</td>' +
         '<td class="num">' + lessonLabel(c.level, c.lesson) + '</td>' +
         '<td>' + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">打开</a>' : '<span class="m">—</span>') + '</td></tr>').join('') +
-      '</table>';
-  }
-  $('main').innerHTML = h;
+      '</table>' : '<div class="empty-note">该教师暂无班级。</div>') + '</div>';
+
+  return h;
 }
 
-/* ==================== 视图：学员课表 ==================== */
-function renderStudentTimetable(){
-  const list = S.students;
-  if(!list.length){ $('main').innerHTML = '<h2>学员课表</h2><div class="empty-note">还没有学员。</div>'; return; }
-  if(!S.selStudent || !stu(S.selStudent)) S.selStudent = list[0].id;
-  const s = stu(S.selStudent);
-  const c = s.classId ? cls(s.classId) : null;
-  const t = c ? tch(c.teacherId) : null;
+/* ==================== 板块 2：学生（2026-10-01 Tony 定） ====================
+   Tony 原话口径：
+     · 填写学生资料之前必须筛选是哪一位教师（筛选的来源来自教师板块）。
+       自家 / 外包按教师页面填写后默认 —— 不用标注文字，用颜色分即可。
+     · 学生资料：姓名 / 联系方式 / 职业 / 学习的要求（能听能讲 · 能听讲能写）
+       —— 这关系到怎么配教课体系（HSK1 第一阶段、第二阶段…）。
+     · 必须记录这位学生是从外包还是自家招聘、属于哪一位教师。
+     · 学生毕业的等级记录分类（将来「招聘懂中文学生」的系统要用来筛选后推荐给单位）。
+   ⚠️ 将来会有不同体系，按工作性质分（工程 / 业务 / 财务 …）—— Tony 明确要求记下，别丢。 */
+function renderStudentsView(){
+  const tList = S.teachers;
+  let h = '<h2>学生 <span class="cnt">' + S.students.length + ' 人</span></h2>';
 
-  let h = '<h2>学员课表</h2>' +
-    '<div class="row" style="max-width:320px;margin-bottom:14px;">' +
-    '<select onchange="S.selStudent=this.value;renderMain()">' +
-    list.map(x => '<option value="' + x.id + '"' + (x.id === s.id ? ' selected' : '') + '>' +
-      esc(x.name) + '（' + lvName(x.level) + '）</option>').join('') + '</select></div>' +
-    '<div class="box"><div class="kv">' +
-    '<div class="k">学员</div><div>' + esc(s.name) + ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span></div>' +
-    '<div class="k">来源</div><div>' + (s.source === 'teacher' ? '教师自带' : '平台招生') + '</div>' +
-    '<div class="k">可上课时段</div><div>' + (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置') + '</div>' +
+  if(!tList.length){
+    h += '<div class="empty-note">还没有教师 —— 学生的归属来自教师板块，先添加教师。' +
+      '<div class="row" style="margin-top:10px;justify-content:center;">' +
+      '<button class="mini primary" onclick="setView(\'teachers\')">去教师板块</button></div></div>';
+    $('main').innerHTML = h; return;
+  }
+  if(!tch(S.stuTeacher)) S.stuTeacher = tList[0].id;
+  const t = tch(S.stuTeacher);
+  const mine = S.students.filter(s => s.teacherId === t.id);
+
+  h += '<div class="box"><b>第一步 · 先选教师</b>' +
+    '<p class="hint2">学生的归属来自教师板块；选定后下面只显示这位教师的学生。' +
+    '自家 / 外包不写文字，用颜色点区分。</p>' +
+    '<div class="chips" style="margin-top:9px;">' +
+      tList.map(x => '<span class="chip' + (x.id === t.id ? ' on' : '') + '" onclick="setStuTeacher(\'' + x.id + '\')">' +
+        esc(x.name) + ' ' + srcDot(x.src) + '</span>').join('') +
+    '</div>' +
+    '<div class="row" style="margin-top:12px;">' +
+      '<button class="mini primary" onclick="editStudent()">+ 给 ' + esc(t.name) + ' 添加学生</button>' +
+      '<span class="m" style="font-size:11.5px;color:var(--hint);">' + srcCN(t.src) +
+      ' · 该教师名下 ' + mine.length + ' 人</span>' +
     '</div></div>';
 
-  if(!c){
-    h += '<div class="empty-note">尚未编班，等待候选池匹配。</div>';
-  }else{
-    h += '<div class="box"><div class="kv">' +
-      '<div class="k">班级</div><div><b>' + esc(c.name) + '</b> <span class="lv ' + c.level + '">' + lvName(c.level) + '</span></div>' +
-      '<div class="k">教师</div><div>' + (t ? esc(t.name) : '?') + ' <span class="src ' + c.src + '">' + srcCN(c.src) + '</span></div>' +
-      '<div class="k">上课时段</div><div>' + slotLabel(c.slotId) + (slot(c.slotId) ? '（' + esc(slot(c.slotId).time) + '）' : '') + '</div>' +
-      '<div class="k">进度</div><div>' + lessonLabel(c.level, c.lesson) + ' · 约剩 ' + weeksLeft(c.lesson) + ' 周</div>' +
-      '<div class="k">视讯链接</div><div>' + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">' + esc(c.link) + '</a>' : '未填写') + '</div>' +
-      '<div class="k">同班同学</div><div>' + c.studentIds.map(id => { const x = stu(id); return x ? esc(x.name) : ''; }).filter(Boolean).join('、') + '</div>' +
-      '</div></div>';
-  }
+  h += '<h2 style="margin-top:22px;">' + esc(t.name) + ' 的学生 <span class="cnt">' + mine.length + ' 人</span></h2>' +
+    '<div class="box">' + (mine.length ? mine.map(s => {
+      const c = s.classId ? cls(s.classId) : null;
+      const on = S.selStudent === s.id;
+      return '<div class="item' + (on ? ' on' : '') + '">' +
+        '<span class="g" style="cursor:pointer;" onclick="pickStudentRow(\'' + s.id + '\')">' +
+        esc(s.name) + ' ' + srcDot(t.src) + ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
+        '<div class="m">' +
+          (s.contact ? esc(s.contact) + ' · ' : '') +
+          (s.job ? esc(s.job) + ' · ' : '') +
+          goalCN(s.goal) + ' · ' +
+          (c ? ('已编入 ' + esc(c.name)) : '未编班') +
+          (s.grade ? ' · 结业 ' + esc(s.grade) : '') +
+        '</div></span>' +
+        '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
+        '<button class="mini danger" onclick="delStudent(\'' + s.id + '\')">删</button></div>';
+    }).join('') : '<div class="empty-note">该教师名下还没有学生。</div>') + '</div>';
+
+  const s = stu(S.selStudent);
+  if(s && s.teacherId === t.id) h += studentDetail(s);
   $('main').innerHTML = h;
+}
+function pickStudentRow(id){ S.selStudent = (S.selStudent === id ? '' : id); save(); renderMain(); }
+
+/* 某位学生的课表（点学生名字展开） */
+function studentDetail(s){
+  const c = s.classId ? cls(s.classId) : null;
+  const t = c ? tch(c.teacherId) : tch(s.teacherId);
+  let h = '<h2 style="margin-top:22px;">' + esc(s.name) + ' 的课表 <span class="cnt">学生视角</span></h2>';
+  if(!c) return h + '<div class="empty-note">尚未编班，等待候选池匹配。</div>';
+  return h + '<div class="box"><div class="kv">' +
+    '<div class="k">班级</div><div><b>' + esc(c.name) + '</b> <span class="lv ' + c.level + '">' + lvName(c.level) + '</span></div>' +
+    '<div class="k">教师</div><div>' + (t ? esc(t.name) : '?') + ' <span class="src ' + c.src + '">' + srcCN(c.src) + '</span></div>' +
+    '<div class="k">上课时段</div><div>' + slotLabel(c.slotId) + (slot(c.slotId) ? '（' + esc(slot(c.slotId).time) + '）' : '') + '</div>' +
+    '<div class="k">进度</div><div>' + lessonLabel(c.level, c.lesson) + ' · 约剩 ' + weeksLeft(c.lesson) + ' 周</div>' +
+    '<div class="k">视讯链接</div><div>' + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener" style="color:var(--acc);">' + esc(c.link) + '</a>' : '未填写') + '</div>' +
+    '<div class="k">同班同学</div><div>' + c.studentIds.map(id => { const x = stu(id); return x ? esc(x.name) : ''; }).filter(Boolean).join('、') + '</div>' +
+    '</div></div>';
 }
 
 /* ==================== 视图：申请管理 ==================== */
@@ -1131,7 +1406,7 @@ function renderApply(){
         '<button class="mini" onclick="reopenApply(\'' + a.id + '\')">撤销</button>' +
         '<button class="mini danger" onclick="delApply(\'' + a.id + '\')">删</button></div>').join('') + '</div>';
   }
-  $('main').innerHTML = h;
+  ($('boardBody') || $('main')).innerHTML = h;
 }
 
 function importCode(){
@@ -1176,28 +1451,105 @@ function openTeacherPage(){
 }
 
 /* ==================== 视图：结算（口令进入） ==================== */
-function renderSettle(){
-  const rows = S.classes.map(c => {
+/* ==================== 板块 5：结算（2026-10-01 Tony 定） ====================
+   Tony 原话口径，分四个区域：
+     ① 公司今天得到的利润结算
+     ② 自家的（总结来源 = 教师 + 学生）—— 金额后续再补
+     ③ 外包的（总结来源 = 教师 + 学生）—— 金额后续再补
+     ④ 总月季（自家 / 外包教师的费用开支、消耗等等都必须列入）—— 数据怎么灌后续再定
+   ⚠️ ②③④ 的金额口径 Tony 还没定。这里先按「单价 × 已上课次」算，并明确标出「待定」，
+      不要假装这就是最终口径。 */
+function settleRows(){
+  return S.classes.map(c => {
     const t = tch(c.teacherId);
     const n = c.studentIds.length;
     const rate = t ? (t.rate || 0) : 0;
     const unit = t && t.rateUnit === 'perStudent' ? rate * n : rate;
     return { c, t, n, rate, unit, total: unit * c.lesson };
   });
+}
+/* 把「推进课次」的日志按起始时间聚合成本期收入 / 成本 */
+function settleWindow(since){
+  const hit = (S.log || []).filter(x => x.at >= since);
+  const cnt = {}; hit.forEach(x => { cnt[x.classId] = (cnt[x.classId] || 0) + 1; });
+  let inc = 0, cst = 0, n = 0;
+  Object.keys(cnt).forEach(cid => {
+    const c = cls(cid); if(!c) return;
+    const t = tch(c.teacherId);
+    const rate = t ? (t.rate || 0) : 0;
+    const unit = t && t.rateUnit === 'perStudent' ? rate * c.studentIds.length : rate;
+    const amt = unit * cnt[cid];
+    n += cnt[cid];
+    if(c.src === 'out') inc += amt; else cst += amt;
+  });
+  return { inc, cst, n };
+}
+function startOfToday(){ const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function startOfMonth(){ const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); }
+
+function renderSettle(){
+  const rows = settleRows();
   const income = rows.filter(r => r.c.src === 'out').reduce((a,r) => a + r.total, 0);
   const cost   = rows.filter(r => r.c.src === 'own').reduce((a,r) => a + r.total, 0);
 
-  let h = '<h2>结算 <span class="cnt">仅「可见结算」的成员能看到</span></h2>' +
-    '<div class="stats" style="max-width:none;margin-bottom:14px;">' +
-      '<div class="stat"><p class="lb">外包收入</p><p class="vl">' + money(income) + '</p></div>' +
-      '<div class="stat"><p class="lb">自有成本</p><p class="vl">' + money(cost) + '</p></div>' +
-      '<div class="stat"><p class="lb">净额</p><p class="vl">' + money(income - cost) + '</p></div>' +
-    '</div>' +
-    '<p class="m" style="font-size:11.5px;color:var(--hint);">单价在「教师」列表里设置：按课次（每上一课结算一次）或按学员×课次（每学员每课次）。</p>';
+  const today = settleWindow(startOfToday());
+  const month = settleWindow(startOfMonth());
 
-  /* 单价输入框必须带币种单位，否则「400000」看不出是 VND 还是别的币。
-     step=1000 贴合 VND 的实际议价粒度（不会出现 400001 这种数）。 */
-  h += '<h2 style="margin-top:20px;">教师单价</h2><div class="box">' +
+  const own    = S.teachers.filter(t => t.src === 'own');
+  const out    = S.teachers.filter(t => t.src === 'out');
+  const ownStu = S.students.filter(s => { const t = tch(s.teacherId); return t && t.src === 'own'; });
+  const outStu = S.students.filter(s => { const t = tch(s.teacherId); return t && t.src === 'out'; });
+  const ownCls = S.classes.filter(c => c.src === 'own');
+  const outCls = S.classes.filter(c => c.src === 'out');
+  const lessons = (arr) => arr.reduce((a,c) => a + c.lesson, 0);
+
+  let h = '<h2>结算 <span class="cnt">仅「可见结算」的成员能看到</span></h2>' +
+    '<p class="m" style="font-size:11.5px;color:var(--hint);margin-bottom:14px;">' +
+    '单价在下面的「教师单价」里设置：按课次（每上一课结算一次）或按学员×课次。' +
+    '金额口径还没定稿 —— 带 <b>待定</b> 标记的数字是暂按「单价 × 已上课次」算的。</p>';
+
+  /* ---- ① 公司今天得到的利润 ---- */
+  h += '<h2 style="margin-top:20px;">① 公司今天得到的利润</h2>' +
+    '<div class="stats" style="max-width:none;margin-bottom:10px;">' +
+      '<div class="stat"><p class="lb">今天推进的课次</p><p class="vl">' + today.n + ' 次</p></div>' +
+      '<div class="stat"><p class="lb">今日收入（外包）</p><p class="vl">' + money(today.inc) + '</p></div>' +
+      '<div class="stat"><p class="lb">今日成本（自有）</p><p class="vl">' + money(today.cst) + '</p></div>' +
+      '<div class="stat"><p class="lb">今日利润</p><p class="vl">' + money(today.inc - today.cst) + '</p></div>' +
+    '</div>' +
+    (today.n ? '' : '<p class="hint2">今天还没有推进过课次 —— 在排课页点「+1 课」就会记进来。</p>');
+
+  /* ---- ② 自家的 ---- */
+  h += '<h2 style="margin-top:20px;">② 自家的 <span class="cnt">总结来源 = 教师 + 学生</span></h2>' +
+    '<div class="stats" style="max-width:none;margin-bottom:10px;">' +
+      '<div class="stat"><p class="lb">自有教师</p><p class="vl">' + own.length + ' 位</p></div>' +
+      '<div class="stat"><p class="lb">自有学生</p><p class="vl">' + ownStu.length + ' 人</p></div>' +
+      '<div class="stat"><p class="lb">自有班级</p><p class="vl">' + ownCls.length + ' 个 · ' + lessons(ownCls) + ' 课次</p></div>' +
+      '<div class="stat"><p class="lb">成本合计</p><p class="vl">' + money(cost) + ' <span class="m">待定</span></p></div>' +
+    '</div>';
+
+  /* ---- ③ 外包的 ---- */
+  h += '<h2 style="margin-top:20px;">③ 外包的 <span class="cnt">总结来源 = 教师 + 学生</span></h2>' +
+    '<div class="stats" style="max-width:none;margin-bottom:10px;">' +
+      '<div class="stat"><p class="lb">外包教师</p><p class="vl">' + out.length + ' 位</p></div>' +
+      '<div class="stat"><p class="lb">外包学生</p><p class="vl">' + outStu.length + ' 人</p></div>' +
+      '<div class="stat"><p class="lb">外包班级</p><p class="vl">' + outCls.length + ' 个 · ' + lessons(outCls) + ' 课次</p></div>' +
+      '<div class="stat"><p class="lb">收入合计</p><p class="vl">' + money(income) + ' <span class="m">待定</span></p></div>' +
+    '</div>';
+
+  /* ---- ④ 总月季 ---- */
+  h += '<h2 style="margin-top:20px;">④ 总月季 <span class="cnt">本月（月度 / 季度口径待定）</span></h2>' +
+    '<div class="stats" style="max-width:none;margin-bottom:10px;">' +
+      '<div class="stat"><p class="lb">本月推进课次</p><p class="vl">' + month.n + ' 次</p></div>' +
+      '<div class="stat"><p class="lb">本月外包收入</p><p class="vl">' + money(month.inc) + ' <span class="m">待定</span></p></div>' +
+      '<div class="stat"><p class="lb">本月自有成本</p><p class="vl">' + money(month.cst) + ' <span class="m">待定</span></p></div>' +
+      '<div class="stat"><p class="lb">本月净额</p><p class="vl">' + money(month.inc - month.cst) + '</p></div>' +
+    '</div>' +
+    '<div class="box" style="margin-bottom:10px;"><b>还缺什么</b>' +
+      '<p class="hint2" style="margin-top:6px;">自有 / 外包教师的<b>费用开支、消耗</b>等科目现在系统里没有数据来源 ——' +
+      '怎么把这些数据灌进来（手工录入 / 导入 / 另建一张表）还没定，等 Tony 定口径后再加。</p></div>';
+
+  /* ---- 教师单价（口径的输入源） ---- */
+  h += '<h2 style="margin-top:20px;">教师单价 <span class="cnt">所有金额的唯一输入源</span></h2><div class="box">' +
     (S.teachers.length ? S.teachers.map(t => {
       /* 旧数据提醒：人民币量级的单价（< 10000）配 ₫ 会显示成「120 ₫」，
          这是本机 localStorage 里的老数据，不是格式 bug —— 就地提示改。 */
@@ -1236,7 +1588,7 @@ function renderSettle(){
         '<td class="num">' + (r.c.src === 'out' ? '+' : '−') + money(r.total) + '</td></tr>').join('') +
       '</table>';
   }
-  h += '<p class="hint2">结算仅对「可见结算」的成员开放；该开关在「成员」页里设置。</p>';
+  h += '<p class="hint2">结算仅对「可见结算」的成员开放；该开关在「成员」板块里设置。</p>';
   $('main').innerHTML = h;
 }
 
@@ -1291,7 +1643,7 @@ function delSlot(id){
   render(); toast('已删除 ' + (s ? s.name : ''));
 }
 
-/* ==================== 操作：教师 / 学员 ==================== */
+/* ==================== 操作：教师 / 学生 ==================== */
 function pick(which, id){
   const arr = which === 'T' ? S.pickT : S.pickS;
   const i = arr.indexOf(id);
@@ -1302,27 +1654,37 @@ function addTeacher(){
   const n = $('tName').value.trim();
   if(!n){ toast('请填写教师姓名'); return; }
   if(S.teachers.some(t => t.name === n)){ toast('教师已存在'); return; }
-  S.teachers.push({ id: uid(), name: n, src: $('tSrc').value, slots: S.pickT.slice(), rate: 0, rateUnit: 'perLesson' });
+  S.teachers.push({ id: uid(), name: n, src: $('tSrc').value, slots: S.pickT.slice(),
+    rate: 0, rateUnit: 'perLesson',
+    profile:{ contact:'', lang:'', exp:'', note:'' }, perf:{ score:0, note:'' } });
   $('tName').value = ''; S.pickT = [];
-  render(); toast('已添加教师 ' + n);
+  render(); toast('已添加教师 ' + n + '（个人资料点「改」补）');
 }
 function delTeacher(id){
   const t = tch(id); if(!t) return;
   if(S.classes.some(c => c.teacherId === id)){ toast('该教师还有班，先删班'); return; }
   S.teachers = S.teachers.filter(x => x.id !== id);
+  /* 清掉指向这位教师的选中态，否则各板块会停在一个不存在的对象上 */
+  if(S.selTeacher === id) S.selTeacher = '';
+  if(S.stuTeacher === id) S.stuTeacher = '';
+  if(S.boardTeacher === id) S.boardTeacher = '';
   render(); toast('已删除 ' + t.name);
 }
 function addStudent(){
   const n = $('stName').value.trim();
-  if(!n){ toast('请填写学员姓名'); return; }
-  S.students.push({ id: uid(), name: n, level: $('stLevel').value, source: $('stSource').value, slots: S.pickS.slice(), classId: null });
+  if(!n){ toast('请填写学生姓名'); return; }
+  const tid = $('stTeacher') ? $('stTeacher').value : '';
+  S.students.push({ id: uid(), name: n, level: $('stLevel').value, source: $('stSource').value,
+    teacherId: tid, contact:'', job:'', goal:'listen', grade:'',
+    slots: S.pickS.slice(), classId: null });
   $('stName').value = ''; S.pickS = [];
-  render(); toast('已添加学员 ' + n);
+  render(); toast('已添加学生 ' + n + '（联系方式 / 职业 / 学习要求点「改」补）');
 }
 function delStudent(id){
   const s = stu(id); if(!s) return;
   if(s.classId){ const c = cls(s.classId); if(c) c.studentIds = c.studentIds.filter(x => x !== id); }
   S.students = S.students.filter(x => x.id !== id);
+  if(S.selStudent === id) S.selStudent = '';
   render(); toast('已删除 ' + s.name);
 }
 function setRate(id, v){ const t = tch(id); if(t){ t.rate = Math.max(0, parseFloat(v) || 0); save(); renderSettle(); } }
@@ -1484,8 +1846,16 @@ function advance(id){
   const scope = S.settings.sync === 'level'
     ? S.classes.filter(x => x.level === c.level)
     : S.classes.filter(x => x.level === c.level && x.slotId === c.slotId);
-  scope.forEach(x => { if(x.lesson < T) x.lesson++; });
+  const at = Date.now();
+  scope.forEach(x => { if(x.lesson < T){ x.lesson++; logLesson(x, at); } });
   render(); toast('已推进：' + scope.map(x => x.name).join('、'));
+}
+/* 推进课次时记一条日志 —— 「今天利润 / 总月季」两个区域靠它算。
+   只留最近 2000 条，避免 localStorage 无限膨胀。 */
+function logLesson(c, at){
+  if(!S.log) S.log = [];
+  S.log.push({ at: at, classId: c.id, lesson: c.lesson });
+  if(S.log.length > 2000) S.log = S.log.slice(-2000);
 }
 /* 视讯链接已并入「改班级」表单，这里不再单独开 prompt 入口 */
 
@@ -1494,6 +1864,17 @@ function findClassFor(s){
   return S.classes.find(c => c.level === s.level
     && c.studentIds.length < cap()
     && s.slots.indexOf(c.slotId) >= 0);
+}
+/* 把学生编入班级时，归属教师跟着班级走 —— 但只在学生还没有归属时补上。
+   教师板块 / 学生板块 / 数据板块全按 student.teacherId 聚合，不同步就全落空
+   （老数据在 load() 里也有一次同样的回填，这里是把运行时的口子补上）。
+   学生「先挂教师」是显式设定，所以已有归属时不覆盖。 */
+function setStuClass(s, cid){
+  s.classId = cid || null;
+  if(cid && !s.teacherId){
+    const c = cls(cid);
+    if(c && c.teacherId) s.teacherId = c.teacherId;
+  }
 }
 /* limit = 最多编入几人；不传表示按班额上限尽量编满 */
 function fillFromPool(cid, limit){
@@ -1504,7 +1885,7 @@ function fillFromPool(cid, limit){
     if(c.studentIds.length >= max) return;
     if(s.level !== c.level) return;
     if(s.slots.indexOf(c.slotId) < 0) return;
-    c.studentIds.push(s.id); s.classId = c.id; n++;
+    c.studentIds.push(s.id); setStuClass(s, c.id); n++;
   });
   return n;
 }
@@ -1512,7 +1893,7 @@ function autoAssign(){
   let n = 0;
   S.students.filter(s => !s.classId).forEach(s => {
     const c = findClassFor(s);
-    if(c){ c.studentIds.push(s.id); s.classId = c.id; n++; }
+    if(c){ c.studentIds.push(s.id); setStuClass(s, c.id); n++; }
   });
   render();
   toast(n ? ('已编入 ' + n + ' 人') : '没有可匹配的班级（检查级别与时段）');
@@ -1562,116 +1943,51 @@ function reject(id){
   render(); toast('已拒绝');
 }
 
-/* ==================== 登录门 ==================== */
-function renderGate(){
-  if(!S.members.length){
-    $('gate').innerHTML =
-      '<div class="gate">' +
-        '<h2>初始化管理员</h2>' +
-        '<p>这是第一次打开。请设置第一个管理员账号 —— 之后只有名单里的成员能进入本系统。</p>' +
-        '<div class="fld"><label>管理员姓名</label><input id="gName" placeholder="例如 Tony" /></div>' +
-        '<div class="fld"><label>登录名</label><input id="gUser" placeholder="英文或拼音，例如 tony" autocomplete="username" /></div>' +
-        '<div class="fld"><label>登录口令</label><input id="gPass" type="password" placeholder="至少 4 位" autocomplete="new-password" /></div>' +
-        '<div class="fld"><label>再输一次</label><input id="gPass2" type="password" autocomplete="new-password" /></div>' +
-        '<button class="primary" style="width:100%;" onclick="initAdmin()">创建管理员并进入</button>' +
-        '<p class="err" id="gErr"></p>' +
-        '<p class="hint2">本机阶段：账号与口令存在这台电脑的浏览器里，用于确认「形态」。' +
-        '上云后将改为 Firebase Auth 邮箱 + 密码，白名单写进云端安全规则。</p>' +
-      '</div>';
-    return;
-  }
-  $('gate').innerHTML =
-    '<div class="gate">' +
-      '<h2>管理端登录</h2>' +
-      '<p>本系统仅限指定成员使用，请用管理员分配的账号登录。</p>' +
-      '<div class="fld"><label>登录名</label><input id="gUser" autocomplete="username" /></div>' +
-      '<div class="fld"><label>口令</label><input id="gPass" type="password" autocomplete="current-password" /></div>' +
-      '<button class="primary" style="width:100%;" onclick="doLogin()">登录</button>' +
-      '<p class="err" id="gErr"></p>' +
-      '<p class="hint2">本页不显示任何排课数据，登录后才加载。</p>' +
-    '</div>';
-  const u = $('gUser'); if(u) u.focus();
-}
-function initAdmin(){
-  const name = $('gName').value.trim();
-  const user = $('gUser').value.trim();
-  const p1 = $('gPass').value, p2 = $('gPass2').value;
-  if(!name){ $('gErr').textContent = '请填写管理员姓名'; return; }
-  if(!user){ $('gErr').textContent = '请填写登录名'; return; }
-  if(p1.length < 4){ $('gErr').textContent = '口令至少 4 位'; return; }
-  if(p1 !== p2){ $('gErr').textContent = '两次输入的口令不一致'; return; }
-  const m = { id:'m' + uid(), name, user, pass:p1, canSettle:true };
-  S.members.push(m);
-  S.login = m.id;
-  render(); toast('管理员已创建：' + name);
-}
-function doLogin(){
-  const user = ($('gUser').value || '').trim();
-  const pass = $('gPass').value || '';
-  const m = S.members.filter(x => x.user === user && x.pass === pass)[0];
-  if(!m){ $('gErr').textContent = '登录名或口令不正确'; return; }
-  S.login = m.id; S.view = 'board';
-  render(); toast('欢迎，' + (m.name || m.user));
-}
-function logout(){ S.login = ''; S.view = 'board'; render(); toast('已退出登录'); }
+/* ==================== 登录门：已删除（2026-10-01）====================
+   Tony：「我用的删除是连代码都不需要，直接删除干净. 以后有需要我们再重新增加.」
+   这里原来有 renderGate() / initAdmin() / doLogin() / logout() 与 S.login 登录态，
+   已整段删除。上云要做权限时再重新设计（届时走 Firebase Auth + 云端安全规则）。 */
 
-/* ==================== 视图：成员 ==================== */
+/* ==================== 视图：成员（纯名单）====================
+   2026-10-01：登录门删除后，「成员」降级为名单 —— 只记姓名。
+   原来的 登录名 / 口令 / 可见结算 随登录一起删掉。
+   Tony：「成员你先搁着，把前面的搞好我们再来商讨这一块。」 */
 function renderMembers(){
-  const me = currentMember();
-  let h = '<h2>成员 <span class="cnt">能登录本系统的指定成员 · 人数不限</span></h2>' +
+  const h = '<h2>成员 <span class="cnt">名单 · 只记姓名</span></h2>' +
     '<div class="box">' +
       (S.members.length ? S.members.map(m =>
-        '<div class="item"><span class="g">' + esc(m.name) +
-        (m.id === me.id ? ' <span class="tag ok">当前登录</span>' : '') +
-        ' <span class="src ' + (m.canSettle ? 'own' : 'out') + '">' + (m.canSettle ? '可见结算' : '不可见结算') + '</span>' +
-        '<div class="m">登录名 ' + esc(m.user) + '</div></span>' +
+        '<div class="item"><span class="g">' + esc(m.name) + '</span>' +
         '<button class="mini" onclick="editMember(\'' + m.id + '\')">改</button>' +
-        '<button class="mini" onclick="toggleSettle(\'' + m.id + '\')">' + (m.canSettle ? '关闭结算' : '开放结算') + '</button>' +
-        (m.id === me.id ? '' : '<button class="mini danger" onclick="delMember(\'' + m.id + '\')">删</button>') +
+        '<button class="mini danger" onclick="delMember(\'' + m.id + '\')">删</button>' +
         '</div>').join('') : '<div class="empty-note">还没有成员</div>') +
     '</div>' +
     '<h2 style="margin-top:22px;">新增成员</h2>' +
     '<div class="box">' +
-      '<div class="row"><input id="mName" placeholder="姓名" /><input id="mUser" placeholder="登录名" /></div>' +
-      '<div class="row"><input id="mPass" type="password" placeholder="初始口令（至少 4 位）" />' +
-        '<label class="cur"><input type="checkbox" id="mSettle" style="width:auto;" /> 可见结算</label></div>' +
-      '<div class="row"><button class="primary" style="width:100%;" onclick="addMember()">添加成员</button></div>' +
-      '<p class="hint2">已有成员点「改」可以改姓名、登录名，或重设口令。系统至少保留一位「可见结算」的成员。</p>' +
-    '</div>' +
-    '<div class="box" style="border-color:var(--warn);">' +
-      '<b style="color:var(--warn);">本机阶段的边界（请知悉）</b>' +
-      '<p class="hint2">现在账号与口令存在这台电脑的浏览器里 —— 它挡得住「随手打开网页的人」，' +
-      '挡不住「会开开发者工具的人」。真正的权限要等上云：Firebase Auth 登录 + 云端安全规则白名单。</p>' +
+      '<div class="row"><input id="mName" placeholder="姓名" />' +
+        '<button class="primary" onclick="addMember()">添加</button></div>' +
+      '<p class="hint2">这是一份名单，不是账号 —— 登录功能已整段删除；以后要做成员/权限时再重新加回来。</p>' +
     '</div>';
   $('main').innerHTML = h;
 }
 function addMember(){
-  const name = $('mName').value.trim();
-  const user = $('mUser').value.trim();
-  const pass = $('mPass').value;
-  if(!name || !user){ toast('请填写姓名和登录名'); return; }
-  if(pass.length < 4){ toast('口令至少 4 位'); return; }
-  if(S.members.some(m => m.user === user)){ toast('登录名已存在'); return; }
-  S.members.push({ id:'m' + uid(), name, user, pass, canSettle: !!$('mSettle').checked });
-  render(); toast('已添加成员 ' + name);
+  const name = ($('mName').value || '').trim();
+  if(!name){ toast('请填写姓名'); return; }
+  S.members.push({ id:'m' + uid(), name });
+  render(); toast('已添加 ' + name);
 }
 function delMember(id){
-  if(S.members.length <= 1){ toast('至少要保留一个成员'); return; }
   const m = S.members.filter(x => x.id === id)[0]; if(!m) return;
-  if(!confirm('确认删除成员「' + (m.name || m.user) + '」？')) return;
+  if(!confirm('确认删除成员「' + m.name + '」？')) return;
   S.members = S.members.filter(x => x.id !== id);
-  render(); toast('已删除 ' + (m.name || m.user));
-}
-function toggleSettle(id){
-  const m = S.members.filter(x => x.id === id)[0]; if(!m) return;
-  m.canSettle = !m.canSettle;
-  render(); toast(m.name + (m.canSettle ? ' 可见结算' : ' 不可见结算'));
+  render(); toast('已删除 ' + m.name);
 }
 
 function setView(v){
-  const me = currentMember();
-  const def = VIEWS.filter(x => x.id === v)[0];
-  if(def && def.need && !(me && me[def.need])){ toast('你没有权限查看该页'); return; }
+  /* 兼容旧板块 id（老链接 / 老测试 / 老书签）：
+     apply → 排课板块的「开班申请」子页签；teacher → 教师板块；student → 学生板块。 */
+  if(v === 'apply'){ v = 'board'; S.boardTab = 'apply'; }
+  else if(v === 'teacher'){ v = 'teachers'; }
+  else if(v === 'student'){ v = 'students'; }
   S.view = v; render();
 }
 
@@ -1699,36 +2015,64 @@ function saveSlot(){
 }
 
 /* ==================== 编辑：教师 ==================== */
+/* id 为空 = 新建（教师板块右上角的「+ 添加教师」走这条）。
+   个人资料 + 教课表现都是 Tony 2026-10-01 明确要求的字段。 */
 function editTeacher(id){
-  const t = tch(id); if(!t) return;
-  const n = S.classes.filter(c => c.teacherId === id).length;
+  const t = id ? tch(id) : null;
+  if(id && !t) return;
+  const isNew = !t;
+  const p = (t && t.profile) || {};
+  const perf = (t && t.perf) || {};
+  const n = t ? S.classes.filter(c => c.teacherId === id).length : 0;
   openModal({
-    kind:'teacher', id, pick:(t.slots || []).slice(), title:'编辑教师',
+    kind:'teacher', id: id || '', pick: t ? (t.slots || []).slice() : [],
+    title: isNew ? '添加教师' : '编辑教师',
     body:
-      fld({ k:'name', label:'姓名', value:t.name }) +
+      fld({ k:'name', label:'姓名', value: t ? t.name : '' }) +
       '<div class="g2">' +
-        fld({ k:'src', label:'身份', type:'select', value:t.src,
+        fld({ k:'src', label:'身份', type:'select', value: t ? t.src : 'own',
               opts:[['own','自有教师'],['out','外包教师']] }) +
-        fld({ k:'rate', label:'单价（' + CUR.sym + '）', type:'number', min:0, value:(t.rate || 0) }) +
+        fld({ k:'contact', label:'联系方式', value:p.contact || '' }) +
       '</div>' +
-      fld({ k:'rateUnit', label:'计价方式', type:'select', value:(t.rateUnit || 'perLesson'),
-            opts:[['perLesson','按课次'],['perStudent','按学员×课次']] }) +
-      mChips('可授课时段', t.slots || [], '不勾任何时段 = 不限时段，任何时段都能排。') +
+      '<div class="g2">' +
+        fld({ k:'lang', label:'国籍 / 语言', value:p.lang || '', ph:'越南 / 中文 · 越南语' }) +
+        fld({ k:'exp', label:'资历', value:p.exp || '', ph:'HSK6 · 3 年教学' }) +
+      '</div>' +
+      '<div class="g2">' +
+        fld({ k:'rate', label:'单价（' + CUR.sym + '）', type:'number', min:0, value:(t ? (t.rate || 0) : 0) }) +
+        fld({ k:'rateUnit', label:'计价方式', type:'select', value:(t ? (t.rateUnit || 'perLesson') : 'perLesson'),
+              opts:[['perLesson','按课次'],['perStudent','按学员×课次']] }) +
+      '</div>' +
+      mChips('可授课时段', t ? (t.slots || []) : [], '不勾任何时段 = 不限时段，任何时段都能排。') +
+      '<div class="g2">' +
+        fld({ k:'score', label:'教课表现（1–5）', type:'number', min:1, value:(perf.score || '') }) +
+        fld({ k:'perfNote', label:'表现记录', value:perf.note || '', ph:'家长反馈 / 课堂纪律' }) +
+      '</div>' +
+      fld({ k:'note', label:'备注', type:'textarea', value:p.note || '' }) +
       (n ? '<p class="hint2">该教师已有 ' + n + ' 个班。改身份会同步到这些班（结算按班级的师资类型分岔）。</p>' : ''),
     foot: mCancel + '<button class="mini primary" onclick="saveTeacher()">保存</button>'
   });
 }
 function saveTeacher(){
-  const t = tch(MED.id); if(!t) return closeModal();
   const name = fv('name');
   if(!name){ toast('请填写教师姓名'); return; }
-  if(S.teachers.some(x => x.id !== t.id && x.name === name)){ toast('已有同名教师'); return; }
+  let t = MED.id ? tch(MED.id) : null;
+  if(!t){
+    if(S.teachers.some(x => x.name === name)){ toast('已有同名教师'); return; }
+    t = { id: uid(), name: name, src: fv('src'), slots: [], rate: 0, rateUnit: 'perLesson' };
+    S.teachers.push(t);
+  }else if(S.teachers.some(x => x.id !== t.id && x.name === name)){
+    toast('已有同名教师'); return;
+  }
   const oldSrc = t.src;
   t.name = name;
   t.src = fv('src');
   t.rate = Math.max(0, parseFloat(fv('rate')) || 0);
   t.rateUnit = fv('rateUnit');
   t.slots = MED.pick.slice();
+  t.profile = { contact: fv('contact'), lang: fv('lang'), exp: fv('exp'), note: fv('note') };
+  const sc = parseInt(fv('score'), 10);
+  t.perf = { score: (sc >= 1 && sc <= 5) ? sc : 0, note: fv('perfNote') };
   /* 连带：班级的师资类型是开班时从教师复制的，改教师身份要同步过去 */
   if(oldSrc !== t.src) S.classes.filter(c => c.teacherId === t.id).forEach(c => { c.src = t.src; });
   /* 连带：收窄可授时段后，已排在这些时段之外的班要提醒 */
@@ -1741,43 +2085,72 @@ function saveTeacher(){
     : ''));
 }
 
-/* ==================== 编辑：学员 ==================== */
+/* ==================== 编辑：学生 ==================== */
+/* id 为空 = 新建（学生板块「+ 给 X 添加学生」走这条）。
+   归属教师默认取学生板块当前筛选的教师 —— Tony：填写学生资料前必须先筛选教师。 */
 function editStudent(id){
-  const s = stu(id); if(!s) return;
-  const cur = s.classId ? cls(s.classId) : null;
-  /* 只列这个学员「级别与时段都匹配」的班，避免编出不合规的组合 */
+  const s = id ? stu(id) : null;
+  if(id && !s) return;
+  const isNew = !s;
+  const cur = (s && s.classId) ? cls(s.classId) : null;
+  const tOpts = S.teachers.map(t => [t.id, t.name + '（' + srcCN(t.src) + '）']);
+  if(!tOpts.length) tOpts.push(['', '（还没有教师 —— 请先到教师板块添加）']);
+  const defT = s ? (s.teacherId || (cur ? cur.teacherId : ''))
+                 : (S.stuTeacher || (S.teachers[0] ? S.teachers[0].id : ''));
+  /* 只列这个学生「级别与时段都匹配」的班，避免编出不合规的组合 */
+  const lv = s ? s.level : 'L1';
+  const sl = s ? (s.slots || []) : [];
   const opts = [['', '（不编班 · 留在候选池）']].concat(
-    S.classes.filter(c => c.level === s.level && s.slots.indexOf(c.slotId) >= 0)
+    S.classes.filter(c => c.level === lv && sl.indexOf(c.slotId) >= 0)
       .map(c => [c.id, c.name + ' · ' + slotLabel(c.slotId) + ' · ' + c.studentIds.length + '/' + cap() + ' 人']));
   if(cur && !opts.some(o => o[0] === cur.id)) opts.push([cur.id, cur.name + '（当前班 · 已不匹配）']);
   openModal({
-    kind:'student', id, pick:(s.slots || []).slice(), title:'编辑学员',
+    kind:'student', id: id || '', pick: s ? (s.slots || []).slice() : [],
+    title: isNew ? '添加学生' : '编辑学生',
     body:
-      fld({ k:'name', label:'姓名', value:s.name }) +
+      fld({ k:'name', label:'姓名', value: s ? s.name : '' }) +
       '<div class="g2">' +
-        fld({ k:'level', label:'级别', type:'select', value:s.level,
+        fld({ k:'teacherId', label:'归属教师', type:'select', value:defT, opts:tOpts,
+              hint:'自家 / 外包跟着这位教师走，不另填。' }) +
+        fld({ k:'contact', label:'联系方式', value:(s && s.contact) || '' }) +
+      '</div>' +
+      '<div class="g2">' +
+        fld({ k:'job', label:'职业', value:(s && s.job) || '', ph:'学生 / 工程 / 业务 / 财务' }) +
+        fld({ k:'grade', label:'结业等级', value:(s && s.grade) || '', ph:'HSK1 / HSK2 …' }) +
+      '</div>' +
+      fld({ k:'goal', label:'学习的要求', type:'select', value:(s && s.goal) || 'listen',
+            opts: GOALS.map(g => [g[0], g[1]]),
+            hint:'决定配哪一套教课体系（HSK1 第一阶段 / 第二阶段…）。' }) +
+      '<div class="g2">' +
+        fld({ k:'level', label:'级别', type:'select', value:lv,
               opts:[['L1','HSK1'],['L2','HSK2'],['L3','HSK3']] }) +
-        fld({ k:'source', label:'来源', type:'select', value:s.source,
+        fld({ k:'source', label:'来源', type:'select', value:(s && s.source) || 'self',
               opts:[['self','平台招生'],['teacher','教师自带']] }) +
       '</div>' +
-      mChips('可上课时段', s.slots || [], '改了级别或时段后，上面的班级下拉会重新匹配。') +
+      mChips('可上课时段', s ? (s.slots || []) : [], '改了级别或时段后，上面的班级下拉会重新匹配。') +
       fld({ k:'classId', label:'编入班级', type:'select', value:(cur ? cur.id : ''),
             opts, hint:'换班直接在这里改；选「不编班」即退回候选池。' }),
     foot: mCancel + '<button class="mini primary" onclick="saveStudent()">保存</button>'
   });
 }
 function saveStudent(){
-  const s = stu(MED.id); if(!s) return closeModal();
   const name = fv('name');
-  if(!name){ toast('请填写学员姓名'); return; }
+  if(!name){ toast('请填写学生姓名'); return; }
+  let s = MED.id ? stu(MED.id) : null;
+  if(!s){
+    s = { id: uid(), name: name, level: fv('level'), source: fv('source'), slots: [], classId: null };
+    S.students.push(s);
+  }
   const lv = fv('level'), target = fv('classId');
   const oldClass = s.classId;
   s.name = name; s.source = fv('source'); s.slots = MED.pick.slice(); s.level = lv;
+  s.teacherId = fv('teacherId') || s.teacherId || '';
+  s.contact = fv('contact'); s.job = fv('job'); s.goal = fv('goal'); s.grade = fv('grade');
 
   /* 先从原班摘掉 */
   const oc = oldClass ? cls(oldClass) : null;
   if(oc) oc.studentIds = oc.studentIds.filter(x => x !== s.id);
-  s.classId = null;
+  setStuClass(s, null);
 
   let msg = '已保存 ' + name;
   if(target){
@@ -1787,7 +2160,7 @@ function saveStudent(){
     else if(tc.level !== lv || s.slots.indexOf(tc.slotId) < 0){
       msg += '；与「' + tc.name + '」的级别或时段不符，已留在候选池';
     }else{
-      tc.studentIds.push(s.id); s.classId = tc.id;
+      tc.studentIds.push(s.id); setStuClass(s, tc.id);
       msg += (oc && oc.id !== tc.id) ? '；已从「' + oc.name + '」换到「' + tc.name + '」' : '；已编入「' + tc.name + '」';
     }
   }else if(oc){
@@ -1806,7 +2179,7 @@ function editClass(id){
   const sOpts = (usable.indexOf(c.slotId) < 0 ? [c.slotId].concat(usable) : usable)
     .map(sid => [sid, slotLabel(sid)]);
   openModal({
-    kind:'class', id, title:'编辑班级',
+    kind:'class', id, pick:(c.days || []).slice(), title:'编辑班级',
     body:
       fld({ k:'name', label:'开班名称', value:c.name }) +
       '<div class="g2">' +
@@ -1820,9 +2193,11 @@ function editClass(id){
               hint:'改级别后进度会重新对齐到该级别的当前进度。' }) +
         fld({ k:'lesson', label:'当前进度（第几课）', type:'number', min:1, value:c.lesson }) +
       '</div>' +
+      mDayChips('上课星期', c.days || [], '日历按「时段 × 星期」画；不设星期就落不到日历上。') +
       fld({ k:'link', label:'视讯链接', value:(c.link || ''), ph:'腾讯会议 / Zoom / Google Meet' }) +
-      '<p class="hint2">在班学员 ' + c.studentIds.length + '/' + cap() + ' 人。' +
-        '改教师或时段后，与班级不再匹配的学员会自动退回候选池。</p>',
+      '<p class="hint2">在班学生 ' + c.studentIds.length + '/' + cap() + ' 人。' +
+        '改教师或时段后，与班级不再匹配的学生会自动退回候选池。' +
+        '教师 / 时段 / 星期随时可改 —— 学生退学、换教师、临时替补都走这里。</p>',
     foot: mCancel + '<button class="mini primary" onclick="saveClass()">保存</button>'
   });
 }
@@ -1842,6 +2217,7 @@ function saveClass(){
 
   c.name = name; c.teacherId = tid; c.slotId = sid; c.src = t.src;
   c.level = lv;
+  c.days = MED.pick.slice();          /* 上课星期 —— 日历按它落格 */
   c.link = fv('link');
   c.lesson = Math.min(Math.max(1, fnum('lesson', c.lesson)), totalLessons());
 
@@ -1905,7 +2281,7 @@ function putStudent(cid, sid){
   const c = cls(cid), s = stu(sid); if(!c || !s) return;
   if(c.studentIds.length >= cap()){ toast('该班已满（上限 ' + cap() + ' 人）'); return; }
   if(c.studentIds.indexOf(sid) < 0) c.studentIds.push(sid);
-  s.classId = c.id;
+  setStuClass(s, c.id);
   render(); toast(s.name + ' 已编入 ' + c.name);
 }
 function kickStudent(cid, sid){
@@ -1920,35 +2296,21 @@ function fillClass(cid){
   render(); toast(n ? ('已编入 ' + n + ' 人') : '没有可编入的学员（检查级别与时段）');
 }
 
-/* ==================== 编辑：成员 ==================== */
+/* ==================== 编辑：成员（纯名单）==================== */
 function editMember(id){
   const m = S.members.filter(x => x.id === id)[0]; if(!m) return;
   openModal({
     kind:'member', id, title:'编辑成员',
-    body:
-      fld({ k:'name', label:'姓名', value:m.name }) +
-      fld({ k:'user', label:'登录名', value:m.user }) +
-      fld({ k:'pass', label:'重设口令', type:'password', ph:'留空则不修改',
-            hint:'至少 4 位。留空表示不改这个人的口令。' }) +
-      '<label class="cur"><input type="checkbox" id="f_settle" style="width:auto;"' +
-        (m.canSettle ? ' checked' : '') + ' /> 可见结算</label>',
+    body: fld({ k:'name', label:'姓名', value:m.name }),
     foot: mCancel + '<button class="mini primary" onclick="saveMember()">保存</button>'
   });
 }
 function saveMember(){
   const m = S.members.filter(x => x.id === MED.id)[0]; if(!m) return closeModal();
-  const name = fv('name'), user = fv('user'), pass = fr('pass');
-  if(!name || !user){ toast('请填写姓名和登录名'); return; }
-  if(S.members.some(x => x.id !== m.id && x.user === user)){ toast('登录名已存在'); return; }
-  if(pass && pass.length < 4){ toast('口令至少 4 位'); return; }
-  const settle = fchk('settle');
-  /* 系统必须至少留一个能看结算的成员，否则结算页谁也进不去 */
-  if(m.canSettle && !settle && !S.members.some(x => x.id !== m.id && x.canSettle)){
-    toast('至少要保留一位「可见结算」的成员'); return;
-  }
-  m.name = name; m.user = user; m.canSettle = settle;
-  if(pass) m.pass = pass;
-  closeModal(); render(); toast('已保存 ' + name + (pass ? '（口令已更新）' : ''));
+  const name = fv('name');
+  if(!name){ toast('请填写姓名'); return; }
+  m.name = name;
+  closeModal(); render(); toast('已保存 ' + name);
 }
 
 /* ==================== 编辑：申请 ==================== */
@@ -2003,10 +2365,38 @@ function reopenApply(id){
 /* ==================== 视图：数据（备份 / 迁移 / 重置） ==================== */
 function backupPayload(){
   const o = JSON.parse(JSON.stringify(S));
-  delete o.login; delete o.pickT; delete o.pickS;
+  delete o.pickT; delete o.pickS;
   o.__app = 'zhops.sched'; o.__v = 2; o.__at = new Date().toISOString();
   return o;
 }
+/* ==================== 板块 4：数据（2026-10-01 Tony 定） ====================
+   Tony 原话口径：
+     · 教师的筛选。
+     · 每一位教师的记录：学生、已经多少教课、自家的还是外包的。
+       （这跟总结有关系，他会设置一些默认代码去做总结 —— 后续再添加代码。必须注明。）
+   ⚠️ 「总结」的口径与默认代码 Tony 还没给，这里先只出原始记录，不做任何推算。 */
+function teacherRecordsTable(){
+  const list = filteredTeachers();
+  if(!list.length) return '<div class="box"><div class="empty-note">还没有教师。</div></div>';
+  return '<div class="box"><table>' +
+    '<tr><th>教师</th><th>师资</th><th class="num">学生</th><th class="num">班级</th>' +
+    '<th class="num">已上课次</th><th>教课表现</th></tr>' +
+    list.map(t => {
+      const mine  = S.classes.filter(c => c.teacherId === t.id);
+      const stuN  = S.students.filter(s => s.teacherId === t.id).length;
+      const taught = mine.reduce((a,c) => a + (c.lesson || 0), 0);
+      const perf = t.perf || {};
+      return '<tr><td>' + esc(t.name) + ' ' + srcDot(t.src) + '</td>' +
+        '<td><span class="src ' + t.src + '">' + srcCN(t.src) + '</span></td>' +
+        '<td class="num">' + stuN + '</td>' +
+        '<td class="num">' + mine.length + '</td>' +
+        '<td class="num">' + taught + '</td>' +
+        '<td>' + (perf.score ? (perf.score + ' / 5') : '<span class="m">未评</span>') +
+        (perf.note ? ' <span class="m">' + esc(perf.note) + '</span>' : '') + '</td></tr>';
+    }).join('') + '</table>' +
+    '<p class="hint2">「总结」的默认代码 / 口径还没定 —— 这一块先只出原始记录，不做推算。</p></div>';
+}
+
 function renderData(){
   const n = S.classes.reduce((a,c) => a + c.studentIds.length, 0);
   const raw = localStorage.getItem(KEY) || '';
@@ -2014,14 +2404,19 @@ function renderData(){
     ['时段', S.slots.length + ' 个'],
     ['教师', S.teachers.length + ' 位（自有 ' + S.teachers.filter(t => t.src === 'own').length +
             ' · 外包 ' + S.teachers.filter(t => t.src === 'out').length + '）'],
-    ['学员', S.students.length + ' 人（已编班 ' + n + ' · 候选池 ' + (S.students.length - n) + '）'],
+    ['学生', S.students.length + ' 人（已编班 ' + n + ' · 候选池 ' + (S.students.length - n) + '）'],
     ['班级', S.classes.length + ' 个'],
     ['申请', S.applications.length + ' 条（待审 ' + S.applications.filter(a => a.status === 'pending').length + '）'],
-    ['成员', S.members.length + ' 位（可见结算 ' + S.members.filter(m => m.canSettle).length + '）'],
+    ['成员', S.members.length + ' 位（名单）'],
+    ['课时日志', (S.log || []).length + ' 条'],
     ['占用体积', (raw.length / 1024).toFixed(1) + ' KB']
   ];
   $('main').innerHTML =
-    '<h2>数据 <span class="cnt">备份 / 迁移 / 重置</span></h2>' +
+    '<h2>数据 <span class="cnt">教师筛选 · 每位教师的记录 · 备份</span></h2>' +
+    teacherFilterBar() +
+    '<h2 style="margin-top:6px;">每位教师的记录 <span class="cnt">学生 · 教课次数 · 自家还是外包</span></h2>' +
+    teacherRecordsTable() +
+    '<h2 style="margin-top:22px;">总体 <span class="cnt">备份 / 迁移 / 重置</span></h2>' +
     '<div class="box">' +
       '<p class="hint2" style="margin:0 0 11px;">现在这份数据只存在这台电脑的浏览器里。' +
       '<b>上云之前，先把备份下载下来</b> —— 换电脑、清缓存、或改坏了都能恢复。</p>' +
@@ -2085,9 +2480,9 @@ function showImport(){
       '导入会<b>覆盖</b>当前的时段、教师、学员、班级与申请。</p>' +
       '<div class="fld"><label>备份内容</label>' +
         '<textarea id="f_txt" placeholder="粘贴 JSON …" style="min-height:150px;"></textarea></div>' +
-      '<label class="cur"><input type="checkbox" id="f_withMembers" style="width:auto;" /> ' +
-        '连成员账号一起导入（会覆盖本机成员）</label>' +
-      '<p class="hint2">不勾选时保留本机的成员名单与口令。</p>',
+      '<label class="cklab"><input type="checkbox" id="f_withMembers" style="width:auto;" /> ' +
+        '连成员名单一起导入（会覆盖本机名单）</label>' +
+      '<p class="hint2">不勾选时保留本机的成员名单。</p>',
     foot: mCancel + '<button class="mini primary" onclick="doImport()">确认导入</button>'
   });
 }
@@ -2100,15 +2495,16 @@ function doImport(){
     toast('备份缺少必要字段（slots / teachers / classes）'); return;
   }
   const withMembers = fchk('withMembers');
-  if(!confirm('导入会覆盖当前的业务数据' + (withMembers ? '（含成员账号）' : '（成员账号保留）') + '。确认继续？')) return;
+  if(!confirm('导入会覆盖当前的业务数据' + (withMembers ? '（含成员名单）' : '（成员名单保留）') + '。确认继续？')) return;
 
-  const keepMembers = S.members, keepLogin = S.login;
+  const keepMembers = S.members;
   const b = blank();
   S = Object.assign(b, o);
   S.settings = Object.assign(b.settings, o.settings || {});
   delete S.settings.pin;
-  S.members = withMembers && Array.isArray(o.members) && o.members.length ? o.members : keepMembers;
-  S.login = (S.members.some(m => m.id === keepLogin)) ? keepLogin : '';
+  S.members = withMembers && Array.isArray(o.members) && o.members.length
+    ? o.members.map(m => ({ id:m.id || ('m' + uid()), name:m.name || m.user || '成员' }))
+    : keepMembers;
   S.pickT = []; S.pickS = [];
   delete S.__app; delete S.__v; delete S.__at;
   if(!S.view || S.view === 'settle' || S.view === 'data') S.view = 'board';
@@ -2125,12 +2521,12 @@ function doImport(){
 /* ==================== 示例 / 重置 ==================== */
 function seed(){
   if(S.classes.length || S.teachers.length || S.students.length){
-    if(!confirm('载入示例会覆盖当前的时段、教师、学员、班级与申请（成员账号保留）。确认继续？')) return;
+    if(!confirm('载入示例会覆盖当前的时段、教师、学员、班级与申请（成员名单保留）。确认继续？')) return;
   }
   closeModal();
-  const keepMembers = S.members, keepLogin = S.login;
+  const keepMembers = S.members;
   S = blank();
-  S.members = keepMembers; S.login = keepLogin;   /* 载入示例不清掉登录状态 */
+  S.members = keepMembers;                        /* 载入示例不动成员名单 */
   /* 示例单价按 VND 口径（2026-09-30 随币种改）：自有按课次、外包按学员×课次。
      这是演示数据，真实单价在「结算」页或教师「改」里改。 */
   S.teachers = [
@@ -2164,11 +2560,11 @@ function seed(){
   render(); toast('已载入示例数据');
 }
 function reset(){
-  if(!confirm('清空所有时段、教师、学员、班级与申请？（成员账号会保留）')) return;
+  if(!confirm('清空所有时段、教师、学员、班级与申请？（成员名单会保留）')) return;
   closeModal();
-  const keepMembers = S.members, keepLogin = S.login;
+  const keepMembers = S.members;
   S = blank();
-  S.members = keepMembers; S.login = keepLogin;
+  S.members = keepMembers;
   render(); toast('已重置');
 }
 
