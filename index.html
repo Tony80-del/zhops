@@ -64,6 +64,12 @@
   main{display:grid; grid-template-columns:330px 1fr; gap:0; align-items:start;}
   .col{padding:18px 22px 70px;}
   .col.left{border-right:1px solid var(--line); background:var(--panel); min-height:calc(100vh - 190px);}
+  /* 设置栏默认「完全不见」（2026-10-01 Tony 定：不点击增加就不出现）。
+     只有点教师板块右上角的「+ 添加教师」才展开，保存成功后自动收起。
+     DOM 一律保留 —— render() 每帧都要往左栏里写（tchCnt / pCurri / stTeacher…），
+     从 DOM 里删掉会让 render() 在 null 上取 textContent 直接报错。只靠 CSS 隐藏。 */
+  main.left-off{grid-template-columns:1fr;}
+  main.left-off .col.left{display:none;}
   h2{font-size:13.5px; font-weight:500; margin:0 0 10px; display:flex; align-items:center; gap:8px;}
   h2 .cnt{font-size:11px; color:var(--hint); font-weight:400;}
   h3{font-size:12.5px; font-weight:500; margin:20px 0 8px; color:var(--muted);}
@@ -105,6 +111,27 @@
   .chips{display:flex; flex-wrap:wrap; gap:6px;}
   .chip{font-size:11.5px; border:1px solid var(--line); border-radius:20px; padding:3px 10px; cursor:pointer; user-select:none;}
   .chip.on{background:var(--accb); color:var(--acc); border-color:var(--acc);}
+  /* 三层视觉分级（2026-10-01 Tony 定，「可上课时段」用）：
+       .on      = 青色描边  → ①② 的筛子（只影响显示，不落库）
+       .picked  = 实心青底  → ③ 真正写进学生档案的时段
+       .dim     = 虚线半透明 → 不匹配当前筛选，但不隐藏、仍可点
+     这三条是叠加关系：一个 chip 可以同时是 .on + .picked + .dim。 */
+  .chip.picked{background:var(--acc); color:var(--onacc); border-color:var(--acc); font-weight:500;}
+  .chip.dim{opacity:.36; border-style:dashed;}
+  .chip.dim:hover{opacity:.75;}
+  .chip.dim.picked,.chip.dim.picked:hover{opacity:1;}
+  .avail{border:1px solid var(--line); border-radius:10px; padding:11px 12px; background:var(--card);}
+  .avrow{display:flex; align-items:flex-start; gap:9px;}
+  .avrow + .avrow{margin-top:9px;}
+  .avtag{flex:0 0 auto; width:56px; font-size:11.5px; color:var(--muted); padding-top:3px;}
+  .avsep{border-top:1px dashed var(--line); margin:11px 0;}
+  .avfoot{display:flex; align-items:center; gap:10px; margin-top:11px; padding-top:10px; border-top:1px dashed var(--line);}
+  .avfoot .g{flex:1; min-width:0; font-size:11.5px; color:var(--hint);}
+  /* 设置栏「四 时段」行内的两个属性下拉（2026-10-01 Tony 定）——
+     直接改这里，上面开着的「添加学生」弹窗立刻跟着变淡 / 变亮：整条链只有一个数据源。 */
+  .slrow{flex-wrap:wrap;}
+  .slattrs{flex:0 0 100%; display:flex; gap:6px; margin-top:6px;}
+  .slattrs select{flex:1 1 0; font-size:11.5px; padding:3px 6px;}
   .mtx{display:grid; gap:6px; font-size:12px;}
   .mcell{background:var(--card); border:1px solid var(--line); border-radius:9px; padding:9px 8px; min-height:54px;}
   .mcell.head{background:transparent; border:0; font-weight:500; text-align:center; padding:4px; color:var(--muted);}
@@ -222,7 +249,7 @@
   </div>
 </div>
 
-<main id="mainWrap">
+<main id="mainWrap" class="left-off">
   <div class="col left">
     <button class="primary" style="width:100%;padding:9px;" onclick="openClassForm()">+ 开班</button>
     <p class="hint2" style="margin:7px 0 18px;">以教师为主：选教师 → 起班名 → 定人数 → 挑时段。</p>
@@ -267,7 +294,7 @@
         <div class="row" style="margin-top:8px;"><select id="stTeacher"></select></div>
         <div class="row"><input id="stName" placeholder="学生姓名" />
           <select id="stLevel" style="width:74px;"><option>L1</option><option>L2</option><option>L3</option></select></div>
-        <div class="row"><select id="stSource"><option value="self">平台招生</option><option value="teacher">教师自带</option></select></div>
+        <div class="row"><select id="stSource"><option value="referral">介绍</option><option value="self">平台</option><option value="teacher">教师自带</option></select></div>
         <p class="m" style="font-size:11.5px;color:var(--muted);margin:9px 0 6px;">可上课时段</p>
         <div class="chips" id="stSlots"></div>
         <div class="row" style="margin-top:10px;"><button class="primary" style="width:100%;" onclick="addStudent()">添加学生</button></div>
@@ -338,10 +365,14 @@ function blank(){
     settings:{ minOpen:6, capMax:10, lessonsTotal:42, minutes:45, perWeek:2, sync:'level' },
     members:[],                       /* 成员名单 —— 纯名单，只记 {id,name}（登录门已删）*/
     slots:[
-      {id:'s1', code:'S1', name:'早班', time:'07:30–08:15'},
-      {id:'s2', code:'S2', name:'午间', time:'12:00–12:45'},
-      {id:'s3', code:'S3', name:'晚班', time:'18:30–19:15'},
-      {id:'s4', code:'S4', name:'周末', time:'09:00–10:30'}
+      /* day / part 是 2026-10-01 新加的两个属性（Tony 定）——
+         它们只服务于「添加学生」弹窗里筛可上课时段，不参与排课计算。
+         day  : weekday 平日 / weekend 周末
+         part : morning 早上 / noon 中午 / evening 晚上 */
+      {id:'s1', code:'S1', name:'早班', time:'07:30–08:15', day:'weekday', part:'morning'},
+      {id:'s2', code:'S2', name:'午间', time:'12:00–12:45', day:'weekday', part:'noon'},
+      {id:'s3', code:'S3', name:'晚班', time:'18:30–19:15', day:'weekday', part:'evening'},
+      {id:'s4', code:'S4', name:'周末', time:'09:00–10:30', day:'weekend', part:'morning'}
     ],
     teachers:[], students:[], classes:[], applications:[],
     log:[],                           /* 推进课次的日志 {at,classId,lesson} —— 「今天 / 本月」结算靠它 */
@@ -354,6 +385,10 @@ function blank(){
     stuTeacher:''                     /* 学生板块：当前筛选的教师（填写学生资料前必须先选教师）*/
   };
 }
+/* 设置栏（左侧那一整栏）的展开态。
+   故意不放进 S、不落盘 —— Tony 定「刷新页面不记住，每次打开都是收起态」。
+   只有点教师板块右上角的「+ 添加教师」才会变 true。 */
+let leftOpen = false;
 let S = load();
 
 function load(){
@@ -390,6 +425,14 @@ function load(){
         if(c) s.teacherId = c.teacherId;
       }
     });
+    /* 老数据迁移：时段补 day / part（2026-10-01 新增的两个属性）。
+       本机 localStorage 里的时段是这之前存的，没有这两个键 —— 不补的话
+       「添加学生」弹窗里的 ①日型 / ②段位 筛选会把所有时段都判成不匹配。
+       缺什么补什么，已经有的不动，用户改过的值不会被覆盖。 */
+    (merged.slots || []).forEach(s => {
+      if(!s.day)  s.day  = 'weekday';
+      if(!s.part) s.part = 'morning';
+    });
     return merged;
   }catch(e){ return blank(); }
 }
@@ -420,6 +463,24 @@ const minOpen = () => S.settings.minOpen;
 const totalLessons = () => S.settings.lessonsTotal;
 const slotLabel = id => { const s = slot(id); return s ? (s.code + ' ' + s.name) : '?'; };
 const srcCN = s => s === 'out' ? '外包' : '自有';
+
+/* ==================== 时段的两个属性（2026-10-01 Tony 定） ====================
+   只用于「添加学生」弹窗里筛可上课时段 —— 不参与排课、不参与结算。
+   想加/改档位，只动这两个表；渲染代码不用碰（选项是遍历出来的）。 */
+const DAYS  = [['weekday','平日'], ['weekend','周末']];
+const PARTS = [['morning','早上'], ['noon','中午'], ['evening','晚上']];
+const dayCN  = v => { const f = DAYS.filter(x => x[0] === v)[0];  return f ? f[1] : '未设'; };
+const partCN = v => { const f = PARTS.filter(x => x[0] === v)[0]; return f ? f[1] : '未设'; };
+
+/* 学生的来源（Tony 2026-10-01 定：介绍 / 平台 / 教师自带）。
+   旧数据的 'self' 仍然有效，只是显示名从「平台招生」统一成「平台」。 */
+const SOURCES = [['referral','介绍'], ['self','平台'], ['teacher','教师自带']];
+const srcStuCN = v => { const f = SOURCES.filter(x => x[0] === v)[0]; return f ? f[1] : '平台'; };
+
+/* 「添加学生」弹窗里两个可筛选下拉的候选清单（Tony 2026-10-01 定）。
+   只是建议值 —— 用原生 datalist，用户照样能直接打字填清单外的内容。 */
+const JOBS   = ['学生','工程','业务','财务','行政','自由职业','其他'];
+const GRADES = ['HSK1','HSK2','HSK3','HSK4','HSK5','HSK6'];
 
 /* ==================== 货币：越南盾 VND（2026-09-30 Tony 定） ====================
    全站只此一处定义币种。要换符号 / 换位置 / 换千分位 / 换小数位，改这个对象即可。
@@ -723,22 +784,26 @@ function fmtWhen(ts){
 }
 
 /* ==================== 通用模态编辑器 ==================== */
-/* MED 是模态的暂存态：不落盘，关掉即丢。pick 存模态内的多选（如「可授时段」）。 */
-let MED = { open:false, kind:'', id:'', pick:[], refresh:null };
+/* MED 是模态的暂存态：不落盘，关掉即丢。pick 存模态内的多选（如「可授时段」）。
+   avail 是「添加学生」弹窗专用，存 ①日型 / ②段位 两个筛子 ——
+   它们只影响显示、永远不写进学生档案，所以也放这里，跟 pick 一样关掉即丢。 */
+let MED = { open:false, kind:'', id:'', pick:[], refresh:null, avail:{ day:[], part:[] } };
 
 function openModal(o){
   MED = {
     open:true, kind:o.kind || '', id:o.id || '',
-    pick:(o.pick || []).slice(), refresh:o.refresh || null
+    pick:(o.pick || []).slice(), refresh:o.refresh || null,
+    avail:{ day:[], part:[] }
   };
   $('mTitle').textContent = o.title || '';
   $('mBody').innerHTML = o.body || '';
   $('mFoot').innerHTML = o.foot || '';
   $('modal').className = 'modal' + (o.wide ? ' wide' : '');
   $('mask').style.display = 'flex';
+  mAvailPaint();                       /* 弹窗里有「可上课时段」就把底部的实时计数补上 */
 }
 function closeModal(){
-  MED = { open:false, kind:'', id:'', pick:[], refresh:null };
+  MED = { open:false, kind:'', id:'', pick:[], refresh:null, avail:{ day:[], part:[] } };
   $('mask').style.display = 'none';
   $('mTitle').textContent = ''; $('mBody').innerHTML = ''; $('mFoot').innerHTML = '';
 }
@@ -765,10 +830,19 @@ function fld(o){
     return '<div class="fld"><label>' + esc(o.label) + '</label><textarea id="' + id +
       '" placeholder="' + esc(o.ph || '') + '">' + esc(o.value == null ? '' : o.value) + '</textarea>' + hint + '</div>';
   }
+  /* 可筛选下拉：o.list = ['选项1','选项2', …]
+     —— 原生 <input list> + <datalist>，零依赖；点一下出清单，也能直接打字新建。
+     传空数组也照常渲染（datalist 空的 = 纯手输），这样调用方不用写分支判断。 */
+  const dlId = o.list ? (id + '_dl') : '';
+  const dl = o.list
+    ? '<datalist id="' + dlId + '">' +
+      o.list.map(v => '<option value="' + esc(v) + '"></option>').join('') + '</datalist>'
+    : '';
   return '<div class="fld"><label>' + esc(o.label) + '</label><input id="' + id + '" type="' + (o.type || 'text') +
     '" value="' + esc(o.value == null ? '' : o.value) + '"' +
+    (dlId ? ' list="' + dlId + '"' : '') +
     (o.min != null ? ' min="' + o.min + '"' : '') +
-    (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + ' />' + hint + '</div>';
+    (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + ' />' + dl + hint + '</div>';
 }
 const fv  = k => { const e = $('f_' + k); return e ? e.value.trim() : ''; };
 const fr  = k => { const e = $('f_' + k); return e ? e.value : ''; };          /* 不 trim（口令用） */
@@ -798,11 +872,86 @@ function mToggleDay(id){
 }
 const mCancel = '<button class="mini" onclick="closeModal()">取消</button>';
 
+/* ==================== 模态内的「可上课时段」（2026-10-01 Tony 定） ====================
+   三层，各管各的：
+     ① 日型（平日 / 周末）  ┐
+     ② 段位（早上/中午/晚上）┘ → 只是筛子：改的是「哪些 chip 变淡」，绝不自动勾选 ③
+     ③ 时段（S1 / S2 …）      → 唯一真正写进学生档案的那一层（存 MED.pick）
+   硬规则（Tony 明确要求）：
+     · ①② 只影响显示，不落库 —— 关掉弹窗就没了，学生档案里查不到它们
+     · 已勾的 ③ 即使不匹配当前筛选，也**保持勾选、不隐藏**，只在底部提示「⚠ N 个不在当前筛选内」
+   状态全在 MED 里，点击只改 MED，然后 mAvailPaint() 就地重画。
+   为什么不整块重画：重画会清掉用户已经打好的姓名 / 联系方式，所以只改 class。 */
+function mAvail(picked){
+  if(!S.slots.length){
+    return '<div class="fld"><label>可上课时段</label>' +
+      '<div class="avail"><span class="empty-note">还没有时段 —— 先在左侧设置栏「四 时段」添加</span></div></div>';
+  }
+  const grp = (g, list, label) => list.map(x =>
+    '<span class="chip" data-g="' + g + '" data-v="' + x[0] + '" onclick="mAvailClick(\'' + g + '\',\'' + x[0] + '\')">' +
+    esc(label(x)) + '</span>').join('');
+  const slotChips = S.slots.map(s =>
+    '<span class="chip" data-g="slot" data-v="' + s.id + '" onclick="mAvailClick(\'slot\',\'' + s.id + '\')">' +
+    esc(s.code + ' ' + s.name + ' ' + s.time) + '</span>').join('');
+  return '<div class="fld"><label>可上课时段</label><div class="avail">' +
+    '<div id="avGroups">' +
+      '<div class="avrow"><span class="avtag">① 日型</span><div class="chips">' + grp('day',  DAYS,  d => d[1]) + '</div></div>' +
+      '<div class="avrow"><span class="avtag">② 段位</span><div class="chips">' + grp('part', PARTS, p => p[1]) + '</div></div>' +
+      '<div class="avsep"></div>' +
+      '<div class="avrow"><span class="avtag">③ 时段</span><div class="chips">' + slotChips + '</div></div>' +
+    '</div>' +
+    '<div class="avfoot"><span class="g" id="avSum"></span>' +
+      '<button class="mini ghost" onclick="mAvailClear()">清空</button></div>' +
+    '</div>' +
+    '<p class="hint2">① ② 只筛显示、不落库；③ 才是真正写进学生档案的时段。①② 不选 = 不限。</p></div>';
+}
+/* ①② 是否命中某条时段 —— 两个都没选 = 全通过 */
+function mAvailMatch(s){
+  if(!s) return false;
+  const d = MED.avail.day, p = MED.avail.part;
+  return (!d.length || d.indexOf(s.day)  >= 0) &&
+         (!p.length || p.indexOf(s.part) >= 0);
+}
+function mAvailClick(g, v){
+  const arr = (g === 'slot') ? MED.pick : MED.avail[g];
+  const i = arr.indexOf(v);
+  if(i >= 0) arr.splice(i, 1); else arr.push(v);
+  mAvailPaint();
+}
+function mAvailClear(){
+  MED.pick = []; MED.avail = { day:[], part:[] };
+  mAvailPaint();
+}
+function mAvailPaint(){
+  const box = $('avGroups'); if(!box) return;
+  box.querySelectorAll('.chip').forEach(el => {
+    const g = el.dataset.g, v = el.dataset.v;
+    const arr = (g === 'slot') ? MED.pick : MED.avail[g];
+    el.classList.toggle('on', arr.indexOf(v) >= 0);
+    if(g === 'slot'){
+      el.classList.toggle('dim',    !mAvailMatch(slot(v)));      /* 不在当前筛选内 */
+      el.classList.toggle('picked', MED.pick.indexOf(v) >= 0);   /* 真正落库的那一层 */
+    }
+  });
+  const chosen = MED.pick.map(slot).filter(Boolean);
+  const off    = chosen.filter(s => !mAvailMatch(s));
+  let txt = '已选 ' + chosen.length + ' 个时段';
+  if(chosen.length) txt += '：' + chosen.map(s => s.code).join('、');
+  const f = [];
+  if(MED.avail.day.length)  f.push(MED.avail.day.map(dayCN).join('/'));
+  if(MED.avail.part.length) f.push(MED.avail.part.map(partCN).join('/'));
+  if(f.length) txt += '　·　筛选：' + f.join(' · ');
+  if(off.length) txt += '　·　⚠ ' + off.length + ' 个不在当前筛选内';
+  const el = $('avSum'); if(el) el.textContent = txt;
+}
+
 /* ==================== 渲染入口 ====================
    2026-10-01：登录门 / 成员登录态 / 免登录开关整段删除
    —— Tony：直接删干净，以后需要再重新增加。
    现在 render() 无条件渲染：页面一打开就能看，不再有任何遮挡与登录分支。 */
 function render(){
+  /* 设置栏的显隐：收起时整栏 display:none，主区占满整行 */
+  const mw = $('mainWrap'); if(mw) mw.classList.toggle('left-off', !leftOpen);
   renderStats();
   renderTabs();
   renderSettings();
@@ -876,12 +1025,28 @@ function renderSlots(){
   $('slotCnt').textContent = S.slots.length + ' 个';
   $('slotList').innerHTML = S.slots.length ? S.slots.map(s => {
     const used = S.classes.filter(c => c.slotId === s.id).length;
-    return '<div class="item"><span class="g">' + esc(s.code + ' ' + s.name) +
+    /* 日型 / 段位做成行内下拉（2026-10-01 Tony 定）——
+       就在列表里直接改，不用点「改」进弹窗。改完立刻生效，
+       上面开着的「添加学生」弹窗会跟着重算哪些时段变淡。 */
+    const sel = (k, list, cur) => '<select onchange="setSlotAttr(\'' + s.id + '\',\'' + k + '\',this.value)">' +
+      list.map(x => '<option value="' + x[0] + '"' + (x[0] === cur ? ' selected' : '') + '>' + x[1] + '</option>').join('') +
+      '</select>';
+    return '<div class="item slrow"><span class="g">' + esc(s.code + ' ' + s.name) +
       '<span class="m"> · ' + esc(s.time) + '</span></span>' +
       '<span class="m">' + used + ' 班</span>' +
       '<button class="mini" onclick="editSlot(\'' + s.id + '\')">改</button>' +
-      '<button class="mini danger" onclick="delSlot(\'' + s.id + '\')">删</button></div>';
+      '<button class="mini danger" onclick="delSlot(\'' + s.id + '\')">删</button>' +
+      '<div class="slattrs">' + sel('day', DAYS, s.day) + sel('part', PARTS, s.part) + '</div></div>';
   }).join('') : '<div class="empty-note">还没有时段</div>';
+}
+/* 设置栏里直接改时段的日型 / 段位。
+   只 save()，不 render() —— 下拉自己的值已经是新的了，重画反而会把焦点丢掉。
+   但「添加学生」弹窗如果开着，必须立刻重算（这就是「一个数据源」的意义）。 */
+function setSlotAttr(sid, k, v){
+  const s = slot(sid); if(!s) return;
+  s[k] = v;
+  save();
+  if(MED.open && MED.kind === 'student') mAvailPaint();
 }
 
 function renderTeachers(){
@@ -915,7 +1080,7 @@ function renderStudents(){
     return '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t ? t.src : 'own') +
       ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
       '<div class="m">' + (t ? esc(t.name) : '未归属教师') + ' · ' + goalCN(s.goal) + ' · ' +
-      (c ? ('已编入 ' + esc(c.name)) : '未编班') + '</div></span>' +
+      (c ? ('已编入 ' + esc(c.name)) : (s.className ? ('开班 ' + esc(s.className)) : '未编班')) + '</div></span>' +
       '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
       '<button class="mini danger" onclick="delStudent(\'' + s.id + '\')">删</button></div>';
   }).join('') : '<div class="empty-note">还没有学生</div>';
@@ -1178,7 +1343,7 @@ function renderTeachersView(){
       [['all','全部',all.length],['own','自有',ownN],['out','外包',outN]].map(k =>
         '<span class="chip' + (S.tchFilter === k[0] ? ' on' : '') + '" onclick="setTchFilter(\'' + k[0] + '\')">' +
         k[1] + ' <span class="m">' + k[2] + '</span></span>').join('') +
-      '<button class="mini primary" style="margin-left:auto;" onclick="editTeacher()">+ 添加教师</button>' +
+      '<button class="mini primary" style="margin-left:auto;" onclick="openTeacherSetup()">+ 添加教师</button>' +
     '</div>';
 
   if(!list.length){
@@ -1303,7 +1468,7 @@ function renderStudentsView(){
           (s.contact ? esc(s.contact) + ' · ' : '') +
           (s.job ? esc(s.job) + ' · ' : '') +
           goalCN(s.goal) + ' · ' +
-          (c ? ('已编入 ' + esc(c.name)) : '未编班') +
+          (c ? ('已编入 ' + esc(c.name)) : (s.className ? ('开班 ' + esc(s.className)) : '未编班')) +
           (s.grade ? ' · 结业 ' + esc(s.grade) : '') +
         '</div></span>' +
         '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
@@ -1630,9 +1795,11 @@ function nextSlotCode(){
 function addSlot(){
   const n = $('sName').value.trim(), t = $('sTime').value.trim();
   if(!n){ toast('请填写时段名'); return; }
-  S.slots.push({ id: uid(), code: nextSlotCode(), name: n, time: t || '待定' });
+  /* 新时段先给一组默认值，加完在下面的行内下拉里改 —— day / part 是 2026-10-01 新增的属性 */
+  S.slots.push({ id: uid(), code: nextSlotCode(), name: n, time: t || '待定',
+                 day:'weekday', part:'morning' });
   $('sName').value = ''; $('sTime').value = '';
-  render(); toast('已添加时段 ' + n);
+  render(); toast('已添加时段 ' + n + '（默认 平日 早上，可在下方改）');
 }
 function delSlot(id){
   if(S.classes.some(c => c.slotId === id)){ toast('该时段还有班，先删班'); return; }
@@ -1650,6 +1817,16 @@ function pick(which, id){
   if(i >= 0) arr.splice(i,1); else arr.push(id);
   if(which === 'T') renderTeachers(); else renderStudents();
 }
+/* 教师板块右上角的「+ 添加教师」（2026-10-01 Tony 定）：
+   原来是弹 editTeacher() 模态，按 Tony 要求把这个按钮的功能整段换掉 ——
+   现在改成「把左侧设置栏拉出来」，填完保存（走下面的 addTeacher）后自动收起。
+   注意：editTeacher() 本身没删。左侧列表的「改」和教师独立页面的「改资料 / 表现」
+   还在用它，只是不再有「新建」这条入口。Tony 明确说新建分支也不删。 */
+function openTeacherSetup(){
+  leftOpen = true;
+  render();
+  const el = $('tName'); if(el) el.focus();
+}
 function addTeacher(){
   const n = $('tName').value.trim();
   if(!n){ toast('请填写教师姓名'); return; }
@@ -1658,6 +1835,7 @@ function addTeacher(){
     rate: 0, rateUnit: 'perLesson',
     profile:{ contact:'', lang:'', exp:'', note:'' }, perf:{ score:0, note:'' } });
   $('tName').value = ''; S.pickT = [];
+  leftOpen = false;   /* 保存成功 → 设置栏自动收起 */
   render(); toast('已添加教师 ' + n + '（个人资料点「改」补）');
 }
 function delTeacher(id){
@@ -1988,7 +2166,7 @@ function setView(v){
   if(v === 'apply'){ v = 'board'; S.boardTab = 'apply'; }
   else if(v === 'teacher'){ v = 'teachers'; }
   else if(v === 'student'){ v = 'students'; }
-  S.view = v; render();
+  S.view = v; leftOpen = false; render();   /* 换板块 → 设置栏收起（2026-10-01 Tony 定） */
 }
 
 /* ==================== 编辑：时段 ==================== */
@@ -2001,6 +2179,13 @@ function editSlot(id){
       fld({ k:'code', label:'代号', value:s.code, hint:'排课矩阵行首显示，如 S1' }) +
       fld({ k:'name', label:'时段名', value:s.name, ph:'上午 / 午间 / 晚班' }) +
       fld({ k:'time', label:'上课时间', value:s.time, ph:'07:30–08:15' }) +
+      /* 日型 / 段位（2026-10-01 新增）：只给「添加学生」弹窗当筛子用，
+         改这两个下拉，那边弹窗里的时段 chip 会立刻跟着变淡 / 变亮。 */
+      '<div class="g2">' +
+        fld({ k:'day',  label:'日型', type:'select', value:s.day  || 'weekday', opts:DAYS  }) +
+        fld({ k:'part', label:'段位', type:'select', value:s.part || 'morning', opts:PARTS }) +
+      '</div>' +
+      '<p class="hint2">日型 / 段位只用于「添加学生」时筛可上课时段，不影响排课。</p>' +
       (used ? '<p class="hint2">已有 ' + used + ' 个班在用这个时段。改代号或名称不影响已排的班。</p>' : ''),
     foot: mCancel + '<button class="mini primary" onclick="saveSlot()">保存</button>'
   });
@@ -2011,6 +2196,8 @@ function saveSlot(){
   if(!name){ toast('请填写时段名'); return; }
   if(S.slots.some(x => x.id !== s.id && x.code === code)){ toast('代号 ' + code + ' 已被占用'); return; }
   s.code = code; s.name = name; s.time = fv('time') || '待定';
+  s.day  = fv('day')  || s.day  || 'weekday';
+  s.part = fv('part') || s.part || 'morning';
   closeModal(); render(); toast('已保存时段 ' + name);
 }
 
@@ -2087,7 +2274,15 @@ function saveTeacher(){
 
 /* ==================== 编辑：学生 ==================== */
 /* id 为空 = 新建（学生板块「+ 给 X 添加学生」走这条）。
-   归属教师默认取学生板块当前筛选的教师 —— Tony：填写学生资料前必须先筛选教师。 */
+   归属教师默认取学生板块当前筛选的教师 —— Tony：填写学生资料前必须先筛选教师。
+
+   2026-10-01 改版（Tony 定稿）：
+     · 加「开班名称」—— 可筛选下拉（已有开班名点一下选，没有就直接打字新建）
+     · 职业 / 结业等级 改成可筛选下拉（datalist：能点选也能手输）
+     · 来源加「介绍」这一项
+     · 「可上课时段」换成三层 chip 模块（见 mAvail）
+     · **「编入班级」整条拿掉** —— 编班只在班级页面做（班级学员 / 候选池）。
+       所以 saveStudent() 现在完全不碰 classId，见那里的注释。 */
 function editStudent(id){
   const s = id ? stu(id) : null;
   if(id && !s) return;
@@ -2097,13 +2292,6 @@ function editStudent(id){
   if(!tOpts.length) tOpts.push(['', '（还没有教师 —— 请先到教师板块添加）']);
   const defT = s ? (s.teacherId || (cur ? cur.teacherId : ''))
                  : (S.stuTeacher || (S.teachers[0] ? S.teachers[0].id : ''));
-  /* 只列这个学生「级别与时段都匹配」的班，避免编出不合规的组合 */
-  const lv = s ? s.level : 'L1';
-  const sl = s ? (s.slots || []) : [];
-  const opts = [['', '（不编班 · 留在候选池）']].concat(
-    S.classes.filter(c => c.level === lv && sl.indexOf(c.slotId) >= 0)
-      .map(c => [c.id, c.name + ' · ' + slotLabel(c.slotId) + ' · ' + c.studentIds.length + '/' + cap() + ' 人']));
-  if(cur && !opts.some(o => o[0] === cur.id)) opts.push([cur.id, cur.name + '（当前班 · 已不匹配）']);
   openModal({
     kind:'student', id: id || '', pick: s ? (s.slots || []).slice() : [],
     title: isNew ? '添加学生' : '编辑学生',
@@ -2112,24 +2300,30 @@ function editStudent(id){
       '<div class="g2">' +
         fld({ k:'teacherId', label:'归属教师', type:'select', value:defT, opts:tOpts,
               hint:'自家 / 外包跟着这位教师走，不另填。' }) +
-        fld({ k:'contact', label:'联系方式', value:(s && s.contact) || '' }) +
+        fld({ k:'contact', label:'联系方式', value:(s && s.contact) || '', ph:'电话 / Zalo' }) +
       '</div>' +
       '<div class="g2">' +
-        fld({ k:'job', label:'职业', value:(s && s.job) || '', ph:'学生 / 工程 / 业务 / 财务' }) +
-        fld({ k:'grade', label:'结业等级', value:(s && s.grade) || '', ph:'HSK1 / HSK2 …' }) +
+        fld({ k:'job', label:'职业', value:(s && s.job) || '', ph:'学生 / 工程 / 业务 / 财务',
+              list: JOBS }) +
+        fld({ k:'grade', label:'结业等级', value:(s && s.grade) || '', ph:'HSK1 / HSK2 …',
+              list: GRADES }) +
       '</div>' +
       fld({ k:'goal', label:'学习的要求', type:'select', value:(s && s.goal) || 'listen',
             opts: GOALS.map(g => [g[0], g[1]]),
             hint:'决定配哪一套教课体系（HSK1 第一阶段 / 第二阶段…）。' }) +
       '<div class="g2">' +
-        fld({ k:'level', label:'级别', type:'select', value:lv,
+        fld({ k:'level', label:'级别', type:'select', value:(s ? s.level : 'L1'),
               opts:[['L1','HSK1'],['L2','HSK2'],['L3','HSK3']] }) +
         fld({ k:'source', label:'来源', type:'select', value:(s && s.source) || 'self',
-              opts:[['self','平台招生'],['teacher','教师自带']] }) +
+              opts: SOURCES }) +
       '</div>' +
-      mChips('可上课时段', s ? (s.slots || []) : [], '改了级别或时段后，上面的班级下拉会重新匹配。') +
-      fld({ k:'classId', label:'编入班级', type:'select', value:(cur ? cur.id : ''),
-            opts, hint:'换班直接在这里改；选「不编班」即退回候选池。' }),
+      /* 开班名称：可筛选下拉 —— 选项 = 系统里已有的班名（S.classes）。
+         一个班都还没有时 datalist 是空的，直接打字就是新建。 */
+      fld({ k:'className', label:'开班名称', value:(s && s.className) || '',
+            ph:'选已有的，或直接打字新建',
+            list: S.classes.map(c => c.name),
+            hint:'已有开班名称 → 点一下从清单里选；还没有 → 直接打字就是新建。这一栏只是记录，不会自动编班。' }) +
+      mAvail(s ? (s.slots || []) : []),
     foot: mCancel + '<button class="mini primary" onclick="saveStudent()">保存</button>'
   });
 }
@@ -2141,32 +2335,28 @@ function saveStudent(){
     s = { id: uid(), name: name, level: fv('level'), source: fv('source'), slots: [], classId: null };
     S.students.push(s);
   }
-  const lv = fv('level'), target = fv('classId');
-  const oldClass = s.classId;
-  s.name = name; s.source = fv('source'); s.slots = MED.pick.slice(); s.level = lv;
+  /* ⚠️ 这个函数**完全不碰 classId**（2026-10-01 Tony 定）。
+     以前它会先把学生从原班摘掉、再按弹窗里的「编入班级」下拉重编 ——
+     那个下拉现在从弹窗里拿掉了，若还留着那段逻辑，一打开编辑点保存就会把学生莫名踢出班级。
+     编班 / 换班 / 退池只在班级页面做：班级学员、候选池。 */
+  s.name = name;
+  s.source = fv('source');
+  s.slots  = MED.pick.slice();
+  s.level  = fv('level');
   s.teacherId = fv('teacherId') || s.teacherId || '';
-  s.contact = fv('contact'); s.job = fv('job'); s.goal = fv('goal'); s.grade = fv('grade');
-
-  /* 先从原班摘掉 */
-  const oc = oldClass ? cls(oldClass) : null;
-  if(oc) oc.studentIds = oc.studentIds.filter(x => x !== s.id);
-  setStuClass(s, null);
-
-  let msg = '已保存 ' + name;
-  if(target){
-    const tc = cls(target);
-    if(!tc){ msg += '；目标班不存在，已留在候选池'; }
-    else if(tc.studentIds.length >= cap()){ msg += '；「' + tc.name + '」已满 ' + cap() + ' 人，已留在候选池'; }
-    else if(tc.level !== lv || s.slots.indexOf(tc.slotId) < 0){
-      msg += '；与「' + tc.name + '」的级别或时段不符，已留在候选池';
-    }else{
-      tc.studentIds.push(s.id); setStuClass(s, tc.id);
-      msg += (oc && oc.id !== tc.id) ? '；已从「' + oc.name + '」换到「' + tc.name + '」' : '；已编入「' + tc.name + '」';
-    }
-  }else if(oc){
-    msg += '；已从「' + oc.name + '」退回候选池';
-  }
-  closeModal(); render(); toast(msg);
+  s.contact = fv('contact');
+  s.job = fv('job');
+  s.goal = fv('goal');
+  s.grade = fv('grade');
+  s.className = fv('className');
+  /* 改了级别 / 时段之后，如果跟已经编好的班对不上了 —— 只**提醒**，不自动退班。
+     自动退班是破坏性的（用户可能只是想补个联系方式），所以交给人去班级页面决定。 */
+  const oc = s.classId ? cls(s.classId) : null;
+  const mism = oc && (oc.level !== s.level || s.slots.indexOf(oc.slotId) < 0);
+  closeModal(); render();
+  toast('已保存 ' + name + (mism
+    ? '；⚠ 级别或时段已与所在班「' + oc.name + '」不符，请到班级页面调整'
+    : ''));
 }
 
 /* ==================== 编辑：班级 ==================== */
@@ -2259,7 +2449,7 @@ function drawManageClass(id){
       (inside.length ? inside.map(s =>
         '<div class="item"><span class="g">' + esc(s.name) +
         ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
-        '<div class="m">' + (s.source === 'teacher' ? '教师自带' : '平台招生') +
+        '<div class="m">' + (s.source === 'teacher' ? '教师自带' : srcStuCN(s.source)) +
         ' · 可选 ' + (s.slots.length ? s.slots.map(slotLabel).join('、') : '未设置') + '</div></span>' +
         '<button class="mini danger" onclick="kickStudent(\'' + id + '\',\'' + s.id + '\')">移出</button></div>').join('')
         : '<div class="empty-note">班内还没有学员</div>') +
@@ -2569,6 +2759,26 @@ function reset(){
 }
 
 /* ==================== 启动 ==================== */
+
+/* Esc 关设置栏（2026-10-01 Tony 定：「按 Esc → 关（确认保存后）」）。
+   表单里还有没保存的东西时，第一次按只提醒、不关 —— 免得误按丢输入；
+   3 秒内再按一次才真关。模态框开着时不插手（模态有自己的关闭按钮）。 */
+let escArmed = false, escTimer = null;
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape' || MED.open || !leftOpen) return;
+  const nameEl = $('tName');
+  const dirty = (nameEl && nameEl.value.trim()) || S.pickT.length;
+  if(dirty && !escArmed){
+    escArmed = true;
+    toast('表单还没保存 —— 再按一次 Esc 关闭');
+    clearTimeout(escTimer);
+    escTimer = setTimeout(() => { escArmed = false; }, 3000);
+    return;
+  }
+  escArmed = false; clearTimeout(escTimer);
+  leftOpen = false; render();
+});
+
 render();
 
 /* 课程体系目录：先用手上那份（内置兜底）把首屏渲染出来，再后台拉一次云上最新 ——
