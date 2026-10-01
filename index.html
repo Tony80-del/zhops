@@ -261,7 +261,7 @@
       <div class="sec" id="secTeacher">
         <div class="sec-h"><span class="sec-n">一</span>教师 <span class="cnt" id="tchCnt"></span></div>
         <div id="tchList"></div>
-        <div class="row" style="margin-top:8px;"><input id="tName" placeholder="教师姓名" />
+        <div class="row" style="margin-top:8px;"><input id="tName" autocomplete="off" placeholder="教师姓名" />
           <select id="tSrc" style="width:88px;"><option value="own">自有</option><option value="out">外包</option></select></div>
         <p class="m" style="font-size:11.5px;color:var(--muted);margin:9px 0 6px;">可授课时段</p>
         <div class="chips" id="tSlots"></div>
@@ -292,7 +292,7 @@
         <div class="sec-h"><span class="sec-n">三</span>学生 <span class="cnt" id="stuCnt"></span></div>
         <div id="stuList" style="max-height:240px;overflow:auto;"></div>
         <div class="row" style="margin-top:8px;"><select id="stTeacher"></select></div>
-        <div class="row"><input id="stName" placeholder="学生姓名" />
+        <div class="row"><input id="stName" autocomplete="off" placeholder="学生姓名" />
           <select id="stLevel" style="width:74px;"><option>L1</option><option>L2</option><option>L3</option></select></div>
         <div class="row"><select id="stSource"><option value="referral">介绍</option><option value="self">平台</option><option value="teacher">教师自带</option></select></div>
         <p class="m" style="font-size:11.5px;color:var(--muted);margin:9px 0 6px;">可上课时段</p>
@@ -304,8 +304,8 @@
         <div class="sec-h"><span class="sec-n">四</span>时段 <span class="cnt" id="slotCnt"></span></div>
         <div id="slotList"></div>
         <div class="row" style="margin-top:8px;">
-          <input id="sName" placeholder="时段名，如 上午" />
-          <input id="sTime" placeholder="09:00–09:45" />
+          <input id="sName" autocomplete="off" placeholder="时段名，如 上午" />
+          <input id="sTime" autocomplete="off" placeholder="09:00–09:45" />
           <button class="mini" onclick="addSlot()">加</button>
         </div>
       </div>
@@ -816,6 +816,13 @@ function mToggle(id){
 }
 
 /* ---- 字段助手：把一份 spec 渲染成表单，并用 fv/fnum 读回 ---- */
+/* ⚠️ 所有输入框都挂 autocomplete="off"（2026-10-01 Tony 反馈后加的）。
+   起因：他在「添加学生」里看到「开班名称」下面冒出第二个下拉 ——
+   那不是我们做的，是 **Chrome 自带的自动填充**：`id="f_className"` 里带 "name"，
+   Chrome 的启发式把它当成「姓名」字段，就把他浏览器里存的资料（Choong）
+   连同菜单页脚「Manage addresses…」一起弹出来，盖在 datalist 上面。
+   加 autocomplete="off" 让浏览器不要在这套表单上做自动填充。
+   注意：datalist（我们的可筛选下拉）不受影响，照样工作。 */
 function fld(o){
   const id = 'f_' + o.k;
   const hint = o.hint ? '<p class="hint2">' + o.hint + '</p>' : '';
@@ -828,7 +835,7 @@ function fld(o){
   }
   if(o.type === 'textarea'){
     return '<div class="fld"><label>' + esc(o.label) + '</label><textarea id="' + id +
-      '" placeholder="' + esc(o.ph || '') + '">' + esc(o.value == null ? '' : o.value) + '</textarea>' + hint + '</div>';
+      '" autocomplete="off" placeholder="' + esc(o.ph || '') + '">' + esc(o.value == null ? '' : o.value) + '</textarea>' + hint + '</div>';
   }
   /* 可筛选下拉：o.list = ['选项1','选项2', …]
      —— 原生 <input list> + <datalist>，零依赖；点一下出清单，也能直接打字新建。
@@ -839,7 +846,7 @@ function fld(o){
       o.list.map(v => '<option value="' + esc(v) + '"></option>').join('') + '</datalist>'
     : '';
   return '<div class="fld"><label>' + esc(o.label) + '</label><input id="' + id + '" type="' + (o.type || 'text') +
-    '" value="' + esc(o.value == null ? '' : o.value) + '"' +
+    '" autocomplete="off" value="' + esc(o.value == null ? '' : o.value) + '"' +
     (dlId ? ' list="' + dlId + '"' : '') +
     (o.min != null ? ' min="' + o.min + '"' : '') +
     (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + ' />' + dl + hint + '</div>';
@@ -1075,12 +1082,13 @@ function renderStudents(){
   const pool = S.students.filter(s => !s.classId).length;
   $('stuCnt').textContent = S.students.length + ' 人 · 待编 ' + pool;
   $('stuList').innerHTML = S.students.length ? S.students.map(s => {
-    const c = s.classId ? cls(s.classId) : null;
     const t = tch(s.teacherId);
+    /* 左侧设置栏是**精简版**：多显示「归属教师」，少显示联系方式 / 职业 / 结业等级
+       （它只有 330px 宽）。编班状态走共用的 clsState()，写法跟另外两页一致。 */
     return '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t ? t.src : 'own') +
       ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
       '<div class="m">' + (t ? esc(t.name) : '未归属教师') + ' · ' + goalCN(s.goal) + ' · ' +
-      (c ? ('已编入 ' + esc(c.name)) : (s.className ? ('开班 ' + esc(s.className)) : '未编班')) + '</div></span>' +
+      clsState(s) + '</div></span>' +
       '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
       '<button class="mini danger" onclick="delStudent(\'' + s.id + '\')">删</button></div>';
   }).join('') : '<div class="empty-note">还没有学生</div>';
@@ -1331,6 +1339,32 @@ const goalCN = g => { const f = GOALS.filter(x => x[0] === g)[0]; return f ? f[1
 /* 自家 / 外包 的颜色点 —— 不写文字，用颜色分（Tony 明确要求） */
 const srcDot = src => '<span class="dot ' + (src === 'out' ? 'out' : 'own') + '" title="' + srcCN(src) + '"></span>';
 
+/* 编班状态那一段 —— 三处共用（学生板块 / 教师独立页面 / 左侧设置栏）。
+   抽出来是为了别再出现「同一个意思、两处写法不同」这种漂移。 */
+const clsState = s => {
+  const c = s.classId ? cls(s.classId) : null;
+  return c ? ('已编入：' + esc(c.name))
+           : (s.className ? ('开班：' + esc(s.className)) : '未编班');
+};
+
+/* ==================== 学生行的字段串（唯一出处） ====================
+   2026-10-01 Tony 反馈「教师页面没同步」后抽出来的：
+   学生板块（renderStudentsView）与教师独立页面（teacherDetail）**必须共用这一个函数**。
+   以前两处各写各的 —— 教师页面那份是旧的，只拼了「学习要求 · 编班状态 · 职业」三段，
+   于是缺联系方式 / 开班名称 / 结业等级，顺序也不一样，一眼就能看出对不上。
+   现在只此一处，**不可能再漂移**。改这里，两个页面同时变。
+
+   分段规则（Tony 给的样板）：
+     联系 1111 · 职业：工程 · 学习的要求：能听能讲 · 开班：苹果班 · 结业 HSK1
+   短标签（联系 / 结业）用空格，其余用全角冒号。 */
+function stuMeta(s){
+  return (s.contact ? '联系 ' + esc(s.contact) + ' · ' : '') +
+    (s.job ? '职业：' + esc(s.job) + ' · ' : '') +
+    '学习的要求：' + goalCN(s.goal) + ' · ' +
+    clsState(s) +
+    (s.grade ? ' · 结业 ' + esc(s.grade) : '');
+}
+
 function renderTeachersView(){
   const all  = S.teachers;
   const list = all.filter(t => S.tchFilter === 'all' || t.src === S.tchFilter);
@@ -1399,14 +1433,15 @@ function teacherDetail(t){
     '</div></div>';
 
   h += '<h2 style="margin-top:22px;">' + esc(t.name) + ' 的学生 <span class="cnt">' + myStu.length + ' 人</span></h2>' +
-    '<div class="box">' + (myStu.length ? myStu.map(s => {
-      const c = s.classId ? cls(s.classId) : null;
-      return '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t.src) +
+    '<div class="box">' + (myStu.length ? myStu.map(s =>
+      /* ⚠️ 这里以前是**另一套**拼法（只有「学习要求 · 编班状态 · 职业」三段），
+         所以教师页面缺联系方式 / 开班名称 / 结业等级 —— Tony 2026-10-01 发现「没同步」。
+         现在和学生板块共用 stuMeta()，两边逐字一致。 */
+      '<div class="item"><span class="g">' + esc(s.name) + ' ' + srcDot(t.src) +
         ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
-        '<div class="m">' + goalCN(s.goal) + ' · ' + (c ? ('已编入 ' + esc(c.name)) : '未编班') +
-        (s.job ? ' · ' + esc(s.job) : '') + '</div></span>' +
-        '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button></div>';
-    }).join('') : '<div class="empty-note">该教师名下还没有学生。</div>') + '</div>';
+        '<div class="m">' + stuMeta(s) + '</div></span>' +
+        '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button></div>'
+    ).join('') : '<div class="empty-note">该教师名下还没有学生。</div>') + '</div>';
 
   h += '<h2 style="margin-top:22px;">' + esc(t.name) + ' 的课表 <span class="cnt">' + mine.length + ' 个班</span></h2>' +
     '<div class="box">' + (mine.length ?
@@ -1459,18 +1494,11 @@ function renderStudentsView(){
 
   h += '<h2 style="margin-top:22px;">' + esc(t.name) + ' 的学生 <span class="cnt">' + mine.length + ' 人</span></h2>' +
     '<div class="box">' + (mine.length ? mine.map(s => {
-      const c = s.classId ? cls(s.classId) : null;
       const on = S.selStudent === s.id;
       return '<div class="item' + (on ? ' on' : '') + '">' +
         '<span class="g" style="cursor:pointer;" onclick="pickStudentRow(\'' + s.id + '\')">' +
         esc(s.name) + ' ' + srcDot(t.src) + ' <span class="lv ' + s.level + '">' + lvName(s.level) + '</span>' +
-        '<div class="m">' +
-          (s.contact ? esc(s.contact) + ' · ' : '') +
-          (s.job ? esc(s.job) + ' · ' : '') +
-          goalCN(s.goal) + ' · ' +
-          (c ? ('已编入 ' + esc(c.name)) : (s.className ? ('开班 ' + esc(s.className)) : '未编班')) +
-          (s.grade ? ' · 结业 ' + esc(s.grade) : '') +
-        '</div></span>' +
+        '<div class="m">' + stuMeta(s) + '</div></span>' +
         '<button class="mini" onclick="editStudent(\'' + s.id + '\')">改</button>' +
         '<button class="mini danger" onclick="delStudent(\'' + s.id + '\')">删</button></div>';
     }).join('') : '<div class="empty-note">该教师名下还没有学生。</div>') + '</div>';
@@ -1507,7 +1535,7 @@ function renderApply(){
       '<b>导入教师端申请码</b>' +
       '<p class="hint2">教师在自己页面上填完后会得到一段以 ZHA1. 开头的申请码，粘贴到这里即可。' +
       '申请码里只有教师填的内容，不含任何平台数据。</p>' +
-      '<div style="margin-top:9px;"><textarea id="impCode" placeholder="粘贴 ZHA1.… 申请码"></textarea></div>' +
+      '<div style="margin-top:9px;"><textarea id="impCode" autocomplete="off" placeholder="粘贴 ZHA1.… 申请码"></textarea></div>' +
       '<div class="row" style="margin-top:9px;">' +
         '<button class="primary" style="width:auto;" onclick="importCode()">导入申请</button>' +
         '<button class="mini" onclick="openTeacherPage()">打开教师端页面</button>' +
@@ -1517,12 +1545,12 @@ function renderApply(){
 
     '<h2 style="margin-top:22px;">手工登记 <span class="cnt">电话或当面告知时用</span></h2>' +
     '<div class="box">' +
-      '<div class="row"><input id="aName" placeholder="教师姓名" />' +
+      '<div class="row"><input id="aName" autocomplete="off" placeholder="教师姓名" />' +
         '<select id="aSrc" style="width:88px;"><option value="out">外包</option><option value="own">自有</option></select></div>' +
       '<div class="row"><select id="aLevel"><option>L1</option><option>L2</option><option>L3</option></select>' +
         '<select id="aSlot">' + S.slots.map(s => '<option value="' + s.id + '">' + esc(s.code + ' ' + s.name) + '</option>').join('') + '</select></div>' +
       '<div class="row"><input id="aCount" type="number" min="0" placeholder="预计学员数" />' +
-        '<input id="aNote" placeholder="备注（可选）" /></div>' +
+        '<input id="aNote" autocomplete="off" placeholder="备注（可选）" /></div>' +
       '<div class="row"><button class="primary" style="width:100%;" onclick="submitApply()">登记并提交审核</button></div>' +
     '</div>' +
 
@@ -2141,7 +2169,7 @@ function renderMembers(){
     '</div>' +
     '<h2 style="margin-top:22px;">新增成员</h2>' +
     '<div class="box">' +
-      '<div class="row"><input id="mName" placeholder="姓名" />' +
+      '<div class="row"><input id="mName" autocomplete="off" placeholder="姓名" />' +
         '<button class="primary" onclick="addMember()">添加</button></div>' +
       '<p class="hint2">这是一份名单，不是账号 —— 登录功能已整段删除；以后要做成员/权限时再重新加回来。</p>' +
     '</div>';
@@ -2669,7 +2697,7 @@ function showImport(){
       '<p class="hint2" style="margin:0 0 10px;">把之前导出的 JSON 内容整段粘进来。' +
       '导入会<b>覆盖</b>当前的时段、教师、学员、班级与申请。</p>' +
       '<div class="fld"><label>备份内容</label>' +
-        '<textarea id="f_txt" placeholder="粘贴 JSON …" style="min-height:150px;"></textarea></div>' +
+        '<textarea id="f_txt" autocomplete="off" placeholder="粘贴 JSON …" style="min-height:150px;"></textarea></div>' +
       '<label class="cklab"><input type="checkbox" id="f_withMembers" style="width:auto;" /> ' +
         '连成员名单一起导入（会覆盖本机名单）</label>' +
       '<p class="hint2">不勾选时保留本机的成员名单。</p>',
