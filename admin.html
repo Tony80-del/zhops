@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MGD 排课系统 · 主端</title>
+<style>
+/* ==========================================================================
+   设计系统 · 浅色 Blueprint（双色模式里的「主端」侧）
+   —— 保留蓝图的基因：深蓝锚点 / 青线 / 琥珀标注 / 图纸角标 / 极淡网格
+   —— 但底色换成浅色，因为主端是「数据密集 + 长时间盯着」的办公工具
+   ========================================================================== */
+:root{
+  /* 底色 + 网格 */
+  --bg:#eef3f7;
+  --grid:rgba(14,116,144,.055);
+  --grid2:rgba(14,116,144,.028);
+
+  /* 面 */
+  --surface:#ffffff;
+  --surface-2:#f7fafc;
+  --surface-3:#eef3f7;
+
+  /* 字 */
+  --ink:#0d2436; --ink2:#4a6a80; --ink3:#8aa3b5;
+
+  /* 线 */
+  --line:#dbe5ec; --line2:#c2d3de;
+
+  /* 主色：蓝图的亮青在白底不可读，压深成深青 */
+  --brand:#0e7490; --brand2:#0891b2; --brand-soft:#e0f2f7; --brand-ink:#0b5f75;
+
+  /* 标注色：蓝图的琥珀，压深 */
+  --amber:#b45309; --amber-soft:#fef3e2; --amber-line:#e8cfa8;
+
+  /* 语义色 */
+  --ok:#0f7b52; --ok-soft:#e6f5ee; --ok-line:#a8ddc4;
+  --warn:#a16207; --warn-soft:#fdf6e3;
+  --bad:#b42318; --bad-soft:#fdeceb; --bad-line:#f0bdb8;
+
+  /* 深蓝锚点（侧栏） */
+  --navy:#0d2436; --navy-line:rgba(103,232,249,.18); --navy-tx:#9fbdd0; --navy-tx2:#6f93a8;
+
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ui:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --side-w:238px; --top-h:56px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 var(--ui);
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(var(--grid2) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
+  background-size:96px 96px,96px 96px,24px 24px,24px 24px;
+}
+a{color:var(--brand);text-decoration:none;}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+
+/* ---------------- 布局 ---------------- */
+#app{display:flex;min-height:100vh;}
+#side{
+  width:var(--side-w);flex:0 0 auto;background:var(--navy);color:var(--navy-tx);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+  background-image:
+    linear-gradient(rgba(103,232,249,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(103,232,249,.055) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+#main{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+/* ---------------- 侧栏 ---------------- */
+.brand{padding:16px 18px 14px;border-bottom:1px solid var(--navy-line);}
+.brand .lg{display:flex;align-items:center;gap:9px;}
+.brand .mark{width:26px;height:26px;flex:0 0 auto;border:1.5px solid #67e8f9;position:relative;}
+.brand .mark::after{content:"";position:absolute;inset:5px;background:#67e8f9;opacity:.85;}
+.brand h1{font-size:14.5px;margin:0;color:#fff;font-weight:650;letter-spacing:.04em;}
+.brand p{margin:6px 0 0;font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);letter-spacing:.06em;}
+.nav{padding:8px 0;flex:1;overflow:auto;}
+.nav .grp{padding:13px 18px 5px;font-size:10px;letter-spacing:.16em;color:#547f96;font-family:var(--mono);}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 18px;color:var(--navy-tx);
+  font-size:13.5px;border-left:3px solid transparent;cursor:pointer;}
+.nav a:hover{background:rgba(103,232,249,.07);color:#dff0f8;}
+.nav a.on{background:rgba(103,232,249,.12);color:#fff;border-left-color:#67e8f9;}
+.nav a svg{flex:0 0 auto;opacity:.9;}
+.nav a .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--navy-tx2);}
+.nav a.on .cnt{color:#67e8f9;}
+.side-foot{padding:11px 18px;border-top:1px solid var(--navy-line);
+  font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);line-height:1.7;}
+.side-foot b{color:#ffd166;font-weight:600;}
+
+/* ---------------- 顶栏 ---------------- */
+#top{
+  height:var(--top-h);flex:0 0 auto;background:rgba(255,255,255,.88);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;
+  padding:0 20px;position:sticky;top:0;z-index:20;
+}
+.crumb{font-size:13px;color:var(--ink2);white-space:nowrap;}
+.crumb b{color:var(--ink);font-weight:650;}
+.crumb .sep{color:var(--ink3);margin:0 7px;}
+.sp{flex:1;}
+.search{display:flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--surface);
+  padding:0 10px;height:32px;min-width:200px;}
+.search input{border:0;outline:0;background:transparent;font:13px var(--ui);color:var(--ink);width:100%;}
+.search svg{color:var(--ink3);flex:0 0 auto;}
+
+/* ---------------- 按钮 ---------------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 13px;
+  font:13px var(--ui);background:var(--surface);border:1px solid var(--line2);color:var(--ink);
+  cursor:pointer;white-space:nowrap;}
+.btn:hover{border-color:var(--brand);color:var(--brand);}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff;}
+.btn.pri:hover{background:var(--brand-ink);border-color:var(--brand-ink);color:#fff;}
+.btn.sm{height:26px;padding:0 9px;font-size:12px;}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2);}
+.btn.ghost:hover{background:var(--surface-3);color:var(--brand);}
+.burger{display:none;}
+
+/* ---------------- 内容区 ---------------- */
+#view{padding:20px 20px 60px;flex:1;min-width:0;}
+.page-h{display:flex;align-items:flex-end;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.page-h h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em;}
+.page-h .desc{margin:0;font-size:12.5px;color:var(--ink3);}
+.page-h .sp{flex:1;}
+
+/* ---------------- 卡片 ---------------- */
+.card{background:var(--surface);border:1px solid var(--line);position:relative;margin-bottom:14px;}
+.card.marks::before,.card.marks::after{content:"";position:absolute;width:10px;height:10px;
+  border:1.5px solid var(--brand);pointer-events:none;}
+.card.marks::before{top:-1px;left:-1px;border-right:0;border-bottom:0;}
+.card.marks::after{bottom:-1px;right:-1px;border-left:0;border-top:0;}
+.card-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 15px;border-bottom:1px solid var(--line);}
+.card-h h3{margin:0;font-size:13.5px;font-weight:650;}
+.card-h .sub{font-size:11.5px;color:var(--ink3);}
+.card-h .sp{flex:1;}
+.card-b{padding:15px;}
+.card-b.tight{padding:0;}
+
+/* 统计卡 */
+/* 统计卡：用显式列数，避免 6 张卡被挤成 5+1 的孤儿行 */
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:11px;margin-bottom:14px;}
+.stats.n4{grid-template-columns:repeat(4,minmax(0,1fr));}
+.stat{background:var(--surface);border:1px solid var(--line);padding:13px 14px;border-left:3px solid var(--line2);}
+.stat.acc{border-left-color:var(--brand);}
+.stat.amber{border-left-color:#d99427;}
+.stat.bad{border-left-color:var(--bad);}
+.stat.ok{border-left-color:var(--ok);}
+.stat .k{font-size:11.5px;color:var(--ink3);letter-spacing:.03em;}
+.stat .v{font-size:23px;font-weight:650;font-family:var(--mono);font-variant-numeric:tabular-nums;
+  margin-top:5px;letter-spacing:-.02em;line-height:1.15;}
+.stat .v small{font-size:12px;font-weight:400;color:var(--ink3);font-family:var(--ui);margin-left:3px;}
+.stat .d{font-size:11.5px;color:var(--ink3);margin-top:5px;}
+
+/* ---------------- 表格 ---------------- */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
+  font-weight:650;padding:10px 13px;border-bottom:1px solid var(--line2);background:var(--surface-2);white-space:nowrap;}
+/* 单元格不折行：窄屏时让 .tbl-wrap 横向滚动，而不是把「苹果班 AP-01」挤成逐字断行 */
+.tbl td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
+.tbl tr:last-child td{border-bottom:0;}
+.tbl tbody tr:hover td{background:#f8fbfd;}
+.tbl .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;}
+.tbl .m{font-family:var(--mono);font-size:12.5px;}
+.tbl .nowrap{white-space:nowrap;}
+
+/* ---------------- 标签 / 点 ---------------- */
+.tg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:1px 8px;
+  border:1px solid;white-space:nowrap;line-height:1.65;}
+.tg.own{color:var(--brand-ink);border-color:#a8d8e6;background:var(--brand-soft);}
+.tg.out{color:#8a4a06;border-color:var(--amber-line);background:var(--amber-soft);}
+.tg.on{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
+.tg.warn{color:var(--warn);border-color:#e8d9a8;background:var(--warn-soft);}
+.tg.bad{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+.tg.off{color:var(--ink2);border-color:var(--line2);background:var(--surface-3);}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+.dot.own{background:var(--brand);} .dot.out{background:#d99427;}
+.dot.on{background:var(--ok);} .dot.off{background:var(--ink3);}
+
+/* 行首状态环（donut）三态：
+   ① 线上 · 正在上课  → 实心 + 呼吸光晕
+   ② 线上 · 未开始/已结束 → 空心青环
+   ③ 线下            → 无色（灰环空心）
+   —— 颜色只出现在线上课那一行，扫一眼就能分辨 */
+.donut{width:13px;height:13px;border-radius:50%;display:inline-block;flex:0 0 auto;
+  box-sizing:border-box;border:3px solid var(--line2);background:transparent;}
+.donut.on{border-color:var(--brand);background:var(--brand-soft);}
+.donut.on.live{border-color:var(--brand);background:var(--brand);
+  animation:donutBreath 1.8s ease-in-out infinite;}
+@keyframes donutBreath{
+  0%,100%{box-shadow:0 0 0 0 rgba(14,116,144,.38);}
+  55%    {box-shadow:0 0 0 5px rgba(14,116,144,0);}
+}
+@media (prefers-reduced-motion:reduce){ .donut.on.live{animation:none;} }
+/* 图例里的环保持静止，免得和行内那个抢注意力 */
+.lg-donut .donut{animation:none !important;}
+/* 图例里的环要和文字对齐 */
+.lg-donut{display:inline-flex;align-items:center;gap:6px;}
+
+/* ---------------- 工具条 ---------------- */
+.bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px;}
+.bar .sp{flex:1;}
+.seg{display:inline-flex;border:1px solid var(--line2);background:var(--surface);}
+.seg button{background:transparent;border:0;border-right:1px solid var(--line);padding:0 12px;height:30px;
+  font:12.5px var(--ui);color:var(--ink2);cursor:pointer;}
+.seg button:last-child{border-right:0;}
+.seg button:hover{color:var(--brand);}
+.seg button.on{background:var(--brand);color:#fff;}
+select.inp,input.inp{height:30px;border:1px solid var(--line2);background:var(--surface);
+  font:13px var(--ui);color:var(--ink);padding:0 9px;outline:0;min-width:0;}
+select.inp:focus,input.inp:focus{border-color:var(--brand);}
+.lbl{font-size:12px;color:var(--ink3);}
+
+/* ---------------- 子页签 ---------------- */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line2);margin-bottom:16px;overflow-x:auto;}
+.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;padding:9px 15px;
+  font:13.5px var(--ui);color:var(--ink2);cursor:pointer;margin-bottom:-1px;white-space:nowrap;}
+.tabs button:hover{color:var(--brand);}
+.tabs button.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:650;}
+
+/* ---------------- 排课矩阵 ---------------- */
+.mx-wrap{overflow-x:auto;}
+.mx{border-collapse:collapse;font-size:12.5px;min-width:640px;width:100%;}
+.mx th,.mx td{border:1px solid var(--line);}
+.mx thead th{background:var(--surface-2);padding:8px 6px;font-size:10.5px;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.08em;font-weight:650;text-align:center;}
+.mx th.rowh{text-align:left;padding:8px 12px;width:126px;background:var(--surface-2);}
+.mx th.rowh .s{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink3);letter-spacing:.02em;text-transform:none;}
+.mx td.cell{height:56px;padding:4px 5px;vertical-align:top;min-width:104px;}
+.mx td.empty{background:repeating-linear-gradient(45deg,transparent 0 5px,rgba(14,116,144,.04) 5px 10px);}
+.chip{display:block;background:var(--brand-soft);border-left:3px solid var(--brand);padding:4px 7px;
+  font-size:11.5px;color:var(--brand-ink);line-height:1.45;}
+.chip.off{background:var(--amber-soft);border-left-color:#d99427;color:#8a4a06;}
+/* 班级名那行：环 + 班名，班名过长时省略号 */
+.chip b{display:flex;align-items:center;gap:5px;font-weight:650;}
+.chip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* 卡片里的环要小一号，配 11.5px 的字 */
+.chip .donut{width:10px;height:10px;border-width:2.5px;}
+/* 课次与教师各占一行并禁止折行，否则「王雅琴」会被断成「王雅 / 琴」 */
+.chip .ln,.chip .tn{display:block;opacity:.8;font-family:var(--mono);font-size:10.5px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ---------------- 其它 ---------------- */
+.empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:13px;}
+.empty .big{font-size:15px;color:var(--ink2);margin-bottom:6px;}
+.note{background:var(--brand-soft);border-left:3px solid var(--brand);padding:11px 14px;font-size:12.5px;
+  color:var(--brand-ink);margin-bottom:14px;}
+.note.amber{background:var(--amber-soft);border-left-color:#d99427;color:#8a4a06;}
+.note b{font-weight:650;}
+/* 异常清单里可点开的条目（点一下 → 打开对应档案 / 跳到班级子页签） */
+.note[data-open], .note[data-act]{cursor:pointer;}
+.note[data-open]:hover, .note[data-act]:hover{filter:brightness(.97);}
+.note .go{display:inline-block;margin-top:6px;font-weight:650;text-decoration:underline;
+  text-underline-offset:2px;text-decoration-thickness:1px;}
+.bar-mini{height:6px;background:var(--surface-3);position:relative;overflow:hidden;min-width:56px;}
+.bar-mini i{position:absolute;left:0;top:0;bottom:0;background:var(--brand);}
+.bar-mini i.hi{background:#d99427;}
+.bar-mini i.full{background:var(--ok);}
+/* ---------------- 课次记录页 · 月份条 ---------------- */
+.mbar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:9px 11px;
+  background:var(--surface);border:1px solid var(--line);}
+.mbtn{position:relative;font:inherit;font-size:12.5px;padding:5px 11px;border:1px solid var(--line2);
+  background:transparent;color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.mbtn:hover{border-color:var(--brand);color:var(--brand);}
+.mbtn.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:650;}
+.mbtn .yr{font-style:normal;font-size:10.5px;opacity:.55;font-weight:600;}
+.mbtn.on .yr{opacity:.85;}
+/* 未来月份：可选，但虚线框 + 选中时换成琥珀色 —— 一眼看出「还没开始」 */
+.mbtn.fut{border-style:dashed;}
+.mbtn.fut.on{background:var(--amber);border-color:var(--amber);color:#fff;}
+.flow{background:var(--surface-2);border:1px solid var(--line);padding:12px 14px;overflow:auto;
+  font:12px/1.85 var(--mono);color:var(--ink2);white-space:pre;}
+.scrim{display:none;position:fixed;inset:0;background:rgba(13,36,54,.45);z-index:50;}
+
+/* ---------------- 响应式 ---------------- */
+/* 6 列需要 ≥1240px 才放得下，否则每张卡不足 150px、数字会溢出 → 中间档降到 3 列 */
+@media (max-width:1240px){
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .stats.n4{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:920px){
+  #side{position:fixed;left:0;top:0;z-index:60;transform:translateX(-100%);transition:transform .22s ease;}
+  #side.open{transform:none;}
+  .scrim.on{display:block;}
+  .burger{display:inline-flex;}
+  #view{padding:14px 14px 50px;}
+  #top{padding:0 14px;gap:8px;}
+  .search{min-width:0;flex:1;}
+  .crumb{display:none;}
+  .stats,.stats.n4{gap:9px;}
+  .stat .v{font-size:20px;}
+  .page-h h2{font-size:18px;}
+}
+@media (max-width:560px){
+  .stats,.stats.n4{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+/* ---------------- 右侧抽屉 · 个人档案 ----------------
+   注意：这里刻意**不复用** .scrim —— 它的显示规则 .scrim.on 被关在
+   @media (max-width:920px) 里（见上），桌面端加了 .on 也不会显示。
+   层级：#top(20) < #scrim(50) < #side 窄屏(60) < #dScrim(65) < #drawer(70) */
+#dScrim{display:none;position:fixed;inset:0;background:rgba(13,36,54,.45);z-index:65;}
+#dScrim.on{display:block;}
+#drawer{position:fixed;top:0;right:0;height:100vh;width:min(430px,92vw);
+  background:var(--surface);border-left:1px solid var(--line2);
+  box-shadow:-10px 0 28px rgba(13,36,54,.12);z-index:70;
+  display:flex;flex-direction:column;transform:translateX(100%);
+  transition:transform .22s ease,visibility .22s;visibility:hidden;}
+#drawer.open{transform:none;visibility:visible;}
+#drawer:not(.open){pointer-events:none;}
+#drawer .d-h{display:flex;align-items:center;gap:10px;padding:13px 16px;
+  border-bottom:1px solid var(--line);background:var(--surface-2);}
+#drawer .d-h .t{font-weight:650;font-size:14.5px;color:var(--ink);}
+#drawer .d-h .s{font-size:11.5px;color:var(--ink3);font-family:var(--mono);}
+#drawer .x{margin-left:auto;width:28px;height:28px;border:1px solid var(--line2);
+  background:var(--surface);color:var(--ink2);cursor:pointer;font-size:15px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
+#drawer .x:hover{color:var(--brand);border-color:var(--brand);}
+#drawer .d-b{padding:16px;overflow:auto;flex:1;}
+#drawer .d-f{padding:12px 16px;border-top:1px solid var(--line);display:flex;
+  gap:8px;align-items:center;background:var(--surface-2);}
+#drawer .d-f .sp{flex:1;}   /* .sp 的 flex:1 只写在 .bar 作用域里，这里要自建 */
+.d-memo{font-size:11.5px;color:var(--warn);line-height:1.5;text-align:right;}
+/* 查看态：键值网格 */
+.kv{display:grid;grid-template-columns:94px 1fr;gap:9px 12px;font-size:13px;align-items:start;}
+.kv dt{color:var(--ink3);font-size:12px;}
+.kv dd{margin:0;color:var(--ink);min-width:0;}
+.kv .mono{font-family:var(--mono);}
+/* 编辑态：字段 */
+.fld{margin-bottom:12px;}
+.fld > .lbl{display:block;margin-bottom:5px;}
+.fld .inp{width:100%;box-sizing:border-box;}
+.fld textarea.inp{height:auto;min-height:62px;padding:7px 9px;line-height:1.5;
+  font-family:var(--ui);resize:vertical;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+/* 多选 chips —— 刻意不用 .seg：事件委托里的 `.seg button` 分支没有作用域限定 */
+.picks{display:flex;flex-wrap:wrap;gap:6px;}
+.pick{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);
+  font:12.5px var(--ui);padding:4px 10px;cursor:pointer;}
+.pick:hover{border-color:var(--brand);color:var(--brand);}
+.pick.on{background:var(--brand);border-color:var(--brand);color:#fff;}
+/* 表格行可点开档案 */
+tr[data-open]{cursor:pointer;}
+tr[data-open]:hover td{background:var(--brand-soft);}
+@media (max-width:560px){
+  #drawer{width:100%;}
+  .g2{grid-template-columns:1fr;}
+  .kv{grid-template-columns:80px 1fr;}
+}
+@media (prefers-reduced-motion:reduce){ #drawer{transition:none;} }
+
+/* ---------------- 开班申请 · 审批（抽屉内的分区块） ---------------- */
+#drawer .a-sec{border:1px solid var(--line);background:var(--surface-2);padding:12px 13px;margin-bottom:12px;}
+#drawer .a-sec h4{margin:0 0 10px;font-size:11.5px;letter-spacing:.08em;color:var(--ink3);font-weight:650;}
+.a-clash{background:var(--bad-soft);border-left:3px solid var(--bad);color:#8f1d14;
+  padding:9px 12px;font-size:12.5px;line-height:1.65;margin-top:10px;}
+.a-ok{background:var(--ok-soft);border-left:3px solid var(--ok);color:#0b5c3d;
+  padding:9px 12px;font-size:12.5px;line-height:1.65;margin-top:10px;}
+.a-warn{background:var(--amber-soft);border-left:3px solid #d99427;color:#8a4a06;
+  padding:9px 12px;font-size:12.5px;line-height:1.65;margin-top:10px;}
+/* 紧跟标题的第一块不要再顶出 10px */
+#drawer .a-sec h4 + .a-ok,
+#drawer .a-sec h4 + .a-clash,
+#drawer .a-sec h4 + .a-warn{margin-top:0;}
+#drawer .btn[disabled]{opacity:.42;cursor:not-allowed;}
+/* 页脚可能有 2 个按钮 + 说明；按钮不许被压扁，说明允许收缩换行 */
+#drawer .d-f .btn{flex:0 0 auto;}
+#drawer .d-f .d-memo{min-width:0;}
+.fld .ro{height:30px;line-height:28px;padding:0 9px;box-sizing:border-box;background:var(--surface-3);
+  border:1px solid var(--line);color:var(--ink3);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* 新建开班申请 · 学生名单：一行 = 序号 + 姓名 + 电话 + 删 */
+#drawer .stu-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+#drawer .stu-row .n{flex:0 0 17px;font-family:var(--mono);font-size:11.5px;color:var(--ink3);text-align:right;}
+#drawer .stu-row .inp{flex:1 1 0;min-width:0;}
+#drawer .stu-row .x2{flex:0 0 auto;width:26px;height:26px;padding:0;border:1px solid var(--line2);
+  background:var(--surface);color:var(--ink3);cursor:pointer;font-size:12px;line-height:1;border-radius:0;}
+#drawer .stu-row .x2:hover{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand">
+      <div class="lg">
+        <div class="mark"></div>
+        <h1>MGD 排课系统</h1>
+      </div>
+      <p>ADMIN · 主端</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      阶段 1 · 主端外壳<br>
+      <b>演示数据</b> · 未接真实数据
+    </div>
+  </aside>
+
+  <div id="main">
+    <header id="top">
+      <button class="btn ghost burger" id="burger" title="菜单">☰</button>
+      <div class="crumb" id="crumb"></div>
+      <div class="sp"></div>
+      <label class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input placeholder="搜索教师 / 学生 / 班级…" id="q">
+      </label>
+    </header>
+    <div id="view"></div>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<!-- 右侧抽屉 · 个人档案（内容由 JS 填充） -->
+<div id="dScrim" aria-hidden="true"></div>
+<aside id="drawer" role="dialog" aria-modal="true" aria-label="个人档案" aria-hidden="true"></aside>
+
+<script>
+/* ==========================================================================
+   阶段 1 · 主端外壳
+   —— 目的：先把「信息架构 + 布局」定下来给 Tony 看
+   —— 数据全部是演示数据，不读也不写 localStorage，绝不碰真实数据
+   ========================================================================== */
+
+/* ---------- 图标 ---------- */
+const ICON = {
+  overview:'<rect x="3" y="3" width="7.5" height="7.5"/><rect x="13.5" y="3" width="7.5" height="7.5"/><rect x="3" y="13.5" width="7.5" height="7.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5"/>',
+  teacher:'<circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"/>',
+  student:'<circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M15.5 6.6a3 3 0 0 1 0 5.6"/><path d="M17 14.3c2.4.6 4 2.4 4 4.7"/>',
+  board:'<rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  data:'<path d="M3 20h18"/><rect x="5" y="12" width="3.4" height="6"/><rect x="10.3" y="7" width="3.4" height="11"/><rect x="15.6" y="14" width="3.4" height="4"/>',
+  settle:'<circle cx="12" cy="12" r="8.6"/><path d="M12 7.2v9.6M9.4 9.9h5.2M9.4 14.1h5.2"/>',
+  members:'<circle cx="12" cy="7.4" r="3"/><path d="M5 20c0-3.4 3.1-5.8 7-5.8s7 2.4 7 5.8"/>',
+  /* 开班申请 = 待办收件箱 */
+  apply:'<path d="M3 13h4.2l1.4 3h6.8l1.4-3H21"/><path d="M5.6 4h12.8l2.6 9v7H3v-7z"/>',
+  /* 课次记录 = 日历 + 清单（按月回看） */
+  lessons:'<rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7 13.5h3.5M7 17h7"/>',
+};
+const ic = (n, s) => '<svg width="'+(s||17)+'" height="'+(s||17)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICON[n]+'</svg>';
+
+/* ---------- 演示数据（全部虚构） ---------- */
+const DB = {
+  slots:[
+    {id:'s1', name:'早班',   time:'07:30–08:15', days:'周一 / 周三'},
+    {id:'s2', name:'午间',   time:'12:00–12:45', days:'周一 / 周五'},
+    {id:'s3', name:'晚班',   time:'19:00–19:45', days:'周二 / 周四'},
+    {id:'s4', name:'周末',   time:'09:00–10:30', days:'周六'},
+  ],
+  /* 教师档案：前 9 个字段给列表用；后 6 个（lang/exp/rateUnit/perfScore/perfNote/note）
+     只给右侧抽屉的「个人档案」用，字段规格对齐老系统 schedule.html 的教师档案 11 项 */
+  teachers:[
+    {id:'t1', name:'王雅琴', tel:'0901 234 561', src:'own', levels:['HSK1','HSK2','HSK3'], slots:['s1','s3'], rate:180000, students:9, state:'正常',
+     lang:'中国 · 中文 · 越南语', exp:'HSK6 · 5 年教学', rateUnit:'student', perfScore:5, perfNote:'家长反馈很好，续报率高', note:'可带 HSK3 冲刺班'},
+    {id:'t2', name:'李文博', tel:'0907 552 118', src:'own', levels:['HSK1','HSK2'],        slots:['s1','s2','s4'], rate:170000, students:7, state:'正常',
+     lang:'中国 · 中文', exp:'HSK5 · 3 年教学', rateUnit:'session', perfScore:4, perfNote:'课堂纪律好，板书清晰', note:''},
+    {id:'t3', name:'张慧敏', tel:'0912 883 004', src:'out', levels:['HSK1'],               slots:['s2','s3'], rate:200000, students:5, state:'正常',
+     lang:'中国 · 中文 · 越南语', exp:'HSK6 · 2 年教学', rateUnit:'student', perfScore:4, perfNote:'越南语沟通顺畅，零基础带得好', note:'外包 · 按学员计费'},
+    {id:'t4', name:'陈国栋', tel:'0938 210 776', src:'out', levels:['HSK1','HSK2'],        slots:['s3','s4'], rate:210000, students:4, state:'正常',
+     lang:'越南 · 中文 · 越南语', exp:'HSK5 · 4 年教学', rateUnit:'session', perfScore:3, perfNote:'偶有迟到，已提醒', note:''},
+    {id:'t5', name:'刘思远', tel:'0963 447 902', src:'own', levels:['HSK2','HSK3'],        slots:['s1','s2'], rate:190000, students:3, state:'正常',
+     lang:'中国 · 中文', exp:'HSK6 · 6 年教学', rateUnit:'student', perfScore:5, perfNote:'HSK2 / HSK3 提分明显', note:'优先排周末'},
+    {id:'t6', name:'赵美玲', tel:'0977 665 331', src:'out', levels:['HSK1'],               slots:[],          rate:200000, students:0, state:'⚠ 未配可授时段',
+     lang:'中国 · 中文 · 越南语', exp:'HSK4 · 1 年教学', rateUnit:'session', perfScore:3, perfNote:'新教师，待观察', note:'还没配可授时段，暂时排不了课'},
+    {id:'t7', name:'周建华', tel:'0982 119 445', src:'own', levels:['HSK1'],               slots:['s2','s3'], rate:175000, students:2, state:'正常',
+     lang:'越南 · 中文 · 越南语', exp:'HSK5 · 3 年教学', rateUnit:'session', perfScore:4, perfNote:'课堂气氛活跃', note:''},
+    {id:'t8', name:'吴晓彤', tel:'0908 336 227', src:'out', levels:['HSK2'],               slots:['s4'],      rate:205000, students:0, state:'正常',
+     lang:'中国 · 中文', exp:'HSK6 · 4 年教学', rateUnit:'student', perfScore:4, perfNote:'只带 HSK2，口碑稳', note:'仅周末可排'},
+  ],
+  /* 班级：★ 加了 startedAt / endedAt / plannedLessons —— 这三个是「状态类」数据的
+     时间锚点。没有它们，回看历史月就只能读"当前值"，会穿越。
+     ⚠️ lesson（当前进度）不再是手写的字面量 —— 它由 lessons 事实表算出来（见 deriveAll） */
+  classes:[
+    {id:'c1', code:'AP-01', name:'苹果班', lv:'HSK1', mode:'online',  slot:'s1', teacher:'t1', cap:10, n:8, room:'',   startedAt:'2026-09-28', endedAt:null, plannedLessons:42},
+    {id:'c2', code:'DN-02', name:'凤梨班', lv:'HSK1', mode:'offline', slot:'s3', teacher:'t4', cap:8,  n:6, room:'B2', startedAt:'2026-09-10', endedAt:null, plannedLessons:42},
+    {id:'c3', code:'MG-03', name:'芒果班', lv:'HSK1', mode:'online',  slot:'s2', teacher:'t7', cap:8,  n:5, room:'',   startedAt:'2026-08-28', endedAt:null, plannedLessons:42},
+    {id:'c4', code:'LZ-04', name:'荔枝班', lv:'HSK2', mode:'offline', slot:'s4', teacher:'t5', cap:6,  n:4, room:'B1', startedAt:'2026-05-09', endedAt:null, plannedLessons:42},
+    {id:'c5', code:'LY-05', name:'龙眼班', lv:'HSK1', mode:'online',  slot:'s3', teacher:'t3', cap:8,  n:3, room:'',   startedAt:'2026-10-03', endedAt:null, plannedLessons:42},
+  ],
+  /* ================= 事实层：课次 =================
+     ★★ 这是全系统唯一的「历史来源」。班级进度 / 学生出勤 / 今日课程 / 本月课次
+        全部从它算出来，一律不许再手写 —— 手写的"当前值"就是假历史：
+        回看上个月时会穿越到今天的数字。
+     ★ 一行 = 一个班在某天上的一节课（不是"某个学生上了课"，那是 enrollment 的事）
+       id      主键（班号#课次）
+       cid     哪个班
+       no      该班第几节课（1 起，按日期顺序）
+       date    上课那天 —— ★ 回看历史全靠它
+       time    这节课的时段（从 slot 冗余存一份：时段将来改了，历史不能跟着变）
+       status  done = 已上完（今天以前）
+               today = 就是今天（正在上 / 还没上）
+               plan  = 已排、未到日子
+               cancel= 已取消（★ 不计数，但记录必须留着 —— 账不能撕，只能冲销）
+     ⚠️ 演示数据由 seedLessons() 按「班级 startedAt + 时段」生成，
+        上云后换成真实的排课动作写入，表结构不变、推导层一行都不用改。 */
+  lessons:[],
+  /* 缺勤事实：谁 · 在哪个班 · 第几节课没来。
+     ★ 只记「缺勤」—— 默认全勤。一个班 20 人 × 40 节 = 800 条出勤记录，
+       但缺勤可能只有 20 条，反过来存省 97% 的数据，而且「谁没来」才是管理要看的。
+     ⚠️ 不存「出勤数」：出勤 = 应出勤 − 缺勤，能算出来就不许存。 */
+  absences:[
+    {sid:'st3',  cid:'c1', no:2},
+    {sid:'st6',  cid:'c2', no:3},
+    {sid:'st6',  cid:'c2', no:6},
+    {sid:'st9',  cid:'c3', no:5},
+    {sid:'st11', cid:'c4', no:4},
+    {sid:'st11', cid:'c4', no:9},
+    {sid:'st11', cid:'c4', no:17},
+    {sid:'st12', cid:'c5', no:1},
+  ],
+  /* 学生档案：前 10 个字段给列表用；后 6 个（phone/job/grade/goal/source/slots）
+     只给右侧抽屉的「个人档案」用，字段规格对齐老系统 schedule.html 的学生档案 10 项。
+     ⚠ 联系方式存 phone（电话 / Zalo），不要占用 contact —— contact 是「联系人 = 本人 / 家长」 */
+  students:[
+    {id:'st1',  name:'阮文安', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'},
+     phone:'0903 111 201', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st2',  name:'阮氏平', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'家长', exam:{s1:'—'},
+     phone:'0903 111 202', job:'上班族', grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st3',  name:'陈文强', lv:'HSK1', own:'out', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'},
+     phone:'0903 111 203', job:'经商',   grade:'',     goal:'all',  source:'self',     slots:['s1']},
+    {id:'st4',  name:'黎氏容', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'家长', exam:{s1:'—'},
+     phone:'0903 111 204', job:'学生',   grade:'',     goal:'both', source:'teacher',  slots:['s1']},
+    {id:'st5',  name:'范明德', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'},
+     phone:'0903 111 205', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st6',  name:'黄氏花', lv:'HSK1', own:'out', cls:'c2', intent:'',      contact:'本人', exam:{s1:'—'},
+     phone:'0907 222 306', job:'上班族', grade:'',     goal:'both', source:'self',     slots:['s3']},
+    {id:'st7',  name:'武文凯', lv:'HSK1', own:'own', cls:'c2', intent:'',      contact:'家长', exam:{s1:'—'},
+     phone:'0907 222 307', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s3']},
+    {id:'st8',  name:'邓氏兰', lv:'HSK1', own:'own', cls:'c2', intent:'',      contact:'本人', exam:{s1:'—'},
+     phone:'0907 222 308', job:'经商',   grade:'',     goal:'all',  source:'teacher',  slots:['s3']},
+    {id:'st9',  name:'吴文南', lv:'HSK1', own:'out', cls:'c3', intent:'',      contact:'本人', exam:{s1:'78'},
+     phone:'0912 333 409', job:'上班族', grade:'HSK1', goal:'all',  source:'referral', slots:['s2']},
+    {id:'st10', name:'段氏芳', lv:'HSK1', own:'own', cls:'c3', intent:'',      contact:'家长', exam:{s1:'85'},
+     phone:'0912 333 410', job:'学生',   grade:'HSK1', goal:'both', source:'self',     slots:['s2']},
+    {id:'st11', name:'阮文宝', lv:'HSK2', own:'own', cls:'c4', intent:'',      contact:'本人', exam:{s1:'82',s2:'79'},
+     phone:'0938 444 511', job:'上班族', grade:'HSK1', goal:'all',  source:'referral', slots:['s4']},
+    {id:'st12', name:'黎文才', lv:'HSK1', own:'own', cls:'c5', intent:'',      contact:'本人', exam:{},
+     phone:'0938 444 512', job:'学生',   grade:'',     goal:'both', source:'self',     slots:['s3']},
+    {id:'st13', name:'阮氏金', lv:'HSK1', own:'own', cls:'',   intent:'AP-01', contact:'家长', exam:{},
+     phone:'0963 555 613', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st14', name:'陈文达', lv:'HSK1', own:'out', cls:'',   intent:'AP-01', contact:'本人', exam:{},
+     phone:'0963 555 614', job:'上班族', grade:'',     goal:'both', source:'self',     slots:['s1']},
+    {id:'st15', name:'黄文勇', lv:'HSK1', own:'own', cls:'',   intent:'MG-03', contact:'家长', exam:{},
+     phone:'0963 555 615', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s2']},
+    {id:'st16', name:'范氏梅', lv:'HSK2', own:'own', cls:'',   intent:'LZ-04', contact:'本人', exam:{},
+     phone:'0963 555 616', job:'上班族', grade:'HSK1', goal:'all',  source:'teacher',  slots:['s4']},
+    {id:'st17', name:'武氏玉', lv:'HSK1', own:'out', cls:'',   intent:'',      contact:'家长', exam:{},
+     phone:'0963 555 617', job:'其他',   grade:'',     goal:'both', source:'referral', slots:[]},
+    {id:'st18', name:'吴文雄', lv:'HSK1', own:'own', cls:'',   intent:'',      contact:'本人', exam:{},
+     phone:'0963 555 618', job:'学生',   grade:'',     goal:'both', source:'self',     slots:[]},
+  ],
+  /* 开班申请。
+     src      来源：'edit' 操作员自己编辑的排班 ／ 'own' 自家外境教师 ／ 'out' 外包外境教师
+              ⚠ src='own'/'out' 时，必须和这位教师档案里的 src 一致（自家 / 外包是教师属性）；
+                src='edit' 时无此约束（操作员可以替任何教师编辑排班）
+     stage    第几阶段（课程进度）；lesson 第几课 —— 阶段由 lesson 反查，两处必须自洽
+     room     教室名称（线下才有意义）
+     待审批   state:'待审批'
+     已通过   link = 最终落在哪个班；linkMode = 'merge' 并课 ／ 'new' 新建
+     已驳回   reason = 'clash' 时间碰撞 ／ 'room' 线下课室已被占用；advice = 操作员反建议的时段
+     演示数据刻意凑齐 4 条待审批，正好走完 4 条分支：
+       a1 教师时间碰撞（红字拦截）      · a2 线下教室被占（红字拦截）
+       a3 命中已有班 → 并课（通过）      · a4 匹配不到 → 建班（通过）
+     匹配规则 = 级别 + 时段 + 形态 相同、阶段相同、并入后不超容量（第 2 步）
+     碰撞规则 = 教师时间碰撞 ／ 线下教室同室同时段（线上课不占教室）  */
+  apps:[
+    {id:'a1', src:'out',  teacher:'t4', lv:'HSK2', stage:1, lesson:3,  mode:'online',  slot:'s3', room:'',   n:7, at:'10-02 14:20', state:'待审批'},
+    {id:'a2', src:'own',  teacher:'t7', lv:'HSK2', stage:1, lesson:5,  mode:'offline', slot:'s3', room:'B2', n:5, at:'10-02 15:05', state:'待审批'},
+    {id:'a3', src:'own',  teacher:'t2', lv:'HSK1', stage:1, lesson:3,  mode:'online',  slot:'s1', room:'',   n:2, at:'10-02 16:30', state:'待审批'},
+    {id:'a4', src:'edit', teacher:'t2', lv:'HSK2', stage:1, lesson:3,  mode:'offline', slot:'s2', room:'B1', n:9, at:'10-02 17:10', state:'待审批'},
+    {id:'a5', src:'own',  teacher:'t7', lv:'HSK1', stage:1, lesson:12, mode:'online',  slot:'s2', room:'',   n:3, at:'09-28 09:40', state:'已通过', link:'c3', linkMode:'merge'},
+    {id:'a6', src:'edit', teacher:'t4', lv:'HSK1', stage:1, lesson:7,  mode:'offline', slot:'s3', room:'B2', n:2, at:'09-20 14:00', state:'已通过', link:'c2', linkMode:'merge'},
+    {id:'a7', src:'out',  teacher:'t3', lv:'HSK2', stage:1, lesson:1,  mode:'offline', slot:'s3', room:'B1', n:7, at:'09-27 11:20', state:'已驳回', reason:'clash', advice:'s2', note:'该教师这个时段已经有一节课'},
+    {id:'a8', src:'out',  teacher:'t6', lv:'HSK1', stage:1, lesson:9,  mode:'offline', slot:'s4', room:'B1', n:6, at:'09-30 16:45', state:'已驳回', reason:'room',  advice:'s1', note:'B1 教室该时段已被荔枝班占用'},
+  ],
+  /* 开班人数门槛：他给的是 8–12。⚠️ 只作参考显示，不拿来拦通过与否 */
+  set:{minOpen:8, capMax:12},
+  /* ★ 演示日期：整个系统的「今天」。所有"当下"的判断都以它为基准。
+     ⚠️ 以前这里是手写的 today[] 数组 —— 现在删掉了，改成从 lessons 事实表按日期查出来
+     （见 buildFacts() 里的 DB.today 赋值）。同一件事只有一份数据。
+     ⚠️ 为什么挑周四：四个时段里，只有「晚班 s3（周二/周四）」同时挂着线下班和线上班。
+        今天是周四 →「今天要上的课」里既有线下（无色环）又有线上（19:00 那节正好在课，
+        实心呼吸环），总览那三种环的图例才看得到对照。 */
+  todayDate:'2026-10-08',
+  /* 演示时钟：固定一个「现在」，让「正在上课」的实心环每次打开都看得到。
+     —— 上云后只改这两行（或把 now 换成读系统时间）即可，isLive() 不用动 */
+  now:'19:15',
+  lessonMin:45,
+  money:{ sessions:62, income:7440000, cost:4680000, today:186000 },
+};
+
+const T  = id => DB.teachers.find(x => x.id === id) || {name:'—'};
+const C  = id => DB.classes.find(x => x.id === id) || {name:'—', code:''};
+const S  = id => DB.slots.find(x => x.id === id) || {name:'—', time:'', days:''};
+const lvLabel = lv => lv;
+const fmtVnd = n => (n/1000).toLocaleString('en-US') + 'k';
+const MODE = {online:'线上', offline:'线下'};
+
+/* 时间小工具：状态环的「正在上课」就靠这两个 */
+const toMin = s => { const p = String(s).split(':'); return (+p[0])*60 + (+p[1]); };
+const endOf = t => { const e = toMin(t) + DB.lessonMin;
+  return String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0'); };
+const isLive = r => r.mode==='online'
+  && toMin(DB.now) >= toMin(r.time)
+  && toMin(DB.now) <  toMin(r.time) + DB.lessonMin;
+
+/* 矩阵的「时段」是 "07:30–08:15" 这种区间串，取开始时间来判断此刻是否在课 */
+const slotStart = t => String(t).split(/[–—\-]/)[0].trim();
+const slotLive  = t => { const s = toMin(slotStart(t));
+  return toMin(DB.now) >= s && toMin(DB.now) < s + DB.lessonMin; };
+
+/* ================= 事实层 → 推导层 =================
+   ★ 三层架构（Tony 2026-10-03 定案）：
+       ① 事实层 —— 有明确发生时间的记录（课次 lessons / 缺勤 absences / 开班申请 apps）
+       ② 推导层 —— 查询时现算，不落库（classLesson / stuAtt / DB.today 都在这一层）
+       ③ 总览   —— 只读，自己一个数都不存
+   ★ 一句话：凡是能算出来的，就不许手写。 */
+
+/* 星期名 → 数字（0=周日 … 6=周六）。从 slot.days 字符串解析出来，
+   不再让每个用到的地方各写一份硬编码 */
+const DAY_NAMES = ['周日','周一','周二','周三','周四','周五','周六'];
+function slotDays(sl){
+  const out = [];
+  DAY_NAMES.forEach((n, i) => { if (String(sl.days || '').indexOf(n) >= 0) out.push(i); });
+  return out;
+}
+const ymd = d => d.getFullYear() + '-' +
+  String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+function addDays(iso, n){ const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return ymd(d); }
+
+/* 播种课次事实表：从班级 startedAt 起，按它时段的星期几往后排，
+   一直排到「今天 + 14 天」—— 所以课表里既有已上的，也有待上的。
+   ⚠️ 这是演示数据的生成器，上云后由真实的排课动作取代；lessons 表结构不变。 */
+function seedLessons(){
+  const out = [];
+  DB.classes.forEach(c => {
+    const sl = S(c.slot);
+    const days = slotDays(sl);
+    if (!days.length || !c.startedAt) return;
+    /* 往后排 45 天 —— 排到六周后，这样月份条上会出现「未来月份」（边界 #8：
+       可选中，但要标「未开始」）。真实系统里就是排课排到几周之后的样子。 */
+    const stop = addDays(DB.todayDate, 45);
+    let d = c.startedAt, no = 0, guard = 0;
+    while (d <= stop && no < (c.plannedLessons || 42) && guard++ < 900){
+      if (days.indexOf(new Date(d + 'T00:00:00').getDay()) >= 0){
+        no++;
+        out.push({
+          id: c.id + '#' + no, cid: c.id, no: no, date: d, time: sl.time,
+          status: d < DB.todayDate ? 'done' : (d === DB.todayDate ? 'today' : 'plan'),
+        });
+      }
+      d = addDays(d, 1);
+    }
+  });
+  return out.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+}
+
+/* 班级进度 = 该班「已经上完」的课次数（由事实表数出来，不手写） */
+function classLesson(c){
+  return DB.lessons.filter(l => l.cid === c.id && l.status === 'done').length;
+}
+const lessonsOf = cid => DB.lessons.filter(l => l.cid === cid);
+
+/* 学生哪天进的这个班：演示数据里默认 = 班级开班日（整班一起进来的）；
+   中途插班的（比如从开班申请名单编进来的）才单独写 joinedAt */
+const stuJoinedAt = s => s.joinedAt || (s.cls ? (C(s.cls).startedAt || '') : '');
+/* 应出勤 = 该生入班之后，这个班已经上过的课次数 */
+function stuAttAll(s){
+  if (!s.cls) return 0;
+  const from = stuJoinedAt(s);
+  return DB.lessons.filter(l => l.cid === s.cls && l.status === 'done' &&
+    (!from || l.date >= from)).length;
+}
+/* 缺勤次数：从缺勤事实表数出来（只记缺勤，默认全勤） */
+function stuAbsent(s){
+  if (!s.cls) return 0;
+  const ls = lessonsOf(s.cls);
+  return DB.absences.filter(a => a.sid === s.id).filter(a => {
+    const l = ls[a.no - 1];
+    return !!l && l.status === 'done';
+  }).length;
+}
+/* 实出勤 = 应出勤 − 缺勤 */
+const stuAtt = s => Math.max(0, stuAttAll(s) - stuAbsent(s));
+
+/* 把事实层算成「当下」。只跑一次，启动时执行 */
+function buildFacts(){
+  DB.lessons = seedLessons();
+  /* 今日课程 = 事实表按「今天」查出来 —— 不再是手写数组。
+     ⚠️ 以前那个手写的 today[] 跟班级时段对不上（周一/周三的班能出现在周六的今日课程里）。
+        现在只会出现「今天真的有课」的班。 */
+  DB.today = DB.lessons
+    .filter(l => l.date === DB.todayDate && l.status !== 'cancel')
+    .sort((a, b) => toMin(slotStart(a.time)) - toMin(slotStart(b.time)))
+    .map(l => {
+      const c = C(l.cid);
+      /* time 只给开始时间 —— 表格里显示时再拼上 endOf()，isLive() 也靠它 */
+      return {cls:l.cid, teacher:c.teacher, mode:c.mode, time:slotStart(l.time), lesson:l.no, status:l.status};
+    });
+}
+buildFacts();
+
+/* 阶段名（演示：只做 HSK1 的 6 段，跟课程体系一致） */
+const STAGE = n => n<=12?'第一阶段':n<=21?'第二阶段':n<=27?'第三阶段':n<=34?'第四阶段':n<=40?'第五阶段':'第六阶段';
+/* n = 0 → 还没开课。新建的班就是 0（事实表里还没有它的课次），
+   ⚠️ 不能让它显示成「L00 · 第一阶段」 */
+const lessonLabel = (lv, n) => !n ? '未开课'
+  : lv === 'HSK1' ? ('L'+String(n).padStart(2,'0')+' · '+STAGE(n))
+  : ('第 '+n+' / 42 课');
+
+/* ---------- 视图清单 ---------- */
+const VIEWS = [
+  {id:'overview', name:'总览', icon:'overview'},
+  {id:'teachers', name:'教师', icon:'teacher'},
+  {id:'students', name:'学生', icon:'student'},
+  {id:'board',    name:'排课', icon:'board'},
+  /* 课次记录 = 按月回看的入口。★ 独立成页（Tony 2026-10-03 定案）——
+     总览永远只讲「现在」，回看历史是另一种姿态（主动检索 vs 被动接收）；
+     混在一页里，用户每次打开都得先判断「我看到的是当下还是 1 月」。 */
+  {id:'lessons',  name:'课次记录', icon:'lessons'},
+  {id:'data',     name:'数据', icon:'data'},
+  {id:'settle',   name:'结算', icon:'settle'},
+  {id:'members',  name:'成员', icon:'members'},
+  /* 开班申请是**一级板块**（2026-10-03 Tony 定案）：审批是待办队列，跟「排课（编排）」是两件事。
+     它在侧栏单独归到「待审批」分组里显示，见 renderNav() */
+  {id:'apply',    name:'开班申请', icon:'apply'},
+];
+
+/* ---------- 小工具 ---------- */
+const $  = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ownTag = o => o==='own' ? '<span class="tg own">自有</span>' : '<span class="tg out">外包</span>';
+const modeTag = m => m==='online' ? '<span class="tg on">线上</span>' : '<span class="tg off">线下</span>';
+
+/* ---------- 档案字段选项（规格抄自老系统 schedule.html） ---------- */
+const SRC      = [['referral','介绍'],['self','平台'],['teacher','教师自带']];
+const RATEUNIT = [['session','按课次'],['student','按学员 × 课次']];
+const GOALS    = [['both','能听能讲'],['all','能听能讲能写']];
+const JOBS     = ['学生','上班族','经商','教师','其他'];
+const GRADES   = [['','（未结业）'],['HSK1','HSK1'],['HSK2','HSK2'],['HSK3','HSK3'],['HSK4','HSK4'],['HSK5','HSK5'],['HSK6','HSK6']];
+const pick     = (list, v) => { const f = list.find(x => x[0]===v); return f ? f[1] : '—'; };
+const srcText      = v => pick(SRC, v);
+const rateUnitText = v => pick(RATEUNIT, v);
+const goalText     = v => pick(GOALS, v);
+const tags = arr => arr && arr.length
+  ? arr.map(x => '<span class="tg off">'+esc(x)+'</span>').join(' ')
+  : '<span class="tg bad">空 · 等于不限</span>';
+
+/* ---------- 开班申请：来源 / 驳回原因 / 课程进度 ---------- */
+const APP_SRC = [['edit','操作员编辑'],['own','自家教师'],['out','外包教师']];
+/* 列表里用短标签，省掉一个半列宽（10 列的表在 1440 笔记本上会横向滚动） */
+const SRC_SHORT = [['edit','操作员'],['own','自家'],['out','外包']];
+const REASONS = [['clash','时间碰撞'],['room','线下课室已被占用']];
+const srcText2   = v => pick(APP_SRC, v);
+const srcShort   = v => pick(SRC_SHORT, v);
+const reasonText = v => pick(REASONS, v);
+/* 课程进度：按课次反查第几阶段。跟 STAGE() 同一套分档，这里返回数字便于匹配 */
+const stageOf   = n => n<=12?1:n<=21?2:n<=27?3:n<=34?4:n<=40?5:6;
+const stageName = n => STAGE(n);
+
+function stat(k, v, d, cls){
+  return '<div class="stat '+(cls||'')+'"><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
+         (d?'<div class="d">'+d+'</div>':'')+'</div>';
+}
+function bar(p, cls){ return '<div class="bar-mini"><i class="'+(cls||'')+'" style="width:'+Math.min(100,p)+'%"></i></div>'; }
+
+/* ---------- 视图：总览 ---------- */
+function vOverview(){
+  const own = DB.teachers.filter(t=>t.src==='own').length;
+  const out = DB.teachers.length - own;
+  const inClass = DB.students.filter(s=>s.cls).length;
+  const pool = DB.students.filter(s=>!s.cls).length;
+  const online = DB.classes.filter(c=>c.mode==='online').length;
+  const offline = DB.classes.length - online;
+  const pending = DB.apps.filter(a=>a.state==='待审批').length;
+  const noSlot = DB.teachers.filter(t=>!t.slots.length);
+  const noTeacher = DB.students.filter(s=>!s.cls && !s.intent);
+  const thin = DB.classes.filter(c=>c.cap - c.n >= 2 && classLesson(c) <= 3);
+  /* 三张异常清单加起来才是标题那个数字。
+     ⚠️ 0 的时候要另走一条空态 —— 不能只写「共 0 项」然后底下空白一片 */
+  const anom = noSlot.length + noTeacher.length + thin.length;
+
+  return `
+  <div class="page-h">
+    <div><h2>总览</h2><p class="desc">打开系统第一眼看到全局 —— 规模 · 人 · 课 · 钱 · 形态 · 异常</p></div>
+    <div class="sp"></div>
+    <span class="tg off">演示数据</span>
+  </div>
+
+  <div class="stats">
+    ${stat('在读班级', DB.classes.length, '线上 '+online+' · 线下 '+offline, 'acc')}
+    ${stat('在读学员', inClass, '候选池 '+pool+' 人')}
+    ${stat('教师', DB.teachers.length, '自有 '+own+' · 外包 '+out)}
+    ${stat('待审批', pending, '开班申请', pending?'amber':'')}
+    ${stat('今日课程', DB.today.length, '节', 'ok')}
+    /* ⚠️ 2026-10-03：这个数以前是写死的 62，现在从课次事实表算 ——
+       不然跟「课次记录」页对不上（那页是算出来的）。
+       钱那三块（收入 / 成本 / 利润）仍是演示占位值，还没接事实表。 */
+    ${stat('本月课次', monthCounted(monthOf(DB.todayDate)).length, '节 · <a href="#lessons">看全部 ›</a>')}
+  </div>
+
+  <div class="card marks">
+    <div class="card-h"><h3>今天要上的课</h3><span class="sub">按开始时间排序 · 演示时钟 ${DB.now}</span><span class="sp"></span>
+      <span class="sub lg-donut"><span class="donut on live"></span>线上 · 正在上课</span>
+      <span class="sub lg-donut"><span class="donut on"></span>线上 · 未开始/已结束</span>
+      <span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span></div>
+    <div class="card-b tight">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>状态</th><th>时间</th><th>班级</th><th>进度</th><th>形态</th><th>授课教师</th><th>学生</th><th></th></tr></thead>
+        <tbody>${DB.today.length ? DB.today.map(r=>{
+          const c = C(r.cls), t = T(r.teacher), live = isLive(r);
+          const dotCls = r.mode!=='online' ? '' : (live ? 'on live' : 'on');
+          const dotTip = r.mode!=='online' ? '线下课 · 环无色'
+                       : (live ? '线上课 · 正在上课' : '线上课 · 未开始 / 已结束');
+          return '<tr>'+
+            '<td><span class="donut '+dotCls+'" title="'+dotTip+'"></span></td>'+
+            '<td class="m nowrap">'+r.time+'<span style="color:var(--ink3)">–'+endOf(r.time)+'</span></td>'+
+            '<td><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+            '<td class="m nowrap">'+lessonLabel(c.lv, r.lesson)+'</td>'+
+            '<td>'+modeTag(r.mode)+'</td>'+
+            '<td>'+esc(t.name)+' '+ownTag(t.src)+'</td>'+
+            '<td class="num">'+c.n+' / '+c.cap+'</td>'+
+            /* 教室要读班级自己的 room 字段 —— 这里曾经写死过字符串「B2」，
+               结果改班级教室时总览不跟着变（现在只剩凤梨班一节线下课，纯属巧合才没露馅） */
+            '<td class="nowrap">'+(r.mode==='online'
+              ? '<a href="#">进入课堂</a>'
+              : '<span style="color:var(--ink3)">线下 · '+(c.room ? '教室 '+esc(c.room) : '教室待定')+'</span>')+'</td>'+
+          '</tr>';
+        }).join('') : '<tr><td colspan="8" class="empty">今天没有课 —— 排课页里排好的课会出现在这里</td></tr>'}</tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card marks">
+    <div class="card-h"><h3>异常清单</h3><span class="sub">让问题主动浮出来，而不是排到一半才发现</span><span class="sp"></span>
+      ${anom ? '<span class="tg bad">共 '+anom+' 项</span>' : '<span class="tg own">全部正常</span>'}</div>
+    <div class="card-b">
+      ${anom
+        ? noSlot.map(t=>'<div class="note amber" data-open="teacher:'+t.id+'"><b>教师未配可授时段</b> —— '+esc(t.name)+'（'+ownTag(t.src)+'）的可授时段是空的，系统会把空时段解释成「不限」，等于<b>全时段都能排</b>。请补上。<span class="go">去补时段 ›</span></div>').join('')+
+          noTeacher.map(s=>'<div class="note amber" data-open="student:'+s.id+'"><b>学生没有归属也没有意向</b> —— '+esc(s.name)+'（'+s.lv+'），既没编班也没填意向班级。<span class="go">去看这个学生 ›</span></div>').join('')+
+          thin.map(c=>'<div class="note" data-act="goclasses"><b>差 '+(c.cap-c.n)+' 人开班</b> —— '+esc(c.name)+' '+c.code+'（'+c.lv+'）目前 '+c.n+' / '+c.cap+' 人，进度 '+lessonLabel(c.lv,classLesson(c))+'。<span class="go">去排课 › 班级 看这个班 ›</span></div>').join('')
+        : '<div class="empty"><div class="big">没有需要处理的异常</div>教师可授时段 / 学生归属 / 班级人数都齐了</div>'}
+    </div>
+  </div>
+
+  <div class="stats">
+    ${stat('线上班', online, '个', 'acc')}
+    ${stat('线下班', offline, '个')}
+    ${stat('本月收入', fmtVnd(DB.money.income), 'VND')}
+    ${stat('本月成本', fmtVnd(DB.money.cost), 'VND')}
+    ${stat('本月利润', fmtVnd(DB.money.income-DB.money.cost), 'VND', 'ok')}
+    ${stat('今日利润', fmtVnd(DB.money.today), 'VND')}
+  </div>`;
+}
+
+/* ---------- 全局搜索 ----------
+   顶栏那一个框，教师 / 学生 / 班级 三处共用同一个词（fQ）。
+   placeholder 承诺能搜三样，就必须真的能搜三样。 */
+let fQ = '';
+
+/* ---------- 视图：教师 ---------- */
+let fTeacher = {src:'all', lv:'all'};
+function vTeachers(){
+  let rows = DB.teachers.filter(t =>
+    (fTeacher.src==='all' || t.src===fTeacher.src) &&
+    (fTeacher.lv==='all' || t.levels.includes(fTeacher.lv)) &&
+    (!fQ || t.name.includes(fQ)));
+  return `
+  <div class="page-h">
+    <div><h2>教师</h2><p class="desc">${DB.teachers.length} 位 · 自有 ${DB.teachers.filter(t=>t.src==='own').length} · 外包 ${DB.teachers.filter(t=>t.src==='out').length}</p></div>
+    <div class="sp"></div>
+    <button class="btn">导出</button><button class="btn pri" data-act="newteacher">＋ 新增教师</button>
+  </div>
+
+  <div class="bar">
+    <span class="lbl">类型</span>
+    <div class="seg" data-f="src">
+      <button data-v="all" class="${fTeacher.src==='all'?'on':''}">全部</button>
+      <button data-v="own" class="${fTeacher.src==='own'?'on':''}">自有</button>
+      <button data-v="out" class="${fTeacher.src==='out'?'on':''}">外包</button>
+    </div>
+    <span class="lbl">级别</span>
+    <select class="inp" data-f="lv">
+      <option value="all">全部</option>
+      ${['HSK1','HSK2','HSK3'].map(l=>'<option value="'+l+'" '+(fTeacher.lv===l?'selected':'')+'>'+l+'</option>').join('')}
+    </select>
+    <div class="sp"></div>
+    <span class="lbl">共 ${rows.length} 位</span>
+  </div>
+
+  <div class="card">
+    <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr>
+        <th>教师</th><th>类型</th><th>联系方式</th><th>可授级别</th><th>可授时段</th>
+        <th class="num">单价/节</th><th class="num">学生</th><th>状态</th><th></th>
+      </tr></thead>
+      <tbody>${rows.map(t=>'<tr data-open="teacher:'+t.id+'">'+
+        '<td><b>'+esc(t.name)+'</b></td>'+
+        '<td>'+ownTag(t.src)+'</td>'+
+        '<td class="m">'+esc(t.tel)+'</td>'+
+        '<td>'+t.levels.map(l=>'<span class="tg off">'+l+'</span>').join(' ')+'</td>'+
+        '<td>'+(t.slots.length ? t.slots.map(s=>'<span class="tg own">'+S(s).name+'</span>').join(' ') : '<span class="tg bad">空 · 等于不限</span>')+'</td>'+
+        '<td class="num">'+t.rate.toLocaleString('en-US')+'</td>'+
+        '<td class="num">'+t.students+'</td>'+
+        '<td>'+(t.state==='正常'?'<span class="tg on">正常</span>':'<span class="tg warn">'+esc(t.state)+'</span>')+'</td>'+
+        '<td class="nowrap"><span class="lbl">查看档案 →</span></td>'+
+      '</tr>').join('') || '<tr><td colspan="9" class="empty">没有符合条件的教师</td></tr>'}</tbody>
+    </table></div></div>
+  </div>`;
+}
+
+/* ---------- 视图：学生 ---------- */
+let fStu = {own:'all', lv:'all', where:'all'};
+function vStudents(){
+  let rows = DB.students.filter(s =>
+    (fStu.own==='all' || s.own===fStu.own) &&
+    (fStu.lv==='all' || s.lv===fStu.lv) &&
+    (fStu.where==='all' || (fStu.where==='in' ? !!s.cls : !s.cls)) &&
+    (!fQ || s.name.includes(fQ)));
+  return `
+  <div class="page-h">
+    <div><h2>学生</h2><p class="desc">${DB.students.length} 人 · 已编班 ${DB.students.filter(s=>s.cls).length} · 候选池 ${DB.students.filter(s=>!s.cls).length}</p></div>
+    <div class="sp"></div>
+    <button class="btn">导入</button><button class="btn pri" data-act="newstudent">＋ 新增学生</button>
+  </div>
+
+  <div class="bar">
+    <span class="lbl">归属</span>
+    <div class="seg" data-f="own">
+      <button data-v="all" class="${fStu.own==='all'?'on':''}">全部</button>
+      <button data-v="own" class="${fStu.own==='own'?'on':''}">自有</button>
+      <button data-v="out" class="${fStu.own==='out'?'on':''}">外包</button>
+    </div>
+    <span class="lbl">级别</span>
+    <select class="inp" data-f="lv">
+      <option value="all">全部</option>
+      ${['HSK1','HSK2','HSK3'].map(l=>'<option value="'+l+'" '+(fStu.lv===l?'selected':'')+'>'+l+'</option>').join('')}
+    </select>
+    <span class="lbl">状态</span>
+    <div class="seg" data-f="where">
+      <button data-v="all" class="${fStu.where==='all'?'on':''}">全部</button>
+      <button data-v="in" class="${fStu.where==='in'?'on':''}">已编班</button>
+      <button data-v="pool" class="${fStu.where==='pool'?'on':''}">候选池</button>
+    </div>
+    <div class="sp"></div>
+    <span class="lbl">共 ${rows.length} 人</span>
+  </div>
+
+  <div class="note"><b>归属（自有 / 外包）是学生自己的字段</b>，不是从归属教师派生 —— 公司自家的学生也可能被派给外包老师教。</div>
+
+  <div class="card">
+    <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr>
+        <th>学生</th><th>归属</th><th>级别</th><th>班级 / 意向</th><th>进度</th>
+        <th class="num">出勤</th><th>联系人</th><th>阶段考试</th><th></th>
+      </tr></thead>
+      <tbody>${rows.map(s=>{
+        const c = s.cls ? C(s.cls) : null;
+        return '<tr data-open="student:'+s.id+'">'+
+        '<td><b>'+esc(s.name)+'</b></td>'+
+        '<td>'+ownTag(s.own)+'</td>'+
+        '<td><span class="tg off">'+s.lv+'</span></td>'+
+        '<td>'+(c ? '<b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span>'
+                  : (s.intent ? '<span class="tg warn">意向 '+esc(s.intent)+' · 尚未编班</span>' : '<span class="tg bad">未编班 · 无意向</span>'))+'</td>'+
+        /* 进度和出勤都是算出来的 —— 学生列表不再存"我上了几节"这种会过期的数字 */
+        '<td class="m nowrap">'+(c ? lessonLabel(c.lv, classLesson(c)) : '—')+'</td>'+
+        '<td class="num">'+(stuAttAll(s) ? stuAtt(s)+' / '+stuAttAll(s) : '—')+'</td>'+
+        '<td><span class="tg off">'+esc(s.contact)+'</span></td>'+
+        '<td class="m">'+(Object.keys(s.exam).length ? Object.entries(s.exam).map(([k,v])=>k+' '+v).join(' · ') : '—')+'</td>'+
+        '<td class="nowrap"><span class="lbl">查看档案 →</span></td>'+
+      '</tr>';}).join('')}</tbody>
+    </table></div></div>
+  </div>`;
+}
+
+/* ---------- 视图：排课 ---------- */
+let bTab = 'matrix';
+function vBoard(){
+  /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 4 个子页 */
+  const tabs = [['matrix','排课矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历']];
+  /* 从别处带着旧的 bTab 进来（比如以前从侧栏点过「开班申请」）→ 兜回矩阵，
+     否则下面全不匹配，会渲染出一张空页 */
+  if (!tabs.some(t => t[0] === bTab)) bTab = 'matrix';
+  let body = '';
+  if (bTab === 'matrix')        body = bMatrix();
+  else if (bTab === 'classes')  body = bClasses();
+  else if (bTab === 'pool')     body = bPool();
+  else                          body = bCalendar();
+  return `
+  <div class="page-h">
+    <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 —— 动手编排的地方</p></div>
+    <div class="sp"></div>
+    <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
+  </div>
+  ${autoBanner()}
+  <div class="tabs" id="btabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(bTab===id?'on':'')+'">'+n+'</button>').join('')}</div>
+  ${body}`;
+}
+/* ---------- 视图：开班申请（一级板块 · 审批收件箱） ----------
+   跟「排课」分开：排课是动手编排的工作台，这里是别人交上来、你审的待办队列 */
+function vApply(){
+  const pending = DB.apps.filter(a => a.state === '待审批').length;
+  return `
+  <div class="page-h">
+    <div><h2>开班申请</h2><p class="desc">操作员在这里审批 · 自家 / 外包教师都走同一套程序</p></div>
+    <div class="sp"></div>
+    ${pending ? '<span class="tg warn">待审批 '+pending+'</span>' : '<span class="tg on">都批完了</span>'}
+  </div>
+  ${bApply()}`;
+}
+function bMatrix(){
+  return `<div class="card marks">
+    <div class="card-h"><h3>排课矩阵</h3><span class="sub">行 = 时段 · 列 = 星期 · 青=线上 / 琥珀=线下</span><span class="sp"></span>
+      <span class="sub lg-donut"><span class="donut on live"></span>正在上课</span>
+      <span class="sub lg-donut"><span class="donut on"></span>线上 · 未开始/已结束</span>
+      <span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span></div>
+    <div class="card-b tight"><div class="mx-wrap"><table class="mx">
+      <thead><tr><th class="rowh">时段</th>${['周一','周二','周三','周四','周五','周六'].map(d=>'<th>'+d+'</th>').join('')}</tr></thead>
+      <tbody>${DB.slots.map(sl=>{
+        const days = ['周一','周二','周三','周四','周五','周六'];
+        const onDays = sl.id==='s1'?[0,2] : sl.id==='s2'?[0,4] : sl.id==='s3'?[1,3] : [5];
+        return '<tr><th class="rowh">'+sl.name+'<span class="s">'+sl.time+'</span></th>'+
+          days.map((d,i)=>{
+            if (!onDays.includes(i)) return '<td class="cell empty"></td>';
+            const cs = DB.classes.filter(c=>c.slot===sl.id);
+            if (!cs.length) return '<td class="cell empty"></td>';
+            return '<td class="cell">'+cs.map(c=>{
+              const t=T(c.teacher);
+              /* 环挂在班级上：这个班有没有在线，一眼看得出来 */
+              const live = c.mode==='online' && slotLive(S(c.slot).time);
+              const dotCls = c.mode!=='online' ? '' : (live?'on live':'on');
+              const dotTip = c.mode!=='online' ? '线下课 · 环无色'
+                           : (live ? '线上课 · 正在上课' : '线上课 · 未开始 / 已结束');
+              return '<span class="chip '+(c.mode==='online'?'':'off')+'">'+
+                     '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
+                     '<span class="nm">'+esc(c.name)+' '+c.code+'</span></b>'+
+                     '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
+                     '<span class="tn">'+esc(t.name)+(c.mode==='offline'&&c.room?' · '+esc(c.room):'')+'</span></span>';
+            }).join('')+'</td>';
+          }).join('')+'</tr>';
+      }).join('')}</tbody>
+    </table></div></div>
+  </div>`;
+}
+function bClasses(){
+  const rows = DB.classes.filter(c =>
+    !fQ || c.name.includes(fQ) || c.code.includes(fQ));
+  return `<div class="card">
+    <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>班级</th><th>级别</th><th>形态</th><th>时段</th><th>教室</th><th>进度</th><th>教师</th><th class="num">人数</th><th>状态</th><th></th></tr></thead>
+      <tbody>${rows.length ? rows.map(c=>{
+        const t=T(c.teacher), sl=S(c.slot), p=c.n/c.cap*100;
+        return '<tr>'+
+        '<td><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+        '<td><span class="tg off">'+c.lv+'</span></td>'+
+        '<td>'+modeTag(c.mode)+'</td>'+
+        '<td class="nowrap">'+sl.name+' <span class="m" style="color:var(--ink3)">'+sl.time+'</span><br><span style="color:var(--ink3);font-size:11.5px">'+sl.days+'</span></td>'+
+        '<td>'+(c.mode==='offline'
+                ? (c.room ? esc(c.room) : '<span class="tg bad">未填</span>')
+                : '<span style="color:var(--ink3)">不占教室</span>')+'</td>'+
+        '<td class="m nowrap">'+lessonLabel(c.lv,classLesson(c))+'</td>'+
+        '<td>'+esc(t.name)+'</td>'+
+        '<td class="num">'+c.n+' / '+c.cap+' '+bar(p, p>=100?'full':'')+'</td>'+
+        '<td>'+(classLesson(c)<=1?'<span class="tg on">刚开班</span>':'<span class="tg off">上课中</span>')+'</td>'+
+        '<td class="nowrap"><a href="#">推进一课</a> · <a href="#">点名</a></td>'+
+      '</tr>';}).join('')
+        : '<tr><td colspan="10" class="empty">没有匹配「'+esc(fQ)+'」的班级</td></tr>'}</tbody>
+    </table></div></div>
+  </div>`;
+}
+function bPool(){
+  const pool = DB.students.filter(s=>!s.cls);
+  return `<div class="note"><b>候选池 = 还没编班的学生。</b>填了「意向班级」的会在对应班开出来之后<b>自动编入</b>（前提是级别 + 可上课时段都对得上）。</div>
+  <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>学生</th><th>归属</th><th>级别</th><th>意向班级</th><th>联系人</th><th>可上课时段</th><th></th></tr></thead>
+    <tbody>${pool.map(s=>'<tr>'+
+      '<td><b>'+esc(s.name)+'</b></td>'+
+      '<td>'+ownTag(s.own)+'</td>'+
+      '<td><span class="tg off">'+s.lv+'</span></td>'+
+      '<td>'+(s.intent ? '<span class="tg warn">'+esc(s.intent)+'</span>' : '<span style="color:var(--ink3)">—</span>')+'</td>'+
+      '<td><span class="tg off">'+esc(s.contact)+'</span></td>'+
+      '<td>'+['s1','s3'].map(x=>'<span class="tg own">'+S(x).name+'</span>').join(' ')+'</td>'+
+      '<td class="nowrap"><a href="#">编入班级</a></td>'+
+    '</tr>').join('')}</tbody>
+  </table></div></div></div>`;
+}
+function bCalendar(){
+  return `<div class="card marks"><div class="card-h"><h3>本周日历</h3><span class="sub">按天查看</span></div>
+  <div class="card-b">
+    <div class="flow">周一  07:30  苹果班 AP-01   第一阶段 第 3 课   线上   王雅琴
+      12:00  芒果班 MG-03   第一阶段 第 12 课  线上   周建华
+      19:00  龙眼班 LY-05   第一阶段 第 1 课   线上   张慧敏
+周二  19:00  凤梨班 DN-02   第一阶段 第 7 课   线下   陈国栋
+周三  07:30  苹果班 AP-01   第一阶段 第 4 课   线上   王雅琴
+周五  12:00  芒果班 MG-03   第二阶段 第 13 课  线上   周建华
+周六  09:00  荔枝班 LZ-04   第三阶段 第 21 课  线下   刘思远</div>
+  </div></div>`;
+}
+/* ================= 视图：课次记录（按月回看） =================
+   ★ Tony 2026-10-03 定案的四条：
+     ① 独立侧栏页，不并在总览 —— 总览永远「当下」，这里专门「回看」
+     ② 月份条只在本页显示（路线 A），不挪顶栏
+     ③ 月份 = 查询参数（mSel），不落库；「在读」用推导算，不存快照
+     ④ 补课 / 调课按「实际上课那天」记 —— 所以一切以 lesson.date 为准 */
+
+/* ---------- 月份小工具 ---------- */
+const WK = ['日','一','二','三','四','五','六'];
+const monthOf    = d => String(d).slice(0, 7);
+const monthStart = m => m + '-01';
+/* 第 mm 月的「第 0 天」= 上个月最后一天，正好拿到本月最后一天 */
+const monthEnd   = m => ymd(new Date(Number(m.slice(0,4)), Number(m.slice(5,7)), 0));
+function nextMonth(m){
+  const y = Number(m.slice(0,4)), mm = Number(m.slice(5,7));
+  return mm === 12 ? (y + 1) + '-01' : y + '-' + String(mm + 1).padStart(2,'0');
+}
+const monthText   = m => m.slice(0,4) + ' 年 ' + Number(m.slice(5,7)) + ' 月';
+const weekdayText = d => '周' + WK[new Date(d + 'T00:00:00').getDay()];
+
+const lessonsIn = m => DB.lessons.filter(l => monthOf(l.date) === m);
+
+/* ★ 该班「到某个月底为止」已上过多少节 —— 不是「到今天为止」。
+   回看历史月时，进度也得是当时的进度（Tony 边界 #12：跨月实体快照用推导法）。
+   查当月时，它就等于 classLesson(c)。 */
+function classLessonAsOf(c, m){
+  return DB.lessons.filter(l => l.cid === c.id && l.status === 'done' && l.date <= monthEnd(m)).length;
+}
+
+/* ★「某月在读」判定公式（Tony 边界 #1 / #12 定案）：
+     开班日 ≤ 该月最后一天  AND（还没结课 OR 结课日 ≥ 该月第一天）
+   —— 跨月未结课的班，在它存在的**每一个月**里都要出现，不是只在开班那个月。 */
+function classLiveIn(c, m){
+  if (!c.startedAt || c.startedAt > monthEnd(m)) return false;
+  if (c.endedAt && c.endedAt < monthStart(m)) return false;
+  return true;
+}
+
+/* 月份条 = 有课次的月份 ∪ 有班级在读的月份 ∪ 当月，升序。
+   把「在读但没有课」的月份也算进来 —— 边界 #4「整月没上课」也要能选到 */
+function monthList(){
+  const set = {};
+  DB.lessons.forEach(l => { set[monthOf(l.date)] = 1; });
+  DB.classes.forEach(c => {
+    if (!c.startedAt) return;
+    const to = c.endedAt ? monthOf(c.endedAt) : monthOf(DB.todayDate);
+    let m = monthOf(c.startedAt), guard = 0;
+    while (m <= to && guard++ < 600){ set[m] = 1; m = nextMonth(m); }
+  });
+  set[monthOf(DB.todayDate)] = 1;
+  return Object.keys(set).sort();
+}
+
+/* 该月「计入统计」的课次 = 已上 + 今天。
+   ★ 不含 cancel —— 边界 #10：不计数，但记录留着（会计红冲：账不能撕，只能冲销） */
+const monthCounted = m => lessonsIn(m).filter(l => l.status === 'done' || l.status === 'today');
+/* 该月缺勤人次：把缺勤事实按课次反查回日期，再按月份筛 */
+function monthAbsent(m){
+  return DB.absences.filter(a => {
+    const l = lessonsOf(a.cid)[a.no - 1];
+    return !!l && l.status === 'done' && monthOf(l.date) === m;
+  }).length;
+}
+
+let mSel = '';   /* 选中的月份（YYYY-MM）。空 = 跟着「当月」走 */
+
+function vLessons(){
+  const cur = monthOf(DB.todayDate);
+  const months = monthList();
+  if (!mSel || months.indexOf(mSel) < 0) mSel = cur;
+  const m = mSel;
+  const list    = lessonsIn(m);
+  const counted = monthCounted(m);
+  const plan    = list.filter(l => l.status === 'plan');
+  const cancel  = list.filter(l => l.status === 'cancel');
+  const future  = m > cur;
+  const live    = DB.classes.filter(c => classLiveIn(c, m));
+  const cids = {}; list.forEach(l => { cids[l.cid] = 1; });
+
+  /* 明细：按日期 + 开始时间排 */
+  const rows = list.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1
+    : toMin(slotStart(a.time)) - toMin(slotStart(b.time)));
+
+  /* 月份条：跨年时在当年第一个按钮上补一个年份小标 */
+  let lastY = '';
+  const bar = months.map(mm => {
+    const y = mm.slice(0,4);
+    const yr = y !== lastY ? '<i class="yr">' + y + '</i>' : '';
+    lastY = y;
+    return '<button class="mbtn' + (mm === m ? ' on' : '') + (mm > cur ? ' fut' : '') +
+      '" data-m="' + mm + '">' + yr + Number(mm.slice(5,7)) + ' 月</button>';
+  }).join('');
+
+  return `
+  <div class="page-h">
+    <div><h2>课次记录</h2><p class="desc">按月回看 · 每节课都记在事实上，不是事后补的汇总</p></div>
+    <div class="sp"></div>
+    ${future ? '<span class="tg warn">未开始</span>'
+             : (m === cur ? '<span class="tg on">本月</span>' : '<span class="tg off">历史</span>')}
+    <a class="btn" href="#overview">回总览（看当下）</a>
+  </div>
+
+  <div class="mbar" id="mbar">${bar}</div>
+
+  <div class="stats">
+    ${stat(monthText(m) + ' 课次', counted.length, '节' + (cancel.length ? ' · 另有已取消 ' + cancel.length + ' 节' : ''), 'acc')}
+    ${stat('已上', counted.filter(l => l.status === 'done').length, '节')}
+    ${stat('今天', counted.filter(l => l.status === 'today').length, '节')}
+    ${stat('待上', plan.length, '节')}
+    ${stat('涉及班级', Object.keys(cids).length, '个 · 在读 ' + live.length + ' 个')}
+    ${stat('该月缺勤', monthAbsent(m), '人次')}
+  </div>
+
+  <div class="card marks">
+    <div class="card-h"><h3>${monthText(m)} 明细</h3>
+      <span class="sub">按实际上课那天记 —— 补课 / 调课也算上课那天</span><span class="sp"></span>
+      ${list.length ? '<span class="tg off">共 ' + list.length + ' 条</span>' : ''}</div>
+    <div class="card-b tight">
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>日期</th><th>班级</th><th>进度</th><th>时段</th><th>形态</th><th>授课教师</th><th>教室</th><th>状态</th></tr></thead>
+        <tbody>${rows.length ? rows.map(l => {
+          const c = C(l.cid), t = T(l.teacher || c.teacher);
+          /* 代课：这节课的授课教师 ≠ 班级的常任教师（边界 #11）—— 必须显示出来，
+             否则将来跟老师对账时「这节课到底谁上的」说不清 */
+          const sub = l.teacher && l.teacher !== c.teacher;
+          const st = l.status === 'done'   ? '<span class="tg on">已上</span>'
+                   : l.status === 'today'  ? '<span class="tg warn">今天</span>'
+                   : l.status === 'cancel' ? '<span class="tg bad">已取消</span>'
+                   :                         '<span class="tg off">待上</span>';
+          /* 已取消的整行压暗 —— 一眼看出来它「在，但不算数」 */
+          return '<tr' + (l.status === 'cancel' ? ' style="opacity:.55"' : '') + '>' +
+            '<td class="m nowrap">' + l.date + ' <span style="color:var(--ink3)">' + weekdayText(l.date) + '</span></td>' +
+            '<td><b>' + esc(c.name) + '</b> <span class="m" style="color:var(--ink3)">' + c.code + '</span></td>' +
+            '<td class="m nowrap">' + lessonLabel(c.lv, l.no) + '</td>' +
+            '<td class="m nowrap">' + slotStart(l.time) + '<span style="color:var(--ink3)">–' + endOf(slotStart(l.time)) + '</span></td>' +
+            '<td>' + modeTag(c.mode) + '</td>' +
+            '<td>' + esc(t.name) + (sub ? ' <span class="tg warn">代课</span>' : '') + '</td>' +
+            '<td>' + (c.mode === 'offline'
+                        ? (c.room ? esc(c.room) : '<span class="tg bad">未填</span>')
+                        : '<span style="color:var(--ink3)">不占教室</span>') + '</td>' +
+            '<td>' + st + '</td>' +
+          '</tr>';
+        }).join('') : '<tr><td colspan="8" class="empty">' +
+            (future ? '这个月还没开始 —— 排了课才会出现在这里' : '这个月没有课次记录') + '</td></tr>'}
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>这个月涉及的班</h3>
+      <span class="sub">跨月未结课的班，会在它存在的<b>每一个月</b>里出现</span><span class="sp"></span>
+      <span class="tg off">在读 ' + live.length + ' 个</span></div>
+    <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>班级</th><th>级别</th><th>开班</th><th>结课</th><th class="num">该月课次</th><th class="num">到该月底已上</th></tr></thead>
+      <tbody>${live.length ? live.map(c => {
+        const n = list.filter(l => l.cid === c.id).length;
+        return '<tr>' +
+          '<td><b>' + esc(c.name) + '</b> <span class="m" style="color:var(--ink3)">' + c.code + '</span></td>' +
+          '<td><span class="tg off">' + c.lv + '</span></td>' +
+          '<td class="m nowrap">' + (c.startedAt || '—') + '</td>' +
+          '<td class="m nowrap">' + (c.endedAt ? c.endedAt : '<span style="color:var(--ink3)">未结课</span>') + '</td>' +
+          '<td class="num">' + (n || '<span style="color:var(--ink3)">0</span>') + '</td>' +
+          '<td class="num">' + classLessonAsOf(c, m) + '</td>' +
+        '</tr>';
+      }).join('') : '<tr><td colspan="6" class="empty">这个月没有任何班级在读</td></tr>'}</tbody>
+    </table></div></div>
+  </div>`;
+}
+
+/* 第 7 步：筛选条 —— 状态 + 按具体驳回原因再筛一层 */
+let fApp = {st:'all', reason:'all'};
+function bApply(){
+  const sts = [['all','全部'],['待审批','待审批'],['已通过','已通过'],['已驳回','已驳回']];
+  const sCnt = s => s==='all' ? DB.apps.length : DB.apps.filter(a=>a.state===s).length;
+  const rCnt = r => r==='all' ? DB.apps.filter(a=>a.state==='已驳回').length
+                             : DB.apps.filter(a=>a.state==='已驳回' && a.reason===r).length;
+
+  let rows = DB.apps.filter(a => fApp.st==='all' || a.state===fApp.st);
+  if (fApp.st==='已驳回' && fApp.reason!=='all') rows = rows.filter(a => a.reason === fApp.reason);
+
+  const stateTag = a => a.state==='待审批' ? '<span class="tg warn">待审批</span>'
+                      : a.state==='已通过' ? '<span class="tg on">已通过</span>'
+                                           : '<span class="tg bad">已驳回</span>';
+
+  return `<div class="card">
+    <div class="bar" style="padding:12px 15px;margin-bottom:0;border-bottom:1px solid var(--line)">
+      <span class="lbl">状态</span>
+      <div class="seg" data-f="app">
+        ${sts.map(s=>'<button data-v="'+s[0]+'" class="'+(fApp.st===s[0]?'on':'')+'">'+s[1]+
+          ' <span class="lbl">'+sCnt(s[0])+'</span></button>').join('')}
+      </div>
+      ${fApp.st==='已驳回' ? '<span class="lbl">驳回原因</span><div class="seg" data-f="appReason">'+
+        [['all','全部原因']].concat(REASONS).map(r=>'<button data-v="'+r[0]+'" class="'+(fApp.reason===r[0]?'on':'')+'">'+
+          r[1]+' <span class="lbl">'+rCnt(r[0])+'</span></button>').join('')+'</div>' : ''}
+      <div class="sp"></div>
+      <span class="lbl">共 ${rows.length} 条 · 点任意一行打开审批</span>
+    </div>
+
+    <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr>
+        <th>提交时间</th><th>来源</th><th>教师</th><th>课程进度</th><th>形态</th><th>时段</th>
+        <th>教室</th><th class="num">学生</th><th>状态</th><th></th>
+      </tr></thead>
+      <tbody>${rows.length ? rows.map(a=>{
+        const t = T(a.teacher), sl = S(a.slot);
+        return '<tr data-open="app:'+a.id+'">'+
+        '<td class="m nowrap">'+esc(a.at)+'</td>'+
+        '<td><span class="tg off">'+esc(srcShort(a.src))+'</span></td>'+
+        '<td>'+esc(t.name)+(a.src==='edit' ? ' '+ownTag(t.src) : '')+'</td>'+
+        '<td class="m nowrap">'+esc(progText(a))+' <span class="tg off">'+esc(a.lv)+'</span></td>'+
+        '<td>'+modeTag(a.mode)+'</td>'+
+        '<td class="nowrap">'+esc(sl.name)+' <span class="m" style="color:var(--ink3)">'+esc(sl.time)+'</span></td>'+
+        '<td>'+(a.mode==='offline'
+                ? (a.room ? esc(a.room) : '<span class="tg bad">未填</span>')
+                : '<span style="color:var(--ink3)">不占教室</span>')+'</td>'+
+        '<td class="num">'+a.n+'</td>'+
+        '<td>'+stateTag(a)+
+          (a.state==='已驳回' ? '<br><span class="lbl">'+esc(reasonText(a.reason))+'</span>' : '')+
+          (a.state==='已通过' ? '<br><span class="lbl">'+(a.linkMode==='merge'?'并入 ':'新建 ')+
+             esc(a.link ? C(a.link).name : '')+'</span>' : '')+'</td>'+
+        '<td class="nowrap"><span class="lbl">'+(a.state==='待审批'?'审批 →':'查看 →')+'</span></td>'+
+      '</tr>';}).join('') : '<tr><td colspan="10" class="empty">这个筛选下没有申请</td></tr>'}</tbody>
+    </table></div></div>
+  </div>`;
+}
+
+/* ---------- 视图：数据 ---------- */
+let dTab = 'att';
+function vData(){
+  const tabs = [['att','出勤'],['exam','阶段考试'],['grade','完成等级']];
+  let body = '';
+  if (dTab==='att'){
+    body = `<div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>学生</th><th>班级</th><th>进度</th><th class="num">已上 / 应上</th><th>出勤率</th><th>最近缺课</th></tr></thead>
+      <tbody>${DB.students.filter(s=>s.cls).map(s=>{
+        /* 出勤三件套全是算出来的：应出勤 = 入班后班级已上课次，缺勤 = 缺勤事实表条数 */
+        const c=C(s.cls), all=stuAttAll(s), att=stuAtt(s), r=all?Math.round(att/all*100):0;
+        return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(c.name)+' <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+        '<td class="m nowrap">'+lessonLabel(c.lv,classLesson(c))+'</td>'+
+        '<td class="num">'+att+' / '+all+'</td>'+
+        '<td>'+bar(r, r>=90?'full':(r<70?'hi':''))+' <span class="m" style="font-size:11.5px">'+r+'%</span></td>'+
+        '<td>'+(att<all?'<span class="tg warn">缺 '+(all-att)+' 次</span>':'<span class="tg on">全勤</span>')+'</td></tr>';}).join('')}</tbody>
+    </table></div></div></div>`;
+  } else if (dTab==='exam'){
+    body = `<div class="note">阶段考试 = 学生 × 每个阶段。卡在某个阶段的学生<b>不能往下排</b>。</div>
+    <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>学生</th><th>级别</th><th>第一阶段</th><th>第二阶段</th><th>第三阶段</th><th>结论</th></tr></thead>
+      <tbody>${DB.students.filter(s=>s.cls).slice(0,8).map(s=>'<tr>'+
+        '<td><b>'+esc(s.name)+'</b></td><td><span class="tg off">'+s.lv+'</span></td>'+
+        '<td class="m">'+(s.exam.s1||'<span style="color:var(--ink3)">未考</span>')+'</td>'+
+        '<td class="m">'+(s.exam.s2||'<span style="color:var(--ink3)">未考</span>')+'</td>'+
+        '<td class="m"><span style="color:var(--ink3)">未考</span></td>'+
+        '<td>'+(s.exam.s1&&+s.exam.s1>=60?'<span class="tg on">可进下一阶段</span>':'<span class="tg off">进行中</span>')+'</td>'+
+      '</tr>').join('')}</tbody>
+    </table></div></div></div>`;
+  } else {
+    body = `<div class="note">完成等级由<b>主端确认</b> —— 将来招聘懂中文学生的系统要用它筛选后推荐给单位。</div>
+    <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>学生</th><th>已完成级别</th><th>结业时间</th><th>确认人</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>阮文宝</b></td><td><span class="tg on">HSK1</span></td><td class="m">2026-09-18</td><td>主端</td><td><a href="#">证书</a></td></tr>
+        <tr><td><b>段氏芳</b></td><td><span class="tg on">HSK1</span></td><td class="m">2026-09-18</td><td>主端</td><td><a href="#">证书</a></td></tr>
+        <tr><td colspan="5" class="empty">其余学生还在读，未结业</td></tr>
+      </tbody>
+    </table></div></div></div>`;
+  }
+  return `<div class="page-h"><div><h2>数据</h2><p class="desc">出勤 · 阶段考试 · 完成等级</p></div></div>
+    <div class="tabs" id="dtabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(dTab===id?'on':'')+'">'+n+'</button>').join('')}</div>${body}`;
+}
+
+/* ---------- 视图：结算 ---------- */
+function vSettle(){
+  const m = DB.money;
+  return `
+  <div class="page-h"><div><h2>结算</h2><p class="desc">2026 年 10 月</p></div><div class="sp"></div>
+    <button class="btn">导出对账单</button><button class="btn pri">封存本月</button></div>
+  <div class="note amber"><b>口径还没定</b> —— 学费怎么收、外包怎么结，金额先留空。现在这些数字是<b>演示值</b>，且会随单价改动而变（没有单价快照）。</div>
+  <div class="stats n4">
+    ${stat('本月课次', m.sessions, '节')}
+    ${stat('收入', fmtVnd(m.income), 'VND', 'ok')}
+    ${stat('成本', fmtVnd(m.cost), 'VND')}
+    ${stat('利润', fmtVnd(m.income-m.cost), 'VND', 'acc')}
+  </div>
+  <div class="card marks">
+    <div class="card-h"><h3>按教师汇总</h3><span class="sub">课次 × 单价</span></div>
+    <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>教师</th><th>类型</th><th class="num">课次</th><th class="num">单价</th><th class="num">小计</th><th>方向</th></tr></thead>
+      <tbody>${DB.teachers.filter(t=>t.students>0).map(t=>{
+        const n = t.students*2+3, sub = n*t.rate;
+        return '<tr><td><b>'+esc(t.name)+'</b></td><td>'+ownTag(t.src)+'</td>'+
+        '<td class="num">'+n+'</td><td class="num">'+t.rate.toLocaleString('en-US')+'</td>'+
+        '<td class="num">'+sub.toLocaleString('en-US')+'</td>'+
+        '<td>'+(t.src==='out'?'<span class="tg bad">我们付他（成本）</span>':'<span class="tg off">内部</span>')+'</td></tr>';}).join('')}</tbody>
+    </table></div></div>
+  </div>`;
+}
+
+/* ---------- 视图：成员 ---------- */
+function vMembers(){
+  const rows = [['王雅琴','主端 · 全部权限'],['李文博','主端 · 只看排课'],['周建华','主端 · 只看数据']];
+  return `<div class="page-h"><div><h2>成员</h2><p class="desc">能登录主端的人（现在只是名单）</p></div>
+    <div class="sp"></div><button class="btn pri">＋ 添加成员</button></div>
+  <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>姓名</th><th>权限</th><th>最近登录</th><th></th></tr></thead>
+    <tbody>${rows.map(([n,p])=>'<tr><td><b>'+n+'</b></td><td><span class="tg off">'+p+'</span></td><td class="m">2026-10-02 09:14</td><td><a href="#">编辑</a> · <a href="#">移除</a></td></tr>').join('')}</tbody>
+  </table></div></div></div>`;
+}
+
+/* ==========================================================================
+   右侧抽屉 · 个人档案
+   —— 教师页 / 学生页点任意一行 → 右侧滑出档案面板
+   —— 「可改」只是内存态：直接改 DB 对象，刷新页面即还原，不写任何存储
+   ========================================================================== */
+let dState = null;   /* {kind:'teacher'|'student'|'app', id, edit, draft, mode, form, isNew} */
+
+function getDRec(){
+  if (!dState) return null;
+  if (dState.kind === 'teacher') return DB.teachers.find(x => x.id === dState.id);
+  if (dState.kind === 'student') return DB.students.find(x => x.id === dState.id);
+  if (dState.kind === 'app')     return DB.apps.find(x => x.id === dState.id);
+  return null;
+}
+function openDrawer(key){
+  const parts = String(key).split(':');
+  const kind = parts[0], id = parts[1];
+  if (kind !== 'teacher' && kind !== 'student' && kind !== 'app') return;
+  dState = {kind:kind, id:id, edit:false, draft:null, mode:'view', form:null, isNew:false};
+  /* 记录不存在就别开 —— 否则 renderDrawer 会清空内容，
+     而这里又把 .open 加上去，会留下一个空白抽屉 */
+  if (!getDRec()){ dState = null; return; }
+  if (kind === 'app') dState.form = appFormOf(getDRec());
+  renderDrawer();
+  $('#dScrim').classList.add('on');
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden','false');
+  const x = $('#drawer .x');
+  if (x) x.focus();
+}
+function closeDrawer(){
+  if (!dState) return;
+  dState = null;
+  $('#drawer').classList.remove('open');
+  $('#dScrim').classList.remove('on');
+  $('#drawer').setAttribute('aria-hidden','true');
+  $('#drawer').innerHTML = '';
+}
+/* 保存后刷新列表行 —— 只重写 #view。
+   绝不能用 render()：render() 末尾会 closeDrawer()，抽屉会把自己关掉 */
+function refreshView(){
+  const id = route();
+  $('#view').innerHTML = (R[id] || vOverview)();
+}
+function startEdit(){
+  const o = getDRec();
+  if (!o) return;
+  dState.edit = true;
+  dState.draft = JSON.parse(JSON.stringify(o));   /* 深拷贝，取消时不影响原对象 */
+  renderDrawer();
+}
+function cancelEdit(){
+  if (!dState) return;
+  /* 新建时点「取消」= 放弃这条，直接关抽屉；编辑时 = 回到查看态 */
+  if (dState.isNew){ closeDrawer(); return; }
+  dState.edit = false; dState.draft = null; renderDrawer();
+}
+function saveEdit(){
+  if (!dState || !dState.draft) return;
+  /* 文本框 / 下拉的值还留在 DOM 里，必须先读回来；数组（多选 chips）已经在 draft 上 */
+  $('#drawer').querySelectorAll('[data-d-inp]').forEach(el => {
+    const f = el.dataset.dInp;
+    let v = el.value;
+    if (f === 'rate' || f === 'perfScore') v = Number(v) || 0;
+    dState.draft[f] = v;
+  });
+  const d = dState.draft;
+
+  /* ---- 新建：push 一条新记录 ---- */
+  if (dState.isNew){
+    const kind = dState.kind;
+    /* 姓名 + 联系方式必填（Tony 2026-10-03：联系方式也要必填，不然新建出来联系不上人） */
+    const miss = [];
+    if (!String(d.name||'').trim()) miss.push('姓名');
+    if (!String(d[kind === 'teacher' ? 'tel' : 'phone']||'').trim()) miss.push('联系方式');
+    if (miss.length){ dState.err = miss.join(' 和 '); renderDrawer(); return; }
+
+    const list = kind === 'teacher' ? DB.teachers : DB.students;
+    const nums = list.map(x => parseInt(String(x.id).replace(/\D/g,''), 10) || 0);
+    d.id   = (kind === 'teacher' ? 't' : 'st') + (Math.max(0, ...nums) + 1);
+    d.name = String(d.name).trim();
+    list.push(d);
+    const view = kind === 'teacher' ? 'teachers' : 'students';
+    closeDrawer();
+    /* hash 没变时 hashchange 不触发，得手动 render() */
+    if (location.hash === '#' + view) render(); else location.hash = '#' + view;
+    return;
+  }
+
+  /* ---- 编辑：写回原对象 ---- */
+  const o = getDRec();
+  if (!o) return;
+  Object.keys(d).forEach(k => { o[k] = d[k]; });
+  dState.edit = false; dState.draft = null;
+  renderDrawer();
+  refreshView();
+}
+/* 多选 chip：只改 draft + 原地 toggle class，不整块重绘（重绘会清掉已填的输入框） */
+function togglePick(btn){
+  if (!dState || !dState.draft) return;
+  const f = btn.dataset.dPick, v = btn.dataset.val;
+  const arr = dState.draft[f];
+  if (!Array.isArray(arr)) return;
+  const i = arr.indexOf(v);
+  if (i >= 0) arr.splice(i,1); else arr.push(v);
+  btn.classList.toggle('on');
+}
+
+/* ---- 查看态 ---- */
+function kv(label, html){
+  return '<dt>'+label+'</dt><dd>'+(html===''||html==null ? '—' : html)+'</dd>';
+}
+function star(n){
+  const k = Math.max(0, Math.min(5, Number(n)||0));
+  return '<span style="color:#d99427">'+'★'.repeat(k)+'</span>'+
+         '<span style="color:var(--line2)">'+'☆'.repeat(5-k)+'</span>'+
+         ' <span class="lbl">'+k+' / 5</span>';
+}
+function slotTags(ids){
+  return ids && ids.length
+    ? ids.map(s => '<span class="tg off">'+esc(S(s).name)+'</span>').join(' ')
+    : '<span class="lbl">未填</span>';
+}
+function tView(o){
+  return '<dl class="kv">'+
+    kv('姓名', esc(o.name))+
+    kv('类型', ownTag(o.src))+
+    kv('联系方式', '<span class="mono">'+esc(o.tel)+'</span>')+
+    kv('国籍 · 语言', esc(o.lang))+
+    kv('资历', esc(o.exp))+
+    kv('可授级别', tags(o.levels))+
+    kv('可授课时段', o.slots.length
+        ? o.slots.map(s => '<span class="tg off">'+esc(S(s).name)+'</span>').join(' ')
+        : '<span class="tg bad">空 · 等于不限</span>')+
+    kv('单价', '<span class="mono">'+Number(o.rate).toLocaleString('en-US')+'</span> <span class="lbl">VND</span>')+
+    kv('计价方式', esc(rateUnitText(o.rateUnit)))+
+    kv('教课表现', star(o.perfScore))+
+    kv('表现记录', esc(o.perfNote))+
+    kv('备注', esc(o.note))+
+    kv('学生数', '<span class="mono">'+o.students+'</span>')+
+  '</dl>';
+}
+function sView(o){
+  const c = o.cls ? C(o.cls) : null;
+  const clsCell = c
+    ? '<b>'+esc(c.name)+'</b> <span class="mono lbl">'+esc(c.code)+'</span>'
+    : (o.intent ? '<span class="tg warn">意向 '+esc(o.intent)+' · 尚未编班</span>'
+                : '<span class="tg bad">未编班 · 无意向</span>');
+  return '<dl class="kv">'+
+    kv('姓名', esc(o.name))+
+    kv('归属', ownTag(o.own))+
+    kv('来源', '<span class="tg off">'+esc(srcText(o.source))+'</span>')+
+    kv('级别', '<span class="tg off">'+esc(o.lv)+'</span>')+
+    kv('联系方式', '<span class="mono">'+esc(o.phone)+'</span>')+
+    kv('联系人', '<span class="tg off">'+esc(o.contact)+'</span>')+
+    kv('职业', esc(o.job))+
+    kv('结业等级', o.grade ? esc(o.grade) : '<span class="lbl">未结业</span>')+
+    kv('学习的要求', esc(goalText(o.goal)))+
+    kv('可上课时段', slotTags(o.slots))+
+    kv('所属班级', clsCell)+
+  '</dl>'+
+  '<div class="note" style="margin:14px 0 0"><b>所属班级只在这里看</b> —— 编班 / 调班统一在「排课 → 班级」页做，跟老系统一致。</div>';
+}
+
+/* ---- 编辑态 ----
+   ⚠ 所有控件都不能带 data-f：会被全局 change 委托截获并触发 render()，把抽屉冲掉
+   ⚠ 绝不能出现 .seg：全局 click 委托里的 `.seg button` 分支没有作用域限定 */
+function fld(label, ctrl){
+  return '<div class="fld"><label class="lbl">'+label+'</label>'+ctrl+'</div>';
+}
+/* attr 默认 data-d-inp（个人档案用）；开班申请的表单传 data-a-inp，两套互不干扰 */
+function inp(f, v, type, attr){
+  return '<input class="inp" '+(attr||'data-d-inp')+'="'+f+'" type="'+(type||'text')+'" value="'+esc(v)+'">';
+}
+function area(f, v, attr){
+  return '<textarea class="inp" '+(attr||'data-d-inp')+'="'+f+'">'+esc(v)+'</textarea>';
+}
+/* list 支持 [['值','文案'],…] 或 ['值',…] 两种写法 */
+function norm(list){
+  return list.map(x => Array.isArray(x) ? x : [x, x]);
+}
+function sel(f, v, list, attr){
+  const opts = norm(list).map(x =>
+    '<option value="'+esc(x[0])+'"'+(String(x[0])===String(v)?' selected':'')+'>'+esc(x[1])+'</option>'
+  ).join('');
+  return '<select class="inp" '+(attr||'data-d-inp')+'="'+f+'">'+opts+'</select>';
+}
+function picks(f, arr, list){
+  return '<div class="picks">'+norm(list).map(x => {
+    const on = (arr||[]).indexOf(x[0]) >= 0;
+    return '<button type="button" class="pick'+(on?' on':'')+'" data-d-pick="'+f+'" data-val="'+esc(x[0])+'">'+esc(x[1])+'</button>';
+  }).join('')+'</div>';
+}
+function slotPicks(f, arr){
+  return picks(f, arr, DB.slots.map(s => [s.id, s.name+' '+s.time]));
+}
+function tEdit(m){
+  return fld('姓名', inp('name', m.name))+
+    '<div class="g2">'+
+      fld('类型', sel('src', m.src, [['own','自有'],['out','外包']]))+
+      fld('联系方式', inp('tel', m.tel))+
+    '</div>'+
+    '<div class="g2">'+
+      fld('国籍 · 语言', inp('lang', m.lang))+
+      fld('资历', inp('exp', m.exp))+
+    '</div>'+
+    fld('可授级别', picks('levels', m.levels, ['HSK1','HSK2','HSK3']))+
+    fld('可授课时段', slotPicks('slots', m.slots))+
+    '<div class="g2">'+
+      fld('单价 (VND)', inp('rate', m.rate, 'number'))+
+      fld('计价方式', sel('rateUnit', m.rateUnit, RATEUNIT))+
+    '</div>'+
+    fld('教课表现', sel('perfScore', m.perfScore,
+      [[1,'★ 1'],[2,'★★ 2'],[3,'★★★ 3'],[4,'★★★★ 4'],[5,'★★★★★ 5']]))+
+    fld('表现记录', area('perfNote', m.perfNote))+
+    fld('备注', area('note', m.note));
+}
+function sEdit(m){
+  return fld('姓名', inp('name', m.name))+
+    '<div class="g2">'+
+      fld('归属', sel('own', m.own, [['own','自有'],['out','外包']]))+
+      fld('来源', sel('source', m.source, SRC))+
+    '</div>'+
+    '<div class="g2">'+
+      fld('级别', sel('lv', m.lv, ['HSK1','HSK2','HSK3']))+
+      fld('联系人', sel('contact', m.contact, ['本人','家长']))+
+    '</div>'+
+    fld('联系方式（电话 / Zalo）', inp('phone', m.phone))+
+    '<div class="g2">'+
+      fld('职业', sel('job', m.job, JOBS))+
+      fld('结业等级', sel('grade', m.grade, GRADES))+
+    '</div>'+
+    fld('学习的要求', sel('goal', m.goal, GOALS))+
+    fld('可上课时段', slotPicks('slots', m.slots));
+}
+
+/* ================= 新增教师 / 新增学生 =================
+   复用档案的「编辑表单」（tEdit / sEdit），只是把「保存」从「写回原对象」换成「push 一条新记录」。
+   Tony 2026-10-03：教师页头 / 学生页头那两个按钮原来点了没反应。 */
+function blankTeacher(){
+  return {
+    name:'', src:'own', tel:'', lang:'', exp:'',
+    levels:[], slots:[], rate:0, rateUnit:'session',
+    perfScore:3, perfNote:'', note:'',
+  };
+}
+function blankStudent(){
+  return {
+    name:'', own:'own', source:'referral', lv:'HSK1', contact:'本人',
+    phone:'', job:'学生', grade:'', goal:'both', slots:[],
+    /* 这几个编辑表单里不出现，但列表 / 档案要用，先给上默认值。
+       ⚠️ 没有 att / attAll —— 出勤是算出来的，存下来就会过期 */
+    cls:'', joinedAt:'', intent:'', exam:{},
+  };
+}
+function openNewProfile(kind){
+  dState = {
+    kind: kind, id: '__new__', edit: true,
+    draft: kind === 'teacher' ? blankTeacher() : blankStudent(),
+    mode: 'view', form: null, isNew: true,
+  };
+  renderDrawer();
+  $('#dScrim').classList.add('on');
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden','false');
+  const x = $('#drawer .x'); if (x) x.focus();
+}
+const openNewTeacher = () => openNewProfile('teacher');
+const openNewStudent = () => openNewProfile('student');
+
+/* 新建态的档案抽屉：表单跟「编辑」一模一样，只是标题和按钮文案不同 */
+function renderNewProfileDrawer(){
+  const isT = dState.kind === 'teacher';
+  const body = (dState.err
+      ? '<div class="a-warn" style="margin:0 0 12px"><b>'+esc(dState.err)+' 不能空</b> —— 先填上再保存。</div>'
+      : '')+
+    (isT ? tEdit(dState.draft) : sEdit(dState.draft));
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">新增'+(isT ? '教师' : '学生')+'</div>'+
+      '<div class="s">'+(isT ? '教师档案' : '学生档案')+' · 新建 · 保存后进列表</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+body+'</div>'+
+    '<div class="d-f">'+
+      '<button class="btn pri" data-d-save>保存</button><button class="btn" data-d-cancel>取消</button>'+
+      '<div class="sp"></div>'+
+      '<span class="d-memo">演示数据 · 改动只在内存<br>刷新页面即还原，不写入任何存储</span>'+
+    '</div>';
+}
+
+function renderDrawer(){
+  if (!dState) return;
+  /* 新建态没有对应记录，先拦掉（否则下面 getDRec 拿不到会 closeDrawer） */
+  if (dState.isNew){
+    if (dState.kind === 'app') renderNewAppDrawer();
+    else                       renderNewProfileDrawer();
+    return;
+  }
+  const o = getDRec();
+  if (!o){ closeDrawer(); return; }
+  if (dState.kind === 'app'){ renderAppDrawer(o); return; }
+  const isT = dState.kind === 'teacher';
+  const edit = dState.edit;
+  const m = edit ? dState.draft : o;
+  const body = isT ? (edit ? tEdit(m) : tView(o)) : (edit ? sEdit(m) : sView(o));
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">'+esc(o.name)+'</div>'+
+      '<div class="s">'+(isT ? '教师' : '学生')+' · '+esc(String(o.id).toUpperCase())+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+body+'</div>'+
+    '<div class="d-f">'+
+      (edit
+        ? '<button class="btn pri" data-d-save>保存</button><button class="btn" data-d-cancel>取消</button>'
+        : '<button class="btn pri" data-d-edit>编辑</button>')+
+      '<div class="sp"></div>'+
+      '<span class="d-memo">演示数据 · 改动只在内存<br>刷新页面即还原，不写入任何存储</span>'+
+    '</div>';
+}
+
+/* ==========================================================================
+   开班申请 · 审批闭环（7 步）
+   第 1 步 校验主体是「操作员」—— 只看时间 / 课室碰撞 + 内容有没有问题。
+           人数门槛（8–12）只作参考显示，不拦通过。
+   第 2 步 找已有班：级别 + 时段 + 形态 相同、阶段相同、并入后不超容量 → 归入该班
+   第 3 步 没命中 → 建班表单（预填可改），预填值随来源走（自家 / 外包不一样）
+   第 4 步 已成立的班只审时间，其余字段不反复审
+   第 5 步 确认后一次性：置「已通过」+ 登记教师可授时段 + 建班／归入已有班
+   第 6 步 驳回必须填原因（时间碰撞 / 线下课室被占）+ 反建议时段
+   第 7 步 列表筛选条：全部 / 待审批 / 已通过 / 已驳回 + 按具体驳回原因
+   ========================================================================== */
+
+/* 演示用水果班名 / 代号 —— 跟 c1–c5 同一套命名，新开班顺着往下取 */
+const FRUIT = [['苹果','AP'],['凤梨','DN'],['芒果','MG'],['荔枝','LZ'],['龙眼','LY'],
+               ['榴莲','LL'],['山竹','SZ'],['红毛丹','HMD'],['椰子','YZ'],['火龙果','HLG']];
+
+/* 申请来源 → 归属：own=自家外境 → 自有；out=外包外境 → 外包；
+   edit=操作员自己编辑的排班 → 按这位教师的档案 */
+function appOwn(a){
+  if (a.src === 'own') return 'own';
+  if (a.src === 'out') return 'out';
+  return T(a.teacher).src || 'own';
+}
+/* 进度文案：第一阶段 · 第 3 课（阶段由课次反查，跟 STAGE() 同一套分档） */
+const progOf   = n => n > 0 ? stageName(n) + ' · 第 ' + n + ' 课' : '尚未开课';
+const progText = a => progOf(a.lesson);
+
+/* 建班表单里改了教室 → 碰撞检查要用新教室重算，不能还用申请里的旧教室 */
+function roomOf(o){
+  return (dState && dState.form && dState.form.room != null) ? dState.form.room : (o.room || '');
+}
+
+/* ---- 系统查碰撞（第 4 步）----
+   返回 null = 没碰撞；否则 {kind:'clash'|'room', hit, what} */
+function clashOf(a){
+  /* ① 教师时间碰撞：同一位教师在同一时段已经有班 */
+  const tc = DB.classes.find(c => c.slot === a.slot && c.teacher === a.teacher);
+  if (tc) return {kind:'clash', hit:tc, what:'class'};
+  /* ② 已经有通过的申请占了同一位教师的同一时段 */
+  const ta = DB.apps.find(x => x !== a && x.state === '已通过' && x.slot === a.slot && x.teacher === a.teacher);
+  if (ta) return {kind:'clash', hit:null, what:'app', app:ta};
+  /* ③ 线下教室碰撞：线上课不占教室，只有线下才查（课室总数待 Tony 提供） */
+  const room = roomOf(a);
+  if (a.mode === 'offline' && room){
+    const rc = DB.classes.find(c => c.mode === 'offline' && c.slot === a.slot && c.room && c.room === room);
+    if (rc) return {kind:'room', hit:rc, what:'class'};
+  }
+  return null;
+}
+
+/* ---- 找已有班（第 2 步）----
+   并的是「课」不是「人」：这个时段本来就有一门同样的课，新学生放进它的空位 */
+function findMatch(a){
+  return DB.classes.find(c =>
+    c.lv === a.lv && c.slot === a.slot && c.mode === a.mode &&
+    stageOf(classLesson(c)) === stageOf(a.lesson) &&
+    c.n + a.n <= c.cap
+  ) || null;
+}
+
+/* ---- 建班 / 驳回的表单草稿 ---- */
+function appFormOf(o){
+  const used = DB.classes.map(c => c.name);
+  const f = FRUIT.find(x => used.indexOf(x[0] + '班') < 0) || ['新班','NW'];
+  const n = DB.classes.length + 1;
+  const cl = clashOf(o);
+  return {
+    /* 第 3 步：预填跟来源走 —— 自家教师 / 外包教师默认值不一样 */
+    name: f[0] + '班',
+    code: f[1] + '-' + String(n).padStart(2,'0'),
+    cap: DB.set.capMax,
+    room: o.room || '',
+    own: appOwn(o),
+    /* 第 6 步：驳回原因。系统查到碰撞就预填那一项，没查到就必须自己选（驳回要给理由） */
+    reason: cl ? cl.kind : '',
+    advice: '',
+    note: '',
+  };
+}
+/* 把抽屉里 data-a-inp 的值读回草稿（用户可能改过预填值） */
+function readAppForm(){
+  if (!dState || !dState.form) return;
+  $('#drawer').querySelectorAll('[data-a-inp]').forEach(el => {
+    dState.form[el.dataset.aInp] = el.value;
+  });
+  /* 学生名单是一组同名字段（data-a-roster + data-i），按行号收回来。
+     ⚠ 不能塞进上面的 data-a-inp 里 —— 那会在每次输入 change 时触发重画，焦点会丢 */
+  if (dState.form.roster){
+    const rows = {};
+    $('#drawer').querySelectorAll('[data-a-roster]').forEach(el => {
+      const i = Number(el.dataset.i) || 0;
+      const r = rows[i] || (rows[i] = { name:'', phone:'' });
+      r[el.dataset.aRoster] = el.value;
+    });
+    const keys = Object.keys(rows).map(Number).sort((a, b) => a - b);
+    if (keys.length) dState.form.roster = keys.map(k => rows[k]);
+  }
+}
+
+/* ---- 抽屉内容 ---- */
+function aSec(title, body){ return '<div class="a-sec"><h4>'+title+'</h4>'+body+'</div>'; }
+
+function aFacts(o){
+  const t = T(o.teacher), sl = S(o.slot);
+  return '<dl class="kv">'+
+    kv('来源', '<span class="tg off">'+esc(srcText2(o.src))+'</span>')+
+    kv('提交时间', '<span class="mono">'+esc(o.at)+'</span>')+
+    kv('教师', esc(t.name)+' '+ownTag(appOwn(o)))+
+    kv('课程进度', '<span class="tg off">'+esc(progText(o))+'</span> <span class="tg off">'+esc(o.lv)+'</span>')+
+    kv('形态', modeTag(o.mode))+
+    kv('时段', esc(sl.name)+' <span class="lbl">'+esc(sl.time)+' · '+esc(sl.days)+'</span>')+
+    kv('教室', o.mode==='offline'
+        ? (o.room ? esc(o.room) : '<span class="tg bad">未填</span>')
+        : '<span class="lbl">线上课 · 不占教室</span>')+
+    kv('学生数', (o.roster && o.roster.length)
+        ? '<span class="mono">'+o.roster.length+'</span> <span class="lbl">按名单 · 申请时填 '+o.n+'</span>'
+        : '<span class="mono">'+o.n+'</span> <span class="lbl">参考 '+DB.set.minOpen+'–'+DB.set.capMax+' 人</span>')+
+    kv('学生名单', (o.roster && o.roster.length)
+        ? '<span class="lbl">共 '+o.roster.length+' 位 · 通过后一起建学生档案并编入这个班</span><br>'+
+          o.roster.map((r,i) => '<span class="mono">'+String(i+1).padStart(2,'0')+'</span> '+esc(r.name)+
+            (r.phone ? ' <span class="lbl">'+esc(r.phone)+'</span>' : '')).join('<br>')
+        : '<span class="lbl">没登记名单 · 只按人数建班</span>')+
+  '</dl>';
+}
+function aCheck(o){
+  const cl = clashOf(o);
+  if (cl && cl.kind === 'clash'){
+    return '<div class="a-clash"><b>⛔ 时间碰撞 · 不能通过</b><br>'+
+      esc(T(o.teacher).name)+' 在 <b>'+esc(S(o.slot).name)+' '+esc(S(o.slot).time)+'</b> 已经有课'+
+      (cl.hit ? '（'+esc(cl.hit.name)+' '+esc(cl.hit.code)+'）' : '（另一条已通过的申请）')+
+      '。请驳回，并给对方一个空档时段的建议。</div>';
+  }
+  if (cl && cl.kind === 'room'){
+    return '<div class="a-clash"><b>⛔ 线下课室已被占用 · 不能通过</b><br>'+
+      '教室 <b>'+esc(roomOf(o))+'</b> 在 <b>'+esc(S(o.slot).name)+' '+esc(S(o.slot).time)+'</b> 已经被 '+
+      (cl.hit ? esc(cl.hit.name)+' '+esc(cl.hit.code) : '其他班')+' 占用。'+
+      '<span class="lbl">（线上课不占教室；课室总数待补）</span></div>';
+  }
+  let s = '<div class="a-ok"><b>✓ 系统检查通过</b> —— 教师时间没有碰撞'+
+    (o.mode==='offline'
+      ? '，教室 <b>'+esc(roomOf(o)||'—')+'</b> 在这个时段也空着。'
+      : '（线上课不占教室）。')+'</div>';
+  if (o.n < DB.set.minOpen)
+    s += '<div class="a-warn"><b>人数参考</b> —— 现在 '+o.n+' 人，低于开班门槛 '+DB.set.minOpen+
+         ' 人。<span class="lbl">（只提示，不拦通过）</span></div>';
+  if (o.n > DB.set.capMax)
+    s += '<div class="a-warn"><b>人数参考</b> —— 现在 '+o.n+' 人，超过单班上限 '+DB.set.capMax+
+         ' 人。<span class="lbl">（只提示，不拦通过）</span></div>';
+  return s;
+}
+function aMerge(o, mt){
+  const t = T(mt.teacher);
+  return aSec('落点 · 并入已有班',
+    '<div class="a-ok"><b>命中 '+esc(mt.name)+' '+esc(mt.code)+'</b><br>'+
+    esc(mt.lv)+' · '+MODE[mt.mode]+' · '+esc(S(mt.slot).name)+' '+esc(S(mt.slot).time)+'<br>'+
+    '该班进度 '+esc(progOf(classLesson(mt)))+' · 授课教师 '+esc(t.name)+'<br>'+
+    '人数 <b>'+mt.n+' / '+mt.cap+'</b> → 并入后 <b>'+(mt.n+o.n)+' / '+mt.cap+'</b>'+
+    '<span class="lbl">（不新建班）</span></div>'+
+    '<div class="note" style="margin:10px 0 0;font-size:11.5px">并的是<b>课</b>，不是人 —— '+
+    '这个时段本来就有一门同样的课，把新学生放进它的空位，不用再开一个新班。</div>');
+}
+function aNewForm(o){
+  const f = dState.form, sl = S(o.slot);
+  return aSec('落点 · 新建班（预填，可改）',
+    '<div class="g2">'+
+      fld('班名', inp('name', f.name, 'text', 'data-a-inp'))+
+      fld('代号', inp('code', f.code, 'text', 'data-a-inp'))+
+    '</div>'+
+    '<div class="g2">'+
+      fld('级别', '<div class="ro">'+esc(o.lv)+'</div>')+
+      fld('形态', '<div class="ro">'+MODE[o.mode]+'</div>')+
+    '</div>'+
+    fld('时段', '<div class="ro">'+esc(sl.name)+' '+esc(sl.time)+' · '+esc(sl.days)+'</div>')+
+    '<div class="g2">'+
+      fld('容量', inp('cap', f.cap, 'number', 'data-a-inp'))+
+      fld('教室名称', inp('room', f.room, 'text', 'data-a-inp'))+
+    '</div>'+
+    fld('归属教师（自有 / 外包）', sel('own', f.own, [['own','自有'],['out','外包']], 'data-a-inp'))+
+    fld('授课教师', '<div class="ro">'+esc(T(o.teacher).name)+' · '+esc(String(o.teacher).toUpperCase())+'</div>')+
+    '<div class="note" style="margin:0;font-size:11.5px">归属预填跟来源走：<b>自家外境教师</b> → 自有；'+
+      '<b>外包外境教师</b> → 外包。级别 / 形态 / 时段来自申请本身，要改就先驳回让对方重交。'+
+      '线下课才需要填教室名称。</div>');
+}
+function aRejectForm(o){
+  const f = dState.form;
+  const cl = clashOf(o);
+  /* 系统没查到碰撞 → 不给预填，逼操作员自己选一个理由 */
+  const reasons = cl ? REASONS : [['','请选择原因']].concat(REASONS);
+  const need = !f.reason;
+  return aSec('驳回（必须填原因）',
+    fld('原因', sel('reason', f.reason, reasons, 'data-a-inp'))+
+    fld('反建议时段', sel('advice', f.advice,
+      [['','（不给建议）']].concat(DB.slots.map(s => [s.id, s.name+' '+s.time])), 'data-a-inp'))+
+    fld('说明', area('note', f.note, 'data-a-inp'))+
+    (need ? '<div class="a-warn" style="margin-top:0"><b>原因必须选</b> —— 驳回要对方知道到底卡在哪。</div>' : '')+
+    '<div class="note amber" style="margin:10px 0 0;font-size:11.5px">反建议 = 操作员挑一个<b>有空档</b>的时段给对方，'+
+    '让对方再确认能不能接受。不给建议也可以，但原因必须选。</div>');
+}
+function aResult(o){
+  if (o.state === '已通过'){
+    const c = o.link ? C(o.link) : null;
+    return aSec('结果',
+      '<div class="a-ok"><b>✓ 已通过</b> · '+(o.linkMode === 'merge' ? '并入已有班' : '新建班')+' '+
+      (c && c.name ? esc(c.name)+' '+esc(c.code) : '')+'</div>'+
+      '<div class="note" style="margin:10px 0 0;font-size:11.5px">通过时同时做了三件事：'+
+      '① 申请置「已通过」　② 把 '+esc(S(o.slot).name)+' 登记成 '+esc(T(o.teacher).name)+
+      ' 的可授时段　③ '+(o.linkMode === 'merge' ? '归入已有班' : '建了一个新班')+'。</div>');
+  }
+  return aSec('结果',
+    '<div class="a-clash"><b>已驳回</b> · 原因：'+esc(reasonText(o.reason))+
+    (o.advice ? '<br>反建议时段：<b>'+esc(S(o.advice).name)+' '+esc(S(o.advice).time)+'</b>' : '')+
+    (o.note ? '<br>说明：'+esc(o.note) : '')+'</div>');
+}
+
+/* ================= 操作员自己开班（来源 = 操作员编辑） =================
+   Tony 2026-10-03 定的入口：「排课」页头的「＋ 开班」。
+   操作员自己排的班也走同一套审批（第 1 步校验 / 碰撞检查一样跑），
+   所以这里做的是「新建一条 src='edit' 的申请」，不是直接建班。 */
+const stamp = () => {
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+};
+function newAppForm(){
+  return {
+    teacher: (DB.teachers[0]||{}).id || '',
+    lv: 'HSK1',
+    slot: (DB.slots[0]||{}).id || '',
+    mode: 'online',
+    room: '',
+    n: DB.set.minOpen,
+    /* 学生名单：开班时就把人登记下来，这样「每位学生跟哪位教师」一目了然。
+       审批通过建班时，填了姓名的会一起建进学生档案并编入这个班。 */
+    roster: [{ name: '', phone: '' }],
+  };
+}
+function openNewApp(){
+  dState = {kind:'app', id:'__new__', edit:false, draft:null, mode:'view', form:newAppForm(), isNew:true};
+  renderDrawer();
+  $('#dScrim').classList.add('on');
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden','false');
+  const x = $('#drawer .x'); if (x) x.focus();
+}
+function renderNewAppDrawer(){
+  const f = dState.form, off = f.mode === 'offline';
+  const tOpts = DB.teachers.map(t => [t.id, t.name+'（'+(t.src==='own'?'自有':'外包')+'）']);
+  const sOpts = DB.slots.map(s => [s.id, s.name+' '+s.time]);
+  /* 学生名单至少留一行空行，免得删光了没法再加 */
+  const roster = (f.roster && f.roster.length) ? f.roster : [{name:'',phone:''}];
+  const named = roster.filter(s => String(s.name||'').trim()).length;
+  const stuRows = roster.map((s,i) =>
+    '<div class="stu-row">'+
+      '<span class="n">'+(i+1)+'</span>'+
+      '<input class="inp" data-a-roster="name"  data-i="'+i+'" value="'+esc(s.name)+'"  placeholder="学生姓名">'+
+      '<input class="inp" data-a-roster="phone" data-i="'+i+'" value="'+esc(s.phone)+'" placeholder="电话 / Zalo">'+
+      '<button type="button" class="x2" data-act="delstu" data-i="'+i+'" title="删掉这一位" aria-label="删掉这一位">✕</button>'+
+    '</div>').join('');
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">新建开班申请</div>'+
+      '<div class="s">操作员自己排的班 · 提交后进「开班申请」等审批</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+
+      aSec('申请内容',
+        fld('教师', sel('teacher', f.teacher, tOpts, 'data-a-inp'))+
+        fld('级别', sel('lv', f.lv, [['HSK1','HSK1'],['HSK2','HSK2'],['HSK3','HSK3']], 'data-a-inp'))+
+        fld('时段', sel('slot', f.slot, sOpts, 'data-a-inp'))+
+        fld('形态', sel('mode', f.mode, [['online','线上'],['offline','线下']], 'data-a-inp'))+
+        (off ? fld('教室', inp('room', f.room, 'text', 'data-a-inp')) : '')+
+        fld('学生人数', inp('n', f.n, 'number', 'data-a-inp'))+
+        '<div class="note" style="margin:10px 0 0;font-size:11.5px">'+
+          '进度默认从 <b>第一阶段 · 第 1 课</b> 开始。提交后系统照样帮你查碰撞、'+
+          '找有没有能并进去的班。</div>')+
+      aSec('学生名单（姓名 + 电话）',
+        stuRows +
+        '<button type="button" class="btn sm" data-act="addstu">＋ 再加一位学生</button>'+
+        '<div class="note" style="margin:10px 0 0;font-size:11.5px">'+
+          '已登记 <b>'+named+'</b> 位（申请人数 '+esc(f.n)+' 位）。'+
+          (named
+            ? '审批通过建班时，这 '+named+' 位会一起建进<b>学生档案</b>并编入这个班 —— 归属教师跟着班走。'
+            : '没填姓名的，通过后只按「申请人数」建班，不建学生档案。')+
+        '</div>')+
+    '</div>'+
+    '<div class="d-f">'+
+      '<button class="btn pri" data-a-do="create">提交申请</button>'+
+      '<button class="btn" data-d-close>取消</button>'+
+      '<div class="sp"></div><div class="d-memo">只改内存演示数据 · 刷新即还原</div>'+
+    '</div>';
+}
+function createApp(){
+  readAppForm();
+  const f = dState.form;
+  const room = String(f.room||'').trim();
+  if (!f.teacher || !f.lv || !f.slot || !f.mode) return;
+  if (f.mode === 'offline' && !room) return;      /* 线下不填教室，碰撞就没法判 */
+  const nums = DB.apps.map(a => parseInt(String(a.id).replace(/\D/g,''), 10) || 0);
+  const id = 'a' + (Math.max(0, ...nums) + 1);
+  /* 学生名单：只收填了姓名的行 */
+  const roster = (f.roster || [])
+    .map(s => ({ name: String(s.name||'').trim(), phone: String(s.phone||'').trim() }))
+    .filter(s => s.name);
+  DB.apps.unshift({
+    id: id, src: 'edit', teacher: f.teacher, lv: f.lv,
+    stage: stageOf(1), lesson: 1,
+    mode: f.mode, slot: f.slot,
+    room: f.mode === 'offline' ? room : '',
+    n: Math.max(0, parseInt(f.n, 10) || 0),
+    roster: roster,
+    at: stamp(), state: '待审批',
+  });
+  closeDrawer();
+  /* hash 没变时 hashchange 不触发，得手动 render() */
+  if (location.hash === '#apply') render(); else location.hash = '#apply';
+}
+
+/* 把申请里的学生名单落成学生档案 + 编入这个班。
+   这样「每位学生跟哪位教师」在档案里就有据可查（归属教师 = 班的教师）。
+   ⚠ 班人数由调用方（approveApp 的 addN）负责加，这里不要再 c.n++，否则会重复计数。 */
+function addStudentsFromRoster(o, classId){
+  const roster = (o.roster || []).filter(r => r && String(r.name||'').trim());
+  if (!roster.length) return 0;
+  const nums = DB.students.map(s => parseInt(String(s.id).replace(/\D/g,''), 10) || 0);
+  let seq = Math.max(0, ...nums);
+  roster.forEach(r => {
+    seq++;
+    DB.students.push({
+      id: 'st' + seq,
+      name: String(r.name).trim(),
+      lv: o.lv, own: 'own', cls: classId,
+      /* 今天才编进来的 → 入班日 = 今天。所以他的"应出勤"从 0 开始，
+         不能拿这个班以前上过的课来算他的出勤 */
+      joinedAt: DB.todayDate, intent: '', contact: '本人',
+      exam: {}, phone: String(r.phone||'').trim(),
+      job: '', grade: '', goal: 'both', source: 'teacher', slots: [o.slot],
+    });
+  });
+  return roster.length;
+}
+
+/* ================= 自动编班（候选池 → 已有班） =================
+   已定规则：只有「意向班级 + 级别 + 可上课时段」都对得上才编；对不上不编，并标原因。 */
+let autoResult = null;
+function autoAssign(){
+  const pool = DB.students.filter(s => !s.cls && s.intent);
+  const done = [], skip = [];
+  pool.forEach(s => {
+    const c = DB.classes.find(x => x.code === s.intent);
+    if (!c)                                   { skip.push(s.name+'（找不到 '+s.intent+'）'); return; }
+    if (c.lv !== s.lv)                        { skip.push(s.name+'（级别不符）'); return; }
+    if (c.n >= c.cap)                         { skip.push(s.name+'（'+c.name+' 已满 '+c.n+'/'+c.cap+'）'); return; }
+    if ((s.slots||[]).length && s.slots.indexOf(c.slot) < 0)
+                                              { skip.push(s.name+'（时段对不上）'); return; }
+    s.cls = c.id; c.n++;
+    done.push(s.name+' → '+c.name);
+  });
+  autoResult = { done: done, skip: skip, at: stamp() };
+  render();
+}
+function autoBanner(){
+  if (!autoResult) return '';
+  const d = autoResult.done, s = autoResult.skip;
+  return '<div class="note'+(d.length ? '' : ' amber')+'" style="margin:0 0 14px">'+
+    '<b>自动编班结果</b>（'+esc(autoResult.at)+'）：编入 '+d.length+' 人'+
+    (d.length ? ' —— '+d.map(esc).join('、') : '')+
+    (s.length ? '<br>跳过 '+s.length+' 人：'+s.map(esc).join('、') : '')+
+    '</div>';
+}
+
+function renderAppDrawer(o){
+  const t = T(o.teacher);
+  const closed = o.state !== '待审批';
+  const rej = dState.mode === 'reject';
+  let body = '', cl = null, mt = null;
+
+  if (closed){
+    body = aSec('申请内容', aFacts(o)) + aResult(o);
+  } else if (rej){
+    body = aSec('申请内容', aFacts(o)) + aRejectForm(o);
+  } else {
+    cl = clashOf(o);
+    mt = cl ? null : findMatch(o);
+    body = aSec('申请内容', aFacts(o)) + aSec('系统检查', aCheck(o));
+    if (!cl) body += mt ? aMerge(o, mt) : aNewForm(o);
+  }
+
+  let foot;
+  if (closed){
+    foot = '<button class="btn" data-d-close>关闭</button>';
+  } else if (rej){
+    foot = '<button class="btn pri" data-a-do="reject"'+(dState.form.reason ? '' : ' disabled')+
+           '>确认驳回</button>'+
+           '<button class="btn" data-a-cancel>返回</button>';
+  } else if (cl){
+    foot = '<button class="btn" disabled>有碰撞 · 不能通过</button>'+
+           '<button class="btn pri" data-a-rej>驳回并给建议</button>';
+  } else {
+    foot = '<button class="btn pri" data-a-do="approve">'+
+             (mt ? '并入 '+esc(mt.name)+' · 批准' : '按以上建班 · 批准')+'</button>'+
+           '<button class="btn" data-a-rej>驳回</button>';
+  }
+
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">'+esc(t.name)+'</div>'+
+      '<div class="s">开班申请 · '+esc(String(o.id).toUpperCase())+' · '+esc(srcText2(o.src))+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+body+'</div>'+
+    '<div class="d-f">'+foot+'<div class="sp"></div>'+
+      '<span class="d-memo">演示数据 · 改动只在内存<br>刷新页面即还原，不写入任何存储</span></div>';
+}
+
+/* ---- 通过（第 5 步：一次性完成三件事）---- */
+function approveApp(){
+  const o = getDRec();
+  if (!o || o.state !== '待审批') return;
+  if (clashOf(o)) return;          /* 有碰撞，按钮本来就是禁用的，这里双保险 */
+  readAppForm();
+  const f = dState.form;
+  const mt = findMatch(o);
+  const t = T(o.teacher);
+  /* 有人名单就按名单算人数（只数填了姓名的行），否则按申请里的人数 */
+  const rosterN = (o.roster || []).filter(r => r && String(r.name||'').trim()).length;
+  const addN = rosterN || o.n;
+
+  if (mt){
+    mt.n = mt.n + addN;
+    o.link = mt.id; o.linkMode = 'merge';
+  } else {
+    const nc = {
+      id: 'c' + (DB.classes.length + 1) + '-' + Date.now().toString(36),
+      code: f.code || ('NW-' + String(DB.classes.length+1).padStart(2,'0')),
+      name: f.name || '新班',
+      lv: o.lv, mode: o.mode, slot: o.slot,
+      teacher: o.teacher,
+      /* ⚠️ 不再写死 lesson。新建的班今天才开，事实表里还没有它的课次 → 进度从 0 起算。
+         申请里的「第 3 课」说的是"这批学生目前学到第 3 课"，不等于"这个班已经上过 3 节"。 */
+      startedAt: DB.todayDate, endedAt: null, plannedLessons: 42,
+      cap: Number(f.cap) || DB.set.capMax,
+      n: addN,
+      room: o.mode === 'offline' ? (f.room || '') : '',
+      own: f.own,
+    };
+    DB.classes.push(nc);
+    o.link = nc.id; o.linkMode = 'new';
+  }
+  o.state = '已通过';
+  /* ② 把申请里的时段登记成这位教师的可授时段 */
+  if (Array.isArray(t.slots) && t.slots.indexOf(o.slot) < 0) t.slots.push(o.slot);
+  /* ③ 名单里的学生 → 学生档案 + 编入这个班（人数已在 addN 里算过，这里不再加） */
+  addStudentsFromRoster(o, o.link);
+
+  renderAppDrawer(o);
+  refreshView();     /* 列表 + 筛选计数 */
+  renderNav();       /* 侧栏「待审批」计数 */
+}
+
+/* ---- 驳回（第 6 步）---- */
+function rejectApp(){
+  const o = getDRec();
+  if (!o || o.state !== '待审批') return;
+  readAppForm();
+  const f = dState.form;
+  if (!f.reason) return;          /* 没选原因就不给驳回，按钮本来就是禁用的，这里双保险 */
+  o.state  = '已驳回';
+  o.reason = f.reason;
+  o.advice = f.advice || '';
+  o.note   = f.note   || '';
+  dState.mode = 'view';
+  renderAppDrawer(o);
+  refreshView();
+  renderNav();
+}
+
+/* ---------- 路由 ---------- */
+const R = {overview:vOverview, teachers:vTeachers, students:vStudents, board:vBoard, lessons:vLessons, apply:vApply, data:vData, settle:vSettle, members:vMembers};
+
+function renderNav(){
+  const cur = route();
+  /* 三个分组：总览（打开系统的第一屏，单独一组）／运营（日常干活的地方）／待审批（别人交上来我批）
+     ⚠ 开班申请归到「待审批」，所以运营那组要把它排除 */
+  const item = v => {
+    let cnt = '';
+    if (v.id==='teachers') cnt = DB.teachers.length;
+    if (v.id==='students') cnt = DB.students.length;
+    if (v.id==='board')    cnt = DB.classes.length;
+    /* 课次记录挂「本月课次」—— 侧栏一眼就知道这个月上了多少节 */
+    if (v.id==='lessons')  cnt = monthCounted(monthOf(DB.todayDate)).length;
+    return '<a data-v="'+v.id+'" class="'+(cur===v.id?'on':'')+'">'+ic(v.icon)+'<span>'+v.name+'</span>'+
+      (cnt!==''?'<span class="cnt">'+cnt+'</span>':'')+'</a>';
+  };
+  const ov   = VIEWS.filter(v => v.id === 'overview');
+  const main = VIEWS.filter(v => v.id !== 'overview' && v.id !== 'apply');
+  const pend = DB.apps.filter(a => a.state === '待审批').length;
+  $('#nav').innerHTML =
+    (ov.length ? '<div class="grp">总览</div>' + ov.map(item).join('') : '') +
+    '<div class="grp">运营</div>' + main.map(item).join('') +
+    '<div class="grp">待审批</div>' +
+    '<a data-v="apply" class="'+(cur==='apply'?'on':'')+'">'+ic('apply')+'<span>开班申请</span>'+
+      '<span class="cnt">'+pend+'</span></a>';
+}
+function route(){ return (location.hash||'#overview').slice(1); }
+function render(){
+  const id = route();
+  $('#view').innerHTML = (R[id]||vOverview)();
+  renderNav();
+  /* 兜底到总览：hash 写错（比如旧书签 #design）时视图渲染的是 vOverview，
+     面包屑也得跟着说「总览」，不能还挂着别的名字 */
+  const v = VIEWS.find(x=>x.id===id) || VIEWS[0];
+  $('#crumb').innerHTML = '主端<span class="sep">/</span><b>'+v.name+'</b>';
+  $('#side').classList.remove('open'); $('#scrim').classList.remove('on');
+  closeDrawer();   /* 导航 / 筛选 / 搜索离开当前视图时，顺手把档案抽屉收起来 */
+  window.scrollTo(0,0);
+}
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click', e => {
+  /* ---- 抽屉优先：抽屉内的按钮绝不能被下面的全局分支截获 ---- */
+  if (e.target.closest('#dScrim')){ closeDrawer(); return; }
+  if (e.target.closest('#drawer [data-d-close]')){ closeDrawer(); return; }
+  if (e.target.closest('#drawer [data-d-edit]')){ startEdit(); return; }
+  if (e.target.closest('#drawer [data-d-save]')){ saveEdit(); return; }
+  if (e.target.closest('#drawer [data-d-cancel]')){ cancelEdit(); return; }
+  const dp = e.target.closest('#drawer [data-d-pick]');
+  if (dp){ togglePick(dp); return; }
+  /* ---- 开班申请抽屉 ---- */
+  if (e.target.closest('#drawer [data-a-rej]')){
+    readAppForm(); dState.mode = 'reject'; renderAppDrawer(getDRec()); return;
+  }
+  if (e.target.closest('#drawer [data-a-cancel]')){
+    readAppForm(); dState.mode = 'view'; renderAppDrawer(getDRec()); return;
+  }
+  const ad = e.target.closest('#drawer [data-a-do]');
+  if (ad){
+    const k = ad.dataset.aDo;
+    if (k === 'approve')      approveApp();
+    else if (k === 'create')  createApp();     /* 新建开班申请（操作员自己排的班） */
+    else                      rejectApp();
+    return;
+  }
+  /* ---- 整行可点开档案 ----
+     preventDefault 是保险丝：行内若出现 <a href="#">，不拦会把 hash 变成 '#'，
+     route() 返回 '' → 回落到 vOverview()，页面会莫名跳回总览 */
+  const row = e.target.closest('[data-open]');
+  if (row){ e.preventDefault(); openDrawer(row.dataset.open); return; }
+  /* 排课页头的两个动作：＋ 开班（新建一条操作员申请）/ 自动编班（候选池 → 已有班）
+     ＋ 开班 那个抽屉里还有「加 / 删学生行」两个动作 */
+  const act = e.target.closest('[data-act]');
+  if (act){
+    const k = act.dataset.act;
+    if (k === 'new')       openNewApp();
+    else if (k === 'auto') autoAssign();
+    else if (k === 'newteacher') openNewTeacher();
+    else if (k === 'newstudent') openNewStudent();
+    else if (k === 'goclasses'){
+      /* 总览「差 N 人开班」那条：班级没有自己的抽屉，就跳到排课 › 班级 子页签去看它 */
+      if (bTab !== 'classes') bTab = 'classes';
+      if (location.hash === '#board') render(); else location.hash = '#board';
+    }
+    else if ((k === 'addstu' || k === 'delstu') && dState && dState.isNew){
+      readAppForm();                                   /* 先把已填的名单收回来，否则重画会丢 */
+      const i = Number(act.dataset.i) || 0;
+      if (k === 'addstu') dState.form.roster.push({ name:'', phone:'' });
+      else                dState.form.roster.splice(i, 1);
+      if (!dState.form.roster.length) dState.form.roster.push({ name:'', phone:'' });
+      renderNewAppDrawer();
+    }
+    return;
+  }
+  /* 只有侧栏的导航项用 data-v 跳转；
+     过滤器的 .seg 按钮也带 data-v，绝不能一起吞掉，所以限定在 #nav 内 */
+  const t = e.target.closest('#nav [data-v]');
+  if (t){
+    /* hash 没变时 hashchange 不会触发（比如重复点当前这一项），得手动 render() */
+    const h = '#' + t.dataset.v;
+    if (location.hash === h) render(); else location.hash = h;
+    return;
+  }
+  /* 课次记录页的月份条：选中月份存在 mSel 里（查询参数，不落库） */
+  const mb = e.target.closest('#mbar button[data-m]');
+  if (mb){ mSel = mb.dataset.m; render(); return; }
+  const bt = e.target.closest('#btabs button');
+  if (bt){ bTab = bt.dataset.t; render(); return; }
+  const dt = e.target.closest('#dtabs button');
+  if (dt){ dTab = dt.dataset.t; render(); return; }
+  const sg = e.target.closest('.seg button');
+  if (sg){
+    const f = sg.parentElement.dataset.f;
+    if (f==='src') fTeacher.src = sg.dataset.v;
+    if (f==='own') fStu.own = sg.dataset.v;
+    if (f==='where') fStu.where = sg.dataset.v;
+    /* 开班申请列表：切状态时把「驳回原因」筛回全部，否则会看到空列表 */
+    if (f==='app'){ fApp.st = sg.dataset.v; fApp.reason = 'all'; }
+    if (f==='appReason') fApp.reason = sg.dataset.v;
+    render(); return;
+  }
+});
+document.addEventListener('change', e => {
+  const s = e.target.closest('select[data-f]');
+  if (s){ if (s.dataset.f==='lv'){ fTeacher.lv = s.value; fStu.lv = s.value; } render(); return; }
+  /* 开班申请抽屉里的下拉 / 输入：
+     建班态改了教室 → 碰撞检查要重算
+     驳回态选了原因 → 「确认驳回」按钮的禁用状态要跟着变 */
+  const a = e.target.closest('#drawer [data-a-inp]');
+  if (a && dState && dState.kind === 'app'){
+    const f = a.dataset.aInp;
+    if (dState.isNew){
+      /* 新建态：切「线上 / 线下」要重画（教室字段跟着出现或消失） */
+      if (f === 'mode'){ readAppForm(); renderNewAppDrawer(); }
+    } else if ((dState.mode !== 'reject' && f === 'room') || (dState.mode === 'reject' && f === 'reason')){
+      readAppForm();
+      renderAppDrawer(getDRec());
+    }
+  }
+});
+$('#burger').addEventListener('click', ()=>{ $('#side').classList.toggle('open'); $('#scrim').classList.toggle('on'); });
+$('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
+/* 顶栏搜索：一个框管三处（教师 / 学生 / 排课 › 班级），跟 placeholder 的承诺对齐。
+   在排课页搜索时自动切到「班级」子页签 —— 否则用户搜班名却盯着矩阵，会以为框坏了 */
+function onSearch(v){
+  fQ = v;
+  const r = route();
+  if (r === 'board' && fQ && bTab !== 'classes') bTab = 'classes';
+  if (r === 'teachers' || r === 'students' || r === 'board') render();
+}
+$('#q').addEventListener('input', e => onSearch(e.target.value));
+document.addEventListener('keydown', e => { if (e.key==='Escape' && dState) closeDrawer(); });
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>
