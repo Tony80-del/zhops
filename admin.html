@@ -698,6 +698,7 @@ function seedDB(){
   now:'19:15',
   lessonMin:45,
   money:{ sessions:62, income:7440000, cost:4680000, today:186000 },
+  seals:[],
   };
 }
 
@@ -754,6 +755,7 @@ function normalizeDB(o){
   n.teachers = (Array.isArray(n.teachers) ? n.teachers : []).map(t => fill(blankTeacher(), t));
   n.students = (Array.isArray(n.students) ? n.students : []).map(s => fill(blankStudent(), s));
   n.members  = (Array.isArray(n.members)  ? n.members  : []).map(m => fill(blankMember(), m));
+  n.seals    = Array.isArray(n.seals) ? n.seals : [];
   return n;
 }
 
@@ -2010,7 +2012,7 @@ function vSettle(){
   const cost    = rows.reduce((s, r) => s + r.sub, 0);
   return `
   <div class="page-h"><div><h2>结算</h2><p class="desc">开班至今 · 截至 ${esc(DB.todayDate)}</p></div><div class="sp"></div>
-    <button class="btn">导出对账单</button><button class="btn pri">封存本月</button></div>
+    <button class="btn" data-act="exportstatement">导出对账单</button><button class="btn pri" data-act="sealmonth">封存本月</button></div>
   <div class="note amber"><b>只做了成本侧</b> —— 课次 / 人数 / 课酬都从课次事实表和学生表现算（口径：<b>开班至今，全部「已上」课次</b>）。
     <b>收入 / 利润还出不来</b>：学生档案里没有「学费」字段，收多少没地方记 —— 宁可留空，也不编数字。<br>
     另外两个已知缺口：① <b>单价没有快照</b>，改一次单价历史账会跟着变；② 按学员计费的教师，人数用的是<b>在读人数</b>，不是实到人数。</div>
@@ -2038,7 +2040,79 @@ function vSettle(){
       }).join('') : '<tr><td colspan="7" class="empty">还没有任何已上课次 —— 排课页「推进一课」之后这里才有账</td></tr>'}</tbody>
     </table></div></div>
     ${hidden ? '<div style="padding:9px 15px;font-size:11.5px;color:var(--ink3);border-top:1px solid var(--line)">另有 '+hidden+' 位教师名下没有已上课次，未列出 —— 表里只列有账的。</div>' : ''}
-  </div>`;
+  </div>
+  ${sealsCard()}`;
+}
+
+/* ---------- 结算：导出对账单 / 封存本月 ---------- */
+function csvCell(v){
+  const s = (v === null || v === undefined) ? '' : String(v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+/* 导出对账单：下载一份 CSV（含 4 张卡汇总 + 按教师明细），UTF-8 BOM 兼容 Excel。
+   ⚠️ 复用 exportData 的 Blob 下载 + 抽屉兜底思路：下载失败不能静默。 */
+function exportStatement(){
+  const rows    = settleRows();
+  const shown   = rows.filter(r => r.lessons > 0);
+  const doneAll = DB.lessons.filter(l => l.status === 'done').length;
+  const cost    = rows.reduce((s, r) => s + r.sub, 0);
+  const lines = [
+    ['MGD 结算对账单','','','','',''],
+    ['统计口径','开班至今 · 截至 ' + DB.todayDate,'','','',''],
+    ['已上课次', doneAll,'节','','',''],
+    ['课酬成本', cost,'VND · 应付教师','','',''],
+    ['收入','待定','缺「学费」字段','','',''],
+    ['利润','待定','缺「学费」字段','','',''],
+    ['','','','','',''],
+    ['教师','类型','已上课次','在读人数','单价VND','小计VND']
+  ];
+  shown.forEach(r => lines.push([r.t.name, r.t.src==='out'?'外包':'自有', r.lessons, r.heads, r.t.rate, r.sub]));
+  const body = lines.map(l => l.map(csvCell).join(',')).join('\r\n');
+  const txt  = '﻿' + body;
+  const name = 'MGD结算对账单_' + new Date().toISOString().slice(0,10) + '.csv';
+  try{
+    if (typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) throw new Error('no-blob');
+    const blob = new Blob([txt], { type:'text/csv;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('已导出 ' + name);
+  }catch(e){
+    openExportDrawer(txt, name);
+  }
+}
+/* 封存本月：把当前结算数字冻结成快照存进 DB.seals（落盘）。
+   ⚠️ 直接解决「单价没有快照」—— 封存后改单价 / 加课次都不会动到这一份。 */
+function sealSettle(){
+  const rows    = settleRows();
+  const shown   = rows.filter(r => r.lessons > 0);
+  if (!shown.length){ toast('还没有可封存的课次'); return; }
+  const doneAll = DB.lessons.filter(l => l.status === 'done').length;
+  const cost    = rows.reduce((s, r) => s + r.sub, 0);
+  if (!Array.isArray(DB.seals)) DB.seals = [];
+  DB.seals.push({
+    id: 'seal-' + Date.now(),
+    sealedAt: new Date().toISOString(),
+    period: DB.todayDate,
+    doneAll: doneAll,
+    cost: cost,
+    rows: shown.map(r => ({ name:r.t.name, src:r.t.src, lessons:r.lessons, heads:r.heads, rate:r.t.rate, sub:r.sub }))
+  });
+  save();
+  refreshView();
+  toast('已封存 ' + DB.todayDate + ' · 课酬成本 ' + fmtVnd(cost));
+}
+/* 已封存快照卡片：列出 DB.seals，显示冻结的结算 */
+function sealsCard(){
+  const seals = (DB.seals || []);
+  const body = seals.length
+    ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>统计截至</th><th>封存时间</th><th class="num">已上课次</th><th class="num">课酬成本 VND</th><th></th></tr></thead><tbody>'+
+      seals.slice().reverse().map(s => '<tr><td><b>'+esc(s.period)+'</b></td><td class="m">'+esc((s.sealedAt||'').slice(0,16).replace('T',' '))+'</td><td class="num">'+s.doneAll+'</td><td class="num"><b>'+Number(s.cost||0).toLocaleString('en-US')+'</b></td><td><span class="tg off">已冻结</span></td></tr>').join('')+
+      '</tbody></table></div>'
+    : '<div class="empty" style="padding:14px">还没有封存记录 —— 封存后这里显示<b>冻结</b>的结算，之后改单价 / 加课次都不会动到它（解决「单价没有快照」）。</div>';
+  return '<div class="card"><div class="card-h"><h3>已封存快照</h3><span class="sub">点「封存本月」冻结当前结算</span></div><div class="card-b tight">'+body+'</div></div>';
 }
 
 /* ---------- 视图：成员 ---------- */
@@ -3346,6 +3420,8 @@ document.addEventListener('click', e => {
     else if (k === 'newteacher') openNewTeacher();
     else if (k === 'newstudent') openNewStudent();
     else if (k === 'newmember')  openNewMember();
+    else if (k === 'exportstatement') exportStatement();
+    else if (k === 'sealmonth') sealSettle();
     else if (k === 'editmember'){ e.preventDefault(); openDrawer('member:'+act.dataset.i); }
     else if (k === 'delmember'){ e.preventDefault(); delMember(act.dataset.i); }
     /* 备份链路：教师页 / 学生页 / 数据页三处入口，走的是同一对函数 */
