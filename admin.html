@@ -551,36 +551,13 @@ function seedDB(){
   ],
   /* 教师档案：前 9 个字段给列表用；后 6 个（lang/exp/rateUnit/perfScore/perfNote/note）
      只给右侧抽屉的「个人档案」用，字段规格对齐老系统 schedule.html 的教师档案 11 项 */
-  teachers:[
-    {id:'t1', name:'王雅琴', tel:'0901 234 561', src:'own', levels:['HSK1','HSK2','HSK3'], slots:['s1','s3'], rate:180000, students:9, state:'正常',
-     lang:'中国 · 中文 · 越南语', exp:'HSK6 · 5 年教学', rateUnit:'student', perfScore:5, perfNote:'家长反馈很好，续报率高', note:'可带 HSK3 冲刺班'},
-    {id:'t2', name:'李文博', tel:'0907 552 118', src:'own', levels:['HSK1','HSK2'],        slots:['s1','s2','s4'], rate:170000, students:7, state:'正常',
-     lang:'中国 · 中文', exp:'HSK5 · 3 年教学', rateUnit:'session', perfScore:4, perfNote:'课堂纪律好，板书清晰', note:''},
-    {id:'t3', name:'张慧敏', tel:'0912 883 004', src:'out', levels:['HSK1'],               slots:['s2','s3'], rate:200000, students:5, state:'正常',
-     lang:'中国 · 中文 · 越南语', exp:'HSK6 · 2 年教学', rateUnit:'student', perfScore:4, perfNote:'越南语沟通顺畅，零基础带得好', note:'外包 · 按学员计费'},
-    {id:'t4', name:'陈国栋', tel:'0938 210 776', src:'out', levels:['HSK1','HSK2'],        slots:['s3','s4'], rate:210000, students:4, state:'正常',
-     lang:'越南 · 中文 · 越南语', exp:'HSK5 · 4 年教学', rateUnit:'session', perfScore:3, perfNote:'偶有迟到，已提醒', note:''},
-    {id:'t5', name:'刘思远', tel:'0963 447 902', src:'own', levels:['HSK2','HSK3'],        slots:['s1','s2'], rate:190000, students:3, state:'正常',
-     lang:'中国 · 中文', exp:'HSK6 · 6 年教学', rateUnit:'student', perfScore:5, perfNote:'HSK2 / HSK3 提分明显', note:'优先排周末'},
-    {id:'t6', name:'赵美玲', tel:'0977 665 331', src:'out', levels:['HSK1'],               slots:[],          rate:200000, students:0, state:'⚠ 未配可授时段',
-     lang:'中国 · 中文 · 越南语', exp:'HSK4 · 1 年教学', rateUnit:'session', perfScore:3, perfNote:'新教师，待观察', note:'还没配可授时段，暂时排不了课'},
-    {id:'t7', name:'周建华', tel:'0982 119 445', src:'own', levels:['HSK1'],               slots:['s2','s3'], rate:175000, students:2, state:'正常',
-     lang:'越南 · 中文 · 越南语', exp:'HSK5 · 3 年教学', rateUnit:'session', perfScore:4, perfNote:'课堂气氛活跃', note:''},
-    {id:'t8', name:'吴晓彤', tel:'0908 336 227', src:'out', levels:['HSK2'],               slots:['s4'],      rate:205000, students:0, state:'正常',
-     lang:'中国 · 中文', exp:'HSK6 · 4 年教学', rateUnit:'student', perfScore:4, perfNote:'只带 HSK2，口碑稳', note:'仅周末可排'},
-  ],
+  teachers:[],
   /* 班级：★ 加了 startedAt / endedAt / plannedLessons —— 这三个是「状态类」数据的
      时间锚点。没有它们，回看历史月就只能读"当前值"，会穿越。
      ⚠️ lesson（当前进度）不再是手写的字面量 —— 它由 lessons 事实表算出来（见 deriveAll）
      ⚠️ 2026-10-12：n（在读人数）也删掉了 —— 以前是手写的 8/6/5/4/3，
         跟学生表实际人数根本对不上（c1 写 8，实际只有 5 人）。现在由 classN() 现算。 */
-  classes:[
-    {id:'c1', code:'AP-01', name:'苹果班', lv:'HSK1', mode:'online',  slot:'s1', teacher:'t1', cap:10, room:'',   startedAt:'2026-09-28', endedAt:null, plannedLessons:42},
-    {id:'c2', code:'DN-02', name:'凤梨班', lv:'HSK1', mode:'offline', slot:'s3', teacher:'t4', cap:8,  room:'B2', startedAt:'2026-09-10', endedAt:null, plannedLessons:42},
-    {id:'c3', code:'MG-03', name:'芒果班', lv:'HSK1', mode:'online',  slot:'s2', teacher:'t7', cap:8,  room:'',   startedAt:'2026-08-28', endedAt:null, plannedLessons:42},
-    {id:'c4', code:'LZ-04', name:'荔枝班', lv:'HSK2', mode:'offline', slot:'s4', teacher:'t5', cap:6,  room:'B1', startedAt:'2026-05-09', endedAt:null, plannedLessons:42},
-    {id:'c5', code:'LY-05', name:'龙眼班', lv:'HSK1', mode:'online',  slot:'s3', teacher:'t3', cap:8,  room:'',   startedAt:'2026-10-03', endedAt:null, plannedLessons:42},
-  ],
+  classes:[],
   /* ================= 事实层：课次 =================
      ★★ 这是全系统唯一的「历史来源」。班级进度 / 学生出勤 / 今日课程 / 本月课次
         全部从它算出来，一律不许再手写 —— 手写的"当前值"就是假历史：
@@ -602,57 +579,11 @@ function seedDB(){
      ★ 只记「缺勤」—— 默认全勤。一个班 20 人 × 40 节 = 800 条出勤记录，
        但缺勤可能只有 20 条，反过来存省 97% 的数据，而且「谁没来」才是管理要看的。
      ⚠️ 不存「出勤数」：出勤 = 应出勤 − 缺勤，能算出来就不许存。 */
-  absences:[
-    {sid:'st3',  cid:'c1', no:2},
-    {sid:'st6',  cid:'c2', no:3},
-    {sid:'st6',  cid:'c2', no:6},
-    {sid:'st9',  cid:'c3', no:5},
-    {sid:'st11', cid:'c4', no:4},
-    {sid:'st11', cid:'c4', no:9},
-    {sid:'st11', cid:'c4', no:17},
-    {sid:'st12', cid:'c5', no:1},
-  ],
+  absences:[],
   /* 学生档案：前 10 个字段给列表用；后 6 个（phone/job/grade/goal/source/slots）
      只给右侧抽屉的「个人档案」用，字段规格对齐老系统 schedule.html 的学生档案 10 项。
      ⚠ 联系方式存 phone（电话 / Zalo），不要占用 contact —— contact 是「联系人 = 本人 / 家长」 */
-  students:[
-    {id:'st1',  name:'阮文安', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'},
-     phone:'0903 111 201', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
-    {id:'st2',  name:'阮氏平', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'家长', exam:{s1:'—'},
-     phone:'0903 111 202', job:'上班族', grade:'',     goal:'both', source:'referral', slots:['s1']},
-    {id:'st3',  name:'陈文强', lv:'HSK1', own:'out', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'},
-     phone:'0903 111 203', job:'经商',   grade:'',     goal:'all',  source:'self',     slots:['s1']},
-    {id:'st4',  name:'黎氏容', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'家长', exam:{s1:'—'},
-     phone:'0903 111 204', job:'学生',   grade:'',     goal:'both', source:'teacher',  slots:['s1']},
-    {id:'st5',  name:'范明德', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'},
-     phone:'0903 111 205', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
-    {id:'st6',  name:'黄氏花', lv:'HSK1', own:'out', cls:'c2', intent:'',      contact:'本人', exam:{s1:'—'},
-     phone:'0907 222 306', job:'上班族', grade:'',     goal:'both', source:'self',     slots:['s3']},
-    {id:'st7',  name:'武文凯', lv:'HSK1', own:'own', cls:'c2', intent:'',      contact:'家长', exam:{s1:'—'},
-     phone:'0907 222 307', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s3']},
-    {id:'st8',  name:'邓氏兰', lv:'HSK1', own:'own', cls:'c2', intent:'',      contact:'本人', exam:{s1:'—'},
-     phone:'0907 222 308', job:'经商',   grade:'',     goal:'all',  source:'teacher',  slots:['s3']},
-    {id:'st9',  name:'吴文南', lv:'HSK1', own:'out', cls:'c3', intent:'',      contact:'本人', exam:{s1:'78'},
-     phone:'0912 333 409', job:'上班族', grade:'HSK1', goal:'all',  source:'referral', slots:['s2']},
-    {id:'st10', name:'段氏芳', lv:'HSK1', own:'own', cls:'c3', intent:'',      contact:'家长', exam:{s1:'85'},
-     phone:'0912 333 410', job:'学生',   grade:'HSK1', goal:'both', source:'self',     slots:['s2']},
-    {id:'st11', name:'阮文宝', lv:'HSK2', own:'own', cls:'c4', intent:'',      contact:'本人', exam:{s1:'82',s2:'79'},
-     phone:'0938 444 511', job:'上班族', grade:'HSK1', goal:'all',  source:'referral', slots:['s4']},
-    {id:'st12', name:'黎文才', lv:'HSK1', own:'own', cls:'c5', intent:'',      contact:'本人', exam:{},
-     phone:'0938 444 512', job:'学生',   grade:'',     goal:'both', source:'self',     slots:['s3']},
-    {id:'st13', name:'阮氏金', lv:'HSK1', own:'own', cls:'',   intent:'AP-01', contact:'家长', exam:{},
-     phone:'0963 555 613', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
-    {id:'st14', name:'陈文达', lv:'HSK1', own:'out', cls:'',   intent:'AP-01', contact:'本人', exam:{},
-     phone:'0963 555 614', job:'上班族', grade:'',     goal:'both', source:'self',     slots:['s1']},
-    {id:'st15', name:'黄文勇', lv:'HSK1', own:'own', cls:'',   intent:'MG-03', contact:'家长', exam:{},
-     phone:'0963 555 615', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s2']},
-    {id:'st16', name:'范氏梅', lv:'HSK2', own:'own', cls:'',   intent:'LZ-04', contact:'本人', exam:{},
-     phone:'0963 555 616', job:'上班族', grade:'HSK1', goal:'all',  source:'teacher',  slots:['s4']},
-    {id:'st17', name:'武氏玉', lv:'HSK1', own:'out', cls:'',   intent:'',      contact:'家长', exam:{},
-     phone:'0963 555 617', job:'其他',   grade:'',     goal:'both', source:'referral', slots:[]},
-    {id:'st18', name:'吴文雄', lv:'HSK1', own:'own', cls:'',   intent:'',      contact:'本人', exam:{},
-     phone:'0963 555 618', job:'学生',   grade:'',     goal:'both', source:'self',     slots:[]},
-  ],
+  students:[],
   /* 开班申请。
      src      来源：'edit' 操作员自己编辑的排班 ／ 'own' 自家外境教师 ／ 'out' 外包外境教师
               ⚠ src='own'/'out' 时，必须和这位教师档案里的 src 一致（自家 / 外包是教师属性）；
@@ -667,16 +598,7 @@ function seedDB(){
        a3 命中已有班 → 并课（通过）      · a4 匹配不到 → 建班（通过）
      匹配规则 = 级别 + 时段 + 形态 相同、阶段相同、并入后不超容量（第 2 步）
      碰撞规则 = 教师时间碰撞 ／ 线下教室同室同时段（线上课不占教室）  */
-  apps:[
-    {id:'a1', src:'out',  teacher:'t4', lv:'HSK2', stage:1, lesson:3,  mode:'online',  slot:'s3', room:'',   n:7, at:'10-02 14:20', state:'待审批'},
-    {id:'a2', src:'own',  teacher:'t7', lv:'HSK2', stage:1, lesson:5,  mode:'offline', slot:'s3', room:'B2', n:5, at:'10-02 15:05', state:'待审批'},
-    {id:'a3', src:'own',  teacher:'t2', lv:'HSK1', stage:1, lesson:3,  mode:'online',  slot:'s1', room:'',   n:2, at:'10-02 16:30', state:'待审批'},
-    {id:'a4', src:'edit', teacher:'t2', lv:'HSK2', stage:1, lesson:3,  mode:'offline', slot:'s2', room:'B1', n:9, at:'10-02 17:10', state:'待审批'},
-    {id:'a5', src:'own',  teacher:'t7', lv:'HSK1', stage:1, lesson:12, mode:'online',  slot:'s2', room:'',   n:3, at:'09-28 09:40', state:'已通过', link:'c3', linkMode:'merge'},
-    {id:'a6', src:'edit', teacher:'t4', lv:'HSK1', stage:1, lesson:7,  mode:'offline', slot:'s3', room:'B2', n:2, at:'09-20 14:00', state:'已通过', link:'c2', linkMode:'merge'},
-    {id:'a7', src:'out',  teacher:'t3', lv:'HSK2', stage:1, lesson:1,  mode:'offline', slot:'s3', room:'B1', n:7, at:'09-27 11:20', state:'已驳回', reason:'clash', advice:'s2', note:'该教师这个时段已经有一节课'},
-    {id:'a8', src:'out',  teacher:'t6', lv:'HSK1', stage:1, lesson:9,  mode:'offline', slot:'s4', room:'B1', n:6, at:'09-30 16:45', state:'已驳回', reason:'room',  advice:'s1', note:'B1 教室该时段已被荔枝班占用'},
-  ],
+  apps:[],
   /* 成员：能登录主端的人。⚠️ 权限（role）目前是文字标签，暂不做登录拦截（Tony 2026-10-13 明确「无权限模型」）。
          lastLogin 是种子写死的演示值 —— 主端还没有登录系统，所以本质是静态。 */
   members:[
@@ -697,7 +619,7 @@ function seedDB(){
      —— 上云后只改这两行（或把 now 换成读系统时间）即可，isLive() 不用动 */
   now:'19:15',
   lessonMin:45,
-  money:{ sessions:62, income:7440000, cost:4680000, today:186000 },
+  money:{ sessions:0, income:0, cost:0, today:0 },
   seals:[],
   };
 }
