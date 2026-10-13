@@ -90,7 +90,7 @@ a{color:var(--brand);text-decoration:none;}
 .side-foot{padding:11px 18px;border-top:1px solid var(--navy-line);
   font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);line-height:1.7;}
 .side-foot b{color:#ffd166;font-weight:600;}
-/* 存盘状态：给 Tony 看得见的证据（已存盘 · 21:12 / 尚无改动 / 存盘失败） */
+/* 存盘状态：给 Tony 看得见的证据（已保存 · 21:12 / 还没保存过 / 保存失败） */
 .side-foot #stState{color:var(--navy-tx2);}
 .side-foot #stState.ok{color:#5eead4;}
 .side-foot #stState.bad{color:#fca5a5;}
@@ -476,8 +476,10 @@ tr[data-open]:hover td{background:var(--brand-soft);}
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
-      主端 · 重建第 3 / 7 步<br>
-      <span id="stState">本机存储 · 尚无改动</span><br>
+      <!-- ★ 2026-10-13 删（P-22）：原来这里有一行「主端 · 重建第 3 / 7 步」——
+           那是**建设进度标记**（第几步做完了），给开发时自己看的，不是给用户看的。
+           Tony 指令「(清)」→ 连根拔掉（不是隐藏）。对应的 VI 词条一并删除。 -->
+      <span id="stState">还没保存过</span><br>
       <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
     </div>
   </aside>
@@ -749,21 +751,24 @@ function resetDB(){
 }
 
 /* 侧栏页脚那个状态小字 —— 给 Tony 看得见的存盘证据。
-   null=还没改动 / true=刚存好 / false=存失败 / 'loaded'=这次打开是读的存盘
+   null=还没保存过 / true=刚保存好 / false=保存失败 / 'loaded'=这次打开是读的存盘
+   ★ 2026-10-13 改（P-21）：措辞从行话（「本机存储 · 已载入存盘」）换成白话（「已保存 · 13:46」）——
+   与教师端同一套措辞，两端别搞成两种说法。老师 / 操作员不需要知道 localStorage，
+   只需要知道「存没存上、存的是几点那一版」。
    ⚠️ 用 $('#stState') 而不是 document.getElementById —— 探针的 DOM 桩只实现 querySelector */
 function markSaved(ok){
   const el = $('#stState');
   if (!el) return;
-  if (ok === null){ el.textContent = '本机存储 · 尚无改动'; el.className = ''; return; }
-  if (!ok){ el.textContent = '存盘失败'; el.className = 'bad'; return; }
+  if (ok === null){ el.textContent = '还没保存过'; el.className = ''; return; }
+  if (!ok){ el.textContent = '保存失败'; el.className = 'bad'; return; }
   if (ok === 'loaded'){
-    /* ★ 一打开就显示「读的是存盘」+ 上次存盘的时间。
-       ⚠️ 不能写「已存盘 · 现在的时间」—— 那是骗人的：这次打开并没有存过。 */
-    el.textContent = '本机存储 · 已载入存盘' + (lastSavedAt ? ' · ' + hhmm(new Date(lastSavedAt)) : '');
+    /* ★ 一打开就显示「已保存」+ 上次存盘的时间。
+       ⚠️ 不能写「已保存 · 现在的时间」—— 那是骗人的：这次打开并没有存过。 */
+    el.textContent = '已保存' + (lastSavedAt ? ' · ' + hhmm(new Date(lastSavedAt)) : '');
     el.className = 'ok';
     return;
   }
-  el.textContent = '已存盘 · ' + hhmm(new Date());
+  el.textContent = '已保存 · ' + hhmm(new Date());
   el.className = 'ok';
 }
 
@@ -3300,7 +3305,7 @@ const VI = {
   '数据':'Dữ liệu', '结算':'Quyết toán', '成员':'Thành viên', '开班申请':'Đơn mở lớp',
   /* 品牌 / 页脚 / 顶栏 */
   'MGD 排课系统':'Hệ thống xếp lớp MGD', 'ADMIN · 主端':'ADMIN · Bảng chính',
-  '本机存储 · 尚无改动':'Bộ nhớ máy · Chưa thay đổi', '重置为演示数据':'Đặt lại dữ liệu demo',
+  '还没保存过':'Chưa lưu lần nào', '重置为演示数据':'Đặt lại dữ liệu demo',
   '主端':'Bảng chính', '搜索教师 / 学生 / 班级…':'Tìm giáo viên / học viên / lớp…',
   /* 通用动作 */
   '保存':'Lưu', '取消':'Hủy', '删除':'Xóa', '新建':'Tạo mới', '编辑':'Sửa', '关闭':'Đóng',
@@ -3425,7 +3430,7 @@ const VI = {
   /* ---- Phase 4：逐页复测（中/越对照）后按「整句 + 量词」补齐 ----
      ⚠️ 这一批的 key 都长于已有短词，_viKeys 按长度降序替换 → 整句先命中，
         剩下的裸量词（个/节/人）只作用在真正剩下的计数节点上。 */
-  '主端 · 重建第 3 / 7 步':'Bảng chính · Tái tạo Thứ 3 / 7 bước',
+  /* ★ 2026-10-13 删（P-22）：原有一条「主端 · 重建第 3 / 7 步」的建设进度标记，随 HTML 一并删除。 */
   /* 量词：单字的走 _viSolo（只整节点匹配），带数字的走 _viRe；这里只放多字词 */
   '人次':'lượt người', '在读':'đang học',
   '今天':'Hôm nay', '日历':'Lịch', '日期':'Ngày',
@@ -3488,7 +3493,7 @@ const VI = {
   '请选择原因':'Chọn lý do', '反建议时段':'Ca đề xuất', '并入已有班':'Gộp vào lớp có sẵn',
   '归入已有班':'Xếp vào lớp có sẵn', '· 原因：':'· Lý do:', '进度默认从':'Tiến độ mặc định từ',
   '已完成全部':'Đã hoàn thành tất cả', '时段对不上':'Ca không khớp', '我上了几节':'tôi đã dạy mấy buổi',
-  '不能往下排':'không thể xếp tiếp', '存盘失败':'Lưu thất bại', '第四阶段':'Giai đoạn 4',
+  '不能往下排':'không thể xếp tiếp', '保存失败':'Lưu thất bại', '第四阶段':'Giai đoạn 4',
   '第五阶段':'Giai đoạn 5', '第六阶段':'Giai đoạn 6', '能听能讲能写':'Nghe nói viết được',
   '能听能讲':'Nghe nói được', '自家教师':'Giáo viên tự có', '」的班级':'」của lớp',
   '全部原因':'Tất cả lý do', '统计口径':'Cách thống kê', '（找不到':' (không tìm thấy',
@@ -3586,9 +3591,9 @@ const VI = {
   /* 数据页 · 导入 / 导出 */
   '数据 · 恢复 · 会覆盖现在这一份':'Dữ liệu · Phục hồi · sẽ ghi đè bản hiện tại',
   '本机存储 · 改动会存进本机浏览器':'Bộ nhớ máy · thay đổi lưu vào trình duyệt máy này',
-  '本机存储 · 已载入存盘':'Bộ nhớ máy · đã nạp bản lưu', '改动会存进本机浏览器':'thay đổi lưu vào trình duyệt máy này',
+  '已保存 ·':'Đã lưu · ', '已保存':'Đã lưu', '改动会存进本机浏览器':'thay đổi lưu vào trình duyệt máy này',
   '改动会存进本机浏览器 · 关掉再开还在':'Thay đổi lưu vào trình duyệt máy này · tắt đi mở lại vẫn còn',
-  '关掉再开还在':'tắt đi mở lại vẫn còn', '已存盘 ·':'Đã lưu ·', '存盘失败':'Lưu thất bại',
+  '关掉再开还在':'tắt đi mở lại vẫn còn', '保存失败':'Lưu thất bại',
   '已重置为演示数据':'Đã đặt lại thành dữ liệu demo', '已从备份恢复':'Đã phục hồi từ bản sao',
   '这台浏览器没能直接下载':'Trình duyệt này không tải trực tiếp được',
   '请全选下面的内容，粘进记事本，存成':'Chọn toàn bộ nội dung dưới đây, dán vào Notepad, lưu thành',

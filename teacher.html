@@ -112,6 +112,14 @@
   .tg.out{color:var(--warn); border-color:var(--warn);}
   footer{font-size:11.5px; color:var(--hint); border-top:1px solid var(--line); padding-top:14px; margin-top:26px;}
   #stState{font-size:11.5px; color:var(--hint);}
+  /* ★ 2026-10-13 补（P-21）：原来这两条**都没有** ——
+     markSaved() 会给 #stState 加 .ok / .bad，但教师端 CSS 里一条规则都没有，
+     于是「已保存」不是绿的、「保存失败」不是红的，全都跟普通灰字一样。
+     主端两条都有（.side-foot #stState.ok / .bad），这里是漏了，现在补齐。
+     ⚠️ 别写成裸 .ok / .bad —— 页面里 .app-card .replied.ok / .no 已在用同名的类，
+     裸规则会连带把那里改色，所以这里用 #stState 限死作用域。 */
+  #stState.ok{color:var(--ok);}
+  #stState.bad{color:var(--bad);}
   /* ==================== 三端适配：手机 / iPad / 电脑 ====================
      断点按**真实设备宽度**定（依据 docs/zhops-layers.html §3.5 + 本轮决策）：
        手机  ≤599px       最大手机竖屏 430；最小 iPad 竖屏 744
@@ -442,7 +450,11 @@
   </section>
 
   <footer>
-    中文课平台 · 教师端（深色）。本页与 admin 共用同一份本机存储；提交即写入，无需申请码。
+    <!-- ★ 2026-10-13 改（P-21）：原文是「中文课平台 · 教师端（深色）。本页与 admin 共用同一份本机存储；
+         提交即写入，无需申请码。」—— 那是开发期写给自己的话（「（深色）」是描述主题色的、
+         「与 admin 共用」是技术事实、「无需申请码」是早期有门槛时的历史残留），老师看不懂也没有可操作价值。
+         改成一句老师看得懂的：数据存在哪、什么时候生效。 -->
+    中文课 · 教师端。你在这里填的东西会自动保存在这台设备上，提交即生效。
     <div id="stState" style="margin-top:6px"></div>
   </footer>
 </div>
@@ -627,16 +639,23 @@ let DB = load() || seedDB();
   }
 })();
 
+/* 页脚那行状态小字 —— 让老师看得懂「我的东西到底存进去没有」。
+   null=还没保存过 / true=刚保存好 / false=保存失败 / 'loaded'=这次打开读到的是上次存的
+   ★ 2026-10-13 改（P-21）：措辞从行话（「本机存储 · 已载入存盘」）换成白话（「已保存 · 13:46」）。
+     老师不需要知道 localStorage，只需要知道「存没存上、存的是几点那一版」。 */
 function markSaved(ok){
   const el = document.getElementById('stState');
   if (!el) return;
-  if (ok === null){ el.textContent = '本机存储 · 尚无改动'; el.className = ''; return; }
-  if (!ok){ el.textContent = '存盘失败'; el.className = 'bad'; return; }
+  if (ok === null){ el.textContent = '还没保存过'; el.className = ''; return; }
+  if (!ok){ el.textContent = '保存失败'; el.className = 'bad'; return; }
   if (ok === 'loaded'){
-    el.textContent = '本机存储 · 已载入存盘' + (lastSavedAt ? ' · ' + hhmm(new Date(lastSavedAt)) : '');
+    /* ★ 一打开就显示「已保存」+ 上次保存的时间。
+       ⚠️ 不能写「已保存 · 现在的时间」—— 那是骗人的：这次打开并没有存过。
+       所以这里取的是存盘里记下的那一刻（lastSavedAt）。 */
+    el.textContent = '已保存' + (lastSavedAt ? ' · ' + hhmm(new Date(lastSavedAt)) : '');
     el.className = 'ok'; return;
   }
-  el.textContent = '已存盘 · ' + hhmm(new Date());
+  el.textContent = '已保存 · ' + hhmm(new Date());
   el.className = 'ok';
 }
 if (loadedFromStore) markSaved('loaded'); else markSaved(null);
@@ -1077,8 +1096,10 @@ let LANG = (function(){ try { return localStorage.getItem('zhops.lang') || 'zh';
 const VI = {
   /* 标题 / 页眉 / 页脚 */
   '中文课 · 教师端':'Lớp học tiếng Trung · Giáo viên',
-  '中文课平台 · 教师端（深色）。本页与 admin 共用同一份本机存储；提交即写入，无需申请码。':
-    'Nền tảng lớp học tiếng Trung · Cổng giáo viên (nền tối). Trang này dùng chung một bộ nhớ máy với admin; gửi là ghi luôn, không cần mã đơn.',
+  /* ★ 2026-10-13 改（P-21）：页脚那句从行话改成白话 —— 词条跟着换。
+     ⚠️ 比上面的 '中文课 · 教师端' 长，_viKeys 按长度降序，所以整句先命中，不会被啃成半句。 */
+  '中文课 · 教师端。你在这里填的东西会自动保存在这台设备上，提交即生效。':
+    'Lớp học tiếng Trung · Cổng giáo viên. Những gì bạn điền ở đây được tự động lưu trên thiết bị này, gửi là có hiệu lực ngay.',
   /* 页签 / 顶部说明段 */
   '提交开班申请':'Gửi đơn mở lớp', '回确认':'Xác nhận lại',
   /* ★ 2026-10-13 新增：副标题由「越南语前缀 + 中文」混排改为纯中文（前缀本来就是 h1 的越南语，重复了），
@@ -1196,9 +1217,9 @@ const VI = {
   '该教室此时段已被占用，管理员可能驳回':'Phòng học đã bị chiếm ở ca này, quản trị viên có thể từ chối',
   '申请已提交':'Đã gửi đơn',
   /* 存盘状态 */
-  '本机存储 · 尚无改动':'Bộ nhớ máy · Chưa thay đổi',
-  '本机存储 · 已载入存盘':'Bộ nhớ máy · đã nạp bản lưu',
-  '已存盘 ·':'Đã lưu ·', '存盘失败':'Lưu thất bại',
+  /* 页脚状态（P-21 改白话）—— '已保存 · ' 比 '已保存' 长，带时间的那条先命中 */
+  '还没保存过':'Chưa lưu lần nào', '已保存 ·':'Đã lưu · ', '已保存':'Đã lưu',
+  '保存失败':'Lưu thất bại',
   /* 数据值：时段 / 星期 / 阶段 / 状态 */
   '早班':'Ca sáng', '午间':'Buổi trưa', '晚班':'Ca tối', '周末':'Cuối tuần',
   '周一':'Thứ hai', '周二':'Thứ ba', '周三':'Thứ tư', '周四':'Thứ năm', '周五':'Thứ sáu',
