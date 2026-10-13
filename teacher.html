@@ -209,12 +209,34 @@
   }
   .todocard .t{font-size:12.5px; color:var(--text);}
   .todocard .n{font-size:18px; font-weight:600; color:var(--warn);}
-  /* 占位卡：这一屏还没建完（B1 临时，B2 / B3 会替换掉） */
-  .soon{
-    background:var(--panel); border:1px dashed var(--line); border-radius:11px;
-    padding:22px 18px; text-align:center; color:var(--hint); font-size:12.5px;
-  }
-  .soon b{display:block; color:var(--muted); font-size:13px; font-weight:500; margin-bottom:6px;}
+  /* ---------- 工作台 · 今日课（B3）----------
+     §3.5 要求「最关键的信息（今天课程 + 视讯链接）放最上面」—— 所以这一块排在入口按钮之前。
+     手机 / iPad：一行换行排；电脑（≥1200px）：摊成一行五列（见文件下方第二个 1200 断点）。 */
+  .trow{display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:10px 14px; border-bottom:1px solid var(--line);}
+  .trow:last-child{border-bottom:0;}
+  .trow .t-time{font-size:13px; font-weight:600; color:var(--acc); font-variant-numeric:tabular-nums;}
+  .trow .t-name b{font-size:13px;}
+  .trow .t-name .code{color:var(--hint); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;}
+  .trow .t-prog,.trow .t-link{font-size:12px; color:var(--muted);}
+  /* 弱化占位（教室待定 / 链接待发布）与空态文案 */
+  .dim{color:var(--hint);}
+  .noclass{color:var(--hint); font-size:12.5px;}
+
+  /* ---------- 我的班级（B3）—— 每班一卡 ----------
+     卡上：班名+代号 / 级别 / 形态 / 时段+星期 / 上到第几课 / 学生数 / 链接位。
+     ⚠️ 规格里那两个按钮（推进一课 / 点名）属 B4 写操作 —— 本轮只读屏，先不放。 */
+  .clscards{margin-bottom:2px;}
+  .clscard{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:13px 15px; margin-bottom:12px;}
+  .clscard .ch{display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-bottom:6px;}
+  .clscard .ch .sp{flex:1;}
+  .clscard .cn{font-size:14.5px; font-weight:600;}
+  .clscard .code{color:var(--hint); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;}
+  .clscard .cs{font-size:12px; color:var(--muted); margin-bottom:10px;}
+  .clscard .kv{grid-template-columns:88px 1fr;}
+  .clscard .kv .v{color:var(--text);}
+  /* 形态标签：线上 = 主题色，线下 = 暖色（不用 .tg.off —— 那个是「级别」标签在用的，别串色） */
+  .tg.live{color:var(--acc); border-color:var(--acc);}
+  .tg.site{color:var(--warn); border-color:var(--warn);}
 
   /* ---------- 我的学生（B2）----------
      手机 / iPad：一行换行排（姓名 + 级别 在前，其余折到下一行）—— 320px 放不下四列。
@@ -263,6 +285,13 @@
     .sturow{display:grid; grid-template-columns:1.3fr .55fr 1.5fr 1fr 1.35fr; gap:10px;}
     /* 流程表：纵向 7 步，铺满 1100px 反而难扫读 —— 限到易读宽度 */
     .flowlist{max-width:780px;}
+    /* B3：今日课摊成一行五列（时间 / 班级 / 形态 / 第几课 / 链接） */
+    .trow{display:grid; grid-template-columns:.6fr 1.4fr .7fr .8fr 1.3fr; gap:10px;}
+    /* B3：班级卡两列 —— §3.5「电脑：多列」，把多出来的宽度真用起来 */
+    .clscards{display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start;}
+    .clscards .clscard{margin-bottom:0;}
+    /* KPI 只有两格，铺满 1100px 会显得空 */
+    .kpis{max-width:560px;}
   }
 </style>
 </head>
@@ -586,7 +615,8 @@ const myStudents = () => {
 };
 
 let DB = load() || seedDB();
-DB.today = [];                /* 教师端不渲染课次，today 留空即可 */
+/* ★ 今日课**不预存** DB.today —— 主端是在 buildFacts() 里现算的（admin:1103–1104），
+   派生层一旦存下来就会过期（B4 推进课次之后尤其明显）。这里改成函数，每次渲染现算。 */
 
 /* 一次性清理内置演示教师：仅当读进来的教师「全部」是那批演示教师时才清空并落盘；
    只要出现一个不在名单里的（真教师），就一律不动。避免演示数据反复冒出来。 */
@@ -680,20 +710,56 @@ function setSelf(id){
   if (ft && id && ft.value !== id) ft.value = id;
   renderView(curTab);
 }
-/* 未选教师 → 空态；选了但这一屏还没做 → 占位卡（B1 临时，B2 / B3 会换掉） */
 const EMPTY_SELF = '<div class="empty">先选一位教师 —— 在页眉「我是谁」里选，这几屏才有数据。</div>';
-function emptyOrSoon(boxId, soonTitle){
-  const box = $id(boxId); if (!box) return;
-  box.innerHTML = SELF()
-    ? '<div class="soon"><b>'+esc(soonTitle)+'</b>这一屏还没做完，下一批补上。</div>'
-    : EMPTY_SELF;
-  applyLang();
+
+/* ---------- B3 派生 + 小工具 ---------- */
+/* 今日课事实（★ 与 admin:1103–1104 同源）：当天、未取消的课次 */
+const todayLessons = () => DB.lessons.filter(l => l.date === DB.todayDate && l.status !== 'cancel');
+const myTodayLessons = () => {
+  const ids = myClasses().map(c => c.id);
+  return todayLessons().filter(l => ids.indexOf(l.cid) !== -1)
+    .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+};
+/* 形态标签。⚠️ 用 .tg.live / .tg.site，不复用 .tg.off —— 那是「级别」标签在用的，会串色 */
+const modeTag = m => m === 'offline'
+  ? '<span class="tg site">线下教课</span>' : '<span class="tg live">线上教课</span>';
+/* 链接位。★ 班级表里**没有** link 字段（a.link 是「申请指向哪个班」）→ 线上先占位，等主端补 */
+function placeText(c){
+  if (c.mode === 'offline') return c.room ? '教室 ' + esc(c.room) : '<span class="dim">教室待定</span>';
+  return '<span class="dim">链接待发布</span>';
 }
+/* 带字段名的位置（班级卡）：标签已经写了「上课地点 / 视讯链接」，
+   值里再说一遍「教室 …」「链接…」就是废话 —— 这里只给纯值。 */
+function placeVal(c){
+  if (c.mode === 'offline') return c.room ? esc(c.room) : '<span class="dim">教室待定</span>';
+  return '<span class="dim">待发布</span>';
+}
+/* 上到第几课（自动算，不存字段）：HSK1 → L03 · 第一阶段 · 第 3 课；其余 → 第 N / 42 课 */
+function classProg(c){
+  const n = classLesson(c);
+  if (!n) return '<span class="dim">还没开课</span>';
+  return c.lv === 'HSK1'
+    ? 'L' + String(n).padStart(2, '0') + ' · ' + STAGE(n) + ' · 第 ' + n + ' 课'
+    : '第 ' + n + ' / ' + (c.plannedLessons || 42) + ' 课';
+}
+
+/* ==================== 工作台（B3） ====================
+   读 zhops-layers §3.3 第一屏：今日课 / 我的班级数 · 我的学生数 / 可授时段（只读）。
+   ★ 决策 ⑦：**不显示单价**。
+   ★ §3.5：手机上「最关键的信息（今天课程 + 视讯链接）放最上面」—— 所以今日课排在入口按钮之前。 */
 function renderHome(){
   const box = $id('homeBody'); if (!box) return;
   const me = SELF();
   const nConf = DB.apps.filter(a => a.state === '已驳回' && a.advice).length;
-  let h = '<div class="entry">' +
+  let h = '';
+  if (me){
+    const tl = myTodayLessons();
+    h += '<div class="sttl"><span class="n">·</span>今日课 <span class="cnt2">' + esc(DB.todayDate) + '</span></div>';
+    h += tl.length
+      ? '<div class="box" style="padding:4px 0">' + tl.map(todayRow).join('') + '</div>'
+      : '<div class="box"><div class="noclass">今天没有课。</div></div>';
+  }
+  h += '<div class="entry">' +
     '<button class="primary" onclick="showTab(\'apply\')">＋ 提交开班申请</button>' +
     '</div>';
   /* 手机底栏里没有「回确认」，这条卡就是唯一入口 —— 所以有才显示，没有就不占地方 */
@@ -704,20 +770,64 @@ function renderHome(){
   if (!me){
     h += EMPTY_SELF;
   } else {
+    h += '<div class="kpis">' +
+      '<div class="c"><div class="n">' + myClasses().length + '</div><div class="l">我的班级</div></div>' +
+      '<div class="c"><div class="n">' + myStudents().length + '</div><div class="l">我的学生</div></div>' +
+      '</div>';
     h += '<div class="box"><div class="kv">' +
-      '<div class="k">教师</div><div>'+esc(me.name)+' '+
-        (me.src === 'own' ? '<span class="tg own">自有</span>' : '<span class="tg out">外包</span>')+'</div>' +
+      '<div class="k">教师</div><div>'+esc(me.name)+' '+ownTag(me.src)+'</div>' +
       '<div class="k">可授时段</div><div>'+
         (me.slots && me.slots.length ? esc(me.slots.map(s => S(s).name).join(' · ')) : '—')+'</div>' +
       '<div class="k">可授级别</div><div>'+
         (me.levels && me.levels.length ? esc(me.levels.join(' · ')) : '—')+'</div>' +
       '</div></div>';
-    h += '<div class="soon"><b>今日课 · 我的班级数 · 我的学生数</b>这一屏还没做完，下一批补上。</div>';
   }
   box.innerHTML = h;
   applyLang();
 }
-function renderClasses(){ emptyOrSoon('classesBody', '我的班级（每班一卡：班名 · 级别 · 上到第几课）'); }
+function todayRow(l){
+  const c = C(l.cid);
+  return '<div class="trow">' +
+    '<span class="t-time">' + esc(l.time || S(c.slot).time) + '</span>' +
+    '<span class="t-name"><b>' + esc(c.name) + '</b> <span class="code">' + esc(c.code) + '</span></span>' +
+    '<span class="t-mode">' + modeTag(c.mode) + '</span>' +
+    '<span class="t-prog">第 ' + l.no + ' 课</span>' +
+    '<span class="t-link">' + placeText(c) + '</span>' +
+  '</div>';
+}
+
+/* ==================== 我的班级（B3） ====================
+   读 zhops-layers §3.3 第二屏：每班一卡 —— 班名+代号 / 级别 / 形态 / 时段+星期 /
+   上到第几课（自动算）/ 班里几个学生 / 视讯链接（线上）或上课地点（线下）。
+   ⚠️ 规格里那两个按钮（推进一课 / 点名）属 B4 写操作 —— 本轮是只读屏，先不放。 */
+function renderClasses(){
+  const box = $id('classesBody'); if (!box) return;
+  if (!SELF()){ box.innerHTML = EMPTY_SELF; applyLang(); return; }
+  const list = myClasses();
+  if (!list.length){
+    box.innerHTML = '<div class="empty">你名下还没有班。<br>开班申请通过、管理员建班之后，这里就会出现。</div>';
+    applyLang(); return;
+  }
+  box.innerHTML = '<div class="clscards">' + list.map(clsCard).join('') + '</div>';
+  applyLang();
+}
+function clsCard(c){
+  const s = S(c.slot), cap = DB.set.capMax || 12;
+  return '<div class="clscard">' +
+    '<div class="ch">' +
+      '<span class="cn">' + esc(c.name) + '</span>' +
+      '<span class="code">' + esc(c.code) + '</span>' +
+      '<span class="sp"></span>' +
+      '<span class="tg">' + esc(c.lv) + '</span>' + modeTag(c.mode) +
+    '</div>' +
+    '<div class="cs">' + esc(s.name) + ' ' + esc(s.time) + (s.days ? ' · ' + esc(s.days) : '') + '</div>' +
+    '<div class="kv">' +
+      '<div class="k">上到第几课</div><div class="v">' + classProg(c) + '</div>' +
+      '<div class="k">班里学生</div><div class="v">' + classN(c) + ' / ' + cap + ' 人</div>' +
+      '<div class="k">' + (c.mode === 'offline' ? '上课地点' : '视讯链接') + '</div><div class="v">' + placeVal(c) + '</div>' +
+    '</div>' +
+  '</div>';
+}
 
 /* ==================== 我的学生（B2） ====================
    读 zhops-layers §3.3 第三屏：**先按「自有 / 外包」分组**，每个学生一行能看出四件事 ——
@@ -985,15 +1095,26 @@ const VI = {
   '＋ 提交开班申请':'＋ Gửi đơn mở lớp',
   '管理员给了反建议，等你回确认':'Quản trị viên đã đưa ca đề xuất, chờ bạn xác nhận lại',
   '可授时段':'Ca có thể dạy', '可授级别':'Cấp độ có thể dạy',
-  '今日课 · 我的班级数 · 我的学生数':'Buổi học hôm nay · Số lớp của tôi · Số học viên của tôi',
-  /* ★ 2026-10-13 新增：空态 + 占位卡（B1 临时，B2 / B3 会换掉） */
+  /* ★ 2026-10-13 新增（B3 · 工作台「今日课」）——
+     B1 的占位卡词条（'今日课 · 我的班级数 · …' / '这一屏还没做完…' / 三张卡的标题）
+     已随 .soon 样式一起退役，就地换成 B3 的真词条，不留死键。 */
+  '今日课':'Buổi học hôm nay',
+  '今天没有课。':'Hôm nay không có buổi học.',
+  '线下教课':'Dạy ngoại tuyến', '线上教课':'Dạy trực tuyến',
+  '链接待发布':'Chờ phát hành liên kết', '待发布':'Chờ phát hành', '教室待定':'Chưa chốt phòng',
+  /* ⚠️ 单字词「教室」只在 placeText() 里跟教室名拼在一起（「教室 B2」）出现；
+     比它长的「教室名称」「线下课必须填教室」「线下教室被占用」等都由 _viKeys 按长度降序先命中，
+     不会把它啃出来 —— 所以安全。 */
+  '教室':'Phòng',
+  /* ★ 2026-10-13 新增（B3 · 我的班级 · 每班一卡） */
+  '上到第几课':'Đã dạy đến bài nào', '班里学生':'Học viên trong lớp',
+  '上课地点':'Địa điểm học', '视讯链接':'Liên kết học trực tuyến',
+  '你名下还没有班。':'Bạn chưa có lớp nào.',
+  '开班申请通过、管理员建班之后，这里就会出现。':
+    'Sau khi đơn mở lớp được duyệt và quản trị viên mở lớp, lớp sẽ hiện ở đây.',
+  /* ★ 2026-10-13 新增：空态（B1 起就在用，保留） */
   '先选一位教师 —— 在页眉「我是谁」里选，这几屏才有数据。':
     'Hãy chọn một giáo viên —— chọn ở「Tôi là ai」trên đầu trang thì các trang này mới có dữ liệu.',
-  '这一屏还没做完，下一批补上。':'Trang này chưa làm xong, sẽ bổ sung ở đợt sau.',
-  '我的班级（每班一卡：班名 · 级别 · 上到第几课）':
-    'Lớp của tôi (mỗi lớp một thẻ: tên lớp · cấp độ · đã dạy đến bài nào)',
-  '我的学生（按自家 / 外包分组）':'Học viên của tôi (nhóm theo tự có / thuê ngoài)',
-  '流程表（7 步 + 高亮停在哪一步）':'Quy trình (7 bước + làm nổi bật đang dừng ở bước nào)',
   /* ★ 2026-10-13 新增（B2 · 我的学生） */
   '出勤':'Đi học', '未编班':'Chưa xếp lớp', '还没开课':'Chưa mở lớp',
   '还没有学生。':'Chưa có học viên.',
@@ -1106,6 +1227,9 @@ const _viRe = [
      「上到」两个字留在中文里。 */
   [/上到第\s*(\d+)\s*课/g, 'Đã dạy đến bài $1'],
   [/⚠\s*缺\s*(\d+)\s*次/g, '⚠ vắng $1 buổi'],
+  /* 「第 3 / 42 课」（非 HSK1 的进度写法）—— 必须排在「第 3 课」前面，
+     否则会被下面的 /(\d+)\s*课/ 先啃成「第 3 / 42 buổi」，「第 3」两个字留在中文里。 */
+  [/第\s*(\d+)\s*\/\s*(\d+)\s*课/g, 'Bài $1 / $2'],
   [/第\s*(\d+)\s*课/g, 'Bài $1'],
   [/(\d+)\s*人/g, '$1 người'],
   [/(\d+)\s*位/g, '$1 người'],
