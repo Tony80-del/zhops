@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- viewport-fit=cover：让 env(safe-area-inset-*) 生效（iPhone home indicator / 刘海） -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>中文课 · 教师端</title>
 <style>
   :root{
@@ -65,6 +66,14 @@
   button.primary:hover{opacity:.92; color:var(--onacc);}
   button.mini{padding:4px 10px; font-size:12px;}
   button.ghost{background:transparent;}
+  /* ---------- 触摸反馈 ----------
+     ⚠️ 本页原本只有 :hover —— 手机上按下去毫无反应，像按坏了。
+     补 :active：按下时轻微下沉 / 变色，手指才有「点到了」的确认感。 */
+  button:active{transform:translateY(1px);}
+  button.primary:active{opacity:.85;}
+  .tabs button:active{background:rgba(255,255,255,.08); color:var(--text);}
+  .lang-switch button:active{background:rgba(255,255,255,.12);}
+  .chip:active{background:var(--accb); border-color:var(--acc);}
   .req{color:var(--bad); margin-left:3px;}
   .err{color:var(--bad); font-size:12.5px; margin:10px 0 0; min-height:20px;}
   .out{display:none;}
@@ -80,7 +89,8 @@
   .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
   .okmark{color:var(--ok); font-size:13.5px; font-weight:500; margin:0 0 8px;}
   .toast{
-    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    /* + env(safe-area-inset-bottom)：iPhone 底部 home indicator 区域约 34px，不加会被压住 */
+    position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translateX(-50%);
     background:var(--acc); color:var(--onacc); border-radius:10px; padding:9px 18px; font-size:12.5px;
     opacity:0; pointer-events:none; transition:opacity .2s; z-index:9;
   }
@@ -102,12 +112,157 @@
   .tg.out{color:var(--warn); border-color:var(--warn);}
   footer{font-size:11.5px; color:var(--hint); border-top:1px solid var(--line); padding-top:14px; margin-top:26px;}
   #stState{font-size:11.5px; color:var(--hint);}
-  @media (max-width:600px){
+  /* ==================== 三端适配：手机 / iPad / 电脑 ====================
+     断点按**真实设备宽度**定（依据 docs/zhops-layers.html §3.5 + 本轮决策）：
+       手机  ≤599px       最大手机竖屏 430；最小 iPad 竖屏 744
+                          → 600–743 之间没有真实竖屏设备，边界取哪儿都不敏感
+       iPad  600–1199px   744(iPad mini) / 820(10.9") / 834(Pro 11") / 1024(Pro 12.9" 竖屏)
+       电脑  ≥1200px      只笔记本 1280 / 1440 进这一档
+     ★ 手机与 iPad **一律单列**，只在电脑放宽 —— 本轮决策，覆盖 §3.5 原文的
+       「iPad 两列 / 电脑侧边栏」。 */
+  @media (max-width:599px){
     .grid2{grid-template-columns:1fr;}
-    .wrap{padding:20px 16px 80px;}
+    /* 底部导航高约 58px + home indicator，内容区必须让开，否则最后一屏被压住 */
+    .wrap{padding:20px 16px calc(78px + env(safe-area-inset-bottom));}
+    /* ★ iOS Safari 对 font-size < 16px 的输入框，一聚焦就把整页强制放大 —— 手机档提到 16px */
+    input,select,textarea{font-size:16px;}
+    /* ★ 触摸目标：低于 44px 手指点不准（原本 28 / 29 / 37 / 39px 全不达标） */
+    button,input,select,textarea{min-height:44px;}
+    button.mini{min-height:44px; padding:8px 14px;}
+    .lang-switch button{height:44px; padding:0 12px;}
+
+    /* ---------- 底部导航（手机） ----------
+       6 个页签在手机上塞不下，只留 4 项：工作台 / 我的班级 / 我的学生 / 流程表。
+       「提交开班申请」「回确认」收到工作台里（顶部主按钮 + 一张提示卡）。
+       ⚠️ 正因为底栏只有这 4 项，工作台必须是默认首屏 —— 否则手机一进来
+          底栏 4 项全没选中，而屏幕上显示的却是没有对应页签的申请表单。 */
+    .tabs{
+      position:fixed; left:0; right:0; bottom:0; z-index:20;
+      display:grid; grid-template-columns:repeat(4,1fr);
+      gap:0; margin:0; flex-wrap:nowrap;
+      background:var(--panel); border-top:1px solid var(--line);
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    }
+    .tabs button{
+      border:0; background:transparent; border-radius:9px; padding:6px 2px;
+      font-size:11.5px; line-height:1.3; min-height:46px;
+      display:flex; align-items:center; justify-content:center; text-align:center;
+    }
+    .tabs button.on{background:var(--accb); color:var(--acc);}
+    /* 这两项在手机上不进底栏（收到工作台里） */
+    .tabs button[data-tab="apply"], .tabs button[data-tab="confirm"]{display:none;}
+    /* toast 抬到底栏之上，否则被压住 */
+    .toast{bottom:calc(80px + env(safe-area-inset-bottom));}
   }
-  @media (min-width:601px) and (max-width:1024px){
+  @media (min-width:600px) and (max-width:1199px){
+    /* ★ iPad 仍单列（决策 3「先统一单列，只在电脑放宽」）——
+       这里**不**改 grid-template-columns，继承上面的 1fr 1fr 是错的，
+       必须显式塌回单列。上一版漏了这行、只写了注释，导致 iPad 悄悄变两列。 */
+    .grid2{grid-template-columns:1fr;}
+    /* 只是限宽 720px 居中 —— 留白是刻意的阅读留白，不是空 */
+    .wrap{max-width:720px;}
+  }
+  @media (min-width:1200px){
     .grid2{grid-template-columns:1fr 1fr;}
+    .wrap{max-width:1100px;}
+  }
+  /* ---------- 语言切换（🇨🇳 / 🇻🇳） ---------- */
+  /* flex-wrap：加了教师选择器之后，窄屏（320px）标题 + 两个控件会挤在一起 */
+  .hrow{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;}
+  .hrow .sp{flex:1;}
+  .lang-switch{
+    display:flex; align-items:stretch; flex:0 0 auto; overflow:hidden;
+    border:1px solid var(--line); background:var(--panel); border-radius:8px;
+  }
+  .lang-switch button{
+    font-family:inherit; font-size:12px; display:flex; align-items:center; gap:5px;
+    padding:0 10px; height:28px; border:0; border-radius:0; background:transparent;
+    color:var(--muted); cursor:pointer; white-space:nowrap;
+  }
+  .lang-switch button + button{border-left:1px solid var(--line);}
+  .lang-switch button:hover{border-color:transparent; background:rgba(255,255,255,.07); color:var(--text);}
+  .lang-switch button.on{background:var(--accb); color:var(--acc); font-weight:600;}
+  .lang-switch .fl{font-size:13px; line-height:1;}
+
+  /* ---------- 页眉「我是谁」教师选择器 ----------
+     无登录系统：这一项只记在本机（zhops.teacher.self），与存盘/语言键互不干扰。
+     四屏（工作台 / 我的班级 / 我的学生 / 流程表）都按它筛数据；没选就是空态。 */
+  .selfpick{display:flex; align-items:center; gap:7px; flex:0 0 auto;}
+  .selfpick label{margin:0; font-size:11.5px; color:var(--hint); white-space:nowrap;}
+  .selfpick select{width:auto; min-width:128px; max-width:200px; font-size:12.5px; padding:5px 8px;}
+
+  /* ---------- 视图骨架：KPI 小卡 / 分节标题 / 主入口 ----------
+     四屏共用，先在 B1 立好骨架，内容随 B2 / B3 填。 */
+  .kpis{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:16px;}
+  .kpis .c{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:12px 14px;}
+  .kpis .c .n{font-size:20px; font-weight:600; line-height:1.25; color:var(--acc);}
+  .kpis .c .l{font-size:11.5px; color:var(--muted);}
+  .sttl{font-size:13.5px; font-weight:500; margin:0 0 10px;}
+  .sttl .n{color:var(--acc); font-size:12px; margin-right:6px;}
+  .entry{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+  .entry .primary{width:auto; flex:1 1 auto; padding:11px 18px;}
+  /* 提示卡（回确认 n 条 / 待办）：整卡可点 */
+  .todocard{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--card); border:1px solid var(--warn); border-left:3px solid var(--warn);
+    border-radius:11px; padding:12px 14px; margin-bottom:16px; cursor:pointer;
+  }
+  .todocard .t{font-size:12.5px; color:var(--text);}
+  .todocard .n{font-size:18px; font-weight:600; color:var(--warn);}
+  /* 占位卡：这一屏还没建完（B1 临时，B2 / B3 会替换掉） */
+  .soon{
+    background:var(--panel); border:1px dashed var(--line); border-radius:11px;
+    padding:22px 18px; text-align:center; color:var(--hint); font-size:12.5px;
+  }
+  .soon b{display:block; color:var(--muted); font-size:13px; font-weight:500; margin-bottom:6px;}
+
+  /* ---------- 我的学生（B2）----------
+     手机 / iPad：一行换行排（姓名 + 级别 在前，其余折到下一行）—— 320px 放不下四列。
+     电脑（≥1200px）：摊成一行五列对齐（见文件下方第二个 1200 断点）—— 宽屏才用得上宽度。 */
+  .sturow{display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:10px 14px; border-bottom:1px solid var(--line);}
+  .sturow:last-child{border-bottom:0;}
+  .sturow .c-name b{font-size:13px;}
+  .sturow .c-cls,.sturow .c-prog,.sturow .c-att{font-size:12px; color:var(--muted);}
+  .sturow .c-cls .code{color:var(--hint); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .sturow .c-att .warn{color:var(--warn);}
+  .cnt2{font-size:11.5px; color:var(--hint); font-weight:400; margin-left:6px;}
+
+  /* ---------- 流程表（B2）—— 纵向 7 步 ----------
+     纵向而不是横向：手机 320px 放不下 7 个横排节点，纵向三端都成立。 */
+  .flowlist{border:1px solid var(--line); border-radius:11px; overflow:hidden; background:var(--card);}
+  .fstep{display:flex; gap:12px; padding:12px 14px; border-bottom:1px solid var(--line);}
+  .fstep:last-child{border-bottom:0;}
+  .fstep .fn{
+    flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:var(--muted); border:1px solid var(--line); background:var(--panel);
+  }
+  .fstep .fb{min-width:0;}
+  .fstep .ft{font-size:13px; font-weight:500;}
+  .fstep .fd{font-size:11.5px; color:var(--hint); margin-top:3px;}
+  .fstep .fcnt{
+    display:inline-block; min-width:18px; text-align:center; margin-left:6px;
+    background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    border-radius:9px; padding:0 6px; font-size:11px;
+  }
+  .fstep .fhere{font-size:11.5px; color:var(--acc); margin-top:5px; font-weight:500;}
+  /* 高亮：你卡在这一步 */
+  .fstep.cur{background:var(--accb);}
+  .fstep.cur .fn{background:var(--acc); color:var(--onacc); border-color:var(--acc); font-weight:600;}
+  .fstep.cur .ft{color:var(--acc);}
+  .fstep.cur .fd{color:var(--muted);}
+  .fstep.cur .fcnt{background:var(--acc); color:var(--onacc); border-color:var(--acc);}
+
+  /* ---------- 电脑档补充（≥1200px）----------
+     ⚠️ 必须放在 .sturow / .flowlist 的**定义之后** —— 同一层级的类选择器，
+        后写的才生效。放在文件上方那个 1200 断点里会被下面的基础规则盖掉。
+     「只在电脑放宽」这句要落到实处：电脑档得真把多出来的宽度用起来，
+     否则 1100px 铺满一条 30 字的学生行 / 7 步纵向列表，右半边全是空的，看着像没做完。 */
+  @media (min-width:1200px){
+    /* 学生行：一行五列对齐（姓名 / 级别 / 班级+代号 / 进度 / 出勤）—— 和规格里那种一行一个学生一致 */
+    .sturow{display:grid; grid-template-columns:1.3fr .55fr 1.5fr 1fr 1.35fr; gap:10px;}
+    /* 流程表：纵向 7 步，铺满 1100px 反而难扫读 —— 限到易读宽度 */
+    .flowlist{max-width:780px;}
   }
 </style>
 </head>
@@ -115,8 +270,25 @@
 <div class="wrap">
 
   <header>
-    <h1>中文课 · 教师端</h1>
-    <p class="sub">Lớp học tiếng Trung · Giáo viên · 提交开班申请 / 回确认</p>
+    <div class="hrow">
+      <div>
+        <h1>中文课 · 教师端</h1>
+        <!-- ★ 2026-10-13：副标题原本是「Lớp học tiếng Trung · Giáo viên · 提交开班申请 / 回确认」，
+             即「越南语前缀 + 中文」混排 —— 而那个前缀就是 h1 的越南语，等于把标题说了两遍。
+             现改为纯中文的职责描述（对齐 zhops-layers §3.4「教师只能做三件事」），
+             越南语模式由 VI 对照表整句翻掉。 -->
+        <p class="sub">提交开班申请 · 推进课次 · 录入成绩</p>
+      </div>
+      <div class="sp"></div>
+      <div class="selfpick">
+        <label for="selfPick">我是谁</label>
+        <select id="selfPick" title="我是谁"></select>
+      </div>
+      <div class="lang-switch" id="langSwitch" title="语言 / Ngôn ngữ">
+        <button type="button" data-lang="zh" class="on"><span class="fl">🇨🇳</span><span class="lb">中文</span></button>
+        <button type="button" data-lang="vi"><span class="fl">🇻🇳</span><span class="lb">Tiếng Việt</span></button>
+      </div>
+    </div>
   </header>
 
   <p class="note">
@@ -126,21 +298,49 @@
     但 <code style="display:inline;padding:1px 5px">file://</code> 与线上 <code style="display:inline;padding:1px 5px">https://</code> 是不同源、不互通——要让别人用 / 跨设备，请发布到同一个网址（<code style="display:inline;padding:1px 5px">…/zhops/</code>）后用线上地址。</span>
   </p>
 
-  <nav class="tabs">
-    <button data-tab="apply" class="on">提交开班申请</button>
+  <nav class="tabs" id="tabs">
+    <!-- 手机档：底栏只显示前 4 项（CSS 里把 apply / confirm 隐藏掉，收到工作台内） -->
+    <button data-tab="home" class="on">工作台</button>
+    <button data-tab="classes">我的班级</button>
+    <button data-tab="students">我的学生</button>
+    <button data-tab="flow">流程表</button>
+    <button data-tab="apply">提交开班申请</button>
     <button data-tab="confirm">回确认 <span class="cnt" id="confCnt">0</span></button>
   </nav>
 
+  <!-- ===================== 工作台（默认首屏） =====================
+       B1 只立骨架：两个入口（＋提交开班申请 / 回确认 n 条）+ 空态。
+       今日课 / 我的班级数 / 可授时段 属 B3。 -->
+  <section id="homeView">
+    <div id="homeBody"></div>
+  </section>
+
+  <!-- ===================== 我的班级 =====================
+       内容属 B3（每班一卡：班名+代号 / 级别 / 形态 / 时段 / 上到第几课 / 人数 / 链接位） -->
+  <section id="classesView" class="out">
+    <div id="classesBody"></div>
+  </section>
+
+  <!-- ===================== 我的学生 =====================
+       内容属 B2（先按「自家 / 外包」分组，每行：归属 / 班名+代号 / 上到第 N 课 / 出勤 x/y） -->
+  <section id="studentsView" class="out">
+    <div id="studentsBody"></div>
+  </section>
+
+  <!-- ===================== 流程表 =====================
+       内容属 B2（静态 7 步 + 按当前数据高亮「停在哪一步」） -->
+  <section id="flowView" class="out">
+    <div id="flowBody"></div>
+  </section>
+
   <!-- ===================== 提交开班申请 ===================== -->
-  <section id="applyView">
+  <section id="applyView" class="out">
     <form id="form" onsubmit="return false;">
       <fieldset>
         <legend><span class="n">一</span>基本信息</legend>
         <div class="fld">
           <label>我是哪位教师<span class="req">*</span></label>
           <select id="fTeacher"></select>
-          <button type="button" class="mini ghost" style="margin-top:6px" onclick="resetTeacherFilter()">清空教师筛选</button>
-          <p class="hint">只清本下拉的教师列表（含 admin 共享键里的教师），级别 / 形态 / 时段等默认项与其它数据不动。</p>
         </div>
         <div class="grid2">
           <div class="fld">
@@ -242,6 +442,12 @@ function seedDB(){
   absences:[],
   students:[],
   apps:[],
+  /* ★ 2026-10-13 补：主端 load() 强制要求 members 是数组（zhops-admin.html:730）。
+     少了它，在干净浏览器里「先开教师端、写一次」→ 存盘里没有 members
+     → 主端 load() 校验不过 → 回落空种子，教师刚写的数据在主端看不见。
+     seals 同理（主端结算页的封存快照），一并补上，保持两边契约对称。 */
+  members:[],
+  seals:[],
   set:{minOpen:8, capMax:12},
   todayDate:'2026-10-08',
   now:'19:15',
@@ -331,6 +537,54 @@ function stamp(){
 function hhmm(d){ return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+/* ==================== 派生层（★ 与 admin 同源，改动必须同步两边） ====================
+   ⚠️ 以下 8 个与 zhops-admin.html 的派生层**逐字同源**，admin 侧行号 1034–1076：
+        classLesson / lessonsOf / classReserved / classN
+        stuJoinedAt / stuAttAll / stuAbsent / stuAtt / ownTag
+      单文件没有构建，没法真正共享 —— 所以两处各存一份，**改任一边都要同步另一边**。
+   原则（抄主端的规矩）：**能算出来的就不许手写**。
+      进度 = 事实表里 status==='done' 的课次数；
+      人数 = 学生表挂在这个班下的人数 + 还没建档的预留名额；
+      出勤 = 应出勤（入班后已上的课次）− 缺勤记录条数。
+      都不存字段 —— 存了就一定会过期。 */
+function classLesson(c){ return DB.lessons.filter(l => l.cid === c.id && l.status === 'done').length; }
+const lessonsOf = cid => DB.lessons.filter(l => l.cid === cid);
+/* 班里「没登记名单」的已通过申请占着的名额（申请可以只填人数、不填名单） */
+function classReserved(c){
+  return DB.apps
+    .filter(a => a.state === '已通过' && a.link === c.id)
+    .filter(a => !(a.roster || []).some(r => r && String(r.name || '').trim()))
+    .reduce((s, a) => s + (a.n || 0), 0);
+}
+const classN = c => DB.students.filter(s => s.cls === c.id).length + classReserved(c);
+/* 学生哪天进的这个班：中途插班的才单独写 joinedAt，否则 = 班级开班日 */
+const stuJoinedAt = s => s.joinedAt || (s.cls ? (C(s.cls).startedAt || '') : '');
+function stuAttAll(s){
+  if (!s.cls) return 0;
+  const from = stuJoinedAt(s);
+  return DB.lessons.filter(l => l.cid === s.cls && l.status === 'done' && (!from || l.date >= from)).length;
+}
+/* 缺勤次数：从缺勤事实表数出来（只记缺勤，默认全勤） */
+function stuAbsent(s){
+  if (!s.cls) return 0;
+  const ls = lessonsOf(s.cls);
+  return DB.absences.filter(a => a.sid === s.id).filter(a => {
+    const l = ls[a.no - 1];
+    return !!l && l.status === 'done';
+  }).length;
+}
+const stuAtt = s => Math.max(0, stuAttAll(s) - stuAbsent(s));
+/* 归属标签。★ 归属是**学生自己的字段**，不是从归属教师派生 ——
+   公司自家的学生也可能被派给外包老师教（主端学生页也写了这句）。 */
+const ownTag = o => o === 'own' ? '<span class="tg own">自有</span>' : '<span class="tg out">外包</span>';
+
+/* 「我的」两个集合：我的班 = 我教的班；我的学生 = 在我教的班里的学生 */
+const myClasses  = () => { const me = getSelf(); return me ? DB.classes.filter(c => c.teacher === me) : []; };
+const myStudents = () => {
+  const ids = myClasses().map(c => c.id);
+  return DB.students.filter(s => s.cls && ids.indexOf(s.cls) !== -1);
+};
+
 let DB = load() || seedDB();
 DB.today = [];                /* 教师端不渲染课次，today 留空即可 */
 
@@ -364,33 +618,223 @@ function toast(msg){
   if (!el) return;
   el.textContent = msg; el.classList.add('show');
   clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1900);
+  applyLang();
 }
 
-/* ==================== 视图：两个子页签 ==================== */
+/* ==================== 视图路由（6 屏） ====================
+   home 工作台（默认首屏）/ classes 我的班级 / students 我的学生 / flow 流程表
+   + 原有 apply 提交开班申请 / confirm 回确认。
+   同一套 DOM，三端只换 CSS：手机把 .tabs 变底部 4 项栏，apply / confirm 收到工作台里。 */
 function $id(id){ return document.getElementById(id); }
+const VIEWS = ['home','classes','students','flow','apply','confirm'];
+let curTab = 'home';
+
 function showTab(tab){
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  $id('applyView').classList.toggle('out', tab !== 'apply');
-  $id('applyView').classList.toggle('on', tab === 'apply');
-  $id('confirmView').classList.toggle('out', tab !== 'confirm');
-  if (tab === 'confirm') renderConfirm();
+  if (VIEWS.indexOf(tab) === -1) tab = 'home';
+  curTab = tab;
+  VIEWS.forEach(v => {
+    const el = $id(v + 'View');
+    if (el) el.classList.toggle('out', v !== tab);
+  });
+  const btns = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
+  /* 手机上 apply / confirm 的按钮被 CSS 藏了（收到工作台里）。这时如果照旧只亮自己，
+     底栏 4 项会全灭 —— 用户会以为界面坏了。所以：要亮的那个按钮看不见时，改亮「工作台」。 */
+  const own = btns.filter(b => b.dataset.tab === tab)[0];
+  const lit = (own && own.getClientRects().length) ? tab : 'home';
+  btns.forEach(b => {
+    const on = b.dataset.tab === lit;
+    b.classList.toggle('on', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  renderView(tab);
+}
+function renderView(tab){
+  if (tab === 'home') renderHome();
+  else if (tab === 'classes') renderClasses();
+  else if (tab === 'students') renderStudents();
+  else if (tab === 'flow') renderFlow();
+  else if (tab === 'confirm') renderConfirm();
+}
+
+/* ==================== 「我是谁」（无登录） ====================
+   新键 zhops.teacher.self：只存教师 id，与存盘（zhops.sched.v3）、语言（zhops.lang）互不干扰。
+   ⚠️ 没有权限模型 —— 这个键谁都能改，任何人都能看任意教师的数据。
+      与「本系统不做权限」的定调一致，接受。 */
+const SELF_KEY = 'zhops.teacher.self';
+function getSelf(){
+  let id = '';
+  try { id = localStorage.getItem(SELF_KEY) || ''; } catch(e){}
+  if (DB.teachers.some(t => t.id === id)) return id;
+  /* 只有一个教师 → 自动算作选中（**不落盘**：免得以后加了人，还留着一个「曾经唯一」的陈旧选择） */
+  if (DB.teachers.length === 1) return DB.teachers[0].id;
+  return '';
+}
+function SELF(){ return DB.teachers.find(t => t.id === getSelf()) || null; }
+function setSelf(id){
+  if (!DB.teachers.some(t => t.id === id)) id = '';
+  try { localStorage.setItem(SELF_KEY, id); } catch(e){}
+  /* 双向同步：页眉「我是谁」与申请表单的「我是哪位教师」是同一个意思，改哪一处都算数。
+     申请流本身一行不改 —— submitApply() 仍然只读 #fTeacher。 */
+  const sp = $id('selfPick'), ft = $id('fTeacher');
+  if (sp && sp.value !== id) sp.value = id;
+  if (ft && id && ft.value !== id) ft.value = id;
+  renderView(curTab);
+}
+/* 未选教师 → 空态；选了但这一屏还没做 → 占位卡（B1 临时，B2 / B3 会换掉） */
+const EMPTY_SELF = '<div class="empty">先选一位教师 —— 在页眉「我是谁」里选，这几屏才有数据。</div>';
+function emptyOrSoon(boxId, soonTitle){
+  const box = $id(boxId); if (!box) return;
+  box.innerHTML = SELF()
+    ? '<div class="soon"><b>'+esc(soonTitle)+'</b>这一屏还没做完，下一批补上。</div>'
+    : EMPTY_SELF;
+  applyLang();
+}
+function renderHome(){
+  const box = $id('homeBody'); if (!box) return;
+  const me = SELF();
+  const nConf = DB.apps.filter(a => a.state === '已驳回' && a.advice).length;
+  let h = '<div class="entry">' +
+    '<button class="primary" onclick="showTab(\'apply\')">＋ 提交开班申请</button>' +
+    '</div>';
+  /* 手机底栏里没有「回确认」，这条卡就是唯一入口 —— 所以有才显示，没有就不占地方 */
+  if (nConf){
+    h += '<div class="todocard" onclick="showTab(\'confirm\')">' +
+      '<div class="t">管理员给了反建议，等你回确认</div><div class="n">'+nConf+'</div></div>';
+  }
+  if (!me){
+    h += EMPTY_SELF;
+  } else {
+    h += '<div class="box"><div class="kv">' +
+      '<div class="k">教师</div><div>'+esc(me.name)+' '+
+        (me.src === 'own' ? '<span class="tg own">自有</span>' : '<span class="tg out">外包</span>')+'</div>' +
+      '<div class="k">可授时段</div><div>'+
+        (me.slots && me.slots.length ? esc(me.slots.map(s => S(s).name).join(' · ')) : '—')+'</div>' +
+      '<div class="k">可授级别</div><div>'+
+        (me.levels && me.levels.length ? esc(me.levels.join(' · ')) : '—')+'</div>' +
+      '</div></div>';
+    h += '<div class="soon"><b>今日课 · 我的班级数 · 我的学生数</b>这一屏还没做完，下一批补上。</div>';
+  }
+  box.innerHTML = h;
+  applyLang();
+}
+function renderClasses(){ emptyOrSoon('classesBody', '我的班级（每班一卡：班名 · 级别 · 上到第几课）'); }
+
+/* ==================== 我的学生（B2） ====================
+   读 zhops-layers §3.3 第三屏：**先按「自有 / 外包」分组**，每个学生一行能看出四件事 ——
+       归属 · 属于哪个班（含代号）· 上到第几课 · 出勤情况。
+   ⚠️ 分组用的是**学生自己的 own 字段**，不是他所在班教师的 src（见上面 ownTag 的说明）。 */
+function renderStudents(){
+  const box = $id('studentsBody'); if (!box) return;
+  if (!SELF()){ box.innerHTML = EMPTY_SELF; applyLang(); return; }
+  const list = myStudents();
+  if (!list.length){
+    box.innerHTML = '<div class="empty">还没有学生。<br>开班申请通过、学生建档编入你的班之后，这里才会有人。</div>';
+    applyLang(); return;
+  }
+  let h = '';
+  [['own','自有'],['out','外包']].forEach(pair => {
+    /* 归一到两档：own 之外一律当外包（老数据可能没写 own） */
+    const rows = list.filter(s => (s.own === 'out' ? 'out' : 'own') === pair[0]);
+    if (!rows.length) return;
+    h += '<div class="sttl"><span class="n">·</span>' + pair[1] +
+         ' <span class="cnt2">' + rows.length + ' 人</span></div>';
+    h += '<div class="box" style="padding:2px 0">' + rows.map(stuRow).join('') + '</div>';
+  });
+  box.innerHTML = h;
+  applyLang();
+}
+function stuRow(s){
+  const c = s.cls ? C(s.cls) : null;
+  const n = c ? classLesson(c) : 0;
+  const all = stuAttAll(s), att = stuAtt(s), abs = stuAbsent(s);
+  return '<div class="sturow">' +
+    '<span class="c-name"><b>' + esc(s.name) + '</b></span>' +
+    '<span class="c-lv"><span class="tg off">' + esc(s.lv) + '</span></span>' +
+    '<span class="c-cls">' + (c ? esc(c.name) + ' <span class="code">' + esc(c.code) + '</span>' : '未编班') + '</span>' +
+    '<span class="c-prog">' + (n > 0 ? '上到第 ' + n + ' 课' : '还没开课') + '</span>' +
+    '<span class="c-att">出勤 ' + (all ? att + ' / ' + all : '—') +
+      (abs ? ' <span class="warn">⚠ 缺 ' + abs + ' 次</span>' : '') + '</span>' +
+  '</div>';
+}
+
+/* ==================== 流程表（B2） ====================
+   读 zhops-layers §3.3 第四屏那张图：从申请到结课 7 步，标出「现在走到哪一步」。
+   ⚠️ 规格只给了图、没给判定口径 —— 下面这条定位规则是我读图定的，写死在这里，要改一句话的事：
+        申请 待审批 / 已驳回          → ② 审核中（被驳回后要回确认再重提，还在这一环来回）
+        申请 已通过、还没建班          → ③ 已通过
+        班级 还没上过课               → ④ 已建班
+        班级 有学生录过成绩、没上满     → ⑥ 阶段考试
+        班级 上过课、没上满            → ⑤ 上课中
+        班级 上满 plannedLessons      → ⑦ 结业
+      ⑥ 排在 ⑤ 之后、⑦ 之前：录成绩是上课过程中每个阶段末的动作，不是独立于上课的一条岔路。
+   高亮规则：**还有东西停着的、最靠前的那一步** —— 那正是老师下一步要动的地方（「卡在哪」）。
+      什么都没提交 → 高亮 ①；全都结业了 → 高亮 ⑦。 */
+const FLOW = [
+  ['提交申请', '你填好时段、级别、人数，提交给管理员'],
+  ['审核中',   '管理员在看时间碰撞 / 教室占用'],
+  ['已通过',   '批准了，等着建班'],
+  ['已建班',   '班建好了，可以开始上课'],
+  ['上课中',   '按课次推进，每上一节记一次'],
+  ['阶段考试', '每个阶段末录一次成绩'],
+  ['结业',     '上满课次，这个班结束'],
+];
+function flowPos(kind, o){
+  if (kind === 'app'){
+    if (o.state === '已通过') return (o.link && DB.classes.some(c => c.id === o.link)) ? 4 : 3;
+    return 2;
+  }
+  const n = classLesson(o);
+  if (n === 0) return 4;
+  if (n >= (o.plannedLessons || 42)) return 7;
+  const hasExam = DB.students.some(s => s.cls === o.id && s.exam && Object.keys(s.exam).length);
+  return hasExam ? 6 : 5;
+}
+function renderFlow(){
+  const box = $id('flowBody'); if (!box) return;
+  const me = SELF();
+  if (!me){ box.innerHTML = EMPTY_SELF; applyLang(); return; }
+  const items = [];
+  DB.apps.filter(a => a.teacher === me.id).forEach(a => items.push(flowPos('app', a)));
+  DB.classes.filter(c => c.teacher === me.id).forEach(c => items.push(flowPos('cls', c)));
+  const at = {};
+  items.forEach(p => { at[p] = (at[p] || 0) + 1; });
+  let here = 1;
+  for (let i = 1; i <= 7; i++){ if (at[i]){ here = i; break; } }
+  let h = '<div class="flowlist">';
+  FLOW.forEach((step, i) => {
+    const n = i + 1, cnt = at[n] || 0, cur = (n === here);
+    h += '<div class="fstep' + (cur ? ' cur' : '') + '">' +
+      '<div class="fn">' + n + '</div>' +
+      '<div class="fb"><div class="ft">' + step[0] +
+        (cnt ? '<span class="fcnt">' + cnt + '</span>' : '') + '</div>' +
+        '<div class="fd">' + step[1] + '</div>' +
+        (cur ? '<div class="fhere">← 你现在在这里</div>' : '') +
+      '</div></div>';
+  });
+  h += '</div>';
+  box.innerHTML = h;
+  applyLang();
 }
 
 /* ==================== 提交开班申请 ==================== */
 function fillTeachers(){
-  $id('fTeacher').innerHTML = DB.teachers.map(t =>
+  const opts = DB.teachers.map(t =>
     '<option value="'+t.id+'">'+esc(t.name)+' · '+(t.src==='own'?'自有':'外包')+'</option>').join('');
-}
-/* 只清「我是哪位教师」这一条：把教师列表置空并落盘 + 重绘，其余默认项/数据不动 */
-function resetTeacherFilter(){
-  DB.teachers = [];
-  save();
-  fillTeachers();
-  toast('已清空教师筛选（仅清教师下拉，其它保留）');
+  $id('fTeacher').innerHTML = opts;
+  /* 页眉的「我是谁」与表单里的「我是哪位教师」同一份选项，只是多一个「未选」 */
+  const sp = $id('selfPick');
+  if (sp){
+    sp.innerHTML = '<option value="">— 未选 —</option>' + opts;
+    const want = getSelf();
+    sp.value = want;
+    if (want) $id('fTeacher').value = want;
+  }
+  applyLang();
 }
 function fillSlots(){
   $id('fSlot').innerHTML = DB.slots.map(s =>
     '<option value="'+s.id+'">'+esc(s.name)+' '+esc(s.time)+' · '+esc(s.days)+'</option>').join('');
+  applyLang();
 }
 function syncRoom(){
   const offline = $id('fMode').value === 'offline';
@@ -406,6 +850,7 @@ function addRosterRow(){
     '<input placeholder="姓名" data-rn="'+i+'">' +
     '<input placeholder="电话 / Zalo（选填）" data-rp="'+i+'">';
   wrap.appendChild(div);
+  applyLang();
 }
 function collectRoster(){
   const names = $id('rosterRows').querySelectorAll('[data-rn]');
@@ -452,7 +897,7 @@ function submitApply(){
   $id('out').classList.add('on');
   toast('申请已提交');
 }
-function setErr(m){ $id('err').textContent = m; }
+function setErr(m){ $id('err').textContent = m; applyLang(); }
 function renderSummary(a){
   $id('summary').innerHTML =
     '<div class="k">教师</div><div>'+esc(a.teacher)+' '+(a.src==='own'?'<span class="tg own">自有</span>':'<span class="tg out">外包</span>')+'</div>' +
@@ -462,6 +907,7 @@ function renderSummary(a){
     '<div class="k">学生人数</div><div>'+a.n+' 人</div>' +
     (a.roster && a.roster.length ? '<div class="k">名单</div><div>'+a.roster.length+' 位（通过后建档编班）</div>' : '') +
     (a.note ? '<div class="k">备注</div><div>'+esc(a.note)+'</div>' : '');
+  applyLang();
 }
 function restartApply(){
   $id('form').classList.remove('out');
@@ -497,6 +943,7 @@ function renderConfirm(){
       replied + acts +
     '</div>';
   }).join('');
+  applyLang();
 }
 function acceptApp(id){
   const a = DB.apps.find(x => x.id === id); if (!a) return;
@@ -514,10 +961,257 @@ function rejectApp(id){
   save(); renderConfirm(); toast('已回复：不接受');
 }
 
+/* ==================== 语言切换（B · 翻译层） ====================
+   与主端（admin）同一套做法：不动现有中文代码；额外挂一本「中文 → 越南语」对照表 VI，
+   渲染后把页面上出现的文字按表替换。没进表的句子保持中文，可逐条往 VI 里补。
+   选择记在本机键 zhops.lang（与主端共用一个键；数据仍走 zhops.sched.v3 那一份，两边不打架）。 */
+let LANG = (function(){ try { return localStorage.getItem('zhops.lang') || 'zh'; } catch(e){ return 'zh'; } })();
+const VI = {
+  /* 标题 / 页眉 / 页脚 */
+  '中文课 · 教师端':'Lớp học tiếng Trung · Giáo viên',
+  '中文课平台 · 教师端（深色）。本页与 admin 共用同一份本机存储；提交即写入，无需申请码。':
+    'Nền tảng lớp học tiếng Trung · Cổng giáo viên (nền tối). Trang này dùng chung một bộ nhớ máy với admin; gửi là ghi luôn, không cần mã đơn.',
+  /* 页签 / 顶部说明段 */
+  '提交开班申请':'Gửi đơn mở lớp', '回确认':'Xác nhận lại',
+  /* ★ 2026-10-13 新增：副标题由「越南语前缀 + 中文」混排改为纯中文（前缀本来就是 h1 的越南语，重复了），
+     改成职责描述 —— 对齐 zhops-layers §3.4「教师只能做三件事」。 */
+  '提交开班申请 · 推进课次 · 录入成绩':'Gửi đơn mở lớp · Tiến buổi học · Nhập điểm',
+  /* ★ 2026-10-13 新增：页眉「我是谁」选择器（无登录，只记本机） */
+  '我是谁':'Tôi là ai', '— 未选 —':'— Chưa chọn —',
+  /* ★ 2026-10-13 新增：六屏页签 */
+  '工作台':'Bảng làm việc', '我的班级':'Lớp của tôi',
+  '我的学生':'Học viên của tôi', '流程表':'Quy trình',
+  /* ★ 2026-10-13 新增：工作台（入口 / 回确认卡 / 教师小卡） */
+  '＋ 提交开班申请':'＋ Gửi đơn mở lớp',
+  '管理员给了反建议，等你回确认':'Quản trị viên đã đưa ca đề xuất, chờ bạn xác nhận lại',
+  '可授时段':'Ca có thể dạy', '可授级别':'Cấp độ có thể dạy',
+  '今日课 · 我的班级数 · 我的学生数':'Buổi học hôm nay · Số lớp của tôi · Số học viên của tôi',
+  /* ★ 2026-10-13 新增：空态 + 占位卡（B1 临时，B2 / B3 会换掉） */
+  '先选一位教师 —— 在页眉「我是谁」里选，这几屏才有数据。':
+    'Hãy chọn một giáo viên —— chọn ở「Tôi là ai」trên đầu trang thì các trang này mới có dữ liệu.',
+  '这一屏还没做完，下一批补上。':'Trang này chưa làm xong, sẽ bổ sung ở đợt sau.',
+  '我的班级（每班一卡：班名 · 级别 · 上到第几课）':
+    'Lớp của tôi (mỗi lớp một thẻ: tên lớp · cấp độ · đã dạy đến bài nào)',
+  '我的学生（按自家 / 外包分组）':'Học viên của tôi (nhóm theo tự có / thuê ngoài)',
+  '流程表（7 步 + 高亮停在哪一步）':'Quy trình (7 bước + làm nổi bật đang dừng ở bước nào)',
+  /* ★ 2026-10-13 新增（B2 · 我的学生） */
+  '出勤':'Đi học', '未编班':'Chưa xếp lớp', '还没开课':'Chưa mở lớp',
+  '还没有学生。':'Chưa có học viên.',
+  '开班申请通过、学生建档编入你的班之后，这里才会有人。':
+    'Sau khi đơn mở lớp được duyệt và học viên được tạo hồ sơ xếp vào lớp của bạn, mới có người ở đây.',
+  /* ★ 2026-10-13 新增（B2 · 流程表 7 步）
+     ⚠️「提交申请」不能和「提交开班申请」撞 —— _viKeys 按长度降序，长的先替，所以安全。
+        「已通过」沿用上面已有的词条。 */
+  '提交申请':'Gửi đơn', '审核中':'Đang duyệt', '已建班':'Đã mở lớp',
+  '上课中':'Đang dạy', '阶段考试':'Thi giai đoạn', '结业':'Kết khóa',
+  '你填好时段、级别、人数，提交给管理员':'Bạn điền ca, cấp độ, số người rồi gửi cho quản trị viên',
+  '管理员在看时间碰撞 / 教室占用':'Quản trị viên đang xem trùng thời gian / phòng học bị chiếm',
+  '批准了，等着建班':'Đã duyệt, chờ mở lớp',
+  '班建好了，可以开始上课':'Lớp đã mở, có thể bắt đầu dạy',
+  '按课次推进，每上一节记一次':'Tiến theo từng buổi, mỗi buổi dạy xong ghi một lần',
+  '每个阶段末录一次成绩':'Cuối mỗi giai đoạn nhập điểm một lần',
+  '上满课次，这个班结束':'Dạy đủ số buổi thì lớp này kết thúc',
+  '← 你现在在这里':'← Bạn đang ở đây',
+  '本页是':'Trang này là ', '教师端':'Cổng giáo viên',
+  '：提交开班申请、对管理员的「反建议时段」回确认。':
+    ': gửi đơn mở lớp, xác nhận lại「ca đề xuất」của quản trị viên.',
+  '提交后申请直接进入管理端的「开班申请 · 待审批」队列（同一份本机存储）。':
+    'Sau khi gửi, đơn vào thẳng hàng đợi「Đơn mở lớp · Chờ duyệt」của bảng quản trị (cùng một bộ nhớ máy).',
+  /* ⚠️ 下面几条是被 <code> / <b> 内联标签切开的碎片，按节点原文整段作 key 才匹配得上 */
+  '⚠️ 本地用 ':'⚠️ Trên máy, mở bằng ',
+  '打开时，admin 与 teacher 在 Chrome 下是':'thì admin và teacher trong Chrome là ',
+  '同一源、互通':'cùng nguồn, thông nhau',
+  '的（teacher 提交后本地 admin 待审批立刻能看到）；':'(teacher gửi xong, admin trên máy thấy ngay ở chờ duyệt);',
+  '但 ':'nhưng ', '与线上':'và',
+  '是不同源、不互通——要让别人用 / 跨设备，请发布到同一个网址（':
+    'là khác nguồn, không thông nhau —— muốn người khác dùng / dùng nhiều thiết bị, hãy phát hành cùng một địa chỉ (',
+  '）后用线上地址。':') rồi dùng địa chỉ trực tuyến.',
+  /* 表单 · 基本信息 */
+  '基本信息':'Thông tin cơ bản',
+  '我是哪位教师':'Tôi là giáo viên nào',
+  '级别':'Cấp độ', '形态':'Hình thức',
+  '线上（不占教室）':'Trực tuyến (không dùng phòng)',
+  '线下（需填教室）':'Ngoại tuyến (cần điền phòng)',
+  '教室名称':'Tên phòng học', '例如 B2':'ví dụ B2',
+  /* 可上课时段 */
+  '可上课时段':'Ca có thể dạy', '时段':'Ca học',
+  /* 学员与开课计划 */
+  '学员与开课计划':'Học viên và kế hoạch mở lớp',
+  '能带来的学生人数':'Số học viên có thể mang đến',
+  '单个班 8–12 人':'một lớp 8–12 người',
+  '低于 8 人仅提示、不拦提交；超过 12 人请拆班。':'Dưới 8 người chỉ nhắc, không chặn gửi; trên 12 người hãy tách lớp.',
+  '学生名单（选填）':'Danh sách học viên (tùy chọn)',
+  '＋ 添加一名学生':'＋ Thêm một học viên',
+  '只填姓名即可；通过后这些学生会被建档案并编入这个班。':
+    'Chỉ cần điền họ tên; sau khi duyệt các học viên này sẽ được tạo hồ sơ và xếp vào lớp này.',
+  '备注（选填）':'Ghi chú (tùy chọn)',
+  '例如：学员都是工厂班组长，零基础，希望周末上课':
+    'ví dụ: học viên đều là tổ trưởng trong xưởng, chưa biết gì, muốn học cuối tuần',
+  '姓名':'Họ tên', '电话 / Zalo（选填）':'Điện thoại / Zalo (tùy chọn)',
+  /* 提交 / 结果 */
+  '提交申请':'Gửi đơn',
+  '申请已提交，已进入管理端「待审批」队列。':'Đã gửi đơn, đã vào hàng đợi「Chờ duyệt」của bảng quản trị.',
+  '再提交一条':'Gửi thêm một đơn',
+  /* 回确认 */
+  '管理员驳回时若给了「反建议时段」，会出现在这里。点击':
+    'Khi quản trị viên từ chối mà có「ca đề xuất」, sẽ hiện ở đây. Bấm ',
+  '＝把时段换成反建议的、重新提交待审批；':' = đổi ca sang ca đề xuất, gửi lại chờ duyệt;',
+  '点击':'bấm ',
+  '＝维持原时段并标记已回复。':' = giữ ca cũ và đánh dấu đã trả lời.',
+  '接受':'Nhận', '不接受':'Không nhận', '接受反建议':'Nhận ca đề xuất',
+  '没有需要回确认的申请':'Không có đơn nào cần xác nhận lại',
+  '✓ 已接受反建议，重新提交待审批':'✓ Đã nhận ca đề xuất, gửi lại chờ duyệt',
+  '✗ 已回复：不接受（维持原时段）':'✗ Đã trả lời: không nhận (giữ ca cũ)',
+  '已接受反建议，重新提交待审批':'Đã nhận ca đề xuất, gửi lại chờ duyệt',
+  '已回复：不接受':'Đã trả lời: không nhận',
+  '原时段':'Ca cũ', '驳回原因：':'Lý do từ chối: ', '反建议时段：':'Ca đề xuất: ',
+  '时间碰撞':'Trùng thời gian', '线下教室被占用':'Phòng học ngoại tuyến đã bị chiếm',
+  /* 提交结果汇总块 · 字段 */
+  '教师':'Giáo viên', '学生人数':'Số học viên', '名单':'Danh sách', '备注':'Ghi chú',
+  /* ★ 2026-10-13 补（P-18 漏词）：提交结果汇总块里「N 位（通过后建档编班）」的括号部分。
+     数字 + 「位」由 _viRe 收拾，但这个括号是纯中文，字典不补就整句漏 ——
+     之前没暴露，是因为测试台的演示教师被 purgeDemoTeachers 清空、提交根本没跑通。 */
+  '（通过后建档编班）':' (tạo hồ sơ sau khi duyệt)',
+  '自有':'Tự có', '外包':'Thuê ngoài', '线上':'Trực tuyến', '线下':'Ngoại tuyến',
+  /* 校验 / 提示条 */
+  '请选择教师':'Vui lòng chọn giáo viên', '请选择级别':'Vui lòng chọn cấp độ',
+  '请选择时段':'Vui lòng chọn ca học',
+  '线下课必须填教室':'Lớp ngoại tuyến phải điền phòng học',
+  '请填写学生人数（至少 1 人）':'Vui lòng điền số học viên (ít nhất 1 người)',
+  '该教师这个时段已经有课，管理员可能驳回':'Giáo viên đã có lớp ở ca này, quản trị viên có thể từ chối',
+  '该教室此时段已被占用，管理员可能驳回':'Phòng học đã bị chiếm ở ca này, quản trị viên có thể từ chối',
+  '申请已提交':'Đã gửi đơn',
+  /* 存盘状态 */
+  '本机存储 · 尚无改动':'Bộ nhớ máy · Chưa thay đổi',
+  '本机存储 · 已载入存盘':'Bộ nhớ máy · đã nạp bản lưu',
+  '已存盘 ·':'Đã lưu ·', '存盘失败':'Lưu thất bại',
+  /* 数据值：时段 / 星期 / 阶段 / 状态 */
+  '早班':'Ca sáng', '午间':'Buổi trưa', '晚班':'Ca tối', '周末':'Cuối tuần',
+  '周一':'Thứ hai', '周二':'Thứ ba', '周三':'Thứ tư', '周四':'Thứ năm', '周五':'Thứ sáu',
+  '周六':'Thứ bảy', '周日':'Chủ nhật',
+  '第一阶段':'Giai đoạn 1', '第二阶段':'Giai đoạn 2', '第三阶段':'Giai đoạn 3',
+  '第四阶段':'Giai đoạn 4', '第五阶段':'Giai đoạn 5', '第六阶段':'Giai đoạn 6',
+  '未开课':'Chưa mở lớp', '尚未开课':'Chưa mở lớp',
+  '已通过':'Đã duyệt', '已驳回':'Đã từ chối', '待审批':'Chờ duyệt',
+  '学生':'Học viên', '本人':'Bản thân',
+};
+const _langOrig = new WeakMap();   /* 记下中文原文，切回中文时还原 */
+/* 长的先替 —— 否则「学生」会先把「学生人数」啃掉一半 */
+const _viKeys = Object.keys(VI).sort((a, b) => b.length - a.length);
+/* 带数字 / 换位的形态：字典跑完只收拾剩下的动态片段。
+   ⚠️ 顺序敏感：具体的排前面（「第 3 课」要先于「3 课」） */
+const _viRe = [
+  /* ⚠️ 顺序敏感：更具体的必须排在更笼统的前面，否则会被先啃碎。
+     「上到第 3 课」要排在「第 3 课」前面 —— 否则先命中后者会得到「上到Bài 3」，
+     「上到」两个字留在中文里。 */
+  [/上到第\s*(\d+)\s*课/g, 'Đã dạy đến bài $1'],
+  [/⚠\s*缺\s*(\d+)\s*次/g, '⚠ vắng $1 buổi'],
+  [/第\s*(\d+)\s*课/g, 'Bài $1'],
+  [/(\d+)\s*人/g, '$1 người'],
+  [/(\d+)\s*位/g, '$1 người'],
+  [/(\d+)\s*课(?!次)/g, '$1 buổi'],
+];
+/* 单字量词 / 序号：**只有整个节点就这一个字**时才替换。
+   ⚠️ 不能放进子串替换 —— 「位」会把「我是哪位教师」啃成「我是哪người教师」。 */
+const _viSolo = {'个':'lớp','节':'buổi','人':'người','位':'người','次':'lần','条':'mục','名':'người','课':'buổi','一':'1','二':'2','三':'3'};
+function viSwap(s){
+  let out = s;
+  const solo = out.trim();
+  if (solo.length === 1 && _viSolo[solo]) return out.split(solo).join(_viSolo[solo]);
+  for (let i = 0; i < _viKeys.length; i++){
+    const k = _viKeys[i];
+    if (out.indexOf(k) !== -1) out = out.split(k).join(VI[k]);
+  }
+  for (let i = 0; i < _viRe.length; i++) out = out.replace(_viRe[i][0], _viRe[i][1]);
+  return out;
+}
+function langWalk(root){
+  if (!root) return;
+  const vi = (LANG === 'vi');
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node){
+      const p = node.parentNode;
+      if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while ((n = w.nextNode())){
+    const raw = n.nodeValue;
+    if (!raw || !raw.trim()) continue;
+    if (vi){
+      const out = viSwap(raw);
+      if (out !== raw){ if (!_langOrig.has(n)) _langOrig.set(n, raw); n.nodeValue = out; }
+    } else if (_langOrig.has(n)){
+      n.nodeValue = _langOrig.get(n);
+    }
+  }
+  ['placeholder','title'].forEach(attr => {
+    root.querySelectorAll('['+attr+']').forEach(el => {
+      const raw = el.getAttribute(attr); if (!raw) return;
+      if (vi){
+        const out = viSwap(raw);
+        if (out !== raw){ if (!_langOrig.has(el)) _langOrig.set(el, raw); el.setAttribute(attr, out); }
+      } else if (_langOrig.has(el)){ el.setAttribute(attr, _langOrig.get(el)); }
+    });
+  });
+}
+function syncLangBtn(){
+  /* ⚠️ 按钮上的「中文」是**语言名**，不进 VI 字典 ——
+     字典里的「中文」会把别处真正的「中文」数据也一起啃掉。
+     所以只在这里单独给它换名（applyLang 里 langWalk 之后调用，会覆盖回去）。 */
+  document.querySelectorAll('#langSwitch button').forEach(b => {
+    b.classList.toggle('on', b.dataset.lang === LANG);
+    const lb = b.querySelector('.lb');
+    if (!lb) return;
+    const want = (b.dataset.lang === 'zh') ? (LANG === 'vi' ? 'Tiếng Trung' : '中文') : 'Tiếng Việt';
+    if (lb.textContent !== want) lb.textContent = want;
+  });
+}
+let _titleOrig = null;   /* <title> 在 <head>，TreeWalker 够不到，单独存一份原文 */
+function applyLang(){
+  langWalk(document.body);
+  if (LANG === 'vi'){
+    if (_titleOrig === null) _titleOrig = document.title;
+    document.title = viSwap(_titleOrig);
+  } else if (_titleOrig !== null){
+    document.title = _titleOrig;
+  }
+  syncLangBtn();
+}
+function setLang(l){
+  LANG = l;
+  try { localStorage.setItem('zhops.lang', l); } catch(e){}
+  applyLang();
+}
+document.getElementById('langSwitch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-lang]'); if (b) setLang(b.dataset.lang);
+});
+/* 后出现的内容（提交结果块 / 回确认列表 / 提示条）：DOM 一变就重扫一遍。
+   只观察新增节点（childList），我们改的是文字（characterData）→ 不会自触发死循环 */
+(function(){
+  if (typeof MutationObserver === 'undefined') return;
+  let busy = false;
+  new MutationObserver(() => {
+    if (busy || LANG !== 'vi') return;
+    busy = true;
+    Promise.resolve().then(() => { try { langWalk(document.body); } finally { busy = false; } });
+  }).observe(document.body, { childList:true, subtree:true });
+})();
+
 /* ==================== 启动 ==================== */
-fillTeachers(); fillSlots(); syncRoom(); renderConfirm();
+fillTeachers(); fillSlots(); syncRoom(); renderConfirm(); applyLang();
 $id('fMode').addEventListener('change', syncRoom);
-document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+/* 页眉「我是谁」→ 写本机 + 同步到表单 + 重渲当前屏 */
+$id('selfPick').addEventListener('change', e => setSelf(e.target.value));
+/* 表单里的「我是哪位教师」→ 反向同步回页眉（申请流本身不改，只是多记一笔「我是谁」） */
+$id('fTeacher').addEventListener('change', e => {
+  try { localStorage.setItem(SELF_KEY, e.target.value); } catch(err){}
+  const sp = $id('selfPick'); if (sp) sp.value = e.target.value;
+  renderView(curTab);
+});
+showTab('home');
 </script>
 </body>
 </html>
