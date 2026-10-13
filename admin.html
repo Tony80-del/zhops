@@ -247,6 +247,7 @@ a{color:var(--brand);text-decoration:none;}
 .tg.out{color:#8a4a06;border-color:var(--amber-line);background:var(--amber-soft);}
 .tg.on{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
 .tg.warn{color:var(--warn);border-color:#e8d9a8;background:var(--warn-soft);}
+.lsub{font:inherit;font-size:12px;max-width:130px;padding:3px 4px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);}
 .tg.bad{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
 .tg.off{color:var(--ink2);border-color:var(--line2);background:var(--surface-3);}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto;}
@@ -1733,7 +1734,10 @@ function vLessons(){
             '<td class="m nowrap">' + lessonLabel(clv, l.no) + '</td>' +
             '<td class="m nowrap">' + slotStart(l.time) + '<span style="color:var(--ink3)">–' + endOf(slotStart(l.time)) + '</span></td>' +
             '<td>' + modeTag(cm) + '</td>' +
-            '<td>' + esc(t.name) + (sub ? ' <span class="tg warn">代课</span>' : '') + '</td>' +
+            '<td><select class="lsub" onchange="setLessonTeacher(\'' + l.id + '\', this.value)">' +
+              '<option value="">常任 · ' + esc((ctc && T(ctc).name) || '—') + '</option>' +
+              DB.teachers.map(t2 => '<option value="' + t2.id + '"' + (l.teacher === t2.id ? ' selected' : '') + '>' + esc(t2.name) + '</option>').join('') +
+            '</select>' + (sub ? ' <span class="tg warn">代课</span>' : '') + '</td>' +
             '<td>' + (cm === 'offline'
                         ? (cr ? esc(cr) : '<span class="tg bad">未填</span>')
                         : '<span style="color:var(--ink3)">不占教室</span>') + '</td>' +
@@ -2974,6 +2978,18 @@ function saveRoll(){
   return true;
 }
 
+/* ★ 代课入口（2026-10-14）：在课次记录页给每节课指定「代课教师」。
+   写 l.teacher（空 = 恢复常任）；授课教师 ≠ 班常任教师 时，课次记录页与教师端都显示「代课」徽章。
+   ⚠️ 显示层（vLessons @1722 / 教师端 todayRow）早已就绪，这里补的是「设置入口」——
+   之前 l.teacher 恒为 undefined，代课标记永远是 false。 */
+function setLessonTeacher(lid, tid){
+  const l = DB.lessons.find(x => x.id === lid); if (!l) return;
+  l.teacher = tid || undefined;   /* 空 = 恢复常任 */
+  save();
+  toast('已更新代课安排');
+  render();
+}
+
 /* ---- 编入班级抽屉（候选池 → 已有班，2026-10-12 第 ③ 步）----
    判据跟老系统 findClassFor() 一致：级别相同 + 未满 + 该生可上课时段含该班时段。
    能编的给按钮，不能编的**标出原因**（透明 —— 别让人猜为什么这个班点不了）。 */
@@ -3624,6 +3640,8 @@ const VI = {
   '人还在读，未结业':'người còn đang học, chưa tốt nghiệp',
   '节 ·':'buổi ·', '个 · 在读':'lớp · đang học', '人，进度':'người, tiến độ',
   '完成等级读的是':'Cấp độ hoàn thành đọc từ', '· 尚未编班':'· chưa xếp lớp',
+  /* ★ 2026-10-14 新增（代课入口） */
+  '常任':'Giáo viên chính', '已更新代课安排':'Đã cập nhật giáo viên dạy thay',
 };
 const _langOrig = new WeakMap();   /* 记下中文原文，切回中文时还原 */
 /* 长的先替 —— 否则「课次」会先把「课次记录」啃掉一半 */

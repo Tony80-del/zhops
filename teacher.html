@@ -95,6 +95,48 @@
     opacity:0; pointer-events:none; transition:opacity .2s; z-index:9;
   }
   .toast.show{opacity:1;}
+
+  /* ==================== B4：推进课次 / 点名 / 代课显示 ==================== */
+  .clsact{display:flex; gap:8px; margin-top:11px;}
+  .clsact .tbtn{flex:1; font:inherit; padding:10px 8px; border-radius:9px; border:1px solid var(--acc);
+    background:var(--acc); color:var(--onacc); font-weight:600; cursor:pointer; font-size:13.5px;}
+  .clsact .tbtn.ghost{background:transparent; color:var(--acc); border-color:var(--line);}
+  .clsact .tbtn:active{transform:scale(.98);}
+  .tg.sub{color:var(--warn); border:1px solid var(--warnb); background:rgba(245,200,106,.14);}
+  /* 点名弹层（轻量 modal，三端复用） */
+  .roll-mask{position:fixed; inset:0; background:rgba(2,6,23,.55); z-index:30; display:none;
+    align-items:flex-end; justify-content:center; padding:0;}
+  .roll-mask.on{display:flex;}
+  .roll-sheet{background:var(--card); width:100%; max-width:560px; max-height:86vh; overflow:auto;
+    border-radius:16px 16px 0 0; padding:16px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow:0 -12px 44px rgba(0,0,0,.45);}
+  .roll-sheet .d-h{display:flex; align-items:flex-start; gap:10px; margin-bottom:10px;}
+  .roll-sheet .d-h .t{font-size:16px; font-weight:650; color:var(--text);}
+  .roll-sheet .d-h .s{font-size:12px; color:var(--muted); margin-top:2px;}
+  .roll-sheet .x{margin-left:auto; border:0; background:transparent; font-size:20px; line-height:1; color:var(--muted); cursor:pointer; padding:2px 6px;}
+  .roll-sheet .note{font-size:12.5px; color:var(--muted); background:var(--panel); border:1px solid var(--line);
+    border-radius:9px; padding:9px 11px; margin:10px 0 4px;}
+  .roll-sheet .lsec{font-size:12px; color:var(--muted); margin:12px 0 6px;}
+  .roll-sheet select{font:inherit; width:100%; padding:10px; border:1px solid var(--line); border-radius:9px;
+    background:var(--panel); color:var(--text); font-size:13.5px;}
+  .roll-list{display:flex; flex-direction:column; gap:2px; margin-top:6px;}
+  .rollrow{display:flex; align-items:center; gap:10px; padding:11px 8px; border-radius:9px; cursor:pointer;}
+  .rollrow:active{background:var(--panel);}
+  .rollrow input{width:19px; height:19px; accent-color:var(--acc);}
+  .rollrow .nm{flex:1; font-size:14px; color:var(--text);}
+  .rollrow .ph{font-size:12px; color:var(--muted); font-family:ui-monospace,monospace;}
+  .rollrow .tagx{font-size:11px; color:var(--bad); border:1px solid var(--badb); border-radius:6px; padding:1px 7px;}
+  .lpick{font-size:13.5px; color:var(--text);}
+  .ls{font-size:11px; padding:1px 7px; border-radius:6px;}
+  .ls.done{color:var(--ok); border:1px solid var(--okb);}
+  .ls.today{color:var(--warn); border:1px solid var(--warnb);}
+  .ls.plan{color:var(--muted); border:1px solid var(--line);}
+  .ls.cancel{color:var(--bad); border:1px solid var(--badb);}
+  .roll-done{margin:14px 0 2px; display:flex; gap:10px;}
+  .roll-done .btn{flex:1; font:inherit; padding:12px; border-radius:10px; border:1px solid var(--acc);
+    background:var(--acc); color:var(--onacc); font-weight:600; cursor:pointer; font-size:14px;}
+  .roll-done .btn.ghost{background:transparent; color:var(--acc); border-color:var(--line);}
+  @media (min-width:1200px){ .roll-mask{align-items:center; padding:16px;} .roll-sheet{border-radius:16px;} }
   .ro{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--text);}
   .empty{color:var(--hint); font-size:12.5px; padding:18px; text-align:center; border:1px dashed var(--line); border-radius:10px;}
   .app-card{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:14px 15px; margin-bottom:12px;}
@@ -461,6 +503,11 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ===================== B4：点名弹层（轻量 modal） ===================== -->
+<div class="roll-mask" id="rollMask" onclick="if(event.target===this)closeRollModal()">
+  <div class="roll-sheet" id="rollSheet"></div>
+</div>
+
 <script>
 /* ==================== 数据层（与 admin 同一套 zhops.sched.v3 存盘） ==================== */
 const KEY = 'zhops.sched.v3';
@@ -546,6 +593,7 @@ function load(){
 let loadedFromStore = false;
 let lastSavedAt = null;
 let dState = null;            /* 占位：roomOf/clashOf 里会读，teacher 端不真正用抽屉 */
+let rState = null;            /* B4：点名弹层状态 { cid, no } */
 
 const T  = id => DB.teachers.find(x => x.id === id) || {name:'—'};
 const S  = id => DB.slots.find(x => x.id === id) || {name:'—', time:'', days:''};
@@ -804,10 +852,11 @@ function renderHome(){
 }
 function todayRow(l){
   const c = C(l.cid);
+  const sub = l.teacher && l.teacher !== (c.teacher || '');   /* 代课：这节课授课教师 ≠ 班常任教师 */
   return '<div class="trow">' +
     '<span class="t-time">' + esc(l.time || S(c.slot).time) + '</span>' +
     '<span class="t-name"><b>' + esc(c.name) + '</b> <span class="code">' + esc(c.code) + '</span></span>' +
-    '<span class="t-mode">' + modeTag(c.mode) + '</span>' +
+    '<span class="t-mode">' + modeTag(c.mode) + (sub ? ' <span class="tg sub">代课 · ' + esc(T(l.teacher).name) + '</span>' : '') + '</span>' +
     '<span class="t-prog">第 ' + l.no + ' 课</span>' +
     '<span class="t-link">' + placeText(c) + '</span>' +
   '</div>';
@@ -843,8 +892,104 @@ function clsCard(c){
       '<div class="k">班里学生</div><div class="v">' + classN(c) + ' / ' + cap + ' 人</div>' +
       '<div class="k">' + (c.mode === 'offline' ? '上课地点' : '视讯链接') + '</div><div class="v">' + placeVal(c) + '</div>' +
     '</div>' +
+    '<div class="clsact">' +
+      '<button class="tbtn" onclick="advanceClass(\'' + c.id + '\')">推进课次</button>' +
+      '<button class="tbtn ghost" onclick="openRollModal(\'' + c.id + '\')">点名</button>' +
+    '</div>' +
   '</div>';
 }
+
+/* ==================== B4：推进课次 + 点名（写操作） ====================
+   ★ 边界（Tony 2026-10-13 拍板 + 10-14 补口径）：
+     ① 只作用于「我带的班」（myClasses） —— 教师碰不到别人的班（窄权限）。
+     ② 推进课次：逐字对齐主端 advanceClass —— today 优先、未来压回今天、plannedLessons 越界保护。
+        教师端没有 buildFacts() —— 派生层（今日课等）每次渲染现算，所以推进后直接 refresh() 即可。
+     ③ 点名：放宽到「任意系统课次」都能点（不限 done/today），支持事后补录；只记缺勤、幂等重建。
+     ④ 代课显示：l.teacher !== 班常任教师 即「代课」—— 显示层（主端已就绪，教师端在此显示）；
+        代课的【设置入口】在主端，教师端只读显示。
+   ⚠️ 教师端写的是共享库 zhops.sched.v3 —— 写错会污染主端数据，所以每一步都有 myClasses 守卫。 */
+
+/* 重新渲染当前视图（写操作后调用，保证工作台/班级/学生都刷新） */
+function refresh(){ renderView(curTab); }
+
+function advanceClass(cid){
+  const me = SELF(); if (!me){ toast('先选你是谁'); return false; }
+  if (!myClasses().some(c => c.id === cid)){ toast('这个班不是你教的'); return false; }
+  const c = C(cid);
+  const total = c.plannedLessons || 42;
+  if (classLesson(c) >= total){ toast(c.name + ' 已完成全部 ' + total + ' 课次'); return false; }
+  const ls = lessonsOf(cid);
+  const next = ls.find(l => l.status === 'today')
+            || ls.filter(l => l.status === 'plan')
+                 .sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0))[0];
+  if (!next){ toast(c.name + ' 还没有课次 —— 先确认它有开班日和时段'); return false; }
+  next.status = 'done';
+  if (next.date > DB.todayDate) next.date = DB.todayDate;   /* 上掉的课不记在未来 */
+  save();
+  toast('已推进：' + c.name + ' 第 ' + next.no + ' 课');
+  refresh();
+  return true;
+}
+
+/* 点名弹层：按 no 顺序排列所有系统课次（不限状态，可事后补录）；默认停在最后一节「已上/今天」 */
+function openRollModal(cid){
+  const me = SELF(); if (!me){ toast('先选你是谁'); return; }
+  if (!myClasses().some(c => c.id === cid)){ toast('这个班不是你教的'); return; }
+  const c = C(cid);
+  const ls = lessonsOf(cid).slice().sort((a, b) => a.no - b.no);
+  if (!ls.length){ toast(c.name + ' 还没有课次 —— 先点一次「推进课次」或确认班里有排课'); return; }
+  const rollable = ls.filter(l => l.status === 'done' || l.status === 'today');
+  rState = { cid: cid, no: (rollable.length ? rollable[rollable.length - 1].no : ls[ls.length - 1].no) };
+  renderRollModal();
+  const m = $id('rollMask'); if (m) m.classList.add('on');
+}
+function renderRollModal(){
+  if (!rState) return;
+  const cid = rState.cid, c = C(cid);
+  const ls = lessonsOf(cid).slice().sort((a, b) => a.no - b.no);
+  if (!ls.some(l => l.no === rState.no)) rState.no = ls[ls.length - 1].no;
+  /* 每次重画都从事实表重读缺勤名单 —— 别信 rState 里的旧值 */
+  const absent = DB.absences.filter(a => a.cid === cid && a.no === rState.no).map(a => a.sid);
+  const students = DB.students.filter(s => s.cls === cid);
+  const opts = ls.map(l => {
+    const stCls = (l.status === 'done' || l.status === 'today' || l.status === 'plan' || l.status === 'cancel') ? l.status : 'plan';
+    const stTxt = l.status === 'done' ? '已上' : l.status === 'today' ? '今天' : l.status === 'plan' ? '待上' : '已取消';
+    return '<option value="' + l.no + '"' + (l.no === rState.no ? ' selected' : '') + '>第 ' + l.no + ' 课 · ' + l.date + ' · ' + stTxt + '</option>';
+  }).join('');
+  const rows = students.length ? students.map(s =>
+    '<label class="rollrow"><input type="checkbox" data-r-sid="' + s.id + '"' + (absent.indexOf(s.id) >= 0 ? ' checked' : '') + '>' +
+      '<span class="nm">' + esc(s.name) + '</span>' +
+      '<span class="ph">' + esc(s.phone || '') + '</span>' +
+      (absent.indexOf(s.id) >= 0 ? '<span class="tagx">缺勤</span>' : '') + '</label>').join('')
+    : '<div class="empty">这个班还没有学员</div>';
+  $id('rollSheet').innerHTML =
+    '<div class="d-h"><div><div class="t">' + esc(c.name) + '</div>' +
+      '<div class="s">点名 · ' + esc(c.code) + '</div></div>' +
+      '<button class="x" onclick="closeRollModal()">✕</button></div>' +
+    '<div class="note"><b>只记缺勤</b> —— 默认全勤，勾上谁没来就行。<br>任意一节系统课次都能点名，可事后补录。</div>' +
+    '<div class="lsec">第几节：</div>' +
+    '<select onchange="rState.no=parseInt(this.value,10);renderRollModal()">' + opts + '</select>' +
+    '<div class="roll-list">' + rows + '</div>' +
+    '<div class="roll-done"><button class="btn" onclick="saveRoll()">保存点名</button>' +
+      '<button class="btn ghost" onclick="closeRollModal()">取消</button></div>';
+  applyLang();
+}
+/* 保存点名：先删该班该节的全部缺勤，再按勾选重建 —— 幂等，重复保存结果一致 */
+function saveRoll(){
+  if (!rState) return false;
+  const cid = rState.cid, no = rState.no;
+  if (!cid || !no) return false;
+  const picked = [];
+  $id('rollSheet').querySelectorAll('[data-r-sid]').forEach(el => { if (el.checked) picked.push(el.dataset.rSid); });
+  DB.absences = DB.absences.filter(a => !(a.cid === cid && a.no === no));
+  picked.forEach(sid => DB.absences.push({ sid: sid, cid: cid, no: no }));
+  save();
+  closeRollModal();
+  toast('已记 ' + picked.length + ' 人缺勤');
+  refresh();
+  return true;
+}
+function closeRollModal(){ rState = null; const m = $id('rollMask'); if (m) m.classList.remove('on'); }
 
 /* ==================== 我的学生（B2） ====================
    读 zhops-layers §3.3 第三屏：**先按「自有 / 外包」分组**，每个学生一行能看出四件事 ——
@@ -1229,6 +1374,20 @@ const VI = {
   '未开课':'Chưa mở lớp', '尚未开课':'Chưa mở lớp',
   '已通过':'Đã duyệt', '已驳回':'Đã từ chối', '待审批':'Chờ duyệt',
   '学生':'Học viên', '本人':'Bản thân',
+  /* ★ 2026-10-14 新增（B4 · 推进课次 + 点名 + 代课显示） */
+  '推进课次':'Tiến buổi học', '点名':'Điểm danh',
+  '只记缺勤':'Chỉ ghi vắng',
+  '默认全勤，勾上谁没来就行。':'Mặc định đủ, tích người vắng.',
+  '任意一节系统课次都能点名，可事后补录。':'Có thể điểm danh bất kỳ buổi nào, bù sau được.',
+  '第几节：':'Buổi thứ:', '保存点名':'Lưu điểm danh', '取消':'Hủy',
+  '已上':'Đã học', '今天':'Hôm nay', '待上':'Chờ học', '已取消':'Đã hủy',
+  '这个班还没有学员':'Lớp này chưa có học viên',
+  '代课':'Dạy thay',
+  '已推进：':'Đã tiến:', '已完成全部':'Đã hoàn thành tất cả',
+  '课次':'buổi học',
+  '还没有课次 —— 先确认它有开班日和时段':'Chưa có buổi học —— hãy xác nhận ngày khai giảng và ca',
+  '这个班不是你教的':'Lớp này không phải bạn dạy', '先选你是谁':'Hãy chọn bạn là ai',
+  '已记 ':'Đã ghi ', ' 人缺勤':' người vắng',
 };
 const _langOrig = new WeakMap();   /* 记下中文原文，切回中文时还原 */
 /* 长的先替 —— 否则「学生」会先把「学生人数」啃掉一半 */
