@@ -322,9 +322,7 @@
 
   <p class="note">
     本页是<b>教师端</b>：提交开班申请、对管理员的「反建议时段」回确认。<br>
-    提交后申请直接进入管理端的「开班申请 · 待审批」队列（同一份本机存储）。<br>
-    <span style="color:var(--hint)">⚠️ 本地用 <code style="display:inline;padding:1px 5px">file://</code> 打开时，admin 与 teacher 在 Chrome 下是<b>同一源、互通</b>的（teacher 提交后本地 admin 待审批立刻能看到）；
-    但 <code style="display:inline;padding:1px 5px">file://</code> 与线上 <code style="display:inline;padding:1px 5px">https://</code> 是不同源、不互通——要让别人用 / 跨设备，请发布到同一个网址（<code style="display:inline;padding:1px 5px">…/zhops/</code>）后用线上地址。</span>
+    提交后申请直接进入管理端的「开班申请 · 待审批」队列（同一份本机存储）。
   </p>
 
   <nav class="tabs" id="tabs">
@@ -1138,15 +1136,10 @@ const VI = {
     ': gửi đơn mở lớp, xác nhận lại「ca đề xuất」của quản trị viên.',
   '提交后申请直接进入管理端的「开班申请 · 待审批」队列（同一份本机存储）。':
     'Sau khi gửi, đơn vào thẳng hàng đợi「Đơn mở lớp · Chờ duyệt」của bảng quản trị (cùng một bộ nhớ máy).',
-  /* ⚠️ 下面几条是被 <code> / <b> 内联标签切开的碎片，按节点原文整段作 key 才匹配得上 */
-  '⚠️ 本地用 ':'⚠️ Trên máy, mở bằng ',
-  '打开时，admin 与 teacher 在 Chrome 下是':'thì admin và teacher trong Chrome là ',
-  '同一源、互通':'cùng nguồn, thông nhau',
-  '的（teacher 提交后本地 admin 待审批立刻能看到）；':'(teacher gửi xong, admin trên máy thấy ngay ở chờ duyệt);',
-  '但 ':'nhưng ', '与线上':'và',
-  '是不同源、不互通——要让别人用 / 跨设备，请发布到同一个网址（':
-    'là khác nguồn, không thông nhau —— muốn người khác dùng / dùng nhiều thiết bị, hãy phát hành cùng một địa chỉ (',
-  '）后用线上地址。':') rồi dùng địa chỉ trực tuyến.',
+  /* ★ 2026-10-13 删：原来这里有一组「被 <code> / <b> 内联标签切开的碎片」词条
+     （⚠️ 本地用 file:// … / 同一源、互通 / 但 … 与线上 / ）后用线上地址。 共 8 条）。
+     对应的是说明段里那句「file:// 与 https:// 同源 / 不同源」的技术备注 —— Tony 指令整段删除，
+     页面里那段 HTML 已连根拔掉，所以这 8 条词条一并删除，不留死键。 */
   /* 表单 · 基本信息 */
   '基本信息':'Thông tin cơ bản',
   '我是哪位教师':'Tôi là giáo viên nào',
