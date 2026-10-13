@@ -90,6 +90,63 @@ a{color:var(--brand);text-decoration:none;}
 .side-foot{padding:11px 18px;border-top:1px solid var(--navy-line);
   font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);line-height:1.7;}
 .side-foot b{color:#ffd166;font-weight:600;}
+/* 存盘状态：给 Tony 看得见的证据（已存盘 · 21:12 / 尚无改动 / 存盘失败） */
+.side-foot #stState{color:var(--navy-tx2);}
+.side-foot #stState.ok{color:#5eead4;}
+.side-foot #stState.bad{color:#fca5a5;}
+.side-foot .sf-btn{
+  display:inline-block;margin-top:3px;padding:0;background:none;border:0;
+  font:inherit;font-family:var(--mono);font-size:10.5px;color:#67e8f9;
+  text-decoration:underline;cursor:pointer;
+}
+.side-foot .sf-btn:hover{color:#a5f3fc;}
+/* ---------- 点名抽屉（2026-10-12 第 ③ 步）---------- */
+/* 一行一个学员，勾上 = 缺勤。缺勤是「例外」，所以列表默认全不勾 —— 一眼扫过去就知道谁没来 */
+.roll-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+.rollrow{display:flex;align-items:center;gap:9px;padding:7px 11px;cursor:pointer;
+  background:var(--surface);border-bottom:1px solid var(--line);font-size:12.5px;}
+.rollrow:last-child{border-bottom:0;}
+.rollrow:hover{background:var(--surface-2);}
+.rollrow input{accent-color:var(--bad,#b03030);width:15px;height:15px;cursor:pointer;flex:none;}
+.rollrow .nm{font-weight:600;}
+.rollrow .ph{color:var(--ink3);font-family:var(--mono);font-size:11.5px;}
+.rollrow .tagx{margin-left:auto;font-size:10.5px;color:var(--ink3);}
+.rollrow input:checked ~ .tagx{color:var(--bad,#b03030);font-weight:600;}
+.rl-pick select{font:inherit;font-size:12.5px;margin-left:4px;padding:2px 6px;
+  border:1px solid var(--line2);border-radius:4px;background:var(--surface);color:var(--ink);}
+/* ---------- 编入班级抽屉（2026-10-12 第 ③ 步）---------- */
+/* 能编的给按钮，不能编的整块压暗 + 标原因 —— 一眼分清「可选项」和「为什么不行」 */
+.enr-list{display:flex;flex-direction:column;gap:8px;}
+.enrrow{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:center;
+  border:1px solid var(--line);border-radius:6px;padding:8px 11px;background:var(--surface);}
+.enrrow.no{opacity:.6;}
+.enrrow .e1{font-size:12.5px;}
+.enrrow .e2{font-size:11.5px;color:var(--ink2);grid-column:1;}
+.enrrow .e3{grid-row:1 / span 2;grid-column:2;}
+/* ---------- 数据 › 出勤明细 / 考试明细抽屉（2026-10-12）---------- */
+/* 一行一条记录：日期 / 课次在前，结论在右 —— 缺勤那行整行泛红，扫一眼就知道缺哪几节。
+   ⚠️ 带 padding / background 的组件类，display 一律显式写（「字体覆盖」那次事故的教训） */
+.at-list,.ex-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+.atrow,.exrow{display:flex;align-items:center;gap:10px;padding:8px 11px;
+  background:var(--surface);border-bottom:1px solid var(--line);font-size:12.5px;}
+.atrow:last-child,.exrow:last-child{border-bottom:0;}
+.atrow .d{flex:0 0 80px;font-family:var(--mono);font-size:11.5px;color:var(--ink3);}
+.atrow .n{color:var(--ink2);}
+.atrow .t{margin-left:auto;}
+.atrow.no{background:var(--bad-soft);}
+.exrow .n{flex:0 0 74px;font-weight:600;}
+.exrow .w{font-size:11.5px;color:var(--ink3);}
+.exrow .t{margin-left:auto;}
+.exrow .t .sc{font-family:var(--mono);font-size:14px;}
+.exrow.cur{background:var(--brand-soft);}
+/* 极简提示条 */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);
+  background:var(--navy);color:#e6f6fb;border:1px solid var(--navy-line);
+  border-radius:8px;padding:9px 16px;font-size:12.5px;z-index:90;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* ---------------- 顶栏 ---------------- */
 #top{
@@ -152,6 +209,8 @@ a{color:var(--brand);text-decoration:none;}
 .stat .v{font-size:23px;font-weight:650;font-family:var(--mono);font-variant-numeric:tabular-nums;
   margin-top:5px;letter-spacing:-.02em;line-height:1.15;}
 .stat .v small{font-size:12px;font-weight:400;color:var(--ink3);font-family:var(--ui);margin-left:3px;}
+/* 「待定」占位：算不出来的数就不编 —— 用小一号的灰字，不跟真数字抢视觉 */
+.stat .v .tbd{font-size:15px;font-weight:650;font-family:var(--ui);color:var(--ink3);letter-spacing:.02em;}
 .stat .d{font-size:11.5px;color:var(--ink3);margin-top:5px;}
 
 /* ---------------- 表格 ---------------- */
@@ -163,6 +222,11 @@ a{color:var(--brand);text-decoration:none;}
 .tbl td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
 .tbl tr:last-child td{border-bottom:0;}
 .tbl tbody tr:hover td{background:#f8fbfd;}
+/* 从排课矩阵点班级卡片跳过来时，把那一行点亮（2026-10-12 第 ③ 步收尾）。
+   ⚠️ 故意放在 :hover 后面 —— 两者权重相同，后写的赢，否则一悬停高亮就没了 */
+.tbl tbody tr.focus td{background:var(--brand-soft);}
+/* 淡底太弱，再加一道左边条 —— 用 inset 阴影而不是 border-left，免得把列宽挤歪 */
+.tbl tbody tr.focus td:first-child{box-shadow:inset 3px 0 0 var(--brand);}
 .tbl .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;}
 .tbl .m{font-family:var(--mono);font-size:12.5px;}
 .tbl .nowrap{white-space:nowrap;}
@@ -242,6 +306,17 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 /* 课次与教师各占一行并禁止折行，否则「王雅琴」会被断成「王雅 / 琴」 */
 .chip .ln,.chip .tn{display:block;opacity:.8;font-family:var(--mono);font-size:10.5px;line-height:1.3;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ---- 排课矩阵：「今天」那一列 + 卡片可点（2026-10-12 第 ③ 步收尾）----
+   日历页一直有「今天」高亮，矩阵一直没有 —— 看的人得自己数今天是周几。 */
+.mx thead th.today{background:var(--brand-soft);color:var(--brand-ink);}
+.mx thead th .tday{display:block;font-size:9.5px;letter-spacing:.02em;font-weight:700;color:var(--brand);}
+.mx td.cell.today{background:rgba(14,116,144,.045);}
+/* ⚠️ 今天那一列的「空」格子要保住斜纹底：.mx td.cell.today 权重高于 .mx td.empty，会把它压掉 */
+.mx td.cell.today.empty{background:repeating-linear-gradient(45deg,transparent 0 5px,rgba(14,116,144,.10) 5px 10px);}
+/* 卡片现在可点（→ 跳到「班级」子页签看它的完整一行）。cursor 由 <a href> 自带，不用写 */
+.mx .chip:hover{box-shadow:0 0 0 2px var(--brand2);}
+.mx .chip:focus-visible{outline:2px solid var(--brand2);outline-offset:1px;}
 
 /* ---------------- 其它 ---------------- */
 .empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:13px;}
@@ -392,8 +467,9 @@ tr[data-open]:hover td{background:var(--brand-soft);}
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
-      阶段 1 · 主端外壳<br>
-      <b>演示数据</b> · 未接真实数据
+      主端 · 重建第 3 / 7 步<br>
+      <span id="stState">本机存储 · 尚无改动</span><br>
+      <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
     </div>
   </aside>
 
@@ -414,12 +490,36 @@ tr[data-open]:hover td{background:var(--brand-soft);}
 <!-- 右侧抽屉 · 个人档案（内容由 JS 填充） -->
 <div id="dScrim" aria-hidden="true"></div>
 <aside id="drawer" role="dialog" aria-modal="true" aria-label="个人档案" aria-hidden="true"></aside>
+<!-- 极简提示条（重置 / 存盘反馈） -->
+<div id="toast"></div>
 
 <script>
 /* ==========================================================================
-   阶段 1 · 主端外壳
-   —— 目的：先把「信息架构 + 布局」定下来给 Tony 看
-   —— 数据全部是演示数据，不读也不写 localStorage，绝不碰真实数据
+   MGD 排课系统 · 主端（重建中 —— 第 3 步 / 共 7 步）
+   —— 【2026-10-12 方向反转】这里不再只是「演示外壳」。Tony 拍板：把主端修成
+      真正能用的系统，老的真系统 schedule.html 放弃（只当「引擎 / 测试的参考源」）。
+      7 步：① 持久化 ② 备份链路 ③ 排课引擎 ④ 申请码 ⑤ 结算 ⑥ 翻译测试 ⑦ 发布
+   —— 【第 1 步：接上本机存储】✅
+       以前：纯演示，不读不写，刷新即还原。
+       现在：改动会存进本机浏览器，关掉再开还在。
+       首次打开灌一批演示数据（seedDB），之后就以存盘的数据为准。
+   —— 【第 2 步：备份链路】✅
+       整库导出成一个 .json 文件 / 粘回来就能恢复。
+       导入前先过三关：认领标记 → 版本号 → 六个数组齐不齐；不过就拒，绝不半路覆盖。
+       ⚠️ 备份文件的标记是 zhops.admin.backup，和存盘的 zhops.admin 分开 —— 导出不会污染存盘。
+   —— 【第 3 步：排课引擎】✅
+       ⚠️ 先纠正一个说法：这步不是「把老系统的引擎搬过来」—— 引擎本来就在主端里
+       （clashOf 三路碰撞 / findMatch 五条匹配 / autoAssign / approveApp），而且比老系统强。
+       缺的是「接到界面上」+ 3 个函数。这步补的：
+       ① 建新班时给它排课表（seedLessonsOf —— 以前新班在 lessons 里一条都没有）
+       ② 班级页三个真动作：推进一课（只推这一个班）· 点名（只记缺勤）· 删班（课次标 cancel 留着）
+       ③ 候选池「编入班级」抽屉（中途插班写 joinedAt）+ 修掉时段硬编码的 bug
+       ④ 日历改成读事实表（以前是一整块手写文字）
+       ⚠️ Tony 定的两条：推进「只推这一个班」（不搞老系统的 settings.sync 同步）；
+          删班的课次「标 cancel 留着」（账不能撕，只能冲销）。
+   —— ⚠️ 存储键与老系统完全隔离：老系统 schedule.html 用 v2，这里用 v3。
+       两边各存各的，互不覆盖、互不影响（键名见下面的 KEY 常量）。
+   —— ⚠️ 还没做的：排课 › 矩阵仍是只读（4 个子页签里只剩它）；结算口径未定（第 ⑤ 步）。
    ========================================================================== */
 
 /* ---------- 图标 ---------- */
@@ -438,8 +538,11 @@ const ICON = {
 };
 const ic = (n, s) => '<svg width="'+(s||17)+'" height="'+(s||17)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICON[n]+'</svg>';
 
-/* ---------- 演示数据（全部虚构） ---------- */
-const DB = {
+/* ---------- 首次打开的种子数据（全部虚构） ----------
+   只在「本机还没有存过盘」时用一次。之后一律以存盘数据为准。
+   ⚠️ 想回到这批数据 → 侧栏页脚「重置为演示数据」。 */
+function seedDB(){
+  return {
   slots:[
     {id:'s1', name:'早班',   time:'07:30–08:15', days:'周一 / 周三'},
     {id:'s2', name:'午间',   time:'12:00–12:45', days:'周一 / 周五'},
@@ -468,13 +571,15 @@ const DB = {
   ],
   /* 班级：★ 加了 startedAt / endedAt / plannedLessons —— 这三个是「状态类」数据的
      时间锚点。没有它们，回看历史月就只能读"当前值"，会穿越。
-     ⚠️ lesson（当前进度）不再是手写的字面量 —— 它由 lessons 事实表算出来（见 deriveAll） */
+     ⚠️ lesson（当前进度）不再是手写的字面量 —— 它由 lessons 事实表算出来（见 deriveAll）
+     ⚠️ 2026-10-12：n（在读人数）也删掉了 —— 以前是手写的 8/6/5/4/3，
+        跟学生表实际人数根本对不上（c1 写 8，实际只有 5 人）。现在由 classN() 现算。 */
   classes:[
-    {id:'c1', code:'AP-01', name:'苹果班', lv:'HSK1', mode:'online',  slot:'s1', teacher:'t1', cap:10, n:8, room:'',   startedAt:'2026-09-28', endedAt:null, plannedLessons:42},
-    {id:'c2', code:'DN-02', name:'凤梨班', lv:'HSK1', mode:'offline', slot:'s3', teacher:'t4', cap:8,  n:6, room:'B2', startedAt:'2026-09-10', endedAt:null, plannedLessons:42},
-    {id:'c3', code:'MG-03', name:'芒果班', lv:'HSK1', mode:'online',  slot:'s2', teacher:'t7', cap:8,  n:5, room:'',   startedAt:'2026-08-28', endedAt:null, plannedLessons:42},
-    {id:'c4', code:'LZ-04', name:'荔枝班', lv:'HSK2', mode:'offline', slot:'s4', teacher:'t5', cap:6,  n:4, room:'B1', startedAt:'2026-05-09', endedAt:null, plannedLessons:42},
-    {id:'c5', code:'LY-05', name:'龙眼班', lv:'HSK1', mode:'online',  slot:'s3', teacher:'t3', cap:8,  n:3, room:'',   startedAt:'2026-10-03', endedAt:null, plannedLessons:42},
+    {id:'c1', code:'AP-01', name:'苹果班', lv:'HSK1', mode:'online',  slot:'s1', teacher:'t1', cap:10, room:'',   startedAt:'2026-09-28', endedAt:null, plannedLessons:42},
+    {id:'c2', code:'DN-02', name:'凤梨班', lv:'HSK1', mode:'offline', slot:'s3', teacher:'t4', cap:8,  room:'B2', startedAt:'2026-09-10', endedAt:null, plannedLessons:42},
+    {id:'c3', code:'MG-03', name:'芒果班', lv:'HSK1', mode:'online',  slot:'s2', teacher:'t7', cap:8,  room:'',   startedAt:'2026-08-28', endedAt:null, plannedLessons:42},
+    {id:'c4', code:'LZ-04', name:'荔枝班', lv:'HSK2', mode:'offline', slot:'s4', teacher:'t5', cap:6,  room:'B1', startedAt:'2026-05-09', endedAt:null, plannedLessons:42},
+    {id:'c5', code:'LY-05', name:'龙眼班', lv:'HSK1', mode:'online',  slot:'s3', teacher:'t3', cap:8,  room:'',   startedAt:'2026-10-03', endedAt:null, plannedLessons:42},
   ],
   /* ================= 事实层：课次 =================
      ★★ 这是全系统唯一的「历史来源」。班级进度 / 学生出勤 / 今日课程 / 本月课次
@@ -572,6 +677,13 @@ const DB = {
     {id:'a7', src:'out',  teacher:'t3', lv:'HSK2', stage:1, lesson:1,  mode:'offline', slot:'s3', room:'B1', n:7, at:'09-27 11:20', state:'已驳回', reason:'clash', advice:'s2', note:'该教师这个时段已经有一节课'},
     {id:'a8', src:'out',  teacher:'t6', lv:'HSK1', stage:1, lesson:9,  mode:'offline', slot:'s4', room:'B1', n:6, at:'09-30 16:45', state:'已驳回', reason:'room',  advice:'s1', note:'B1 教室该时段已被荔枝班占用'},
   ],
+  /* 成员：能登录主端的人。⚠️ 权限（role）目前是文字标签，暂不做登录拦截（Tony 2026-10-13 明确「无权限模型」）。
+         lastLogin 是种子写死的演示值 —— 主端还没有登录系统，所以本质是静态。 */
+  members:[
+    {id:'m1', name:'王雅琴', role:'主端 · 全部权限', lastLogin:'2026-10-02 09:14'},
+    {id:'m2', name:'李文博', role:'主端 · 只看排课', lastLogin:'2026-10-02 09:14'},
+    {id:'m3', name:'周建华', role:'主端 · 只看数据', lastLogin:'2026-10-02 09:14'},
+  ],
   /* 开班人数门槛：他给的是 8–12。⚠️ 只作参考显示，不拿来拦通过与否 */
   set:{minOpen:8, capMax:12},
   /* ★ 演示日期：整个系统的「今天」。所有"当下"的判断都以它为基准。
@@ -586,7 +698,320 @@ const DB = {
   now:'19:15',
   lessonMin:45,
   money:{ sessions:62, income:7440000, cost:4680000, today:186000 },
-};
+  };
+}
+
+/* ==========================================================================
+   持久化（2026-10-12 · 第 1 步）
+   —— 读：启动时先看本机有没有存过；有就用存的，没有才灌种子数据。
+   —— 写：凡是改了 DB 的地方，改完必须调 save()。改了不存 = 白改。
+   —— 键名独立（v3），老系统的 v2 一个字节都不碰。
+   ========================================================================== */
+const KEY = 'zhops.sched.v3';
+const APP_TAG = 'zhops.admin';      /* 认领标记：防止误读到别人的键 */
+const DB_VER = 1;
+
+/* 这次打开到底是「读到了存盘」还是「新灌的种子」—— 侧栏要如实说。
+   ⚠️ 不能靠 DB 有没有数据来判断：两种情况下 DB 都有数据。 */
+let loadedFromStore = false;
+let lastSavedAt = null;             /* 上次存盘时间（从载荷的 __at 读回来） */
+
+function hhmm(d){
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+/* 把一份外来的数据（本机存盘 / 导入的备份）补成「完整可用的 DB」。
+   ★ 以种子为底：缺的标量字段（todayDate / now / lessonMin / money / set）用默认值补上。
+   ⚠️ 不补的后果（2026-10-12 真踩到）：
+      一份没有 money 的备份 → vOverview() 读 DB.money.income 直接抛异常 → 整页白屏；
+      一份没有 todayDate 的备份 → 不崩，但 today 静默变空 —— 更阴。
+   —— load() 和 applyBackup() 共用这一个，两边口径永远一致。
+   —— 元数据（__app/__v/__at）和派生层（today）在这里统一剥掉，调用方不用各写一遍。 */
+function normalizeDB(o){
+  const n = seedDB();
+  Object.keys(o).forEach(k => {
+    if (k === '__app' || k === '__v' || k === '__at') return;   /* 元数据不进 DB */
+    if (k === 'today') return;                                  /* 派生层永远重算 */
+    if (k === 'money' || k === 'set') return;                   /* 对象型标量：下面浅合并 */
+    n[k] = o[k];
+  });
+  /* 对象型标量浅合并 —— 备份里只写了 money.sessions 时，income 用默认值兜着，不能整个抹掉 */
+  ['money','set'].forEach(k => {
+    if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k])) n[k] = Object.assign(n[k], o[k]);
+  });
+  if (!Array.isArray(n.lessons)) n.lessons = [];
+  /* 逐条记录补默认字段。
+     ⚠️ 为什么需要：老备份 / 手改过的存盘里记录可能少字段 ——
+        视图读 t.slots.length 会直接抛异常，整页白屏（2026-10-12 踩到）。
+     ⚠️ 用 blankTeacher / blankStudent 当底：它们是「新建一条记录」的默认值，
+        字段清单天然跟着新建流程走，不会各自漂移。
+     ⚠️ classes / apps 没有对应的工厂，本次不兜底 —— 见 skill「已知边界」。
+     ⚠️ 只覆盖 !== undefined 的键：不能拿 undefined 去盖掉默认值。 */
+  const fill = (base, rec) => {
+    Object.keys(rec).forEach(k => { if (rec[k] !== undefined) base[k] = rec[k]; });
+    return base;
+  };
+  n.teachers = (Array.isArray(n.teachers) ? n.teachers : []).map(t => fill(blankTeacher(), t));
+  n.students = (Array.isArray(n.students) ? n.students : []).map(s => fill(blankStudent(), s));
+  n.members  = (Array.isArray(n.members)  ? n.members  : []).map(m => fill(blankMember(), m));
+  return n;
+}
+
+function save(){
+  /* 探针的 DOM 桩里没有 localStorage —— 直接跳过，别让断言因为环境而崩 */
+  if (typeof localStorage === 'undefined') return false;
+  try{
+    const o = Object.assign({}, DB);
+    /* ★ 派生层不落库（能算出来就不许存）—— today 每次启动由 deriveToday() 重算。
+       存了它就会有「手写的当前值」，回看历史时会穿越。 */
+    delete o.today;
+    const iso = new Date().toISOString();
+    o.__app = APP_TAG; o.__v = DB_VER; o.__at = iso;
+    localStorage.setItem(KEY, JSON.stringify(o));
+    lastSavedAt = iso;
+    markSaved(true);
+    return true;
+  }catch(e){
+    markSaved(false);
+    return false;
+  }
+}
+
+/* 读盘。返回 null = 本机没存过 / 存坏了 / 不是本系统的键 → 调用方回落到种子数据。
+   ⚠️ 存坏了绝不能把异常抛出去 —— 抛出去整页白屏，宁可当没存过重新开始。 */
+function load(){
+  if (typeof localStorage === 'undefined') return null;
+  let o = null;
+  try{
+    const raw = localStorage.getItem(KEY);
+    if (raw) o = JSON.parse(raw);
+  }catch(e){ o = null; }
+  if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return null;
+  const at = o.__at || null;
+  /* 结构对不上就当没存过，别让页面半死 */
+  if (!Array.isArray(o.teachers) || !Array.isArray(o.students) || !Array.isArray(o.classes)) return null;
+  if (!Array.isArray(o.apps) || !Array.isArray(o.slots) || !Array.isArray(o.absences) || !Array.isArray(o.members)) return null;
+  /* ★ 全部校验都过了才算「真的用上了存盘」—— 半路 return null 的不能算 */
+  loadedFromStore = true;
+  lastSavedAt = at;
+  /* 剥元数据 + 补标量交给 normalizeDB —— 和「导入备份」走同一条路，口径不会漂 */
+  return normalizeDB(o);
+}
+
+/* 抹掉本机存盘，回到种子数据（侧栏页脚那个链接用） */
+function resetDB(){
+  if (typeof localStorage !== 'undefined'){ try{ localStorage.removeItem(KEY); }catch(e){} }
+  DB = seedDB();
+  buildFacts();
+  autoResult = null;
+  closeDrawer();
+  loadedFromStore = false; lastSavedAt = null;   /* 抹掉存盘了，就不再是「载入存盘」状态 */
+  markSaved(null);
+  if (location.hash === '#overview') render(); else location.hash = '#overview';
+  toast('已重置为演示数据');
+}
+
+/* 侧栏页脚那个状态小字 —— 给 Tony 看得见的存盘证据。
+   null=还没改动 / true=刚存好 / false=存失败 / 'loaded'=这次打开是读的存盘
+   ⚠️ 用 $('#stState') 而不是 document.getElementById —— 探针的 DOM 桩只实现 querySelector */
+function markSaved(ok){
+  const el = $('#stState');
+  if (!el) return;
+  if (ok === null){ el.textContent = '本机存储 · 尚无改动'; el.className = ''; return; }
+  if (!ok){ el.textContent = '存盘失败'; el.className = 'bad'; return; }
+  if (ok === 'loaded'){
+    /* ★ 一打开就显示「读的是存盘」+ 上次存盘的时间。
+       ⚠️ 不能写「已存盘 · 现在的时间」—— 那是骗人的：这次打开并没有存过。 */
+    el.textContent = '本机存储 · 已载入存盘' + (lastSavedAt ? ' · ' + hhmm(new Date(lastSavedAt)) : '');
+    el.className = 'ok';
+    return;
+  }
+  el.textContent = '已存盘 · ' + hhmm(new Date());
+  el.className = 'ok';
+}
+
+/* 极简提示条（主端原本没有 toast；重置 / 存盘反馈用） */
+function toast(msg){
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('on'), 1900);
+}
+
+/* 启动：有存盘用存盘，没有才播种 */
+let DB = load() || seedDB();
+
+/* ==========================================================================
+   备份链路（2026-10-12 · 第 2 步）
+   —— 为什么要有：数据只在这台电脑的浏览器里。清缓存 / 换电脑 / 手滑改坏，
+      没有备份就真回不去。这一步给它一条「导出成文件 / 从文件恢复」的路。
+   —— 铁律同 save()：派生层（today）不进备份文件。
+   —— 备份带认领标记；导入先验标记、再验版本、再验结构 —— 坏了不白屏，
+      也绝不半路把现有数据写坏。
+   —— 做法参考老系统 schedule.html 的 exportData / showImport / doImport。
+   ========================================================================== */
+const BACKUP_TAG = 'zhops.admin.backup';
+const BACKUP_VER = 1;
+
+/* 打包成「可以存成文件的那一份」。
+   ⚠️ 剔除逻辑必须和 save() 一致 —— 两边各写一套迟早漂移。
+      这里同样删 today：它是算出来的，存进备份等于给未来埋一个穿越值。 */
+function backupPayload(){
+  const o = Object.assign({}, DB);
+  delete o.today;
+  o.__app = BACKUP_TAG;
+  o.__v   = BACKUP_VER;
+  o.__at  = new Date().toISOString();
+  return o;
+}
+
+function backupName(){
+  return 'MGD排课备份_' + new Date().toISOString().slice(0,10) + '.json';
+}
+
+/* 导出：下载一个 .json。
+   ⚠️ 下载失败（沙盒 / 老浏览器没有 Blob）不能静默 —— 退化成抽屉里一段可复制的文本。
+      否则用户点了按钮什么都没发生，只会以为系统坏了。 */
+function exportData(){
+  const txt  = JSON.stringify(backupPayload(), null, 2);
+  const name = backupName();
+  try{
+    if (typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL)
+      throw new Error('no-blob');
+    const blob = new Blob([txt], { type:'application/json;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('已导出 ' + name);
+    return true;
+  }catch(e){
+    openExportDrawer(txt, name);
+    return false;
+  }
+}
+
+/* 导出兜底：把 JSON 摊在抽屉里让人自己复制 */
+function openExportDrawer(txt, name){
+  dState = {kind:'export', id:'__export__', edit:false, draft:null, mode:'view',
+            form:null, isNew:false, err:null, text:txt, name:name};
+  renderDrawer();
+  openPanel();
+}
+
+function renderExportDrawer(){
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">导出备份</div>'+
+      '<div class="s">'+esc(dState.name)+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+
+      '<div class="a-warn" style="margin:0 0 12px"><b>这台浏览器没能直接下载</b> —— '+
+        '请全选下面的内容，粘进记事本，存成 <span class="mono">.json</span> 文件。</div>'+
+      '<textarea class="inp" data-i-inp="out" readonly style="min-height:260px;font-family:var(--mono);font-size:11px">'+
+        esc(dState.text)+'</textarea>'+
+    '</div>'+
+    '<div class="d-f">'+
+      '<button class="btn" data-d-close>关闭</button>'+
+      '<div class="sp"></div>'+
+      '<span class="d-memo">'+dState.text.length+' 字符<br>存成 .json 文件</span>'+
+    '</div>';
+}
+
+/* 校验一份备份载荷。返回 null = 可以导入；返回字符串 = 拒绝的理由（直接给人看）。
+   ⚠️ 三关都要过：
+      ① 认领标记 —— 没有它说明这可能是别人的 JSON / 用户粘错了文件，不能猜着往库里灌
+      ② 版本号   —— 来自更新版本的备份，字段可能不认识，宁可不导
+      ③ 结构     —— 六个数组一个都不能缺
+   单独抽成函数是为了能单测：不必真去点抽屉也能把每一关都验一遍。 */
+function backupCheck(o){
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return '内容不是一个 JSON 对象';
+  if (o.__app !== BACKUP_TAG) return '这不是本系统的备份文件（认领标记对不上）';
+  const v = Number(o.__v) || 0;
+  if (v > BACKUP_VER) return '备份来自更新的版本（v' + v + '），当前主端只认到 v' + BACKUP_VER;
+  const need = ['teachers','students','classes','apps','slots','absences'];
+  const miss = need.filter(k => !Array.isArray(o[k]));
+  if (miss.length) return '缺少必要字段：' + miss.join(' / ');
+  return null;
+}
+
+function openImportDrawer(){
+  dState = {kind:'import', id:'__import__', edit:false, draft:null, mode:'view',
+            form:null, isNew:false, err:null};
+  renderDrawer();
+  openPanel();
+}
+
+function renderImportDrawer(){
+  const err = dState.err
+    ? '<div class="a-warn" style="margin:0 0 12px"><b>没有导入</b> —— '+esc(dState.err)+'</div>'
+    : '';
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">从备份导入</div>'+
+      '<div class="s">数据 · 恢复 · 会覆盖现在这一份</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+err+
+      '<p style="font-size:12px;color:var(--ink3);margin:0 0 10px">'+
+        '把之前导出的 <b>.json</b> 文件用记事本打开，内容整段粘进来。</p>'+
+      '<div class="fld"><label class="lbl">备份内容</label>'+
+        '<textarea class="inp" data-i-inp="txt" placeholder="粘贴 JSON …" '+
+          'style="min-height:200px;font-family:var(--mono);font-size:11px"></textarea></div>'+
+    '</div>'+
+    '<div class="d-f">'+
+      '<button class="btn pri" data-i-do="import">确认导入</button>'+
+      '<button class="btn" data-d-close>取消</button>'+
+      '<div class="sp"></div>'+
+      '<span class="d-memo">会再确认一次<br>校验不过不动现有数据</span>'+
+    '</div>';
+}
+
+/* 执行导入。返回 true = 真导进去了（探针要断言这个）。
+   ⚠️ 顺序不能反：先全部校验 → 再 confirm → 最后才写。
+      校验没过就弹确认、用户点了「确定」却什么都没发生，比不弹更糟。 */
+function doImport(){
+  const ta  = $('#drawer [data-i-inp="txt"]');
+  const txt = ta ? String(ta.value || '').trim() : '';
+  if (!txt){ dState.err = '还没有粘贴任何内容'; renderImportDrawer(); return false; }
+
+  let o = null;
+  try{ o = JSON.parse(txt); }
+  catch(e){ dState.err = '不是合法的 JSON'; renderImportDrawer(); return false; }
+
+  const bad = backupCheck(o);
+  if (bad){ dState.err = bad; renderImportDrawer(); return false; }
+
+  const ok = (typeof window.confirm === 'function')
+    ? window.confirm('导入会覆盖当前的全部业务数据（教师 / 学生 / 班级 / 申请 / 课次记录）。\n'+
+                     '现在这一份会被替换掉，确定继续吗？')
+    : true;
+  if (!ok) return false;
+
+  applyBackup(o);
+  return true;
+}
+
+/* 把校验过的备份灌进 DB。★ 只有 backupCheck 放行才会走到这里。 */
+function applyBackup(o){
+  /* 剥元数据 + 补标量 + 剔 today —— 和 load() 共用 normalizeDB，
+     ⚠️ 这里绝不能写成 const n = {} 再逐键复制：备份里没有的标量（money / todayDate）
+        会变成 undefined，轻则 today 空掉，重则 vOverview() 直接崩。 */
+  DB = normalizeDB(o);
+  buildFacts();      /* 有 lessons 就按今天重算；没有就补播种 */
+  autoResult = null; /* 自动编班的结果属于上一批数据，作废 */
+  closeDrawer();
+  save();            /* ★ 导完立刻落盘 —— 否则关掉再开又回到旧数据 */
+  toast('已从备份恢复');
+  /* hash 没变时 hashchange 不触发，得手动 render() */
+  if (location.hash === '#students') render(); else location.hash = '#students';
+}
 
 const T  = id => DB.teachers.find(x => x.id === id) || {name:'—'};
 const C  = id => DB.classes.find(x => x.id === id) || {name:'—', code:''};
@@ -628,29 +1053,43 @@ const ymd = d => d.getFullYear() + '-' +
 function addDays(iso, n){ const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return ymd(d); }
 
 /* 播种课次事实表：从班级 startedAt 起，按它时段的星期几往后排，
-   一直排到「今天 + 14 天」—— 所以课表里既有已上的，也有待上的。
-   ⚠️ 这是演示数据的生成器，上云后由真实的排课动作取代；lessons 表结构不变。 */
+   一直排到「今天 + 45 天」—— 所以课表里既有已上的，也有待上的。
+   ⚠️ 这是演示数据的生成器，上云后由真实的排课动作取代；lessons 表结构不变。
+   ★ 2026-10-12 第 ③ 步：拆出单班版 seedLessonsOf() —— 建班时用它给「这一个班」生课表，
+     不能再重跑全量（会把其他班手动推进过的 done 覆盖掉）。 */
+
+/* 单班版：只给一个班生成课表。
+   ★ 每条记录带「班信息快照」（cname / ccode / clv / cmode / croom / ctch）：
+     班将来改名或被删掉，历史记录不能跟着变 —— 同 lessons.time 冗余存一份的理由。 */
+function seedLessonsOf(c){
+  const out = [];
+  const sl = S(c.slot);
+  const days = slotDays(sl);
+  if (!days.length || !c.startedAt) return out;
+  /* 往后排 45 天 —— 排到六周后，这样月份条上会出现「未来月份」（边界 #8：
+     可选中，但要标「未开始」）。真实系统里就是排课排到几周之后的样子。 */
+  const stop = addDays(DB.todayDate, 45);
+  const snap = {
+    cname: c.name, ccode: c.code, clv: c.lv,
+    cmode: c.mode, croom: c.room || '', ctch: c.teacher,
+  };
+  let d = c.startedAt, no = 0, guard = 0;
+  while (d <= stop && no < (c.plannedLessons || 42) && guard++ < 900){
+    if (days.indexOf(new Date(d + 'T00:00:00').getDay()) >= 0){
+      no++;
+      out.push(Object.assign({
+        id: c.id + '#' + no, cid: c.id, no: no, date: d, time: sl.time,
+        status: d < DB.todayDate ? 'done' : (d === DB.todayDate ? 'today' : 'plan'),
+      }, snap));
+    }
+    d = addDays(d, 1);
+  }
+  return out;
+}
+
 function seedLessons(){
   const out = [];
-  DB.classes.forEach(c => {
-    const sl = S(c.slot);
-    const days = slotDays(sl);
-    if (!days.length || !c.startedAt) return;
-    /* 往后排 45 天 —— 排到六周后，这样月份条上会出现「未来月份」（边界 #8：
-       可选中，但要标「未开始」）。真实系统里就是排课排到几周之后的样子。 */
-    const stop = addDays(DB.todayDate, 45);
-    let d = c.startedAt, no = 0, guard = 0;
-    while (d <= stop && no < (c.plannedLessons || 42) && guard++ < 900){
-      if (days.indexOf(new Date(d + 'T00:00:00').getDay()) >= 0){
-        no++;
-        out.push({
-          id: c.id + '#' + no, cid: c.id, no: no, date: d, time: sl.time,
-          status: d < DB.todayDate ? 'done' : (d === DB.todayDate ? 'today' : 'plan'),
-        });
-      }
-      d = addDays(d, 1);
-    }
-  });
+  DB.classes.forEach(c => { seedLessonsOf(c).forEach(l => out.push(l)); });
   return out.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
 }
 
@@ -659,6 +1098,23 @@ function classLesson(c){
   return DB.lessons.filter(l => l.cid === c.id && l.status === 'done').length;
 }
 const lessonsOf = cid => DB.lessons.filter(l => l.cid === cid);
+
+/* 班里「没登记名单」的已通过申请占着的名额。
+   申请可以只填人数、不填名单（申请页原文：没登记名单 · 只按人数建班）——
+   这批人确实要来上课，只是还没有学生档案，所以不能不算。
+   ⚠️ 一旦名单登记了名字，addStudentsFromRoster 会建出学生档案，
+      这里就自动不再重复计（两个来源互斥，靠「有没有名字」区分）。 */
+function classReserved(c){
+  return DB.apps
+    .filter(a => a.state === '已通过' && a.link === c.id)
+    .filter(a => !(a.roster || []).some(r => r && String(r.name || '').trim()))
+    .reduce((s, a) => s + (a.n || 0), 0);
+}
+/* 班级在读人数 = 学生表里挂在它名下的人 + 上面那批还没档案的预留人数。
+   ★ 2026-10-12：以前 c.n 是个手写计数器 —— enrollInto / autoAssign / approveApp
+   各自 c.n++，三处各加各的，跟学生表实际人数经常对不上（种子 c1 写 8，实际只有 5 人）。
+   现在一律现算：能算出来的就不许手写。申请里的 o.n（申请时填的人数）是业务值，不受此限。 */
+const classN = c => DB.students.filter(s => s.cls === c.id).length + classReserved(c);
 
 /* 学生哪天进的这个班：演示数据里默认 = 班级开班日（整班一起进来的）；
    中途插班的（比如从开班申请名单编进来的）才单独写 joinedAt */
@@ -682,12 +1138,31 @@ function stuAbsent(s){
 /* 实出勤 = 应出勤 − 缺勤 */
 const stuAtt = s => Math.max(0, stuAttAll(s) - stuAbsent(s));
 
-/* 把事实层算成「当下」。只跑一次，启动时执行 */
-function buildFacts(){
+/* 最近一次缺课：该生缺勤记录里，对应课次「已上」且日期最大的那一节。
+   数据 › 出勤页那一列要显示它 —— 原表头写着「最近缺课」，格子里却是汇总的「缺 N 次」，
+   名实不符。现在两样都给：先「缺 N 次」，再「最近 MM-DD」。 */
+function stuLastAbsent(s){
+  if (!s.cls) return null;
+  const ls = lessonsOf(s.cls);
+  let best = null;
+  DB.absences.filter(a => a.sid === s.id).forEach(a => {
+    const l = ls[a.no - 1];
+    if (l && l.status === 'done' && (!best || l.date > best.date)) best = l;
+  });
+  return best;
+}
+
+/* 播种课次事实表。⚠️ 只在「本机还没存过盘」时跑一次 ——
+   存过盘的不能再播，否则每次刷新都把课次重算一遍，历史会被穿越回今天。 */
+function seedFacts(){
   DB.lessons = seedLessons();
-  /* 今日课程 = 事实表按「今天」查出来 —— 不再是手写数组。
-     ⚠️ 以前那个手写的 today[] 跟班级时段对不上（周一/周三的班能出现在周六的今日课程里）。
-        现在只会出现「今天真的有课」的班。 */
+}
+
+/* 把事实层算成「当下」。派生层每次启动都重算 —— 它不落库（能算出来就不许存）。
+   今日课程 = 事实表按「今天」查出来，不再是手写数组。
+   ⚠️ 以前那个手写的 today[] 跟班级时段对不上（周一/周三的班能出现在周六的今日课程里）。
+      现在只会出现「今天真的有课」的班。 */
+function deriveToday(){
   DB.today = DB.lessons
     .filter(l => l.date === DB.todayDate && l.status !== 'cancel')
     .sort((a, b) => toMin(slotStart(a.time)) - toMin(slotStart(b.time)))
@@ -696,6 +1171,11 @@ function buildFacts(){
       /* time 只给开始时间 —— 表格里显示时再拼上 endOf()，isLive() 也靠它 */
       return {cls:l.cid, teacher:c.teacher, mode:c.mode, time:slotStart(l.time), lesson:l.no, status:l.status};
     });
+}
+
+function buildFacts(){
+  if (!Array.isArray(DB.lessons) || !DB.lessons.length) seedFacts();
+  deriveToday();
 }
 buildFacts();
 
@@ -727,6 +1207,9 @@ const VIEWS = [
 
 /* ---------- 小工具 ---------- */
 const $  = s => document.querySelector(s);
+/* 启动就把「这次打开有没有读到存盘」写进侧栏 —— 一打开看得见，不用等第一次改动。
+   ⚠️ 必须放在 $ 初始化之后（markSaved 里用了 $），否则会踩 TDZ 报错 */
+markSaved(loadedFromStore ? 'loaded' : null);
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ownTag = o => o==='own' ? '<span class="tg own">自有</span>' : '<span class="tg out">外包</span>';
 const modeTag = m => m==='online' ? '<span class="tg on">线上</span>' : '<span class="tg off">线下</span>';
@@ -774,16 +1257,23 @@ function vOverview(){
   const pending = DB.apps.filter(a=>a.state==='待审批').length;
   const noSlot = DB.teachers.filter(t=>!t.slots.length);
   const noTeacher = DB.students.filter(s=>!s.cls && !s.intent);
-  const thin = DB.classes.filter(c=>c.cap - c.n >= 2 && classLesson(c) <= 3);
+  const thin = DB.classes.filter(c=>c.cap - classN(c) >= 2 && classLesson(c) <= 3);
   /* 三张异常清单加起来才是标题那个数字。
      ⚠️ 0 的时候要另走一条空态 —— 不能只写「共 0 项」然后底下空白一片 */
   const anom = noSlot.length + noTeacher.length + thin.length;
 
+  /* ⚠️ 2026-10-12 修的真 bug：下面「本月课次」那张卡上方原来夹着一段块注释，
+     写在模板字符串**里面** —— 模板字符串里的注释符不是注释，是字面量，
+     结果那段话原样印在页面上（总览右上角，一行小字）。
+     ⚠️ 这段说明必须留在模板字符串**外面**，别再挪回去。
+     背景：这个数以前是写死的 62，现在从课次事实表算 ——
+     不然跟「课次记录」页对不上（那页是算出来的）。
+     钱那三块（收入 / 成本 / 利润）仍是演示占位值，还没接事实表。 */
   return `
   <div class="page-h">
     <div><h2>总览</h2><p class="desc">打开系统第一眼看到全局 —— 规模 · 人 · 课 · 钱 · 形态 · 异常</p></div>
     <div class="sp"></div>
-    <span class="tg off">演示数据</span>
+    <span class="tg off">本机存储</span>
   </div>
 
   <div class="stats">
@@ -792,9 +1282,6 @@ function vOverview(){
     ${stat('教师', DB.teachers.length, '自有 '+own+' · 外包 '+out)}
     ${stat('待审批', pending, '开班申请', pending?'amber':'')}
     ${stat('今日课程', DB.today.length, '节', 'ok')}
-    /* ⚠️ 2026-10-03：这个数以前是写死的 62，现在从课次事实表算 ——
-       不然跟「课次记录」页对不上（那页是算出来的）。
-       钱那三块（收入 / 成本 / 利润）仍是演示占位值，还没接事实表。 */
     ${stat('本月课次', monthCounted(monthOf(DB.todayDate)).length, '节 · <a href="#lessons">看全部 ›</a>')}
   </div>
 
@@ -818,7 +1305,7 @@ function vOverview(){
             '<td class="m nowrap">'+lessonLabel(c.lv, r.lesson)+'</td>'+
             '<td>'+modeTag(r.mode)+'</td>'+
             '<td>'+esc(t.name)+' '+ownTag(t.src)+'</td>'+
-            '<td class="num">'+c.n+' / '+c.cap+'</td>'+
+            '<td class="num">'+classN(c)+' / '+c.cap+'</td>'+
             /* 教室要读班级自己的 room 字段 —— 这里曾经写死过字符串「B2」，
                结果改班级教室时总览不跟着变（现在只剩凤梨班一节线下课，纯属巧合才没露馅） */
             '<td class="nowrap">'+(r.mode==='online'
@@ -837,7 +1324,7 @@ function vOverview(){
       ${anom
         ? noSlot.map(t=>'<div class="note amber" data-open="teacher:'+t.id+'"><b>教师未配可授时段</b> —— '+esc(t.name)+'（'+ownTag(t.src)+'）的可授时段是空的，系统会把空时段解释成「不限」，等于<b>全时段都能排</b>。请补上。<span class="go">去补时段 ›</span></div>').join('')+
           noTeacher.map(s=>'<div class="note amber" data-open="student:'+s.id+'"><b>学生没有归属也没有意向</b> —— '+esc(s.name)+'（'+s.lv+'），既没编班也没填意向班级。<span class="go">去看这个学生 ›</span></div>').join('')+
-          thin.map(c=>'<div class="note" data-act="goclasses"><b>差 '+(c.cap-c.n)+' 人开班</b> —— '+esc(c.name)+' '+c.code+'（'+c.lv+'）目前 '+c.n+' / '+c.cap+' 人，进度 '+lessonLabel(c.lv,classLesson(c))+'。<span class="go">去排课 › 班级 看这个班 ›</span></div>').join('')
+          thin.map(c=>'<div class="note" data-act="goclasses"><b>差 '+(c.cap-classN(c))+' 人开班</b> —— '+esc(c.name)+' '+c.code+'（'+c.lv+'）目前 '+classN(c)+' / '+c.cap+' 人，进度 '+lessonLabel(c.lv,classLesson(c))+'。<span class="go">去排课 › 班级 看这个班 ›</span></div>').join('')
         : '<div class="empty"><div class="big">没有需要处理的异常</div>教师可授时段 / 学生归属 / 班级人数都齐了</div>'}
     </div>
   </div>
@@ -868,7 +1355,7 @@ function vTeachers(){
   <div class="page-h">
     <div><h2>教师</h2><p class="desc">${DB.teachers.length} 位 · 自有 ${DB.teachers.filter(t=>t.src==='own').length} · 外包 ${DB.teachers.filter(t=>t.src==='out').length}</p></div>
     <div class="sp"></div>
-    <button class="btn">导出</button><button class="btn pri" data-act="newteacher">＋ 新增教师</button>
+    <button class="btn" data-act="export" title="导出整份数据备份（JSON）">导出备份</button><button class="btn pri" data-act="newteacher">＋ 新增教师</button>
   </div>
 
   <div class="bar">
@@ -920,7 +1407,7 @@ function vStudents(){
   <div class="page-h">
     <div><h2>学生</h2><p class="desc">${DB.students.length} 人 · 已编班 ${DB.students.filter(s=>s.cls).length} · 候选池 ${DB.students.filter(s=>!s.cls).length}</p></div>
     <div class="sp"></div>
-    <button class="btn">导入</button><button class="btn pri" data-act="newstudent">＋ 新增学生</button>
+    <button class="btn" data-act="import" title="从备份文件恢复整份数据">从备份导入</button><button class="btn pri" data-act="newstudent">＋ 新增学生</button>
   </div>
 
   <div class="bar">
@@ -974,6 +1461,8 @@ function vStudents(){
 
 /* ---------- 视图：排课 ---------- */
 let bTab = 'matrix';
+/* 从排课矩阵点班级卡片跳过来时，要聚焦哪一个班（只活一次 render，见 render() 末尾） */
+let bFocus = null;
 function vBoard(){
   /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 4 个子页 */
   const tabs = [['matrix','排课矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历']];
@@ -1007,34 +1496,54 @@ function vApply(){
   </div>
   ${bApply()}`;
 }
+/* ★ 2026-10-12 第 ③ 步收尾 —— 排课矩阵原来是排课 4 个子页里**唯一只读**的那个，
+   而且「时段 → 哪几天」是写死在代码里的。三处改动（都不写数据）：
+     ① onDays 改走 slotDays(sl)。原来写的是 sl.id==='s1'?[0,2] : …，
+        跟候选池那个 ['s1','s3'] 是同一类 bug —— 改了 sl.days，矩阵不跟着动。
+        项目自己的规矩（见上面「三层架构」）：凡是能算出来的，就不许手写。
+     ② 标出「今天」那一列。日历页一直有今天高亮，矩阵一直没有，看的人得自己数今天周几。
+     ③ 卡片可点 → 跳到「班级」子页签并点亮那一行（班级没有自己的抽屉，
+        跟总览「差 N 人开班」那条走的是同一个思路，只是多了个聚焦）。 */
 function bMatrix(){
+  /* 列 = 周一 ~ 周六；**只有真有周日课的时候**才多排一列周日 ——
+     否则周日排的班在矩阵上会凭空消失（onDays 里那个 0 匹配不到任何一列）。
+     ⚠️ colDays 里存的是 DAY_NAMES 索引（0=周日 … 6=周六），不存列号，免得两套索引打架。 */
+  const hasSun = DB.slots.some(sl => slotDays(sl).indexOf(0) >= 0);
+  const colDays = hasSun ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6];
+  const todayDi = new Date(DB.todayDate + 'T00:00:00').getDay();   /* 0=周日 */
+  const todayInCols = colDays.indexOf(todayDi) >= 0;
   return `<div class="card marks">
     <div class="card-h"><h3>排课矩阵</h3><span class="sub">行 = 时段 · 列 = 星期 · 青=线上 / 琥珀=线下</span><span class="sp"></span>
       <span class="sub lg-donut"><span class="donut on live"></span>正在上课</span>
       <span class="sub lg-donut"><span class="donut on"></span>线上 · 未开始/已结束</span>
-      <span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span></div>
+      <span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span>
+      <span class="tg warn" title="今天 = ${DB.todayDate}${todayInCols ? '' : '（周日 · 矩阵里没有这一列）'}">今天 ${DAY_NAMES[todayDi]}</span></div>
     <div class="card-b tight"><div class="mx-wrap"><table class="mx">
-      <thead><tr><th class="rowh">时段</th>${['周一','周二','周三','周四','周五','周六'].map(d=>'<th>'+d+'</th>').join('')}</tr></thead>
+      <thead><tr><th class="rowh">时段</th>${colDays.map(di =>
+        '<th'+(di===todayDi?' class="today"':'')+'>'+DAY_NAMES[di]+
+        (di===todayDi?'<span class="tday">今天</span>':'')+'</th>').join('')}</tr></thead>
       <tbody>${DB.slots.map(sl=>{
-        const days = ['周一','周二','周三','周四','周五','周六'];
-        const onDays = sl.id==='s1'?[0,2] : sl.id==='s2'?[0,4] : sl.id==='s3'?[1,3] : [5];
+        const onDays = slotDays(sl);
         return '<tr><th class="rowh">'+sl.name+'<span class="s">'+sl.time+'</span></th>'+
-          days.map((d,i)=>{
-            if (!onDays.includes(i)) return '<td class="cell empty"></td>';
+          colDays.map(di=>{
+            const tdCls = 'cell' + (di===todayDi ? ' today' : '');
+            if (onDays.indexOf(di) < 0) return '<td class="'+tdCls+' empty"></td>';
             const cs = DB.classes.filter(c=>c.slot===sl.id);
-            if (!cs.length) return '<td class="cell empty"></td>';
-            return '<td class="cell">'+cs.map(c=>{
+            if (!cs.length) return '<td class="'+tdCls+' empty"></td>';
+            return '<td class="'+tdCls+'">'+cs.map(c=>{
               const t=T(c.teacher);
               /* 环挂在班级上：这个班有没有在线，一眼看得出来 */
               const live = c.mode==='online' && slotLive(S(c.slot).time);
               const dotCls = c.mode!=='online' ? '' : (live?'on live':'on');
               const dotTip = c.mode!=='online' ? '线下课 · 环无色'
                            : (live ? '线上课 · 正在上课' : '线上课 · 未开始 / 已结束');
-              return '<span class="chip '+(c.mode==='online'?'':'off')+'">'+
+              /* ★ ③ 卡片可点：去「班级」子页签看它的完整一行（级别 / 教室 / 人数 / 三个动作） */
+              return '<a href="#" class="chip '+(c.mode==='online'?'':'off')+'"'+
+                     ' data-c-act="open" data-cid="'+c.id+'" title="点开看这个班">'+
                      '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
                      '<span class="nm">'+esc(c.name)+' '+c.code+'</span></b>'+
                      '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
-                     '<span class="tn">'+esc(t.name)+(c.mode==='offline'&&c.room?' · '+esc(c.room):'')+'</span></span>';
+                     '<span class="tn">'+esc(t.name)+(c.mode==='offline'&&c.room?' · '+esc(c.room):'')+'</span></a>';
             }).join('')+'</td>';
           }).join('')+'</tr>';
       }).join('')}</tbody>
@@ -1048,8 +1557,8 @@ function bClasses(){
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>班级</th><th>级别</th><th>形态</th><th>时段</th><th>教室</th><th>进度</th><th>教师</th><th class="num">人数</th><th>状态</th><th></th></tr></thead>
       <tbody>${rows.length ? rows.map(c=>{
-        const t=T(c.teacher), sl=S(c.slot), p=c.n/c.cap*100;
-        return '<tr>'+
+        const t=T(c.teacher), sl=S(c.slot), p=classN(c)/c.cap*100;
+        return '<tr'+(c.id === bFocus ? ' class="focus"' : '')+'>'+
         '<td><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
         '<td><span class="tg off">'+c.lv+'</span></td>'+
         '<td>'+modeTag(c.mode)+'</td>'+
@@ -1059,13 +1568,23 @@ function bClasses(){
                 : '<span style="color:var(--ink3)">不占教室</span>')+'</td>'+
         '<td class="m nowrap">'+lessonLabel(c.lv,classLesson(c))+'</td>'+
         '<td>'+esc(t.name)+'</td>'+
-        '<td class="num">'+c.n+' / '+c.cap+' '+bar(p, p>=100?'full':'')+'</td>'+
+        '<td class="num">'+classN(c)+' / '+c.cap+' '+bar(p, p>=100?'full':'')+'</td>'+
         '<td>'+(classLesson(c)<=1?'<span class="tg on">刚开班</span>':'<span class="tg off">上课中</span>')+'</td>'+
-        '<td class="nowrap"><a href="#">推进一课</a> · <a href="#">点名</a></td>'+
+        '<td class="nowrap">'+
+          '<a href="#" data-c-act="advance" data-cid="'+c.id+'">推进一课</a> · '+
+          '<a href="#" data-c-act="roll" data-cid="'+c.id+'">点名</a> · '+
+          '<a href="#" data-c-act="del" data-cid="'+c.id+'">删班</a></td>'+
       '</tr>';}).join('')
         : '<tr><td colspan="10" class="empty">没有匹配「'+esc(fQ)+'」的班级</td></tr>'}</tbody>
     </table></div></div>
   </div>`;
+}
+/* 该生可上课时段 —— ★ 2026-10-12 第 ③ 步修的真 bug：
+   原来这里写死 ['s1','s3']，所以每个学生都显示「早班 晚班」，跟 s.slots 毫无关系。 */
+function slotCells(s){
+  const ids = (s.slots || []).filter(x => DB.slots.some(v => v.id === x));
+  if (!ids.length) return '<span style="color:var(--ink3)">不限</span>';
+  return ids.map(x => '<span class="tg own">'+esc(S(x).name)+'</span>').join(' ');
 }
 function bPool(){
   const pool = DB.students.filter(s=>!s.cls);
@@ -1078,22 +1597,56 @@ function bPool(){
       '<td><span class="tg off">'+s.lv+'</span></td>'+
       '<td>'+(s.intent ? '<span class="tg warn">'+esc(s.intent)+'</span>' : '<span style="color:var(--ink3)">—</span>')+'</td>'+
       '<td><span class="tg off">'+esc(s.contact)+'</span></td>'+
-      '<td>'+['s1','s3'].map(x=>'<span class="tg own">'+S(x).name+'</span>').join(' ')+'</td>'+
-      '<td class="nowrap"><a href="#">编入班级</a></td>'+
+      '<td>'+slotCells(s)+'</td>'+
+      '<td class="nowrap"><a href="#" data-e-open="'+s.id+'">编入班级</a></td>'+
     '</tr>').join('')}</tbody>
   </table></div></div></div>`;
 }
+/* 本周 = 「今天」所在的那一周（周一 → 周日）。今天 = DB.todayDate */
+function weekRange(iso){
+  const dow = (new Date(iso + 'T00:00:00').getDay() + 6) % 7;   /* 周一 = 0 … 周日 = 6 */
+  const from = addDays(iso, -dow);
+  return { from: from, to: addDays(from, 6) };
+}
+
+/* 本周日历（2026-10-12 第 ③ 步：从硬编码改成读事实表）
+   ⚠️ 以前这里是一整块手写的文字（「周一 07:30 苹果班 AP-01 …」），跟真实课次毫无关系 ——
+      改班名、推进课次、加新班，它都不会变。现在按 date 从 lessons 里查出来。 */
 function bCalendar(){
-  return `<div class="card marks"><div class="card-h"><h3>本周日历</h3><span class="sub">按天查看</span></div>
-  <div class="card-b">
-    <div class="flow">周一  07:30  苹果班 AP-01   第一阶段 第 3 课   线上   王雅琴
-      12:00  芒果班 MG-03   第一阶段 第 12 课  线上   周建华
-      19:00  龙眼班 LY-05   第一阶段 第 1 课   线上   张慧敏
-周二  19:00  凤梨班 DN-02   第一阶段 第 7 课   线下   陈国栋
-周三  07:30  苹果班 AP-01   第一阶段 第 4 课   线上   王雅琴
-周五  12:00  芒果班 MG-03   第二阶段 第 13 课  线上   周建华
-周六  09:00  荔枝班 LZ-04   第三阶段 第 21 课  线下   刘思远</div>
-  </div></div>`;
+  const w = weekRange(DB.todayDate);
+  const list = DB.lessons
+    .filter(l => l.date >= w.from && l.date <= w.to)
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1
+                    : toMin(slotStart(a.time)) - toMin(slotStart(b.time)));
+  const shown = list.filter(l => l.status !== 'cancel');
+  const rows = shown.map(l => {
+    const c = C(l.cid);
+    const cn = l.cname || c.name, cc = l.ccode || c.code, clv = l.clv || c.lv;
+    const cm = l.cmode || c.mode, ctc = l.ctch || c.teacher;
+    const t = T(l.teacher || ctc);
+    const isToday = l.date === DB.todayDate;
+    const st = l.status === 'done'  ? '<span class="tg on">已上</span>'
+             : l.status === 'today' ? '<span class="tg warn">今天</span>'
+             :                        '<span class="tg off">待上</span>';
+    return '<tr'+(isToday ? ' style="background:var(--brand-soft)"' : '')+'>'+
+      '<td class="m nowrap">'+l.date+' <span style="color:var(--ink3)">'+weekdayText(l.date)+'</span>'+
+        (isToday ? ' <span class="tg on">今天</span>' : '')+'</td>'+
+      '<td class="m nowrap">'+slotStart(l.time)+'<span style="color:var(--ink3)">–'+endOf(slotStart(l.time))+'</span></td>'+
+      '<td><b>'+esc(cn)+'</b> <span class="m" style="color:var(--ink3)">'+cc+'</span></td>'+
+      '<td class="m nowrap">'+lessonLabel(clv, l.no)+'</td>'+
+      '<td>'+modeTag(cm)+'</td>'+
+      '<td>'+esc(t.name)+'</td>'+
+      '<td>'+st+'</td>'+
+    '</tr>';
+  }).join('');
+
+  return `<div class="card marks"><div class="card-h"><h3>本周日历</h3>
+    <span class="sub">${w.from} ~ ${w.to} · 按天看这一周排了什么</span><span class="sp"></span>
+    <span class="tg off">共 ${shown.length} 节</span></div>
+  <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>日期</th><th>时间</th><th>班级</th><th>进度</th><th>形态</th><th>教师</th><th>状态</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="7" class="empty">本周没有排课</td></tr>'}</tbody>
+  </table></div></div></div>`;
 }
 /* ================= 视图：课次记录（按月回看） =================
    ★ Tony 2026-10-03 定案的四条：
@@ -1216,10 +1769,17 @@ function vLessons(){
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>日期</th><th>班级</th><th>进度</th><th>时段</th><th>形态</th><th>授课教师</th><th>教室</th><th>状态</th></tr></thead>
         <tbody>${rows.length ? rows.map(l => {
-          const c = C(l.cid), t = T(l.teacher || c.teacher);
+          /* ★ 班信息优先用课次记录里的「快照」（l.cname 等）—— 班改名或删掉后，历史不能跟着变。
+             老数据没有快照，回落到当前班对象（C() 查不到时返回 {name:'—',code:''}，不会崩） */
+          const c = C(l.cid);
+          const cn = l.cname || c.name, cc = l.ccode || c.code, clv = l.clv || c.lv;
+          const cm = l.cmode || c.mode;
+          const cr = (l.croom != null && l.croom !== '') ? l.croom : c.room;
+          const ctc = l.ctch || c.teacher;
+          const t = T(l.teacher || ctc);
           /* 代课：这节课的授课教师 ≠ 班级的常任教师（边界 #11）—— 必须显示出来，
              否则将来跟老师对账时「这节课到底谁上的」说不清 */
-          const sub = l.teacher && l.teacher !== c.teacher;
+          const sub = l.teacher && l.teacher !== ctc;
           const st = l.status === 'done'   ? '<span class="tg on">已上</span>'
                    : l.status === 'today'  ? '<span class="tg warn">今天</span>'
                    : l.status === 'cancel' ? '<span class="tg bad">已取消</span>'
@@ -1227,13 +1787,13 @@ function vLessons(){
           /* 已取消的整行压暗 —— 一眼看出来它「在，但不算数」 */
           return '<tr' + (l.status === 'cancel' ? ' style="opacity:.55"' : '') + '>' +
             '<td class="m nowrap">' + l.date + ' <span style="color:var(--ink3)">' + weekdayText(l.date) + '</span></td>' +
-            '<td><b>' + esc(c.name) + '</b> <span class="m" style="color:var(--ink3)">' + c.code + '</span></td>' +
-            '<td class="m nowrap">' + lessonLabel(c.lv, l.no) + '</td>' +
+            '<td><b>' + esc(cn) + '</b> <span class="m" style="color:var(--ink3)">' + cc + '</span></td>' +
+            '<td class="m nowrap">' + lessonLabel(clv, l.no) + '</td>' +
             '<td class="m nowrap">' + slotStart(l.time) + '<span style="color:var(--ink3)">–' + endOf(slotStart(l.time)) + '</span></td>' +
-            '<td>' + modeTag(c.mode) + '</td>' +
+            '<td>' + modeTag(cm) + '</td>' +
             '<td>' + esc(t.name) + (sub ? ' <span class="tg warn">代课</span>' : '') + '</td>' +
-            '<td>' + (c.mode === 'offline'
-                        ? (c.room ? esc(c.room) : '<span class="tg bad">未填</span>')
+            '<td>' + (cm === 'offline'
+                        ? (cr ? esc(cr) : '<span class="tg bad">未填</span>')
                         : '<span style="color:var(--ink3)">不占教室</span>') + '</td>' +
             '<td>' + st + '</td>' +
           '</tr>';
@@ -1321,92 +1881,221 @@ function bApply(){
   </div>`;
 }
 
+/* ---- 数据页的小工具：成绩格 + 结论 ----
+   ⚠️ s.exam 里的 '—' 是**占位符不是分数**：+('—') 是 NaN。
+   老代码 `s.exam.s1 && +s.exam.s1>=60` 因此让这些学生恒显「进行中」，
+   而且第三阶段那一列整列写死「未考」，根本没读 s3。这里统一按「能不能转成数字」判断。 */
+function examCell(v){
+  const raw = String(v == null ? '' : v).trim();
+  const n = Number(raw);
+  if (raw === '' || isNaN(n)) return '<td class="m"><span style="color:var(--ink3)">未考</span></td>';
+  return '<td class="m">'+(n >= 60
+    ? '<b>'+esc(raw)+'</b>'
+    : '<span style="color:var(--warn)">'+esc(raw)+'</span>')+'</td>';
+}
+/* 结论口径：先看这个学生**现在读到第几阶段**（由班级进度算出来），再看他这一阶段的成绩。
+   ⚠️ 老口径只看第一阶段分数 —— 读到第三阶段的学生也会被标成「可进下一阶段」，是错的。 */
+function examVerdict(s, c){
+  const st = stageOf(classLesson(c));
+  const raw = String(((s.exam || {})['s' + st]) == null ? '' : (s.exam || {})['s' + st]).trim();
+  const n = Number(raw);
+  if (raw === '' || isNaN(n)) return '<span class="tg off">第 '+st+' 阶段未考</span>';
+  return n >= 60 ? '<span class="tg on">可进下一阶段</span>'
+                 : '<span class="tg bad">第 '+st+' 阶段不及格</span>';
+}
+
 /* ---------- 视图：数据 ---------- */
 let dTab = 'att';
 function vData(){
   const tabs = [['att','出勤'],['exam','阶段考试'],['grade','完成等级']];
   let body = '';
   if (dTab==='att'){
-    body = `<div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>学生</th><th>班级</th><th>进度</th><th class="num">已上 / 应上</th><th>出勤率</th><th>最近缺课</th></tr></thead>
-      <tbody>${DB.students.filter(s=>s.cls).map(s=>{
+    const list = DB.students.filter(s=>s.cls);
+    body = `<div class="note">出勤全部由<b>事实表</b>算出来 —— 应出勤 = 入班后这个班已上的课次，缺勤 = 缺勤记录条数。<b>点任意一行看逐节明细。</b></div>
+    <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>学生</th><th>班级</th><th>进度</th><th class="num">已上 / 应上</th><th>出勤率</th><th>缺勤</th></tr></thead>
+      <tbody>${list.length ? list.map(s=>{
         /* 出勤三件套全是算出来的：应出勤 = 入班后班级已上课次，缺勤 = 缺勤事实表条数 */
-        const c=C(s.cls), all=stuAttAll(s), att=stuAtt(s), r=all?Math.round(att/all*100):0;
-        return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(c.name)+' <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+        const c=C(s.cls), all=stuAttAll(s), att=stuAtt(s), abs=stuAbsent(s), r=all?Math.round(att/all*100):0;
+        const last=stuLastAbsent(s);
+        return '<tr data-open="att:'+s.id+'"><td><b>'+esc(s.name)+'</b></td><td>'+esc(c.name)+' <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
         '<td class="m nowrap">'+lessonLabel(c.lv,classLesson(c))+'</td>'+
         '<td class="num">'+att+' / '+all+'</td>'+
         '<td>'+bar(r, r>=90?'full':(r<70?'hi':''))+' <span class="m" style="font-size:11.5px">'+r+'%</span></td>'+
-        '<td>'+(att<all?'<span class="tg warn">缺 '+(all-att)+' 次</span>':'<span class="tg on">全勤</span>')+'</td></tr>';}).join('')}</tbody>
+        '<td>'+(abs
+          ? '<span class="tg warn">缺 '+abs+' 次</span> <span class="m" style="font-size:11.5px;color:var(--ink3)">最近 '+esc(String(last?last.date:'').slice(5))+'</span>'
+          : '<span class="tg on">全勤</span>')+'</td></tr>';}).join('')
+        : '<tr><td colspan="6" class="empty">还没有编班的学生</td></tr>'}</tbody>
     </table></div></div></div>`;
   } else if (dTab==='exam'){
-    body = `<div class="note">阶段考试 = 学生 × 每个阶段。卡在某个阶段的学生<b>不能往下排</b>。</div>
+    const list = DB.students.filter(s=>s.cls);
+    body = `<div class="note">阶段考试 = 学生 × 每个阶段。卡在某个阶段的学生<b>不能往下排</b>。<b>点任意一行看该生各阶段成绩。</b></div>
     <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>学生</th><th>级别</th><th>第一阶段</th><th>第二阶段</th><th>第三阶段</th><th>结论</th></tr></thead>
-      <tbody>${DB.students.filter(s=>s.cls).slice(0,8).map(s=>'<tr>'+
-        '<td><b>'+esc(s.name)+'</b></td><td><span class="tg off">'+s.lv+'</span></td>'+
-        '<td class="m">'+(s.exam.s1||'<span style="color:var(--ink3)">未考</span>')+'</td>'+
-        '<td class="m">'+(s.exam.s2||'<span style="color:var(--ink3)">未考</span>')+'</td>'+
-        '<td class="m"><span style="color:var(--ink3)">未考</span></td>'+
-        '<td>'+(s.exam.s1&&+s.exam.s1>=60?'<span class="tg on">可进下一阶段</span>':'<span class="tg off">进行中</span>')+'</td>'+
-      '</tr>').join('')}</tbody>
+      <thead><tr><th>学生</th><th>级别</th><th>现在读到</th><th>第一阶段</th><th>第二阶段</th><th>第三阶段</th><th>结论</th></tr></thead>
+      <tbody>${list.length ? list.map(s=>{
+        const c=C(s.cls);
+        return '<tr data-open="exam:'+s.id+'"><td><b>'+esc(s.name)+'</b></td>'+
+          '<td><span class="tg off">'+esc(s.lv)+'</span></td>'+
+          '<td class="m nowrap">'+stageName(classLesson(c))+'</td>'+
+          examCell(s.exam && s.exam.s1)+examCell(s.exam && s.exam.s2)+examCell(s.exam && s.exam.s3)+
+          '<td>'+examVerdict(s, c)+'</td></tr>';}).join('')
+        : '<tr><td colspan="7" class="empty">还没有编班的学生</td></tr>'}</tbody>
     </table></div></div></div>`;
   } else {
-    body = `<div class="note">完成等级由<b>主端确认</b> —— 将来招聘懂中文学生的系统要用它筛选后推荐给单位。</div>
+    const done = DB.students.filter(s=>s.grade);
+    const rest = DB.students.length - done.length;
+    body = `<div class="note">完成等级读的是<b>学生档案里的「结业等级」字段</b>（在「学生」页维护）——
+      这一页只做汇总，<b>不自己写名单</b>。将来招聘懂中文学生的系统要用它筛选后推荐给单位。<b>点任意一行看学生档案。</b></div>
     <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>学生</th><th>已完成级别</th><th>结业时间</th><th>确认人</th><th></th></tr></thead>
-      <tbody>
-        <tr><td><b>阮文宝</b></td><td><span class="tg on">HSK1</span></td><td class="m">2026-09-18</td><td>主端</td><td><a href="#">证书</a></td></tr>
-        <tr><td><b>段氏芳</b></td><td><span class="tg on">HSK1</span></td><td class="m">2026-09-18</td><td>主端</td><td><a href="#">证书</a></td></tr>
-        <tr><td colspan="5" class="empty">其余学生还在读，未结业</td></tr>
-      </tbody>
+      <thead><tr><th>学生</th><th>已完成级别</th><th>所属班级</th><th>联系方式</th></tr></thead>
+      <tbody>${done.length ? done.map(s=>{
+        const c = s.cls ? C(s.cls) : null;
+        return '<tr data-open="student:'+s.id+'"><td><b>'+esc(s.name)+'</b></td>'+
+          '<td><span class="tg on">'+esc(s.grade)+'</span></td>'+
+          '<td>'+(c ? esc(c.name)+' <span class="m" style="color:var(--ink3)">'+esc(c.code)+'</span>'
+                    : '<span class="lbl">已结业 · 不在班</span>')+'</td>'+
+          '<td class="mono">'+esc(s.phone || '—')+'</td></tr>';}).join('')
+        : '<tr><td colspan="4" class="empty">还没有结业的学生</td></tr>'}
+        ${rest ? '<tr><td colspan="4" class="empty">其余 '+rest+' 人还在读，未结业</td></tr>' : ''}</tbody>
     </table></div></div></div>`;
   }
   return `<div class="page-h"><div><h2>数据</h2><p class="desc">出勤 · 阶段考试 · 完成等级</p></div></div>
-    <div class="tabs" id="dtabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(dTab===id?'on':'')+'">'+n+'</button>').join('')}</div>${body}`;
+    <div class="tabs" id="dtabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(dTab===id?'on':'')+'">'+n+'</button>').join('')}</div>${body}${backupCard()}`;
+}
+
+/* 备份 / 恢复卡 —— 放在「数据」页底部（老系统也是这个位置）。
+   ⚠️ 这两个按钮和教师页 / 学生页那两个走的是同一套动作，不是两套实现 */
+function backupCard(){
+  return '<div class="card" style="margin-top:18px">'+
+    '<div class="card-h"><h3>备份 / 恢复</h3>'+
+      '<span class="sub">数据只在这台电脑的浏览器里</span></div>'+
+    '<div class="card-b">'+
+      '<p style="font-size:12px;color:var(--ink3);margin:0 0 12px">'+
+        '换电脑、清缓存、或手滑改坏了，都能靠这份备份回去。<b>做大动作之前先导一份。</b></p>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn pri" data-act="export">导出备份（下载 JSON）</button>'+
+        '<button class="btn" data-act="import">从备份导入</button>'+
+      '</div>'+
+    '</div></div>';
 }
 
 /* ---------- 视图：结算 ---------- */
+/* ★ 2026-10-12：这一页原来 4 张卡 + 汇总表**全是编的**
+   （DB.money 是种子里的演示值；汇总表用 t.students*2+3 凑课次）。现在改成真算。
+   口径（Tony 定）：① 周期 = 开班至今，全部「已上」课次（不是自然月）
+                   ② 只做成本侧（课酬应付）；收入 / 利润先不做
+                   ③ 人数 = classN(c) 现算（学生表 + 未登记名单的已通过申请）
+   ⚠️ 两个已知缺口（写进页面提示，不编数字）：
+      · 单价没有快照 → 改一次单价，历史账会跟着变
+      · 按学员计费的教师，人数用的是「在读人数」，不是「实到人数」 */
+function settleRows(){
+  return DB.teachers.map(t => {
+    const cs = DB.classes.filter(c => c.teacher === t.id);
+    const lessons = cs.reduce((s, c) => s + classLesson(c), 0);
+    const heads   = cs.reduce((s, c) => s + classN(c), 0);
+    /* 按课次       → 课次 × 单价
+       按学员×课次  → Σ(该班课次 × 该班人数) × 单价
+       ⚠️ 不能写成「总课次 × 总人数」—— 一个教师带两个班时那个算法是错的 */
+    const sub = t.rateUnit === 'student'
+      ? cs.reduce((s, c) => s + classLesson(c) * classN(c), 0) * t.rate
+      : lessons * t.rate;
+    return {t:t, nClass:cs.length, lessons:lessons, heads:heads, sub:sub};
+  });
+}
 function vSettle(){
-  const m = DB.money;
+  const rows    = settleRows();
+  const shown   = rows.filter(r => r.lessons > 0);   /* 只列「有账」的教师，0 课的挤满表没意义 */
+  const hidden  = rows.length - shown.length;
+  const doneAll = DB.lessons.filter(l => l.status === 'done').length;
+  const cost    = rows.reduce((s, r) => s + r.sub, 0);
   return `
-  <div class="page-h"><div><h2>结算</h2><p class="desc">2026 年 10 月</p></div><div class="sp"></div>
+  <div class="page-h"><div><h2>结算</h2><p class="desc">开班至今 · 截至 ${esc(DB.todayDate)}</p></div><div class="sp"></div>
     <button class="btn">导出对账单</button><button class="btn pri">封存本月</button></div>
-  <div class="note amber"><b>口径还没定</b> —— 学费怎么收、外包怎么结，金额先留空。现在这些数字是<b>演示值</b>，且会随单价改动而变（没有单价快照）。</div>
+  <div class="note amber"><b>只做了成本侧</b> —— 课次 / 人数 / 课酬都从课次事实表和学生表现算（口径：<b>开班至今，全部「已上」课次</b>）。
+    <b>收入 / 利润还出不来</b>：学生档案里没有「学费」字段，收多少没地方记 —— 宁可留空，也不编数字。<br>
+    另外两个已知缺口：① <b>单价没有快照</b>，改一次单价历史账会跟着变；② 按学员计费的教师，人数用的是<b>在读人数</b>，不是实到人数。</div>
   <div class="stats n4">
-    ${stat('本月课次', m.sessions, '节')}
-    ${stat('收入', fmtVnd(m.income), 'VND', 'ok')}
-    ${stat('成本', fmtVnd(m.cost), 'VND')}
-    ${stat('利润', fmtVnd(m.income-m.cost), 'VND', 'acc')}
+    ${stat('已上课次', doneAll, '节 · 开班至今', 'acc')}
+    ${stat('课酬成本', fmtVnd(cost), 'VND · 应付教师', 'amber')}
+    ${stat('收入', '<span class="tbd">待定</span>', '缺「学费」字段')}
+    ${stat('利润', '<span class="tbd">待定</span>', '缺「学费」字段')}
   </div>
   <div class="card marks">
-    <div class="card-h"><h3>按教师汇总</h3><span class="sub">课次 × 单价</span></div>
+    <div class="card-h"><h3>按教师汇总</h3><span class="sub">名下所有班 · 已上课次 × 单价（按学员计费的再 × 在读人数）</span></div>
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>教师</th><th>类型</th><th class="num">课次</th><th class="num">单价</th><th class="num">小计</th><th>方向</th></tr></thead>
-      <tbody>${DB.teachers.filter(t=>t.students>0).map(t=>{
-        const n = t.students*2+3, sub = n*t.rate;
-        return '<tr><td><b>'+esc(t.name)+'</b></td><td>'+ownTag(t.src)+'</td>'+
-        '<td class="num">'+n+'</td><td class="num">'+t.rate.toLocaleString('en-US')+'</td>'+
-        '<td class="num">'+sub.toLocaleString('en-US')+'</td>'+
-        '<td>'+(t.src==='out'?'<span class="tg bad">我们付他（成本）</span>':'<span class="tg off">内部</span>')+'</td></tr>';}).join('')}</tbody>
+      <thead><tr><th>教师</th><th>类型</th><th class="num">已上课次</th><th class="num">在读人数</th><th class="num">单价 VND</th><th class="num">小计 VND</th><th>方向</th></tr></thead>
+      <tbody>${shown.length ? shown.map(r => {
+        const t = r.t;
+        return '<tr><td><b>'+esc(t.name)+'</b> <span class="m" style="color:var(--ink3)">'+r.nClass+' 个班</span></td>'+
+        '<td>'+ownTag(t.src)+'</td>'+
+        '<td class="num">'+r.lessons+'</td>'+
+        '<td class="num">'+(t.rateUnit === 'student' ? r.heads
+          : '<span style="color:var(--ink3)" title="按课次计费，人数不参与计算">'+r.heads+'</span>')+'</td>'+
+        '<td class="num">'+t.rate.toLocaleString('en-US')+
+          '<br><span style="color:var(--ink3);font-size:11px">'+esc(rateUnitText(t.rateUnit))+'</span></td>'+
+        '<td class="num"><b>'+r.sub.toLocaleString('en-US')+'</b></td>'+
+        '<td>'+(t.src === 'out' ? '<span class="tg bad">我们付他（成本）</span>' : '<span class="tg off">内部</span>')+'</td></tr>';
+      }).join('') : '<tr><td colspan="7" class="empty">还没有任何已上课次 —— 排课页「推进一课」之后这里才有账</td></tr>'}</tbody>
     </table></div></div>
+    ${hidden ? '<div style="padding:9px 15px;font-size:11.5px;color:var(--ink3);border-top:1px solid var(--line)">另有 '+hidden+' 位教师名下没有已上课次，未列出 —— 表里只列有账的。</div>' : ''}
   </div>`;
 }
 
 /* ---------- 视图：成员 ---------- */
+/* ---- 成员：权限是标签，暂不做登录拦截（Tony 2026-10-13 明确「无权限模型」）---- */
+function mView(o){
+  return '<dl class="kv">'+
+    kv('姓名', esc(o.name))+
+    kv('权限', '<span class="tg off">'+esc(o.role)+'</span>')+
+    kv('最近登录', o.lastLogin ? esc(o.lastLogin) : '<span class="lbl">尚未登录</span>')+
+  '</dl>'+
+  '<div class="note" style="margin:14px 0 0"><b>权限目前是标签</b> —— 只作显示，暂不做登录拦截。</div>';
+}
+function mEdit(m){
+  return fld('姓名', inp('name', m.name))+
+    fld('权限', sel('role', m.role,
+      [['主端 · 全部权限','主端 · 全部权限'],
+       ['主端 · 只看排课','主端 · 只看排课'],
+       ['主端 · 只看数据','主端 · 只看数据']]))+
+    fld('最近登录', inp('lastLogin', m.lastLogin || ''));
+}
+/* 移除成员：破坏性操作，先 confirm 再落盘 */
+function delMember(id){
+  if (!id) return;
+  const i = (DB.members||[]).findIndex(x => x.id === id);
+  if (i < 0) return;
+  const m = DB.members[i];
+  if (!confirm('移除成员「'+m.name+'」？此操作会写进本机浏览器，关掉再开还在。')) return;
+  DB.members.splice(i, 1);
+  save();
+  refreshView();
+  toast('已移除成员「'+m.name+'」');
+}
 function vMembers(){
-  const rows = [['王雅琴','主端 · 全部权限'],['李文博','主端 · 只看排课'],['周建华','主端 · 只看数据']];
-  return `<div class="page-h"><div><h2>成员</h2><p class="desc">能登录主端的人（现在只是名单）</p></div>
-    <div class="sp"></div><button class="btn pri">＋ 添加成员</button></div>
+  const list = (DB.members || []);
+  const body = list.length
+    ? list.map(m =>
+        '<tr>'+
+          '<td><b>'+esc(m.name)+'</b></td>'+
+          '<td><span class="tg off">'+esc(m.role)+'</span></td>'+
+          '<td class="m">'+(m.lastLogin ? esc(m.lastLogin) : '—')+'</td>'+
+          '<td><a href="#" data-act="editmember" data-i="'+esc(m.id)+'">编辑</a> · '+
+              '<a href="#" data-act="delmember" data-i="'+esc(m.id)+'">移除</a></td>'+
+        '</tr>'
+      ).join('')
+    : '<tr><td colspan="4" class="m">还没有成员，点右上「＋ 添加成员」加一位。</td></tr>';
+  return `<div class="page-h"><div><h2>成员</h2><p class="desc">能登录主端的人（权限目前是标签，暂不做登录拦截）</p></div>
+    <div class="sp"></div><button class="btn pri" data-act="newmember">＋ 添加成员</button></div>
   <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>姓名</th><th>权限</th><th>最近登录</th><th></th></tr></thead>
-    <tbody>${rows.map(([n,p])=>'<tr><td><b>'+n+'</b></td><td><span class="tg off">'+p+'</span></td><td class="m">2026-10-02 09:14</td><td><a href="#">编辑</a> · <a href="#">移除</a></td></tr>').join('')}</tbody>
+    <tbody>${body}</tbody>
   </table></div></div></div>`;
 }
 
 /* ==========================================================================
    右侧抽屉 · 个人档案
    —— 教师页 / 学生页点任意一行 → 右侧滑出档案面板
-   —— 「可改」只是内存态：直接改 DB 对象，刷新页面即还原，不写任何存储
+   —— 「可改」：保存后写进 DB + 落盘（2026-10-12 起），关掉再开还在
    ========================================================================== */
 let dState = null;   /* {kind:'teacher'|'student'|'app', id, edit, draft, mode, form, isNew} */
 
@@ -1415,23 +2104,35 @@ function getDRec(){
   if (dState.kind === 'teacher') return DB.teachers.find(x => x.id === dState.id);
   if (dState.kind === 'student') return DB.students.find(x => x.id === dState.id);
   if (dState.kind === 'app')     return DB.apps.find(x => x.id === dState.id);
+  if (dState.kind === 'member')  return DB.members.find(x => x.id === dState.id);
   return null;
+}
+/* 打开右侧抽屉面板 —— 所有抽屉共用的收尾三行（+ 聚焦关闭键）。
+   ⚠️ 2026-10-12：这三行以前在 openRollDrawer / openEnrollDrawer 里**漏写了**，
+   结果「点名」「编入」两个按钮点下去没反应 —— 内容写进了 #drawer，
+   面板却停在屏幕外（#drawer 默认 transform:translateX(100%) + visibility:hidden，
+   只有 .open 才拉进来）。抽成一个函数，新开抽屉照着调一次就不会再漏。 */
+function openPanel(){
+  $('#dScrim').classList.add('on');
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden','false');
+  const x = $('#drawer .x');
+  if (x) x.focus();
 }
 function openDrawer(key){
   const parts = String(key).split(':');
   const kind = parts[0], id = parts[1];
-  if (kind !== 'teacher' && kind !== 'student' && kind !== 'app') return;
+  /* 数据三页的明细入口（2026-10-12）：att / exam 都挂在学生上，但展示的不是档案本身 */
+  if (kind === 'att'){  openAttDrawer(id);  return; }
+  if (kind === 'exam'){ openExamDrawer(id); return; }
+  if (kind !== 'teacher' && kind !== 'student' && kind !== 'app' && kind !== 'member') return;
   dState = {kind:kind, id:id, edit:false, draft:null, mode:'view', form:null, isNew:false};
   /* 记录不存在就别开 —— 否则 renderDrawer 会清空内容，
      而这里又把 .open 加上去，会留下一个空白抽屉 */
   if (!getDRec()){ dState = null; return; }
   if (kind === 'app') dState.form = appFormOf(getDRec());
   renderDrawer();
-  $('#dScrim').classList.add('on');
-  $('#drawer').classList.add('open');
-  $('#drawer').setAttribute('aria-hidden','false');
-  const x = $('#drawer .x');
-  if (x) x.focus();
+  openPanel();
 }
 function closeDrawer(){
   if (!dState) return;
@@ -1477,15 +2178,19 @@ function saveEdit(){
     /* 姓名 + 联系方式必填（Tony 2026-10-03：联系方式也要必填，不然新建出来联系不上人） */
     const miss = [];
     if (!String(d.name||'').trim()) miss.push('姓名');
-    if (!String(d[kind === 'teacher' ? 'tel' : 'phone']||'').trim()) miss.push('联系方式');
+    const contactField = kind === 'teacher' ? 'tel' : kind === 'student' ? 'phone' : 'role';
+    if (!String(d[contactField]||'').trim()) miss.push(kind === 'member' ? '权限' : '联系方式');
     if (miss.length){ dState.err = miss.join(' 和 '); renderDrawer(); return; }
 
-    const list = kind === 'teacher' ? DB.teachers : DB.students;
+    const list = kind === 'teacher' ? DB.teachers : kind === 'student' ? DB.students : DB.members;
+    const prefix = kind === 'teacher' ? 't' : kind === 'student' ? 'st' : 'm';
     const nums = list.map(x => parseInt(String(x.id).replace(/\D/g,''), 10) || 0);
-    d.id   = (kind === 'teacher' ? 't' : 'st') + (Math.max(0, ...nums) + 1);
+    d.id   = prefix + (Math.max(0, ...nums) + 1);
     d.name = String(d.name).trim();
+    if (kind === 'member' && !d.lastLogin) d.lastLogin = '';
     list.push(d);
-    const view = kind === 'teacher' ? 'teachers' : 'students';
+    save();
+    const view = kind === 'teacher' ? 'teachers' : kind === 'student' ? 'students' : 'members';
     closeDrawer();
     /* hash 没变时 hashchange 不触发，得手动 render() */
     if (location.hash === '#' + view) render(); else location.hash = '#' + view;
@@ -1496,6 +2201,7 @@ function saveEdit(){
   const o = getDRec();
   if (!o) return;
   Object.keys(d).forEach(k => { o[k] = d[k]; });
+  save();
   dState.edit = false; dState.draft = null;
   renderDrawer();
   refreshView();
@@ -1658,10 +2364,13 @@ function blankStudent(){
     cls:'', joinedAt:'', intent:'', exam:{},
   };
 }
+function blankMember(){
+  return { name:'', role:'主端 · 全部权限', lastLogin:'' };
+}
 function openNewProfile(kind){
   dState = {
     kind: kind, id: '__new__', edit: true,
-    draft: kind === 'teacher' ? blankTeacher() : blankStudent(),
+    draft: kind === 'teacher' ? blankTeacher() : kind === 'student' ? blankStudent() : blankMember(),
     mode: 'view', form: null, isNew: true,
   };
   renderDrawer();
@@ -1672,30 +2381,42 @@ function openNewProfile(kind){
 }
 const openNewTeacher = () => openNewProfile('teacher');
 const openNewStudent = () => openNewProfile('student');
+const openNewMember  = () => openNewProfile('member');
 
 /* 新建态的档案抽屉：表单跟「编辑」一模一样，只是标题和按钮文案不同 */
 function renderNewProfileDrawer(){
   const isT = dState.kind === 'teacher';
+  const isM = dState.kind === 'member';
   const body = (dState.err
       ? '<div class="a-warn" style="margin:0 0 12px"><b>'+esc(dState.err)+' 不能空</b> —— 先填上再保存。</div>'
       : '')+
-    (isT ? tEdit(dState.draft) : sEdit(dState.draft));
+    (isT ? tEdit(dState.draft) : isM ? mEdit(dState.draft) : sEdit(dState.draft));
   $('#drawer').innerHTML =
     '<div class="d-h">'+
-      '<div><div class="t">新增'+(isT ? '教师' : '学生')+'</div>'+
-      '<div class="s">'+(isT ? '教师档案' : '学生档案')+' · 新建 · 保存后进列表</div></div>'+
+      '<div><div class="t">新增'+(isT ? '教师' : isM ? '成员' : '学生')+'</div>'+
+      '<div class="s">'+(isT ? '教师档案' : isM ? '成员' : '学生档案')+' · 新建 · 保存后进列表</div></div>'+
       '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
     '</div>'+
     '<div class="d-b">'+body+'</div>'+
     '<div class="d-f">'+
       '<button class="btn pri" data-d-save>保存</button><button class="btn" data-d-cancel>取消</button>'+
       '<div class="sp"></div>'+
-      '<span class="d-memo">演示数据 · 改动只在内存<br>刷新页面即还原，不写入任何存储</span>'+
+      '<span class="d-memo">改动会存进本机浏览器<br>关掉再开还在</span>'+
     '</div>';
 }
 
 function renderDrawer(){
   if (!dState) return;
+  /* 备份链路的两态：它们不是档案，没有对应记录 ——
+     ⚠️ 必须在 getDRec() 之前拦掉，否则 getDRec() 返回 null，下面会直接 closeDrawer() */
+  if (dState.kind === 'export'){ renderExportDrawer(); return; }
+  if (dState.kind === 'import'){ renderImportDrawer(); return; }
+  /* 点名 / 编入（2026-10-12 第 ③ 步）：都不是档案 —— 一个挂在「班级」上，一个挂在「学生」上 */
+  if (dState.kind === 'roll'){ renderRollDrawer(); return; }
+  if (dState.kind === 'enroll'){ renderEnrollDrawer(); return; }
+  /* 数据三页的明细抽屉（2026-10-12）：都不是档案 —— att 挂学生出勤，exam 挂学生考试 */
+  if (dState.kind === 'att'){ renderAttDrawer(); return; }
+  if (dState.kind === 'exam'){ renderExamDrawer(); return; }
   /* 新建态没有对应记录，先拦掉（否则下面 getDRec 拿不到会 closeDrawer） */
   if (dState.isNew){
     if (dState.kind === 'app') renderNewAppDrawer();
@@ -1706,13 +2427,17 @@ function renderDrawer(){
   if (!o){ closeDrawer(); return; }
   if (dState.kind === 'app'){ renderAppDrawer(o); return; }
   const isT = dState.kind === 'teacher';
+  const isM = dState.kind === 'member';
   const edit = dState.edit;
   const m = edit ? dState.draft : o;
-  const body = isT ? (edit ? tEdit(m) : tView(o)) : (edit ? sEdit(m) : sView(o));
+  let body;
+  if (isM)      body = edit ? mEdit(m) : mView(o);
+  else if (isT) body = edit ? tEdit(m) : tView(o);
+  else          body = edit ? sEdit(m) : sView(o);
   $('#drawer').innerHTML =
     '<div class="d-h">'+
       '<div><div class="t">'+esc(o.name)+'</div>'+
-      '<div class="s">'+(isT ? '教师' : '学生')+' · '+esc(String(o.id).toUpperCase())+'</div></div>'+
+      '<div class="s">'+(isT ? '教师' : isM ? '成员' : '学生')+' · '+esc(String(o.id).toUpperCase())+'</div></div>'+
       '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
     '</div>'+
     '<div class="d-b">'+body+'</div>'+
@@ -1721,7 +2446,7 @@ function renderDrawer(){
         ? '<button class="btn pri" data-d-save>保存</button><button class="btn" data-d-cancel>取消</button>'
         : '<button class="btn pri" data-d-edit>编辑</button>')+
       '<div class="sp"></div>'+
-      '<span class="d-memo">演示数据 · 改动只在内存<br>刷新页面即还原，不写入任何存储</span>'+
+      '<span class="d-memo">改动会存进本机浏览器<br>关掉再开还在</span>'+
     '</div>';
 }
 
@@ -1781,7 +2506,7 @@ function findMatch(a){
   return DB.classes.find(c =>
     c.lv === a.lv && c.slot === a.slot && c.mode === a.mode &&
     stageOf(classLesson(c)) === stageOf(a.lesson) &&
-    c.n + a.n <= c.cap
+    classN(c) + a.n <= c.cap
   ) || null;
 }
 
@@ -1881,7 +2606,7 @@ function aMerge(o, mt){
     '<div class="a-ok"><b>命中 '+esc(mt.name)+' '+esc(mt.code)+'</b><br>'+
     esc(mt.lv)+' · '+MODE[mt.mode]+' · '+esc(S(mt.slot).name)+' '+esc(S(mt.slot).time)+'<br>'+
     '该班进度 '+esc(progOf(classLesson(mt)))+' · 授课教师 '+esc(t.name)+'<br>'+
-    '人数 <b>'+mt.n+' / '+mt.cap+'</b> → 并入后 <b>'+(mt.n+o.n)+' / '+mt.cap+'</b>'+
+    '人数 <b>'+classN(mt)+' / '+mt.cap+'</b> → 并入后 <b>'+(classN(mt)+o.n)+' / '+mt.cap+'</b>'+
     '<span class="lbl">（不新建班）</span></div>'+
     '<div class="note" style="margin:10px 0 0;font-size:11.5px">并的是<b>课</b>，不是人 —— '+
     '这个时段本来就有一门同样的课，把新学生放进它的空位，不用再开一个新班。</div>');
@@ -1963,10 +2688,7 @@ function newAppForm(){
 function openNewApp(){
   dState = {kind:'app', id:'__new__', edit:false, draft:null, mode:'view', form:newAppForm(), isNew:true};
   renderDrawer();
-  $('#dScrim').classList.add('on');
-  $('#drawer').classList.add('open');
-  $('#drawer').setAttribute('aria-hidden','false');
-  const x = $('#drawer .x'); if (x) x.focus();
+  openPanel();
 }
 function renderNewAppDrawer(){
   const f = dState.form, off = f.mode === 'offline';
@@ -2012,7 +2734,7 @@ function renderNewAppDrawer(){
     '<div class="d-f">'+
       '<button class="btn pri" data-a-do="create">提交申请</button>'+
       '<button class="btn" data-d-close>取消</button>'+
-      '<div class="sp"></div><div class="d-memo">只改内存演示数据 · 刷新即还原</div>'+
+      '<div class="sp"></div><div class="d-memo">改动会存进本机浏览器 · 关掉再开还在</div>'+
     '</div>';
 }
 function createApp(){
@@ -2036,6 +2758,7 @@ function createApp(){
     roster: roster,
     at: stamp(), state: '待审批',
   });
+  save();
   closeDrawer();
   /* hash 没变时 hashchange 不触发，得手动 render() */
   if (location.hash === '#apply') render(); else location.hash = '#apply';
@@ -2043,7 +2766,8 @@ function createApp(){
 
 /* 把申请里的学生名单落成学生档案 + 编入这个班。
    这样「每位学生跟哪位教师」在档案里就有据可查（归属教师 = 班的教师）。
-   ⚠ 班人数由调用方（approveApp 的 addN）负责加，这里不要再 c.n++，否则会重复计数。 */
+   ⚠ 2026-10-12 起班人数由 classN() 从学生表现算 —— 这里只挂 s.cls，不用管计数。
+      （以前调用方还要 mt.n += addN，现在整条链路都删了。） */
 function addStudentsFromRoster(o, classId){
   const roster = (o.roster || []).filter(r => r && String(r.name||'').trim());
   if (!roster.length) return 0;
@@ -2075,13 +2799,15 @@ function autoAssign(){
     const c = DB.classes.find(x => x.code === s.intent);
     if (!c)                                   { skip.push(s.name+'（找不到 '+s.intent+'）'); return; }
     if (c.lv !== s.lv)                        { skip.push(s.name+'（级别不符）'); return; }
-    if (c.n >= c.cap)                         { skip.push(s.name+'（'+c.name+' 已满 '+c.n+'/'+c.cap+'）'); return; }
+    if (classN(c) >= c.cap)                   { skip.push(s.name+'（'+c.name+' 已满 '+classN(c)+'/'+c.cap+'）'); return; }
     if ((s.slots||[]).length && s.slots.indexOf(c.slot) < 0)
                                               { skip.push(s.name+'（时段对不上）'); return; }
-    s.cls = c.id; c.n++;
+    /* ⚠️ 只把学生挂到班上就够了 —— 人数由 classN() 从学生表现算，不要再 ++ */
+    s.cls = c.id;
     done.push(s.name+' → '+c.name);
   });
   autoResult = { done: done, skip: skip, at: stamp() };
+  save();
   render();
 }
 function autoBanner(){
@@ -2092,6 +2818,308 @@ function autoBanner(){
     (d.length ? ' —— '+d.map(esc).join('、') : '')+
     (s.length ? '<br>跳过 '+s.length+' 人：'+s.map(esc).join('、') : '')+
     '</div>';
+}
+
+/* ================= 排课 › 班级 的三个行内动作（2026-10-12 第 ③ 步）=================
+   Tony 当天拍板的两条：
+     ① 推进一课 —— **只推这一个班**，不跟着推别的班（老系统有 sync 开关，这里不要）
+     ② 删班 —— 课次记录标 cancel **留着**（「账不能撕，只能冲销」），学员退回候选池 */
+
+/* 推进一课：把该班「下一节该上的课」标成 done。
+   优先「今天」那节，其次最早的「已排未上」。
+   ⚠️ 上掉的课不能记在未来 —— 课表是预排的，plan 的日期可能 > 今天，推进时要压回今天。 */
+function advanceClass(cid){
+  if (!cid) return false;
+  const c = C(cid);
+  if (!DB.classes.some(x => x.id === cid)){ toast('这个班已经不在了'); return false; }
+  const total = c.plannedLessons || 42;
+  if (classLesson(c) >= total){ toast(c.name + ' 已完成全部 ' + total + ' 课次'); return false; }
+  const ls = lessonsOf(cid);
+  const next = ls.find(l => l.status === 'today')
+            || ls.filter(l => l.status === 'plan')
+                 .sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0))[0];
+  if (!next){ toast(c.name + ' 还没有课表 —— 先确认它有开班日和时段'); return false; }
+  next.status = 'done';
+  if (next.date > DB.todayDate) next.date = DB.todayDate;   /* 上掉的课不记在未来 */
+  buildFacts();          /* 派生层「今日课程」跟着重算 */
+  save();
+  toast('已推进：' + c.name + ' 第 ' + next.no + ' 课');
+  render();
+  return true;
+}
+
+/* 删班（Tony 定：课次标 cancel 留着）——
+   ① 学员退回候选池 ② 该班课次全标 cancel（记录留着，只是不算数）③ 班从 classes 里去掉。
+   ⚠️ 班一删，C(cid) 就查不到了；课次记录页靠 lessons 里的「班信息快照」(cname 等) 显示原班名。 */
+function delClass(cid){
+  if (!cid) return false;
+  const c = C(cid);
+  if (!DB.classes.some(x => x.id === cid)){ toast('这个班已经不在了'); return false; }
+  const n = DB.students.filter(s => s.cls === cid).length;
+  const msg = '删除「' + c.name + '」？' +
+    (n ? '\n\n' + n + ' 名学员会退回候选池。' : '\n') +
+    '\n它的课次记录会保留，但标成「已取消」（账不撕，只冲销）。';
+  if (typeof window.confirm === 'function' && !window.confirm(msg)) return false;
+  DB.students.forEach(s => { if (s.cls === cid) s.cls = null; });
+  DB.lessons.forEach(l => { if (l.cid === cid) l.status = 'cancel'; });
+  DB.classes = DB.classes.filter(x => x.id !== cid);
+  buildFacts();
+  save();
+  toast('已删除 ' + c.name + (n ? '，' + n + ' 名学员退回候选池' : ''));
+  render();
+  return true;
+}
+
+/* ---- 点名抽屉 ----
+   只记「缺勤」（默认全勤）—— 与 absences 表的设计一致：一个班 20 人 × 40 节 = 800 条记录，
+   但缺勤可能只有 20 条，反过来存省 97%，而且「谁没来」才是管理要看的。
+   ⚠️ 缺勤要挂在某一节课上（a.no = 该班第几课），所以「没有已上课次」的班点不了名。 */
+function openRollDrawer(cid){
+  if (!cid) return;
+  const c = C(cid);
+  if (!DB.classes.some(x => x.id === cid)){ toast('这个班已经不在了'); return; }
+  const ls = lessonsOf(cid);
+  const rollable = ls.filter(l => l.status === 'done' || l.status === 'today');
+  if (!rollable.length){
+    toast(c.name + ' 还没有「已上」的课次 —— 先点一次「推进一课」');
+    return;
+  }
+  dState = { kind:'roll', cid:cid, no:rollable[rollable.length - 1].no };
+  renderDrawer();
+  openPanel();
+}
+
+function renderRollDrawer(){
+  const cid = dState.cid;
+  const c = C(cid);
+  const ls = lessonsOf(cid);
+  const rollable = ls.filter(l => l.status === 'done' || l.status === 'today');
+  const students = DB.students.filter(s => s.cls === cid);
+
+  if (!rollable.length){
+    $('#drawer').innerHTML =
+      '<div class="d-h"><div><div class="t">'+esc(c.name)+'</div>'+
+        '<div class="s">点名 · '+esc(c.code)+'</div></div>'+
+        '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button></div>'+
+      '<div class="d-b"><div class="note amber"><b>这个班还没有「已上」的课次，没法点名。</b><br>'+
+        '先在班级列表里点一次「推进一课」，把那节课标成已上，再回来点名。</div></div>'+
+      '<div class="d-f"><button class="btn" data-d-close>关闭</button></div>';
+    return;
+  }
+  if (!rollable.some(l => l.no === dState.no)) dState.no = rollable[rollable.length - 1].no;
+
+  /* 每次重画都从事实表重读缺勤名单 —— 别信 dState 里的旧值 */
+  const absent = DB.absences.filter(a => a.cid === cid && a.no === dState.no).map(a => a.sid);
+
+  const opts = rollable.map(l =>
+    '<option value="'+l.no+'"'+(l.no === dState.no ? ' selected' : '')+'>'+
+      '第 '+l.no+' 课 · '+l.date+(l.status === 'today' ? '（今天）' : '')+
+    '</option>').join('');
+
+  const rows = students.length ? students.map(s =>
+    '<label class="rollrow"><input type="checkbox" data-r-sid="'+s.id+'"'+
+      (absent.indexOf(s.id) >= 0 ? ' checked' : '')+'>'+
+      '<span class="nm">'+esc(s.name)+'</span>'+
+      '<span class="ph">'+esc(s.phone || '')+'</span>'+
+      '<span class="tagx">缺勤</span></label>').join('')
+    : '<div class="empty">这个班还没有学员</div>';
+
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">'+esc(c.name)+'</div>'+
+      '<div class="s">点名 · '+esc(c.code)+' · '+esc(c.lv)+' · '+esc(T(c.teacher).name)+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+
+      '<div class="note"><b>只记缺勤</b> —— 默认全勤，勾上谁没来就行。<br>'+
+        '<span class="rl-pick">第几节：<select data-r-no>'+opts+'</select></span></div>'+
+      '<div class="roll-list">'+rows+'</div>'+
+    '</div>'+
+    '<div class="d-f">'+
+      '<button class="btn pri" data-r-save>保存点名</button>'+
+      '<button class="btn" data-d-close>取消</button>'+
+    '</div>';
+}
+
+/* 保存点名：先删该班该节的全部缺勤，再按勾选重建 —— 幂等，重复保存结果一致 */
+function saveRoll(){
+  if (!dState || dState.kind !== 'roll') return false;
+  const cid = dState.cid, no = dState.no;
+  if (!cid || !no) return false;
+  const picked = [];
+  $('#drawer').querySelectorAll('[data-r-sid]').forEach(el => {
+    if (el.checked) picked.push(el.dataset.rSid);
+  });
+  DB.absences = DB.absences.filter(a => !(a.cid === cid && a.no === no));
+  picked.forEach(sid => DB.absences.push({ sid:sid, cid:cid, no:no }));
+  buildFacts();
+  save();
+  closeDrawer();
+  toast('已记 ' + picked.length + ' 人缺勤');
+  render();
+  return true;
+}
+
+/* ---- 编入班级抽屉（候选池 → 已有班，2026-10-12 第 ③ 步）----
+   判据跟老系统 findClassFor() 一致：级别相同 + 未满 + 该生可上课时段含该班时段。
+   能编的给按钮，不能编的**标出原因**（透明 —— 别让人猜为什么这个班点不了）。 */
+function openEnrollDrawer(sid){
+  const s = DB.students.find(x => x.id === sid);
+  if (!s) return;
+  if (s.cls){ toast(s.name + ' 已经在班上了'); return; }
+  dState = { kind:'enroll', sid:sid };
+  renderDrawer();
+  openPanel();
+}
+
+/* 为什么这个班编不进去 —— 返回 '' 表示能编 */
+function enrollWhy(s, c){
+  if (c.lv !== s.lv) return '级别不符（这个班是 ' + c.lv + '）';
+  if (classN(c) >= c.cap)  return '已满（' + classN(c) + '/' + c.cap + '）';
+  const ids = (s.slots || []).filter(x => DB.slots.some(v => v.id === x));
+  if (ids.length && ids.indexOf(c.slot) < 0) return '时段对不上';
+  return '';
+}
+
+function renderEnrollDrawer(){
+  const s = DB.students.find(x => x.id === dState.sid);
+  if (!s){ closeDrawer(); return; }
+  const rows = DB.classes.length ? DB.classes.map(c => {
+    const w = enrollWhy(s, c);
+    return '<div class="enrrow'+(w ? ' no' : '')+'">'+
+      '<div class="e1"><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+esc(c.code)+'</span></div>'+
+      '<div class="e2"><span class="tg off">'+c.lv+'</span> '+modeTag(c.mode)+' · '+
+        esc(S(c.slot).name)+' · '+esc(T(c.teacher).name)+' · '+classN(c)+'/'+c.cap+'</div>'+
+      '<div class="e3">'+(w ? '<span class="tg bad">'+w+'</span>'
+                            : '<button class="btn sm pri" data-e-go="'+c.id+'">编入</button>')+'</div>'+
+    '</div>';
+  }).join('') : '<div class="empty">还没有任何班级 —— 先去「开班申请」批一个</div>';
+
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">'+esc(s.name)+'</div>'+
+      '<div class="s">编入班级 · '+esc(s.lv)+' · '+esc(s.contact || '')+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+
+      '<div class="note">该生可上课时段：'+slotCells(s)+'　级别：<span class="tg off">'+esc(s.lv)+'</span><br>'+
+        '只有<b>级别相同 · 未满 · 时段对得上</b>的班能编入，其余会标出原因。</div>'+
+      '<div class="enr-list">'+rows+'</div>'+
+    '</div>'+
+    '<div class="d-f"><button class="btn" data-d-close>关闭</button></div>';
+}
+
+/* ---- 出勤明细抽屉（只读，2026-10-12 数据页）----
+   出勤页那一行只给汇总数，缺哪几节得能点开看 —— 否则「缺 2 次」只是个数字，追不下去。
+   口径跟 stuAttAll 完全一致：只列「已上」的课次，而且从入班那天算起。 */
+function openAttDrawer(sid){
+  const s = DB.students.find(x => x.id === sid);
+  if (!s) return;
+  if (!s.cls){ toast(s.name + ' 还没编班，没有出勤可看'); return; }
+  dState = { kind:'att', sid:sid };
+  renderDrawer();
+  openPanel();
+}
+function renderAttDrawer(){
+  const s = DB.students.find(x => x.id === dState.sid);
+  if (!s || !s.cls){ closeDrawer(); return; }
+  const c = C(s.cls), from = stuJoinedAt(s);
+  const ls = lessonsOf(s.cls).filter(l => l.status === 'done' && (!from || l.date >= from));
+  const absent = {};
+  DB.absences.filter(a => a.sid === s.id).forEach(a => { absent[a.no] = true; });
+  const all = ls.length, att = stuAtt(s), abs = stuAbsent(s), r = all ? Math.round(att/all*100) : 0;
+  const rows = ls.length ? ls.map(l =>
+    '<div class="atrow'+(absent[l.no] ? ' no' : '')+'">'+
+      '<span class="d">'+esc(l.date)+'</span>'+
+      '<span class="n">第 '+l.no+' 课</span>'+
+      '<span class="t">'+(absent[l.no]
+        ? '<span class="tg warn">缺勤</span>'
+        : '<span class="tg on">出勤</span>')+'</span>'+
+    '</div>').join('') : '<div class="empty">这个班还没有「已上」的课次</div>';
+
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">'+esc(s.name)+'</div>'+
+      '<div class="s">出勤明细 · '+esc(c.name)+' '+esc(c.code)+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+
+      '<div class="note">应出勤 = 入班（'+(from ? esc(from) : '开班')+'）之后这个班<b>已上</b>的课次；'+
+        '缺勤按事实表数，只记缺勤（默认全勤）。</div>'+
+      '<div class="stats n4" style="margin:0 0 12px">'+
+        stat('已上', att)+
+        stat('应上', all)+
+        stat('缺勤', abs, '', abs ? 'bad' : 'ok')+
+        stat('出勤率', r+'<small>%</small>', '', r>=90 ? 'ok' : (r<70 ? 'bad' : ''))+
+      '</div>'+
+      '<div class="at-list">'+rows+'</div>'+
+    '</div>'+
+    '<div class="d-f"><button class="btn" data-d-close>关闭</button></div>';
+}
+
+/* ---- 考试明细抽屉（只读，2026-10-12 数据页）----
+   ★ 学生档案抽屉里**没有**考试成绩（那 11 项里没有），所以阶段考试页必须自带明细入口，
+   否则「未考 / 82 分」这些格子点不进去、也查不到是第几阶段该考的。 */
+function openExamDrawer(sid){
+  const s = DB.students.find(x => x.id === sid);
+  if (!s) return;
+  dState = { kind:'exam', sid:sid };
+  renderDrawer();
+  openPanel();
+}
+function renderExamDrawer(){
+  const s = DB.students.find(x => x.id === dState.sid);
+  if (!s){ closeDrawer(); return; }
+  const c = s.cls ? C(s.cls) : null;
+  const st = c ? stageOf(classLesson(c)) : 0;
+  const rows = [1,2,3].map(i => {
+    const raw = String((((s.exam || {})['s' + i]) == null ? '' : (s.exam || {})['s' + i])).trim();
+    const n = Number(raw), has = raw !== '' && !isNaN(n);
+    return '<div class="exrow'+(i === st ? ' cur' : '')+'">'+
+      '<span class="n">第 '+i+' 阶段</span>'+
+      '<span class="w">'+(i === st ? '当前阶段' : '')+'</span>'+
+      '<span class="t">'+(has
+        ? '<b class="sc" style="color:'+(n>=60 ? 'var(--ok)' : 'var(--bad)')+'">'+esc(raw)+'</b> <span class="lbl">分</span>'
+        : '<span class="lbl">未考</span>')+'</span>'+
+    '</div>';
+  }).join('');
+
+  $('#drawer').innerHTML =
+    '<div class="d-h">'+
+      '<div><div class="t">'+esc(s.name)+'</div>'+
+      '<div class="s">阶段考试 · '+esc(s.lv)+' · '+(c ? esc(c.name)+' '+esc(c.code) : '未编班')+'</div></div>'+
+      '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
+    '</div>'+
+    '<div class="d-b">'+
+      (c
+        ? '<div class="note">现在读到 <b>'+esc(stageName(classLesson(c)))+'</b>'+
+            '（'+esc(c.name)+' 已上 '+classLesson(c)+' 课）—— 要考的就是这一阶段。</div>'
+        : '<div class="note">这个学生<b>还没编班</b> —— 没有班级进度就没有「当前阶段」，只能看已录的成绩。</div>')+
+      '<div class="ex-list">'+rows+'</div>'+
+      (c ? '<div style="margin-top:12px">'+examVerdict(s, c)+'</div>' : '')+
+    '</div>'+
+    '<div class="d-f"><button class="btn" data-d-close>关闭</button></div>';
+}
+
+/* 真正编入。★ joinedAt 必须写 —— 中途插班的出勤要从入班那天算起；
+   不写的话 stuJoinedAt() 会回落到「开班日」，把这名学生入班前的课全算成缺勤。 */
+function enrollInto(cid){
+  if (!dState || dState.kind !== 'enroll') return false;
+  const s = DB.students.find(x => x.id === dState.sid);
+  const c = DB.classes.find(x => x.id === cid);
+  if (!s || !c) return false;
+  if (s.cls){ toast(s.name + ' 已经在班上了'); return false; }
+  if (classN(c) >= c.cap){ toast(c.name + ' 已经满了'); return false; }
+  s.cls = c.id;
+  s.joinedAt = DB.todayDate;
+  if (!s.teacherId) s.teacherId = c.teacher;
+  /* ⚠️ 不再 c.n++ —— 人数由 classN() 从学生表现算 */
+  buildFacts();
+  save();
+  closeDrawer();
+  toast(s.name + ' 已编入 ' + c.name);
+  render();
+  return true;
 }
 
 function renderAppDrawer(o){
@@ -2135,7 +3163,7 @@ function renderAppDrawer(o){
     '</div>'+
     '<div class="d-b">'+body+'</div>'+
     '<div class="d-f">'+foot+'<div class="sp"></div>'+
-      '<span class="d-memo">演示数据 · 改动只在内存<br>刷新页面即还原，不写入任何存储</span></div>';
+      '<span class="d-memo">本机存储 · 改动会存进本机浏览器<br>关掉再开还在</span></div>';
 }
 
 /* ---- 通过（第 5 步：一次性完成三件事）---- */
@@ -2147,12 +3175,11 @@ function approveApp(){
   const f = dState.form;
   const mt = findMatch(o);
   const t = T(o.teacher);
-  /* 有人名单就按名单算人数（只数填了姓名的行），否则按申请里的人数 */
-  const rosterN = (o.roster || []).filter(r => r && String(r.name||'').trim()).length;
-  const addN = rosterN || o.n;
-
+  /* ⚠️ 2026-10-12：这里以前会算 addN（名单人数，没名单就退回申请人数）然后 mt.n += addN。
+     现在班人数一律由 classN() 从学生表 + 未登记名单的已通过申请现算，
+     所以「有名单的」靠 addStudentsFromRoster 建档案自动计入、
+     「没名单的」靠 classReserved() 按 o.n 计入 —— 这里一行都不用写。 */
   if (mt){
-    mt.n = mt.n + addN;
     o.link = mt.id; o.linkMode = 'merge';
   } else {
     const nc = {
@@ -2161,15 +3188,22 @@ function approveApp(){
       name: f.name || '新班',
       lv: o.lv, mode: o.mode, slot: o.slot,
       teacher: o.teacher,
-      /* ⚠️ 不再写死 lesson。新建的班今天才开，事实表里还没有它的课次 → 进度从 0 起算。
+      /* ⚠️ 仍然不写死 lesson —— 进度一律从事实表数出来。
          申请里的「第 3 课」说的是"这批学生目前学到第 3 课"，不等于"这个班已经上过 3 节"。 */
       startedAt: DB.todayDate, endedAt: null, plannedLessons: 42,
       cap: Number(f.cap) || DB.set.capMax,
-      n: addN,
+      /* ⚠️ 不写 n —— 人数从学生表现算（新班建出来时 0 人，
+         名单里的学生由下面 addStudentsFromRoster 落成档案后自动计入） */
       room: o.mode === 'offline' ? (f.room || '') : '',
       own: f.own,
     };
     DB.classes.push(nc);
+    /* ★ 2026-10-12 第 ③ 步：给新班生课表。
+       以前这里不生 —— 新班在 lessons 事实表里一条记录都没有，后果是：
+       ① 进度永远 0 ② 点名无处可挂（缺勤要挂在某节课上）③ 日历 / 课次记录页看不到它。
+       班今天才开，所以生成的课次全是 today / plan —— 进度照样从 0 起算（这条没变）。 */
+    seedLessonsOf(nc).forEach(l => DB.lessons.push(l));
+    DB.lessons.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
     o.link = nc.id; o.linkMode = 'new';
   }
   o.state = '已通过';
@@ -2177,6 +3211,7 @@ function approveApp(){
   if (Array.isArray(t.slots) && t.slots.indexOf(o.slot) < 0) t.slots.push(o.slot);
   /* ③ 名单里的学生 → 学生档案 + 编入这个班（人数已在 addN 里算过，这里不再加） */
   addStudentsFromRoster(o, o.link);
+  save();
 
   renderAppDrawer(o);
   refreshView();     /* 列表 + 筛选计数 */
@@ -2194,6 +3229,7 @@ function rejectApp(){
   o.reason = f.reason;
   o.advice = f.advice || '';
   o.note   = f.note   || '';
+  save();
   dState.mode = 'view';
   renderAppDrawer(o);
   refreshView();
@@ -2239,6 +3275,7 @@ function render(){
   $('#side').classList.remove('open'); $('#scrim').classList.remove('on');
   closeDrawer();   /* 导航 / 筛选 / 搜索离开当前视图时，顺手把档案抽屉收起来 */
   window.scrollTo(0,0);
+  bFocus = null;   /* 矩阵点卡片点亮的那个班只亮这一次 render，下次重画就恢复正常 */
 }
 
 /* ---------- 事件 ---------- */
@@ -2251,6 +3288,10 @@ document.addEventListener('click', e => {
   if (e.target.closest('#drawer [data-d-cancel]')){ cancelEdit(); return; }
   const dp = e.target.closest('#drawer [data-d-pick]');
   if (dp){ togglePick(dp); return; }
+  /* ---- 备份链路：导入抽屉里的「确认导入」 ---- */
+  if (e.target.closest('#drawer [data-i-do]')){ doImport(); return; }
+  /* ---- 点名抽屉：保存（2026-10-12 第 ③ 步）---- */
+  if (e.target.closest('#drawer [data-r-save]')){ saveRoll(); return; }
   /* ---- 开班申请抽屉 ---- */
   if (e.target.closest('#drawer [data-a-rej]')){
     readAppForm(); dState.mode = 'reject'; renderAppDrawer(getDRec()); return;
@@ -2266,6 +3307,30 @@ document.addEventListener('click', e => {
     else                      rejectApp();
     return;
   }
+  /* ---- 排课 › 班级 的三个行内动作（2026-10-12 第 ③ 步）----
+     ⚠️ 必须排在 [data-open] 之前：这几个是 <a href="#">，不拦会把 hash 变成 '#'
+     → route() 返回 '' → 回落到总览，页面会莫名跳走 */
+  const ca = e.target.closest('[data-c-act]');
+  if (ca){
+    e.preventDefault();
+    const k = ca.dataset.cAct, cid = ca.dataset.cid;
+    if (k === 'advance')      advanceClass(cid);
+    else if (k === 'roll')    openRollDrawer(cid);
+    else if (k === 'del')     delClass(cid);
+    /* ---- 排课 › 矩阵的班级卡片 → 跳到「班级」子页签并点亮那一行（2026-10-12 第 ③ 步收尾）----
+       班级没有自己的抽屉，跟总览「差 N 人开班」那条 goclasses 是同一个思路，只是多了个聚焦。
+       ⚠️ hash 没变时 hashchange 不触发，得手动 render()（跟侧栏导航同一处理） */
+    else if (k === 'open'){
+      bFocus = cid; bTab = 'classes';
+      if (location.hash === '#board') render(); else location.hash = '#board';
+    }
+    return;
+  }
+  /* ---- 排课 › 候选池：打开「编入班级」抽屉（2026-10-12 第 ③ 步）---- */
+  const eo = e.target.closest('[data-e-open]');
+  if (eo){ e.preventDefault(); openEnrollDrawer(eo.dataset.eOpen); return; }
+  const eg = e.target.closest('#drawer [data-e-go]');
+  if (eg){ enrollInto(eg.dataset.eGo); return; }
   /* ---- 整行可点开档案 ----
      preventDefault 是保险丝：行内若出现 <a href="#">，不拦会把 hash 变成 '#'，
      route() 返回 '' → 回落到 vOverview()，页面会莫名跳回总览 */
@@ -2280,6 +3345,12 @@ document.addEventListener('click', e => {
     else if (k === 'auto') autoAssign();
     else if (k === 'newteacher') openNewTeacher();
     else if (k === 'newstudent') openNewStudent();
+    else if (k === 'newmember')  openNewMember();
+    else if (k === 'editmember'){ e.preventDefault(); openDrawer('member:'+act.dataset.i); }
+    else if (k === 'delmember'){ e.preventDefault(); delMember(act.dataset.i); }
+    /* 备份链路：教师页 / 学生页 / 数据页三处入口，走的是同一对函数 */
+    else if (k === 'export') exportData();
+    else if (k === 'import') openImportDrawer();
     else if (k === 'goclasses'){
       /* 总览「差 N 人开班」那条：班级没有自己的抽屉，就跳到排课 › 班级 子页签去看它 */
       if (bTab !== 'classes') bTab = 'classes';
@@ -2324,6 +3395,9 @@ document.addEventListener('click', e => {
   }
 });
 document.addEventListener('change', e => {
+  /* ---- 点名抽屉：切换「点哪一节」（2026-10-12 第 ③ 步）---- */
+  const rn = e.target.closest('#drawer [data-r-no]');
+  if (rn && dState && dState.kind === 'roll'){ dState.no = Number(rn.value) || 0; renderRollDrawer(); return; }
   const s = e.target.closest('select[data-f]');
   if (s){ if (s.dataset.f==='lv'){ fTeacher.lv = s.value; fStu.lv = s.value; } render(); return; }
   /* 开班申请抽屉里的下拉 / 输入：
@@ -2343,6 +3417,14 @@ document.addEventListener('change', e => {
 });
 $('#burger').addEventListener('click', ()=>{ $('#side').classList.toggle('open'); $('#scrim').classList.toggle('on'); });
 $('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
+/* 重置为演示数据：抹掉本机存盘 → 回到 seedDB 那批数据。
+   加一句确认 —— 存盘里可能有他刚录的东西，误点代价太大 */
+$('#btnReset').addEventListener('click', () => {
+  const ok = (typeof window.confirm === 'function')
+    ? window.confirm('重置会把本机存的数据全部抹掉，回到最初的演示数据。确定继续吗？')
+    : true;
+  if (ok) resetDB();
+});
 /* 顶栏搜索：一个框管三处（教师 / 学生 / 排课 › 班级），跟 placeholder 的承诺对齐。
    在排课页搜索时自动切到「班级」子页签 —— 否则用户搜班名却盯着矩阵，会以为框坏了 */
 function onSearch(v){
