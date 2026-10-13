@@ -164,6 +164,15 @@ a{color:var(--brand);text-decoration:none;}
 .search input{border:0;outline:0;background:transparent;font:13px var(--ui);color:var(--ink);width:100%;}
 .search svg{color:var(--ink3);flex:0 0 auto;}
 
+/* ---------------- 语言切换（🇨🇳 / 🇻🇳） ---------------- */
+.lang-switch{display:flex;align-items:stretch;border:1px solid var(--line2);background:var(--surface-2);flex:0 0 auto;}
+.lang-switch button{font:12.5px var(--ui);display:flex;align-items:center;gap:6px;padding:0 11px;height:32px;
+  border:0;background:transparent;color:var(--ink2);cursor:pointer;white-space:nowrap;}
+.lang-switch button + button{border-left:1px solid var(--line2);}
+.lang-switch button:hover{background:var(--surface-3);color:var(--ink);}
+.lang-switch button.on{background:var(--navy);color:#fff;font-weight:650;}
+.lang-switch .fl{font-size:15px;line-height:1;}
+
 /* ---------------- 按钮 ---------------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 13px;
   font:13px var(--ui);background:var(--surface);border:1px solid var(--line2);color:var(--ink);
@@ -482,6 +491,10 @@ tr[data-open]:hover td{background:var(--brand-soft);}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input placeholder="搜索教师 / 学生 / 班级…" id="q">
       </label>
+      <div class="lang-switch" id="langSwitch" title="语言 / Ngôn ngữ">
+        <button type="button" data-lang="zh" class="on"><span class="fl">🇨🇳</span><span class="lb">中文</span></button>
+        <button type="button" data-lang="vi"><span class="fl">🇻🇳</span><span class="lb">Tiếng Việt</span></button>
+      </div>
     </header>
     <div id="view"></div>
   </div>
@@ -1730,7 +1743,7 @@ function vLessons(){
   <div class="card">
     <div class="card-h"><h3>这个月涉及的班</h3>
       <span class="sub">跨月未结课的班，会在它存在的<b>每一个月</b>里出现</span><span class="sp"></span>
-      <span class="tg off">在读 ' + live.length + ' 个</span></div>
+      <span class="tg off">在读 ${live.length} 个</span></div>
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>班级</th><th>级别</th><th>开班</th><th>结课</th><th class="num">该月课次</th><th class="num">到该月底已上</th></tr></thead>
       <tbody>${live.length ? live.map(c => {
@@ -3272,7 +3285,444 @@ function render(){
   closeDrawer();   /* 导航 / 筛选 / 搜索离开当前视图时，顺手把档案抽屉收起来 */
   window.scrollTo(0,0);
   bFocus = null;   /* 矩阵点卡片点亮的那个班只亮这一次 render，下次重画就恢复正常 */
+  applyLang();     /* 渲染完再套语言层（中文 → 越南语） */
 }
+
+/* ==================== 语言切换（B · 翻译层） ====================
+   不动现有中文代码；额外挂一本「中文 → 越南语」对照表 VI，渲染后把页面上
+   出现的文字按表替换。没进表的句子保持中文，可逐条往 VI 里补。
+   选择记在本机键 zhops.lang（不碰 zhops.sched.v3 那份数据）。 */
+let LANG = (function(){ try { return localStorage.getItem('zhops.lang') || 'zh'; } catch(e){ return 'zh'; } })();
+const VI = {
+  /* 侧栏 · 分组 / 导航 */
+  '总览':'Tổng quan', '运营':'Vận hành', '待审批':'Chờ duyệt',
+  '教师':'Giáo viên', '学生':'Học viên', '排课':'Xếp lớp', '课次记录':'Lịch sử buổi học',
+  '数据':'Dữ liệu', '结算':'Quyết toán', '成员':'Thành viên', '开班申请':'Đơn mở lớp',
+  /* 品牌 / 页脚 / 顶栏 */
+  'MGD 排课系统':'Hệ thống xếp lớp MGD', 'ADMIN · 主端':'ADMIN · Bảng chính',
+  '本机存储 · 尚无改动':'Bộ nhớ máy · Chưa thay đổi', '重置为演示数据':'Đặt lại dữ liệu demo',
+  '主端':'Bảng chính', '搜索教师 / 学生 / 班级…':'Tìm giáo viên / học viên / lớp…',
+  /* 通用动作 */
+  '保存':'Lưu', '取消':'Hủy', '删除':'Xóa', '新建':'Tạo mới', '编辑':'Sửa', '关闭':'Đóng',
+  '导出':'Xuất', '导入':'Nhập', '搜索':'Tìm kiếm', '全部':'Tất cả', '添加':'Thêm', '移除':'Gỡ',
+  '返回':'Quay lại', '提交':'Gửi', '确认':'Xác nhận', '重置':'Đặt lại', '刷新':'Làm mới',
+  '推进一课':'Tiến 1 buổi', '编入班级':'Xếp vào lớp', '编入':'Xếp vào', '开班':'Mở lớp',
+  '从备份导入':'Nhập từ bản sao', '备份链路':'Sao lưu', '封存本月':'Chốt tháng này',
+  /* 通用字段 / 标签 */
+  '姓名':'Họ tên', '电话':'Điện thoại', '备注':'Ghi chú', '状态':'Trạng thái',
+  '班级':'Lớp', '时段':'Ca học', '级别':'Cấp độ', '人数':'Số người', '教室':'Phòng học',
+  '类型':'Loại', '字段':'Trường', '权限':'Quyền', '视图':'Chế độ xem', '来源':'Nguồn',
+  '结果':'Kết quả', '进度':'Tiến độ', '课程进度':'Tiến độ khóa học', '学费':'Học phí',
+  '联系方式':'Liên hệ', '联系人':'Người liên hệ', '归属':'Thuộc về', '授课教师':'Giáo viên dạy',
+  '可授级别':'Cấp độ có thể dạy', '可上课时段':'Ca có thể dạy', '个人档案':'Hồ sơ cá nhân',
+  '学生档案':'Hồ sơ học viên', '最近登录':'Đăng nhập gần nhất', '学生名单':'Danh sách học viên',
+  '申请内容':'Nội dung đơn', '驳回原因':'Lý do từ chối', '阶段考试':'Thi giai đoạn',
+  '结业等级':'Cấp độ tốt nghiệp', '排课矩阵':'Ma trận xếp lớp', '候选池':'Nhóm chờ xếp lớp',
+  '未填':'Chưa điền', '待定':'Chờ xác định', '本人':'Bản thân', '家长':'Phụ huynh',
+  '操作':'Thao tác', '详情':'Chi tiết', '筛选':'Lọc', '排序':'Sắp xếp', '本月':'Tháng này',
+  '本周':'Tuần này', '今日':'Hôm nay', '暂无':'Chưa có', '可选':'Tùy chọn', '必填':'Bắt buộc',
+  /* 自有 / 外包 · 线上 / 线下 */
+  '自有':'Tự có', '外包':'Thuê ngoài', '线上':'Trực tuyến', '线下':'Ngoại tuyến',
+  '不占教室':'Không dùng phòng',
+  /* 状态词 */
+  '已通过':'Đã duyệt', '已驳回':'Đã từ chối', '已上':'Đã học', '待上':'Chờ học',
+  '正在上课':'Đang học', '缺勤':'Vắng mặt', '出勤':'Đi học', '应出勤':'Phải đi học',
+  '已上课次':'Số buổi đã học', '未考':'Chưa thi', '未开始':'Chưa bắt đầu', '已结束':'Đã kết thúc',
+  '进行中':'Đang tiến hành', '待审核':'Chờ duyệt',
+  /* 总览 / 统计 */
+  '在读班级':'Lớp đang học', '在读人数':'Số người đang học', '本月课次':'Buổi học tháng này',
+  '今日课程':'Lịch hôm nay', '课酬成本':'Chi phí thù lao', '单价':'Đơn giá',
+  '第一阶段':'Giai đoạn 1', '第二阶段':'Giai đoạn 2',
+  '第三阶段':'Giai đoạn 3', '课次':'Buổi học',
+  /* 星期 */
+  '周一':'Thứ hai', '周二':'Thứ ba', '周三':'Thứ tư', '周四':'Thứ năm', '周五':'Thứ sáu',
+  '周六':'Thứ bảy', '周日':'Chủ nhật',
+  /* 角色标签 */
+  '主端 · 全部权限':'Bảng chính · Toàn quyền', '主端 · 只看排课':'Bảng chính · Chỉ xếp lớp',
+  '主端 · 只看数据':'Bảng chính · Chỉ dữ liệu',
+  /* 其它 */
+  '现在':'Hiện tại', '当下':'Hiện tại', '空 · 等于不限':'Trống · không giới hạn',
+  /* 总览 / 结算 / 空态 等补充 */
+  '利润':'Lợi nhuận', '收入':'Thu nhập', '成本':'Chi phí', '时间':'Thời gian',
+  '形态':'Hình thức', '正常':'Bình thường', '在读学员':'Học viên đang học',
+  '本机存储':'Bộ nhớ máy', '线上班':'Lớp trực tuyến', '线下班':'Lớp ngoại tuyến',
+  '今天要上的课':'Buổi học hôm nay', '今天没有课':'Hôm nay không có lớp',
+  '异常清单':'Danh sách bất thường', '没有需要处理的异常':'Không có bất thường cần xử lý',
+  '都齐了':'đều đủ', '无色':'không màu', '这里':'ở đây',
+  '打开系统第一眼看到全局':'Nhìn tổng thể ngay khi mở hệ thống',
+  '规模 · 人 · 课 · 钱 · 形态 · 异常':'Quy mô · Người · Buổi · Tiền · Hình thức · Bất thường',
+  '让问题主动浮出来':'để vấn đề tự nổi lên', '而不是排到一半才发现':'thay vì phát hiện giữa chừng',
+  '演示时钟':'Đồng hồ demo',
+  /* ---- Phase 3：全页覆盖（教师 / 学生 / 排课 / 课次 / 数据 / 结算 / 成员 / 申请 / 抽屉） ---- */
+  /* 通用 / 动作 */
+  '查看档案 →':'Xem hồ sơ →', '看全部 ›':'Xem tất cả ›', '去补时段 ›':'Bổ sung ca ›',
+  '去看这个学生 ›':'Xem học viên này ›', '明细':'Chi tiết', '历史':'Lịch sử', '结论':'Kết luận',
+  '职业':'Nghề nghiệp', '资历':'Kinh nghiệm', '内部':'Nội bộ', '方向':'Hướng', '显示':'Hiển thị',
+  '点':'Bấm', '页':'trang', '行':'dòng', '月':'tháng', '条':'mục', '项':'mục', '位':'vị',
+  '次':'lần', '分':'điểm', '共':'Tổng', '不限':'Không giới hạn', '未结业':'Chưa tốt nghiệp',
+  '尚未登录':'Chưa đăng nhập', '已冻结':'Đã đóng băng', '冻结':'Đóng băng', '已取消':'Đã hủy',
+  '代课':'Dạy thay', '全勤':'Đi học đủ', '结课':'Kết thúc khóa', '未结课':'Chưa kết thúc khóa',
+  '刚开班':'Vừa mở lớp', '上课中':'Đang học', '进入课堂':'Vào lớp', '点名':'Điểm danh',
+  '删班':'Xóa lớp', '自动编班':'Tự động xếp lớp', '菜单':'Menu', '阶段':'giai đoạn', '第 ':'Thứ ',
+  /* 总览 */
+  '全部正常':'Tất cả bình thường', '教师未配可授时段':'Giáo viên chưa cấu hình ca dạy',
+  '学生没有归属也没有意向':'Học viên chưa thuộc lớp cũng chưa có nguyện vọng',
+  '教师可授时段 / 学生归属 / 班级人数都齐了':'Ca dạy / Thuộc lớp / Số người đều đủ',
+  '线上 · 正在上课':'Trực tuyến · Đang học', '本周日历':'Lịch tuần này',
+  '本周没有排课':'Tuần này chưa xếp lớp',
+  /* 教师 / 学生 */
+  '＋ 新增教师':'＋ Thêm giáo viên', '没有符合条件的教师':'Không có giáo viên phù hợp',
+  '单价/节':'Đơn giá/buổi', '可授时段':'Ca có thể dạy', '＋ 新增学生':'＋ Thêm học viên',
+  '已编班':'Đã xếp lớp', '班级 / 意向':'Lớp / Nguyện vọng', '意向班级':'Lớp nguyện vọng',
+  '可上课时段':'Ca có thể học', '未编班 · 无意向':'Chưa xếp lớp · Không nguyện vọng',
+  '还没有编班的学生':'Học viên chưa xếp lớp', '现在读到':'Hiện đang học',
+  '人数参考':'Tham khảo số người', '（只提示，不拦通过）':'(chỉ nhắc, không chặn duyệt)',
+  '删掉这一位':'Xóa người này',
+  /* 排课 */
+  '动手编排的地方':'nơi bắt tay xếp lớp', '＋ 开班':'＋ Mở lớp',
+  '候选池 = 还没编班的学生。':'Nhóm chờ = học viên chưa xếp lớp.',
+  /* 课次 */
+  '回总览（看当下）':'Về tổng quan (xem hiện tại)', '该月课次':'Buổi học tháng đó',
+  '到该月底已上':'Đã học đến cuối tháng đó',
+  '这个月没有课次记录':'Tháng này không có lịch sử buổi học',
+  '这个月没有任何班级在读':'Tháng này không có lớp nào đang học',
+  /* 数据 */
+  '出勤 · 阶段考试 · 完成等级':'Đi học · Thi giai đoạn · Cấp độ hoàn thành',
+  '备份 / 恢复':'Sao lưu / Phục hồi', '导出备份（下载 JSON）':'Xuất bản sao (tải JSON)',
+  '备份内容':'Nội dung sao lưu', '确认导入':'Xác nhận nhập', '没有导入':'Chưa nhập',
+  '出勤率':'Tỷ lệ đi học', '已上 / 应上':'Đã học / Phải học',
+  '已完成级别':'Cấp độ đã hoàn thành', '所属班级':'Lớp trực thuộc',
+  '已结业 · 不在班':'Đã tốt nghiệp · không ở lớp', '还没有结业的学生':'Chưa có học viên tốt nghiệp',
+  '事实表':'Bảng sự thật', '应上':'Phải học', '派生':'Phái sinh',
+  '只在这台电脑的浏览器里':'chỉ trong trình duyệt máy này',
+  /* 结算 */
+  '导出对账单':'Xuất bảng đối chiếu', '按教师汇总':'Tổng hợp theo giáo viên',
+  '只做了成本侧':'Chỉ làm phần chi phí', '收入 / 利润还出不来':'Thu nhập / Lợi nhuận chưa ra được',
+  '单价 VND':'Đơn giá VND', '小计 VND':'Tạm tính VND', '课酬成本 VND':'Chi phí thù lao VND',
+  '我们付他（成本）':'Ta trả họ (chi phí)', '统计截至':'Thống kê đến',
+  '封存时间':'Thời gian chốt', '已封存快照':'Ảnh chụp đã chốt',
+  '还没有封存记录':'Chưa có bản ghi chốt', '对账单':'Bảng đối chiếu',
+  '单价没有快照':'Đơn giá không có ảnh chụp',
+  /* 成员 */
+  '＋ 添加成员':'＋ Thêm thành viên', '权限目前是标签':'Quyền hiện là nhãn',
+  '能登录主端的人':'Người có thể đăng nhập bảng chính',
+  /* 申请 / 抽屉 */
+  '提交申请':'Gửi đơn', '提交时间':'Thời gian gửi', '新建开班申请':'Tạo đơn mở lớp mới',
+  '确认驳回':'Xác nhận từ chối', '驳回并给建议':'Từ chối và gợi ý', '驳回':'Từ chối',
+  '都批完了':'Đã duyệt hết', '审批 →':'Duyệt →', '查看 →':'Xem →',
+  '并入 ':'Gộp vào ', '新建 ':'Tạo mới ', '有碰撞 · 不能通过':'Có trùng · không thể duyệt',
+  '✓ 已通过':'✓ Đã duyệt', '✓ 系统检查通过':'✓ Hệ thống kiểm tra đạt',
+  '这个筛选下没有申请':'Không có đơn trong bộ lọc này',
+  '＋ 再加一位学生':'＋ Thêm một học viên', '第几节：':'Buổi thứ mấy:', '保存点名':'Lưu điểm danh',
+  '这个班还没有学员':'Lớp này chưa có học viên', '还没有任何班级':'Chưa có lớp nào',
+  '这个学生还没编班':'Học viên này chưa xếp lớp', '当前阶段':'Giai đoạn hiện tại',
+  '线上课 · 不占教室':'Lớp trực tuyến · không dùng phòng', '学生数':'Số học viên',
+  '没登记名单 · 只按人数建班':'Chưa ghi danh sách · chỉ tạo lớp theo số người',
+  '原因必须选':'Phải chọn lý do', '线下课才需要填教室名称。':'Chỉ lớp ngoại tuyến mới cần điền tên phòng.',
+  '国籍 · 语言':'Quốc tịch · Ngôn ngữ', '联系方式（电话 / Zalo）':'Liên hệ (điện thoại / Zalo)',
+  '新增教师':'Thêm giáo viên', '新增学生':'Thêm học viên', '新增成员':'Thêm thành viên',
+  '教师档案':'Hồ sơ giáo viên', '已登记':'Đã ghi danh',
+  /* ---- Phase 4：逐页复测（中/越对照）后按「整句 + 量词」补齐 ----
+     ⚠️ 这一批的 key 都长于已有短词，_viKeys 按长度降序替换 → 整句先命中，
+        剩下的裸量词（个/节/人）只作用在真正剩下的计数节点上。 */
+  '主端 · 重建第 3 / 7 步':'Bảng chính · Tái tạo Thứ 3 / 7 bước',
+  /* 量词：单字的走 _viSolo（只整节点匹配），带数字的走 _viRe；这里只放多字词 */
+  '人次':'lượt người', '在读':'đang học',
+  '今天':'Hôm nay', '日历':'Lịch', '日期':'Ngày',
+  '早班':'Ca sáng', '晚班':'Ca tối', '周末':'Cuối tuần', '午间':'Buổi trưa',
+  /* 标签 / 短语 */
+  '涉及班级':'Lớp liên quan', '该月缺勤':'Vắng mặt tháng đó', '完成等级':'Cấp độ hoàn thành',
+  '导出备份':'Xuất bản sao lưu', '开班至今':'Kể từ khi mở lớp', '截至':'tính đến',
+  '每一个月':'mỗi tháng', '另有已取消':'còn có đã hủy',
+  '应付教师':'Phải trả giáo viên', '缺「学费」字段':'Thiếu trường「Học phí」',
+  '按开始时间排序':'Sắp xếp theo thời gian bắt đầu', '冻结当前结算':'Đóng băng quyết toán hiện tại',
+  '暂不做登录拦截':'tạm thời chưa chặn đăng nhập', '出勤全部由':'Đi học tất cả do',
+  '里出现':'đều xuất hiện',
+  /* 整句（被内联标签切开的节点，整句作 key 才匹配得上） */
+  '从备份文件恢复整份数据':'Phục hồi toàn bộ dữ liệu từ tệp sao lưu',
+  '导出整份数据备份（JSON）':'Xuất toàn bộ bản sao dữ liệu (JSON)',
+  '做大动作之前先导一份。':'Trước khi làm việc lớn, hãy xuất một bản sao.',
+  '另外两个已知缺口：①':'Hai lỗ hổng khác đã biết: ①',
+  '换电脑、清缓存、或手滑改坏了，都能靠这份备份回去。':'Đổi máy, xóa cache hay lỡ tay sửa hỏng, đều khôi phục được từ bản sao này.',
+  '点任意一行看逐节明细。':'Bấm vào bất kỳ dòng nào để xem chi tiết từng buổi.',
+  '条 · 点任意一行打开审批':'mục · Bấm bất kỳ dòng nào để mở duyệt',
+  /* ⚠️ 上面的 key 前缀会被 _viRe 的「(\d+) 条」先吃掉，所以再挂一条不带数字的兜底 */
+  '点任意一行打开审批':'Bấm bất kỳ dòng nào để mở duyệt',
+  '按实际上课那天记 —— 补课 / 调课也算上课那天':'Ghi theo ngày thực tế lên lớp —— học bù / đổi ca cũng tính ngày lên lớp',
+  '按月回看 · 每节课都记在事实上，不是事后补的汇总':'Xem lại theo tháng · mỗi buổi đều ghi trên sự thật, không phải tổng hợp bù sau',
+  '今天没有课 —— 排课页里排好的课会出现在这里':'Hôm nay không có lớp —— những buổi đã xếp ở trang xếp lớp sẽ hiện ở đây',
+  '还没有封存记录 —— 封存后这里显示':'Chưa có bản ghi chốt —— sau khi chốt sẽ hiển thị ở đây',
+  '还没有任何已上课次 —— 排课页「推进一课」之后这里才有账':'Chưa có buổi học nào đã dạy —— sau khi bấm「Tiến 1 buổi」ở trang xếp lớp mới có số liệu',
+  '操作员在这里审批 · 自家 / 外包教师都走同一套程序':'Người thao tác duyệt ở đây · giáo viên tự có / thuê ngoài đều theo cùng một quy trình',
+  '归属（自有 / 外包）是学生自己的字段':'Thuộc về (Tự có / Thuê ngoài) là trường của chính học viên',
+  '，不是从归属教师派生 —— 公司自家的学生也可能被派给外包老师教。':', không phải phái sinh từ giáo viên thuộc về —— học viên của công ty cũng có thể được giao cho giáo viên thuê ngoài dạy.',
+  '，不是实到人数。':', không phải số người thực tế.',
+  '，改一次单价历史账会跟着变；② 按学员计费的教师，人数用的是':', sửa đơn giá một lần thì sổ lịch sử sẽ đổi theo; ② giáo viên tính theo học viên, số người dùng là',
+  '：学生档案里没有「学费」字段，收多少没地方记 —— 宁可留空，也不编数字。':': hồ sơ học viên không có trường「Học phí」, thu bao nhiêu không có chỗ ghi —— thà để trống, không bịa số.',
+  '的结算，之后改单价 / 加课次都不会动到它（解决「单价没有快照」）。':'của quyết toán, sau đó sửa đơn giá / thêm buổi học đều không ảnh hưởng (giải quyết「Đơn giá không có ảnh chụp」).',
+  '—— 课次 / 人数 / 课酬都从课次事实表和学生表现算（口径：':'—— Buổi học / Số người / Thù lao đều tính từ bảng sự thật buổi học và kết quả học viên (cách tính:',
+  '名下所有班 · 已上课次 × 单价（按学员计费的再 × 在读人数）':'Tất cả lớp trực thuộc · Số buổi đã học × Đơn giá (lớp tính theo học viên thì × Số người đang học)',
+  '算出来 —— 应出勤 = 入班后这个班已上的课次，缺勤 = 缺勤记录条数。':'tính ra —— Phải đi học = số buổi lớp này đã dạy sau khi vào lớp, Vắng mặt = số bản ghi vắng mặt.',
+  '跨月未结课的班，会在它存在的':'Lớp chưa kết thúc khóa kéo qua tháng,',
+  '这个月涉及的班':'Lớp liên quan tháng này',
+  '矩阵 · 班级 · 候选池 · 日历 —— 动手编排的地方':'Ma trận · Lớp · Nhóm chờ xếp lớp · Lịch —— nơi bắt tay xếp lớp',
+  '行 = 时段 · 列 = 星期 · 青=线上 / 琥珀=线下':'dòng = Ca học · cột = thứ · xanh=Trực tuyến / hổ phách=Ngoại tuyến',
+  /* ---- Phase 5：抽屉 / 审批弹窗 / 说明段 / 下拉选项（源码级穷举，不再靠「打开页面看」）---- */
+  /* 通用词 */
+  '另有':'Còn có', '其余':'Còn lại', '最近':'Gần đây', '新增':'Thêm mới', '新班':'lớp mới',
+  '参考':'Tham khảo', '命中':'Khớp', '班名':'Tên lớp', '代号':'Mã', '容量':'Sức chứa',
+  '原因':'Lý do', '说明':'Ghi chú', '已满':'Đã đầy', '跳过':'Bỏ qua', '已记':'Đã ghi',
+  '只有':'chỉ có', '字符':'ký tự', '介绍':'Giới thiệu', '平台':'Nền tảng', '自家':'Tự có',
+  '意向':'Nguyện vọng', '并入':'Gộp vào', '未编班':'Chưa xếp lớp', '已编入':'Đã xếp vào',
+  '当前值':'Giá trị hiện tại', '已删除':'Đã xóa', '已封存':'Đã chốt', '已导出':'Đã xuất',
+  '未开课':'Chưa mở lớp', '不能空':'không được để trống', '操作员':'Người thao tác',
+  '自动编入':'Tự động xếp vào', '系统检查':'Hệ thống kiểm tra', '教师自带':'Giáo viên tự có',
+  '时间碰撞':'Trùng thời gian', '计价方式':'Cách tính giá', '教课表现':'Kết quả giảng dạy',
+  '表现记录':'Bản ghi kết quả', '尚未开课':'Chưa mở lớp', '已经有课':'đã có lớp',
+  '该班进度':'Tiến độ lớp đó', '教室名称':'Tên phòng học', '只记缺勤':'Chỉ ghi vắng mặt',
+  '这个学生':'Học viên này', '还没编班':'chưa xếp lớp', '已经满了':'đã đầy', '其他班':'lớp khác',
+  '占用。':'chiếm.', '并的是':'Gộp là', '有空档':'có ca trống', '新建班':'lớp mới',
+  '登记成':'đăng ký thành', '已满（':'Đã đầy (', '课 ·':'buổi ·', '。请补上。':' Vui lòng bổ sung.',
+  '没有匹配「':'Không khớp「', '阶段不及格':'giai đoạn không đạt', '小计VND':'Tạm tính VND',
+  '可授课时段':'Ca có thể dạy', '学习的要求':'Yêu cầu học tập', '→ 并入后':'→ Sau khi gộp',
+  '请选择原因':'Chọn lý do', '反建议时段':'Ca đề xuất', '并入已有班':'Gộp vào lớp có sẵn',
+  '归入已有班':'Xếp vào lớp có sẵn', '· 原因：':'· Lý do:', '进度默认从':'Tiến độ mặc định từ',
+  '已完成全部':'Đã hoàn thành tất cả', '时段对不上':'Ca không khớp', '我上了几节':'tôi đã dạy mấy buổi',
+  '不能往下排':'không thể xếp tiếp', '存盘失败':'Lưu thất bại', '第四阶段':'Giai đoạn 4',
+  '第五阶段':'Giai đoạn 5', '第六阶段':'Giai đoạn 6', '能听能讲能写':'Nghe nói viết được',
+  '能听能讲':'Nghe nói được', '自家教师':'Giáo viên tự có', '」的班级':'」của lớp',
+  '全部原因':'Tất cả lý do', '统计口径':'Cách thống kê', '（找不到':' (không tìm thấy',
+  '已推进：':'Đã đẩy:', '的课次；':'buổi học;', '· 批准':'· Duyệt', '按课次':'Theo buổi học',
+  '上班族':'Nhân viên văn phòng', '）目前':' ) hiện', '文件。':'tệp.', '已经被':'đã bị',
+  '· 第':'· Thứ', '说明：':'Ghi chú:', '经商':'Kinh doanh', '其他':'Khác', '文案':'Nội dung chữ',
+  '操作员编辑':'Người thao tác sửa', '自家外境教师':'Giáo viên ngoại cảnh tự có',
+  '外包外境教师':'Giáo viên ngoại cảnh thuê ngoài',
+  /* 下拉选项值：目标 / 职业
+     ⚠️ 水果名（苹果 / 凤梨 / …）**故意不进字典** —— 它们是演示「班名」的数据部分
+        （形如「苹果班 AP-01」），只翻「苹果」会得到半中半越的「Táo班」，比整名保持中文更糟。
+        班名属于数据，要越南语就换演示数据（见打磨台）。 */
+  '上班族':'Nhân viên văn phòng', '经商':'Kinh doanh', '能听能讲能写':'Nghe nói viết được',
+  '能听能讲':'Nghe nói được', '第四阶段':'Giai đoạn 4', '第五阶段':'Giai đoạn 5', '第六阶段':'Giai đoạn 6',
+  /* 申请审批抽屉 · 事实行 */
+  '按名单 · 申请时填':'Theo danh sách · điền khi xin', '（不新建班）':' (không mở lớp mới)',
+  '位 · 通过后一起建学生档案并编入这个班':'người · sau khi duyệt sẽ tạo hồ sơ học viên và xếp vào lớp này',
+  '没填姓名的，通过后只按「申请人数」建班，不建学生档案。':'Ai chưa điền họ tên, sau khi duyệt chỉ mở lớp theo「số người xin」, không tạo hồ sơ học viên.',
+  /* 申请审批抽屉 · 检查块 */
+  '⛔ 时间碰撞 · 不能通过':'⛔ Trùng thời gian · không thể duyệt',
+  '⛔ 线下课室已被占用 · 不能通过':'⛔ Phòng học ngoại tuyến đã bị chiếm · không thể duyệt',
+  '—— 教师时间没有碰撞':'—— thời gian giáo viên không trùng',
+  '（另一条已通过的申请）':' (một đơn khác đã duyệt)',
+  '。请驳回，并给对方一个空档时段的建议。':'. Hãy từ chối và đề xuất cho bên kia một ca trống.',
+  '（线上课不占教室；课室总数待补）':' (lớp trực tuyến không dùng phòng; tổng số phòng chờ bổ sung)',
+  '在这个时段也空着。':'ở ca này cũng trống.', '（线上课不占教室）。':' (lớp trực tuyến không dùng phòng).',
+  '人，低于开班门槛':'người, thấp hơn ngưỡng mở lớp', '人，超过单班上限':'người, vượt giới hạn một lớp',
+  /* 运行时测试（带演示数据 + 打开抽屉）补的最后一批 */
+  ' 在 ':' tại ', '出勤明细':'Chi tiết điểm danh', '年教学':' năm kinh nghiệm giảng dạy',
+  '反馈很好，续报率高':'phản hồi tốt, tỷ lệ tái đăng ký cao', '未配可授时段':'chưa cấu hình ca có thể dạy',
+  '可带':'Có thể dạy', '冲刺班':'lớp cấp tốc', '缺':'thiếu',
+  '—— 要考的就是这一阶段。':'—— cần thi chính là giai đoạn này.',
+  /* 申请审批抽屉 · 落点 / 表单 / 驳回 / 结果 */
+  '落点 · 并入已有班':'Điểm đến · gộp vào lớp có sẵn',
+  '落点 · 新建班（预填，可改）':'Điểm đến · lớp mới (điền sẵn, có thể sửa)',
+  '这个时段本来就有一门同样的课，把新学生放进它的空位，不用再开一个新班。':'Ca này vốn đã có một lớp y hệt, xếp học viên mới vào chỗ trống của nó, không cần mở lớp mới.',
+  '归属预填跟来源走：':'Thuộc về điền sẵn theo nguồn:',
+  '→ 外包。级别 / 形态 / 时段来自申请本身，要改就先驳回让对方重交。':'→ Thuê ngoài. Cấp độ / Hình thức / Ca học lấy từ chính đơn, muốn sửa thì từ chối để bên kia gửi lại.',
+  '级别不符（这个班是':'Cấp độ không khớp (lớp này là', '（级别不符）':' (cấp độ không khớp)',
+  '（时段对不上）':' (ca không khớp)', '的班能编入，其余会标出原因。':'thì xếp vào được, còn lại sẽ ghi rõ lý do.',
+  '驳回（必须填原因）':'Từ chối (bắt buộc điền lý do)', '（不给建议）':' (không đề xuất)',
+  '反建议 = 操作员挑一个':'Đề xuất = người thao tác chọn một', '的时段给对方，':'một ca cho bên kia,',
+  '让对方再确认能不能接受。不给建议也可以，但原因必须选。':'để bên kia xác nhận lại xem có nhận được không. Không đưa đề xuất cũng được, nhưng bắt buộc chọn lý do.',
+  '—— 驳回要对方知道到底卡在哪。':'—— từ chối để bên kia biết vướng ở đâu.',
+  '通过时同时做了三件事：':'Khi duyệt đồng thời làm ba việc:',
+  '① 申请置「已通过」　② 把':'① Đơn chuyển「Đã duyệt」　② Đưa',
+  '的可授时段　③':'ca có thể dạy　③', '建了一个新班':'đã mở một lớp mới',
+  '反建议时段：':'Ca đề xuất:', '说明：':'Ghi chú:', '· 原因：':'· Lý do:',
+  /* 其它抽屉 / 说明段 */
+  '先在班级列表里点一次「推进一课」，把那节课标成已上，再回来点名。':'Trước tiên bấm「Tiến 1 buổi」một lần trong danh sách lớp, đánh dấu buổi đó là đã học, rồi quay lại điểm danh.',
+  '这个班还没有「已上」的课次，没法点名。':'Lớp này chưa có buổi「đã học」, không điểm danh được.',
+  '这个班还没有「已上」的课次':'Lớp này chưa có buổi「đã học」',
+  '还没有「已上」的课次 —— 先点一次「推进一课」':'Chưa có buổi「đã học」—— trước tiên bấm「Tiến 1 buổi」một lần',
+  '缺勤按事实表数，只记缺勤（默认全勤）。':'Vắng mặt đếm theo bảng sự thật, chỉ ghi vắng mặt (mặc định đi học đủ).',
+  '—— 默认全勤，勾上谁没来就行。':'—— mặc định đi học đủ, chỉ cần tick ai không đến.',
+  '所属班级只在这里看':'Lớp trực thuộc chỉ xem ở đây',
+  '—— 编班 / 调班统一在「排课 → 班级」页做，跟老系统一致。':'—— Việc xếp lớp / chuyển lớp làm thống nhất ở trang「Xếp lớp → Lớp」, giống hệ thống cũ.',
+  '还没编班，没有出勤可看':'chưa xếp lớp, không có điểm danh để xem',
+  '—— 没有班级进度就没有「当前阶段」，只能看已录的成绩。':'—— Không có tiến độ lớp thì không có「giai đoạn hiện tại」, chỉ xem được điểm đã nhập.',
+  '），既没编班也没填意向班级。':' ), vừa chưa xếp lớp vừa chưa điền lớp nguyện vọng.',
+  '填了「意向班级」的会在对应班开出来之后':'Ai điền「lớp nguyện vọng」sẽ sau khi lớp tương ứng mở ra',
+  '，不是人 ——':' , không phải người ——', '并编入这个班 —— 归属教师跟着班走。':'và xếp vào lớp này —— giáo viên thuộc về đi theo lớp.',
+  '位会一起建进':'người sẽ cùng tạo vào', '位（申请人数':'người (số người xin',
+  '名学员会退回候选池。':'học viên sẽ trả về nhóm chờ xếp lớp.',
+  '名学员退回候选池':'học viên trả về nhóm chờ xếp lớp',
+  '还没有任何班级 —— 先去「开班申请」批一个':'Chưa có lớp nào —— vào「Đơn mở lớp」duyệt một cái trước',
+  '还没有成员，点右上「＋ 添加成员」加一位。':'Chưa có thành viên, bấm「＋ Thêm thành viên」ở góc phải để thêm một người.',
+  '已移除成员「':'Đã xóa thành viên「', '—— 只作显示，暂不做登录拦截。':'—— chỉ để hiển thị, tạm thời chưa chặn đăng nhập.',
+  '操作员自己排的班 · 提交后进「开班申请」等审批':'Lớp do người thao tác tự xếp · sau khi gửi sẽ vào「Đơn mở lớp」chờ duyệt',
+  '还没有课表 —— 先确认它有开班日和时段':'Chưa có thời khóa biểu —— xác nhận nó có ngày mở lớp và ca học trước',
+  '应出勤 = 入班（':'Phải đi học = sau khi vào lớp (', '）之后这个班':' ) sau đó lớp này',
+  '的课次；':'buổi học;', '。将来招聘懂中文学生的系统要用它筛选后推荐给单位。':'. Sau này hệ thống tuyển dụng học viên biết tiếng Trung sẽ dùng nó để lọc rồi giới thiệu cho đơn vị.',
+  '（在「学生」页维护）——':' (bảo trì ở trang「Học viên」) ——', '这一页只做汇总，':'Trang này chỉ tổng hợp,',
+  '不自己写名单':'không tự viết danh sách',
+  '阶段考试 = 学生 × 每个阶段。卡在某个阶段的学生':'Thi giai đoạn = học viên × mỗi giai đoạn. Học viên kẹt ở một giai đoạn',
+  '不能往下排':'không thể xếp tiếp', '课）—— 要考的就是这一阶段。':'buổi) —— cần thi chính là giai đoạn này.',
+  '学生档案里的「结业等级」字段':'trường「Cấp độ tốt nghiệp」trong hồ sơ học viên',
+  '点任意一行看该生各阶段成绩。':'Bấm vào bất kỳ dòng nào để xem điểm từng giai đoạn của học viên đó.',
+  '点任意一行看学生档案。':'Bấm vào bất kỳ dòng nào để xem hồ sơ học viên.',
+  '可进下一阶段':'có thể lên giai đoạn sau', '阶段不及格':'giai đoạn không đạt',
+  /* 排课 / 班级 */
+  '该生可上课时段：':'Ca có thể học của học viên:', '（前提是级别 + 可上课时段都对得上）。':' (với điều kiện cấp độ + ca có thể học đều khớp).',
+  '级别相同 · 未满 · 时段对得上':'Cùng cấp độ · chưa đầy · ca khớp',
+  '找有没有能并进去的班。':'tìm xem có lớp nào gộp vào được.',
+  '· 按天看这一周排了什么':'· xem theo ngày tuần này đã xếp gì',
+  '（周日 · 矩阵里没有这一列）':' (Chủ nhật · ma trận không có cột này)',
+  '线上课 · 正在上课':'Lớp trực tuyến · đang học', '线上课 · 未开始 / 已结束':'Lớp trực tuyến · chưa bắt đầu / đã kết thúc',
+  '线下课 · 环无色':'Lớp ngoại tuyến · vòng không màu',
+  '去排课 › 班级 看这个班 ›':'Vào Xếp lớp › Lớp xem lớp này ›', '点开看这个班':'bấm để xem lớp này',
+  '这个班已经不在了':'Lớp này không còn nữa', '已经在班上了':'đã ở trong lớp rồi',
+  '该班进度':'Tiến độ lớp đó', '这个班已经上过':'Lớp này đã dạy',
+  '这批学生目前学到':'Nhóm học viên này hiện học đến',
+  '还没有可封存的课次':'Chưa có buổi học nào để chốt', '统计口径':'Cách thống kê',
+  '另有':'Còn có', '其余':'Còn lại',
+  /* 数据页 · 导入 / 导出 */
+  '数据 · 恢复 · 会覆盖现在这一份':'Dữ liệu · Phục hồi · sẽ ghi đè bản hiện tại',
+  '本机存储 · 改动会存进本机浏览器':'Bộ nhớ máy · thay đổi lưu vào trình duyệt máy này',
+  '本机存储 · 已载入存盘':'Bộ nhớ máy · đã nạp bản lưu', '改动会存进本机浏览器':'thay đổi lưu vào trình duyệt máy này',
+  '改动会存进本机浏览器 · 关掉再开还在':'Thay đổi lưu vào trình duyệt máy này · tắt đi mở lại vẫn còn',
+  '关掉再开还在':'tắt đi mở lại vẫn còn', '已存盘 ·':'Đã lưu ·', '存盘失败':'Lưu thất bại',
+  '已重置为演示数据':'Đã đặt lại thành dữ liệu demo', '已从备份恢复':'Đã phục hồi từ bản sao',
+  '这台浏览器没能直接下载':'Trình duyệt này không tải trực tiếp được',
+  '请全选下面的内容，粘进记事本，存成':'Chọn toàn bộ nội dung dưới đây, dán vào Notepad, lưu thành',
+  '文件用记事本打开，内容整段粘进来。':'tệp bằng Notepad, dán nguyên đoạn nội dung vào.',
+  '存成 .json 文件':'lưu thành tệp .json', '粘贴 JSON …':'Dán JSON …', '还没有粘贴任何内容':'Chưa dán nội dung nào',
+  '内容不是一个 JSON 对象':'Nội dung không phải một đối tượng JSON', '不是合法的 JSON':'không phải JSON hợp lệ',
+  '缺少必要字段：':'Thiếu trường bắt buộc:', '这不是本系统的备份文件（认领标记对不上）':'Đây không phải tệp sao lưu của hệ thống này (dấu nhận diện không khớp)',
+  '备份来自更新的版本（v':'Bản sao từ phiên bản mới hơn (v', '），当前主端只认到 v':' ), bảng chính hiện chỉ nhận đến v',
+  '把之前导出的':'Mở tệp', '文件。':'tệp.',
+  '校验不过不动现有数据':'không qua kiểm tra thì không động vào dữ liệu hiện có', '会再确认一次':'sẽ xác nhận lại một lần',
+  '现在这一份会被替换掉，确定继续吗？':'Bản hiện tại sẽ bị thay thế, chắc chắn tiếp tục?',
+  '重置会把本机存的数据全部抹掉，回到最初的演示数据。确定继续吗？':'Đặt lại sẽ xóa toàn bộ dữ liệu lưu trên máy này, quay về dữ liệu demo ban đầu. Chắc chắn tiếp tục?',
+  '」？此操作会写进本机浏览器，关掉再开还在。':'」? Thao tác này sẽ ghi vào trình duyệt máy này, tắt đi mở lại vẫn còn.',
+  '· 新建 · 保存后进列表':' · Tạo mới · lưu xong vào danh sách', '按以上建班 · 批准':'Mở lớp như trên · Duyệt',
+  '审批通过建班时，这':'Khi duyệt mở lớp, số', '跳过':'Bỏ qua',
+  /* 结算 */
+  '小计VND':'Tạm tính VND', '按学员 × 课次':'Theo học viên × buổi học', '按课次计费，人数不参与计算':'Tính phí theo buổi học, số người không tham gia tính',
+  '全时段都能排':'mọi ca đều xếp được',
+  /* 收尾：单字量词已在 _viSolo / _viRe 处理，此处不放单字 */
+  '）的可授时段是空的，系统会把空时段解释成「不限」，等于':' ) đang trống, hệ thống hiểu ca trống là「không giới hạn」, nghĩa là',
+  '教师名下没有已上课次，未列出 —— 表里只列有账的。':'giáo viên chưa có buổi đã dạy, không liệt kê —— bảng chỉ liệt kê người có số liệu.',
+  /* ⚠️ 下面两条同理：数字被 _viRe 的「(\d+) 人」先吃掉了，key 不能带「人」 */
+  '，低于开班门槛':', thấp hơn ngưỡng mở lớp', '，超过单班上限':', vượt giới hạn một lớp',
+  '这个月还没开始 —— 排了课才会出现在这里':'Tháng này chưa bắt đầu —— xếp lớp xong mới hiện ở đây',
+  '开始。提交后系统照样帮你查碰撞、':'bắt đầu. Sau khi gửi hệ thống vẫn kiểm tra trùng lịch,',
+  '—— 先填上再保存。':'—— điền vào rồi lưu.', 'MGD排课备份_':'MGD-xep-lop-sao-luu_',
+  '线下课室已被占用':'Phòng học ngoại tuyến đã bị chiếm',
+  '人还在读，未结业':'người còn đang học, chưa tốt nghiệp',
+  '节 ·':'buổi ·', '个 · 在读':'lớp · đang học', '人，进度':'người, tiến độ',
+  '完成等级读的是':'Cấp độ hoàn thành đọc từ', '· 尚未编班':'· chưa xếp lớp',
+};
+const _langOrig = new WeakMap();   /* 记下中文原文，切回中文时还原 */
+/* 长的先替 —— 否则「课次」会先把「课次记录」啃掉一半 */
+const _viKeys = Object.keys(VI).sort((a, b) => b.length - a.length);
+/* 少数需要「换位 / 带数字」的形态：子串替换做不到，先在前面用正则改一次。
+   例：2026 年 10 月 → Tháng 10 năm 2026（越南语是「月在前、年在后」）
+   ⚠️ 顺序敏感：长的、具体的规则必须排在前面（「3 个班」要先于「3 个」） */
+const _viRe = [
+  [/(\d{4})\s*年\s*(\d{1,2})\s*月/g, 'Tháng $2 năm $1'],
+  [/差\s*(\d+)\s*人开班/g, 'Thiếu $1 người mở lớp'],
+  [/(\d+)\s*人缺勤/g, '$1 người vắng mặt'],
+  [/(\d+)\s*个班/g, '$1 lớp'],
+  [/(\d+)\s*个/g, '$1 lớp'],
+  [/(\d+)\s*节/g, '$1 buổi'],
+  [/(\d+)\s*人/g, '$1 người'],
+  [/(\d+)\s*位/g, '$1 vị'],
+  [/(\d+)\s*次/g, '$1 lần'],
+  [/(\d+)\s*条/g, '$1 mục'],
+  [/(\d+)\s*名/g, '$1 người'],
+  [/第\s*(\d+)\s*课/g, 'Bài $1'],
+  [/(\d+)\s*课(?!次)/g, '$1 buổi'],
+];
+/* 单字量词：**只有整个节点就这一个字**时才替换。
+   ⚠️ 不能放进下面的子串替换 —— 「个」会把「这个班」啃成「这lớp班」、「人」会把「这个学生」啃坏。 */
+const _viSolo = {'个':'lớp','节':'buổi','人':'người','位':'vị','次':'lần','条':'mục','名':'người','课':'buổi'};
+function viSwap(s){
+  let out = s;
+  for (let i = 0; i < _viRe.length; i++) out = out.replace(_viRe[i][0], _viRe[i][1]);
+  const solo = out.trim();
+  if (solo.length === 1 && _viSolo[solo]) return out.split(solo).join(_viSolo[solo]);
+  for (let i = 0; i < _viKeys.length; i++){
+    const k = _viKeys[i];
+    if (out.indexOf(k) !== -1) out = out.split(k).join(VI[k]);
+  }
+  return out;
+}
+function langWalk(root){
+  if (!root) return;
+  const vi = (LANG === 'vi');
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node){
+      const p = node.parentNode;
+      if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while ((n = w.nextNode())){
+    const raw = n.nodeValue;
+    if (!raw || !raw.trim()) continue;
+    if (vi){
+      const out = viSwap(raw);
+      if (out !== raw){ if (!_langOrig.has(n)) _langOrig.set(n, raw); n.nodeValue = out; }
+    } else if (_langOrig.has(n)){
+      n.nodeValue = _langOrig.get(n);
+    }
+  }
+  ['placeholder','title'].forEach(attr => {
+    root.querySelectorAll('['+attr+']').forEach(el => {
+      const raw = el.getAttribute(attr); if (!raw) return;
+      if (vi){
+        const out = viSwap(raw);
+        if (out !== raw){ if (!_langOrig.has(el)) _langOrig.set(el, raw); el.setAttribute(attr, out); }
+      } else if (_langOrig.has(el)){ el.setAttribute(attr, _langOrig.get(el)); }
+    });
+  });
+}
+function syncLangBtn(){
+  /* ⚠️ 按钮上的「中文」是**语言名**，不能进 VI 字典 ——
+     字典里的「中文」会把教师档案里「中国 · 中文 · 越南语」这类**数据**也一起啃掉。
+     所以只在这里单独给它换名（applyLang 里 langWalk 之后调用，会覆盖回去）。 */
+  document.querySelectorAll('#langSwitch button').forEach(b => {
+    b.classList.toggle('on', b.dataset.lang === LANG);
+    const lb = b.querySelector('.lb');
+    if (!lb) return;
+    lb.textContent = (b.dataset.lang === 'zh') ? (LANG === 'vi' ? 'Tiếng Trung' : '中文') : 'Tiếng Việt';
+  });
+}
+let _titleOrig = null;   /* <title> 在 <head>，TreeWalker 够不到，单独存一份原文 */
+function applyLang(){
+  langWalk(document.body);
+  if (LANG === 'vi'){
+    if (_titleOrig === null) _titleOrig = document.title;
+    document.title = viSwap(_titleOrig);
+  } else if (_titleOrig !== null){
+    document.title = _titleOrig;
+  }
+  syncLangBtn();
+}
+function setLang(l){ LANG = l; try { localStorage.setItem('zhops.lang', l); } catch(e){} render(); }
+document.getElementById('langSwitch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-lang]'); if (b) setLang(b.dataset.lang);
+});
+/* 抽屉 / 提示条等「后出现」的内容：DOM 一变就重扫一遍。
+   只观察新增节点（childList），我们改的是文字（characterData）→ 不会自触发死循环 */
+(function(){
+  if (typeof MutationObserver === 'undefined') return;
+  let busy = false;
+  new MutationObserver(() => {
+    if (busy || LANG !== 'vi') return;
+    busy = true;
+    Promise.resolve().then(() => { try { langWalk(document.body); } finally { busy = false; } });
+  }).observe(document.body, { childList:true, subtree:true });
+})();
 
 /* ---------- 事件 ---------- */
 document.addEventListener('click', e => {
