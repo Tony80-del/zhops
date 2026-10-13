@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-skin="midnight">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>中文课 · 教师开班申请</title>
+<title>中文课 · 教师端</title>
 <style>
   :root{
     --bg:#0b0d10; --panel:#12151a; --card:#171b21; --line:rgba(255,255,255,.13);
@@ -19,15 +19,25 @@
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
     font-size:13px; line-height:1.6;
   }
-  .wrap{max-width:720px; margin:0 auto; padding:28px 22px 70px;}
-  header{border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:22px;}
-  h1{font-size:20px; font-weight:500; margin:0 0 6px;}
+  .wrap{max-width:780px; margin:0 auto; padding:26px 22px 90px;}
+  header{border-bottom:1px solid var(--line); padding-bottom:15px; margin-bottom:20px;}
+  h1{font-size:20px; font-weight:500; margin:0 0 5px;}
   .sub{font-size:12.5px; color:var(--hint); margin:0;}
   .note{
     background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--acc);
-    border-radius:8px; padding:10px 13px; font-size:12.5px; color:var(--muted); margin:0 0 22px;
+    border-radius:8px; padding:10px 13px; font-size:12.5px; color:var(--muted); margin:0 0 20px;
   }
-  fieldset{border:0; padding:0; margin:0 0 22px;}
+  .tabs{display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap;}
+  .tabs button{
+    font-family:inherit; font-size:13px; color:var(--muted); background:var(--card);
+    border:1px solid var(--line); border-radius:20px; padding:7px 16px; cursor:pointer;
+  }
+  .tabs button.on{background:var(--accb); color:var(--acc); border-color:var(--acc);}
+  .tabs .cnt{
+    display:inline-block; min-width:18px; text-align:center; margin-left:6px;
+    background:var(--badb); color:var(--bad); border-radius:9px; padding:0 6px; font-size:11.5px;
+  }
+  fieldset{border:0; padding:0; margin:0 0 20px;}
   legend{font-size:13.5px; font-weight:500; padding:0; margin:0 0 10px; color:var(--text);}
   legend .n{color:var(--acc); font-size:12px; margin-right:6px;}
   label{display:block; font-size:12px; color:var(--muted); margin:0 0 5px;}
@@ -38,7 +48,7 @@
     border:1px solid var(--line); border-radius:8px; padding:8px 10px; outline:none; width:100%;
   }
   input:focus,select:focus,textarea:focus{border-color:var(--acc);}
-  textarea{resize:vertical; min-height:74px;}
+  textarea{resize:vertical; min-height:60px;}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .chips{display:flex; flex-wrap:wrap; gap:8px;}
   .chip{
@@ -52,8 +62,9 @@
   }
   button:hover{border-color:var(--acc); color:var(--acc);}
   button.primary{background:var(--acc); color:var(--onacc); border-color:var(--acc); width:100%; padding:11px; font-size:14px;}
-  button.primary:hover{opacity:.9; color:var(--onacc);}
+  button.primary:hover{opacity:.92; color:var(--onacc);}
   button.mini{padding:4px 10px; font-size:12px;}
+  button.ghost{background:transparent;}
   .req{color:var(--bad); margin-left:3px;}
   .err{color:var(--bad); font-size:12.5px; margin:10px 0 0; min-height:20px;}
   .out{display:none;}
@@ -66,7 +77,7 @@
     background:var(--panel); border:1px solid var(--line); border-radius:8px;
     padding:11px 12px; word-break:break-all; line-height:1.55; max-height:180px; overflow:auto;
   }
-  .row{display:flex; gap:8px; align-items:center;}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
   .okmark{color:var(--ok); font-size:13.5px; font-weight:500; margin:0 0 8px;}
   .toast{
     position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
@@ -74,279 +85,474 @@
     opacity:0; pointer-events:none; transition:opacity .2s; z-index:9;
   }
   .toast.show{opacity:1;}
+  .ro{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; color:var(--text);}
+  .empty{color:var(--hint); font-size:12.5px; padding:18px; text-align:center; border:1px dashed var(--line); border-radius:10px;}
+  .app-card{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:14px 15px; margin-bottom:12px;}
+  .app-card .h{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:8px;}
+  .app-card .h b{font-size:13.5px;}
+  .app-card .tags{font-size:11.5px; color:var(--muted);}
+  .app-card .reason{color:var(--warn); font-size:12.5px; margin:6px 0;}
+  .app-card .advice{background:var(--okb); border:1px solid var(--ok); border-radius:8px; padding:8px 11px; font-size:12.5px; margin:8px 0;}
+  .app-card .acts{display:flex; gap:8px; margin-top:10px;}
+  .app-card .replied{font-size:12.5px; margin-top:8px;}
+  .app-card .replied.ok{color:var(--ok);}
+  .app-card .replied.no{color:var(--bad);}
+  .tg{display:inline-block; font-size:11.5px; padding:1px 7px; border-radius:10px; border:1px solid var(--line); color:var(--muted);}
+  .tg.own{color:var(--acc); border-color:var(--acc);}
+  .tg.out{color:var(--warn); border-color:var(--warn);}
   footer{font-size:11.5px; color:var(--hint); border-top:1px solid var(--line); padding-top:14px; margin-top:26px;}
-  @media (max-width:600px){ .grid2{grid-template-columns:1fr;} }
+  #stState{font-size:11.5px; color:var(--hint);}
+  @media (max-width:600px){
+    .grid2{grid-template-columns:1fr;}
+    .wrap{padding:20px 16px 80px;}
+  }
+  @media (min-width:601px) and (max-width:1024px){
+    .grid2{grid-template-columns:1fr 1fr;}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <h1>中文课 · 教师开班申请</h1>
-    <p class="sub">Lớp học tiếng Trung · Đăng ký mở lớp</p>
+    <h1>中文课 · 教师端</h1>
+    <p class="sub">Lớp học tiếng Trung · Giáo viên · 提交开班申请 / 回确认</p>
   </header>
 
   <p class="note">
-    本页只用于<b>提交开班申请</b>，不显示任何排课、班级或学员信息。
-    填完后系统会生成一段<b>申请码</b>，请把它发给管理员；管理员导入后即进入审核。
+    本页是<b>教师端</b>：提交开班申请、对管理员的「反建议时段」回确认。<br>
+    提交后申请直接进入管理端的「开班申请 · 待审批」队列（同一份本机存储）。<br>
+    <span style="color:var(--hint)">⚠️ 本地用 <code style="display:inline;padding:1px 5px">file://</code> 打开时，教师端与 admin 是不同源、互不连通；
+    只有发布到同一个网址（<code style="display:inline;padding:1px 5px">…/zhops/</code>）后，两边才共享同一份存储。</span>
   </p>
 
-  <form id="form" onsubmit="return false;">
+  <nav class="tabs">
+    <button data-tab="apply" class="on">提交开班申请</button>
+    <button data-tab="confirm">回确认 <span class="cnt" id="confCnt">0</span></button>
+  </nav>
 
-    <fieldset>
-      <legend><span class="n">一</span>基本信息</legend>
-      <div class="grid2">
+  <!-- ===================== 提交开班申请 ===================== -->
+  <section id="applyView">
+    <form id="form" onsubmit="return false;">
+      <fieldset>
+        <legend><span class="n">一</span>基本信息</legend>
         <div class="fld">
-          <label>姓名<span class="req">*</span></label>
-          <input id="fName" placeholder="真实姓名" autocomplete="name" />
+          <label>我是哪位教师<span class="req">*</span></label>
+          <select id="fTeacher"></select>
         </div>
-        <div class="fld">
-          <label>联系方式<span class="req">*</span></label>
-          <input id="fContact" placeholder="手机 / Zalo / 邮箱" autocomplete="tel" />
+        <div class="grid2">
+          <div class="fld">
+            <label>级别<span class="req">*</span></label>
+            <select id="fLv">
+              <option value="HSK1">HSK1</option>
+              <option value="HSK2">HSK2</option>
+              <option value="HSK3">HSK3</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label>形态<span class="req">*</span></label>
+            <select id="fMode">
+              <option value="online">线上（不占教室）</option>
+              <option value="offline">线下（需填教室）</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div class="grid2">
-        <div class="fld">
-          <label>教师身份</label>
-          <select id="fSrc">
-            <option value="out">外包教师（使用平台课程）</option>
-            <option value="own">自有教师（公司内部）</option>
-          </select>
+        <div class="fld" id="roomFld" style="display:none">
+          <label>教室名称<span class="req">*</span></label>
+          <input id="fRoom" placeholder="例如 B2" />
         </div>
-        <div class="fld">
-          <label>HSK 教学经验</label>
-          <select id="fExp">
-            <option value="none">无教学经验</option>
-            <option value="hsk12">教过 HSK 1–2</option>
-            <option value="hsk34">教过 HSK 3–4</option>
-            <option value="hsk56">教过 HSK 5–6</option>
-            <option value="native">中文母语 / 华裔</option>
-          </select>
-        </div>
-      </div>
-    </fieldset>
+      </fieldset>
 
-    <fieldset>
-      <legend><span class="n">二</span>想教什么<span class="req">*</span></legend>
-      <div class="fld">
-        <label>可教级别（可多选）</label>
-        <div class="chips" id="lvChips"></div>
-        <p class="hint">目前平台已完整编排的是 HSK1（42 课 / 506 词）；HSK2、HSK3 内容在建设中。</p>
-      </div>
-    </fieldset>
+      <fieldset>
+        <legend><span class="n">二</span>可上课时段<span class="req">*</span></legend>
+        <div class="fld">
+          <label>时段</label>
+          <select id="fSlot"></select>
+        </div>
+      </fieldset>
 
-    <fieldset>
-      <legend><span class="n">三</span>可上课时间<span class="req">*</span></legend>
-      <div class="fld">
-        <label>可选时段（可多选）</label>
-        <div class="chips" id="slotChips"></div>
-      </div>
-      <div class="fld">
-        <label>其他可上课时间（选填）</label>
-        <input id="fSlotNote" placeholder="例如：周二、周四 20:00 之后也可以" />
-        <p class="hint">时段表由管理员维护；如果你的时间不在上面，写在这里。</p>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend><span class="n">四</span>学员与开课计划</legend>
-      <div class="grid2">
+      <fieldset>
+        <legend><span class="n">三</span>学员与开课计划</legend>
         <div class="fld">
           <label>能带来的学生人数<span class="req">*</span></label>
-          <input id="fStudents" type="number" min="0" max="10" placeholder="例如 8" />
-          <p class="hint">单个班 6–10 人。不足 6 人暂不开班。</p>
+          <input id="fN" type="number" min="1" max="12" placeholder="单个班 8–12 人" />
+          <p class="hint">低于 8 人仅提示、不拦提交；超过 12 人请拆班。</p>
         </div>
         <div class="fld">
-          <label>期望开课日期</label>
-          <input id="fStart" type="date" />
+          <label>学生名单（选填）</label>
+          <div id="rosterRows"></div>
+          <button type="button" class="mini ghost" onclick="addRosterRow()">＋ 添加一名学生</button>
+          <p class="hint">只填姓名即可；通过后这些学生会被建档案并编入这个班。</p>
         </div>
-      </div>
-      <div class="fld">
-        <label>备注（选填）</label>
-        <textarea id="fNote" placeholder="例如：学员都是工厂班组长，零基础，希望周末上课"></textarea>
-      </div>
-    </fieldset>
+        <div class="fld">
+          <label>备注（选填）</label>
+          <textarea id="fNote" placeholder="例如：学员都是工厂班组长，零基础，希望周末上课"></textarea>
+        </div>
+      </fieldset>
 
-    <button class="primary" onclick="submitForm()">提交申请</button>
-    <p class="err" id="err"></p>
-  </form>
+      <button class="primary" onclick="submitApply()">提交申请</button>
+      <p class="err" id="err"></p>
+    </form>
 
-  <div class="out" id="out">
-    <p class="okmark">申请已生成。请把下面的申请码发给管理员。</p>
-    <div class="box">
-      <div class="kv" id="summary"></div>
-    </div>
-    <div class="box">
-      <label>申请码</label>
-      <code id="code"></code>
-      <div class="row" style="margin-top:11px;">
-        <button class="mini" onclick="copyCode()">复制申请码</button>
-        <button class="mini" onclick="downloadCode()">下载为文件</button>
-        <button class="mini" onclick="restart()">重新填写</button>
+    <div class="out" id="out">
+      <p class="okmark">申请已提交，已进入管理端「待审批」队列。</p>
+      <div class="box"><div class="kv" id="summary"></div></div>
+      <div class="row">
+        <button class="mini" onclick="restartApply()">再提交一条</button>
       </div>
-      <p class="hint" style="font-size:11.5px;color:var(--hint);margin-top:9px;">
-        申请码里只有你刚填的内容，不含任何平台数据。管理员导入后才能看到。
-      </p>
     </div>
-  </div>
+  </section>
+
+  <!-- ===================== 回确认 ===================== -->
+  <section id="confirmView" class="out">
+    <p class="note" style="border-left-color:var(--warn)">
+      管理员驳回时若给了「反建议时段」，会出现在这里。点击<b>接受</b>＝把时段换成反建议的、重新提交待审批；
+      点击<b>不接受</b>＝维持原时段并标记已回复。
+    </p>
+    <div id="confirmList"></div>
+  </section>
 
   <footer>
-    中文课平台 · 教师端。本页可离线使用；提交后数据仅存在于本机，直到你把申请码交给管理员。
+    中文课平台 · 教师端（深色）。本页与 admin 共用同一份本机存储；提交即写入，无需申请码。
+    <div id="stState" style="margin-top:6px"></div>
   </footer>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* ==================== 常量 ==================== */
-const CODE_PREFIX = 'ZHA1.';
+/* ==================== 数据层（与 admin 同一套 zhops.sched.v3 存盘） ==================== */
+const KEY = 'zhops.sched.v3';
+const APP_TAG = 'zhops.admin';      /* 与 admin 同一个认领标记 */
+const DB_VER = 1;
 
-/* 时段表：与排课系统默认一致。上云后改为从云端读取。 */
-const SLOTS = [
-  { id:'s1', code:'S1', name:'早班', time:'07:30–08:15' },
-  { id:'s2', code:'S2', name:'午间', time:'12:00–12:45' },
-  { id:'s3', code:'S3', name:'晚班', time:'18:30–19:15' },
-  { id:'s4', code:'S4', name:'周末', time:'09:00–10:30' }
-];
-const LEVELS = ['L1','L2','L3'];
-
-/* ==================== 状态 ==================== */
-const pickedLv = [];
-const pickedSlot = [];
-
-/* ==================== 工具 ==================== */
-const $ = id => document.getElementById(id);
-function esc(s){
-  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
-function toast(msg){
-  const el = $('toast'); el.textContent = msg; el.classList.add('show');
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1900);
-}
-function b64enc(str){
-  const bytes = new TextEncoder().encode(str);
-  let bin = '';
-  bytes.forEach(b => { bin += String.fromCharCode(b); });
-  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-function b64dec(s){
-  const b64 = s.replace(/-/g,'+').replace(/_/g,'/');
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-}
-function encodeApp(o){ return CODE_PREFIX + b64enc(JSON.stringify(o)); }
-function decodeApp(code){
-  const raw = String(code || '').trim().replace(/\s+/g,'');
-  if(raw.indexOf(CODE_PREFIX) !== 0) throw new Error('申请码格式不对（应以 ' + CODE_PREFIX + ' 开头）');
-  return JSON.parse(b64dec(raw.slice(CODE_PREFIX.length)));
-}
-
-/* ==================== 渲染选项 ==================== */
-function renderChips(){
-  $('lvChips').innerHTML = LEVELS.map(lv =>
-    '<span class="chip' + (pickedLv.indexOf(lv) >= 0 ? ' on' : '') +
-    '" onclick="toggleLv(\'' + lv + '\')">' + lv + '</span>').join('');
-
-  $('slotChips').innerHTML = SLOTS.map(s =>
-    '<span class="chip' + (pickedSlot.indexOf(s.id) >= 0 ? ' on' : '') +
-    '" onclick="toggleSlot(\'' + s.id + '\')">' + esc(s.code + ' ' + s.name) +
-    ' <span style="opacity:.7">' + esc(s.time) + '</span></span>').join('');
-}
-function toggleLv(lv){
-  const i = pickedLv.indexOf(lv);
-  if(i >= 0) pickedLv.splice(i,1); else pickedLv.push(lv);
-  renderChips();
-}
-function toggleSlot(id){
-  const i = pickedSlot.indexOf(id);
-  if(i >= 0) pickedSlot.splice(i,1); else pickedSlot.push(id);
-  renderChips();
-}
-
-/* ==================== 提交 ==================== */
-function collect(){
+function seedDB(){
   return {
-    v: 1,
-    name: $('fName').value.trim(),
-    contact: $('fContact').value.trim(),
-    src: $('fSrc').value,
-    exp: $('fExp').value,
-    levels: pickedLv.slice(),
-    slots: pickedSlot.slice(),
-    slotNote: $('fSlotNote').value.trim(),
-    students: parseInt($('fStudents').value, 10) || 0,
-    startDate: $('fStart').value || '',
-    note: $('fNote').value.trim(),
-    at: new Date().toISOString()
+  slots:[
+    {id:'s1', name:'早班',   time:'07:30–08:15', days:'周一 / 周三'},
+    {id:'s2', name:'午间',   time:'12:00–12:45', days:'周一 / 周五'},
+    {id:'s3', name:'晚班',   time:'19:00–19:45', days:'周二 / 周四'},
+    {id:'s4', name:'周末',   time:'09:00–10:30', days:'周六'},
+  ],
+  teachers:[
+    {id:'t1', name:'王雅琴', tel:'0901 234 561', src:'own', levels:['HSK1','HSK2','HSK3'], slots:['s1','s3'], rate:180000, students:9, state:'正常',
+     lang:'中国 · 中文 · 越南语', exp:'HSK6 · 5 年教学', rateUnit:'student', perfScore:5, perfNote:'家长反馈很好，续报率高', note:'可带 HSK3 冲刺班'},
+    {id:'t2', name:'李文博', tel:'0907 552 118', src:'own', levels:['HSK1','HSK2'],        slots:['s1','s2','s4'], rate:170000, students:7, state:'正常',
+     lang:'中国 · 中文', exp:'HSK5 · 3 年教学', rateUnit:'session', perfScore:4, perfNote:'课堂纪律好，板书清晰', note:''},
+    {id:'t3', name:'张慧敏', tel:'0912 883 004', src:'out', levels:['HSK1'],               slots:['s2','s3'], rate:200000, students:5, state:'正常',
+     lang:'中国 · 中文 · 越南语', exp:'HSK6 · 2 年教学', rateUnit:'student', perfScore:4, perfNote:'越南语沟通顺畅，零基础带得好', note:'外包 · 按学员计费'},
+    {id:'t4', name:'陈国栋', tel:'0938 210 776', src:'out', levels:['HSK1','HSK2'],        slots:['s3','s4'], rate:210000, students:4, state:'正常',
+     lang:'越南 · 中文 · 越南语', exp:'HSK5 · 4 年教学', rateUnit:'session', perfScore:3, perfNote:'偶有迟到，已提醒', note:''},
+    {id:'t5', name:'刘思远', tel:'0963 447 902', src:'own', levels:['HSK2','HSK3'],        slots:['s1','s2'], rate:190000, students:3, state:'正常',
+     lang:'中国 · 中文', exp:'HSK6 · 6 年教学', rateUnit:'student', perfScore:5, perfNote:'HSK2 / HSK3 提分明显', note:'优先排周末'},
+    {id:'t6', name:'赵美玲', tel:'0977 665 331', src:'out', levels:['HSK1'],               slots:[],          rate:200000, students:0, state:'⚠ 未配可授时段',
+     lang:'中国 · 中文 · 越南语', exp:'HSK4 · 1 年教学', rateUnit:'session', perfScore:3, perfNote:'新教师，待观察', note:'还没配可授时段，暂时排不了课'},
+    {id:'t7', name:'周建华', tel:'0982 119 445', src:'own', levels:['HSK1'],               slots:['s2','s3'], rate:175000, students:2, state:'正常',
+     lang:'越南 · 中文 · 越南语', exp:'HSK5 · 3 年教学', rateUnit:'session', perfScore:4, perfNote:'课堂气氛活跃', note:''},
+    {id:'t8', name:'吴晓彤', tel:'0908 336 227', src:'out', levels:['HSK2'],               slots:['s4'],      rate:205000, students:0, state:'正常',
+     lang:'中国 · 中文', exp:'HSK6 · 4 年教学', rateUnit:'student', perfScore:4, perfNote:'只带 HSK2，口碑稳', note:'仅周末可排'},
+  ],
+  classes:[
+    {id:'c1', code:'AP-01', name:'苹果班', lv:'HSK1', mode:'online',  slot:'s1', teacher:'t1', cap:10, room:'',   startedAt:'2026-09-28', endedAt:null, plannedLessons:42},
+    {id:'c2', code:'DN-02', name:'凤梨班', lv:'HSK1', mode:'offline', slot:'s3', teacher:'t4', cap:8,  room:'B2', startedAt:'2026-09-10', endedAt:null, plannedLessons:42},
+    {id:'c3', code:'MG-03', name:'芒果班', lv:'HSK1', mode:'online',  slot:'s2', teacher:'t7', cap:8,  room:'',   startedAt:'2026-08-28', endedAt:null, plannedLessons:42},
+    {id:'c4', code:'LZ-04', name:'荔枝班', lv:'HSK2', mode:'offline', slot:'s4', teacher:'t5', cap:6,  room:'B1', startedAt:'2026-05-09', endedAt:null, plannedLessons:42},
+    {id:'c5', code:'LY-05', name:'龙眼班', lv:'HSK1', mode:'online',  slot:'s3', teacher:'t3', cap:8,  room:'',   startedAt:'2026-10-03', endedAt:null, plannedLessons:42},
+  ],
+  lessons:[],
+  absences:[
+    {sid:'st3',  cid:'c1', no:2},{sid:'st6',  cid:'c2', no:3},{sid:'st6',  cid:'c2', no:6},
+    {sid:'st9',  cid:'c3', no:5},{sid:'st11', cid:'c4', no:4},{sid:'st11', cid:'c4', no:9},
+    {sid:'st11', cid:'c4', no:17},{sid:'st12', cid:'c5', no:1},
+  ],
+  students:[
+    {id:'st1',  name:'阮文安', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'}, phone:'0903 111 201', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st2',  name:'阮氏平', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'家长', exam:{s1:'—'}, phone:'0903 111 202', job:'上班族', grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st3',  name:'陈文强', lv:'HSK1', own:'out', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'}, phone:'0903 111 203', job:'经商',   grade:'',     goal:'all',  source:'self',     slots:['s1']},
+    {id:'st4',  name:'黎氏容', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'家长', exam:{s1:'—'}, phone:'0903 111 204', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st5',  name:'范明德', lv:'HSK1', own:'own', cls:'c1', intent:'',      contact:'本人', exam:{s1:'—'}, phone:'0903 111 205', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st6',  name:'黄氏花', lv:'HSK1', own:'out', cls:'c2', intent:'',      contact:'本人', exam:{s1:'—'}, phone:'0907 222 306', job:'上班族', grade:'',     goal:'both', source:'self',     slots:['s3']},
+    {id:'st7',  name:'武文凯', lv:'HSK1', own:'own', cls:'c2', intent:'',      contact:'家长', exam:{s1:'—'}, phone:'0907 222 307', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s3']},
+    {id:'st8',  name:'邓氏兰', lv:'HSK1', own:'own', cls:'c2', intent:'',      contact:'本人', exam:{s1:'—'}, phone:'0907 222 308', job:'经商',   grade:'',     goal:'all',  source:'teacher',  slots:['s3']},
+    {id:'st9',  name:'吴文南', lv:'HSK1', own:'out', cls:'c3', intent:'',      contact:'本人', exam:{s1:'78'}, phone:'0912 333 409', job:'上班族', grade:'HSK1', goal:'all',  source:'referral', slots:['s2']},
+    {id:'st10', name:'段氏芳', lv:'HSK1', own:'own', cls:'c3', intent:'',      contact:'家长', exam:{s1:'85'}, phone:'0912 333 410', job:'学生',   grade:'HSK1', goal:'both', source:'self',     slots:['s2']},
+    {id:'st11', name:'阮文宝', lv:'HSK2', own:'own', cls:'c4', intent:'',      contact:'本人', exam:{s1:'82',s2:'79'}, phone:'0938 444 511', job:'上班族', grade:'HSK1', goal:'all',  source:'referral', slots:['s4']},
+    {id:'st12', name:'黎文才', lv:'HSK1', own:'own', cls:'c5', intent:'',      contact:'本人', exam:{}, phone:'0938 444 512', job:'学生',   grade:'',     goal:'both', source:'self',     slots:['s3']},
+    {id:'st13', name:'阮氏金', lv:'HSK1', own:'own', cls:'',   intent:'AP-01', contact:'家长', exam:{}, phone:'0963 555 613', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s1']},
+    {id:'st14', name:'陈文达', lv:'HSK1', own:'out', cls:'',   intent:'AP-01', contact:'本人', exam:{}, phone:'0963 555 614', job:'上班族', grade:'',     goal:'both', source:'self',     slots:['s1']},
+    {id:'st15', name:'黄文勇', lv:'HSK1', own:'own', cls:'',   intent:'MG-03', contact:'家长', exam:{}, phone:'0963 555 615', job:'学生',   grade:'',     goal:'both', source:'referral', slots:['s2']},
+    {id:'st16', name:'范氏梅', lv:'HSK2', own:'own', cls:'',   intent:'LZ-04', contact:'本人', exam:{}, phone:'0963 555 616', job:'上班族', grade:'HSK1', goal:'all',  source:'teacher',  slots:['s4']},
+    {id:'st17', name:'武氏玉', lv:'HSK1', own:'out', cls:'',   intent:'',      contact:'家长', exam:{}, phone:'0963 555 617', job:'其他',   grade:'',     goal:'both', source:'referral', slots:[]},
+    {id:'st18', name:'吴文雄', lv:'HSK1', own:'own', cls:'',   intent:'',      contact:'本人', exam:{}, phone:'0963 555 618', job:'学生',   grade:'',     goal:'both', source:'self',     slots:[]},
+  ],
+  apps:[
+    {id:'a1', src:'out',  teacher:'t4', lv:'HSK2', stage:1, lesson:3,  mode:'online',  slot:'s3', room:'',   n:7, at:'10-02 14:20', state:'待审批'},
+    {id:'a2', src:'own',  teacher:'t7', lv:'HSK2', stage:1, lesson:5,  mode:'offline', slot:'s3', room:'B2', n:5, at:'10-02 15:05', state:'待审批'},
+    {id:'a3', src:'own',  teacher:'t2', lv:'HSK1', stage:1, lesson:3,  mode:'online',  slot:'s1', room:'',   n:2, at:'10-02 16:30', state:'待审批'},
+    {id:'a4', src:'edit', teacher:'t2', lv:'HSK2', stage:1, lesson:3,  mode:'offline', slot:'s2', room:'B1', n:9, at:'10-02 17:10', state:'待审批'},
+    {id:'a5', src:'own',  teacher:'t7', lv:'HSK1', stage:1, lesson:12, mode:'online',  slot:'s2', room:'',   n:3, at:'09-28 09:40', state:'已通过', link:'c3', linkMode:'merge'},
+    {id:'a6', src:'edit', teacher:'t4', lv:'HSK1', stage:1, lesson:7,  mode:'offline', slot:'s3', room:'B2', n:2, at:'09-20 14:00', state:'已通过', link:'c2', linkMode:'merge'},
+    {id:'a7', src:'out',  teacher:'t3', lv:'HSK2', stage:1, lesson:1,  mode:'offline', slot:'s3', room:'B1', n:7, at:'09-27 11:20', state:'已驳回', reason:'clash', advice:'s2', note:'该教师这个时段已经有一节课'},
+    {id:'a8', src:'out',  teacher:'t6', lv:'HSK1', stage:1, lesson:9,  mode:'offline', slot:'s4', room:'B1', n:6, at:'09-30 16:45', state:'已驳回', reason:'room',  advice:'s1', note:'B1 教室该时段已被荔枝班占用'},
+  ],
+  set:{minOpen:8, capMax:12},
+  todayDate:'2026-10-08',
+  now:'19:15',
+  lessonMin:45,
+  money:{ sessions:62, income:7440000, cost:4680000, today:186000 },
   };
 }
-function validate(a){
-  if(!a.name) return '请填写姓名';
-  if(!a.contact) return '请填写联系方式';
-  if(!a.levels.length) return '请至少选择一个可教级别';
-  if(!a.slots.length && !a.slotNote) return '请至少选择一个可上课时段，或在「其他时间」里写明';
-  if(!a.students || a.students < 1) return '请填写能带来的学生人数';
-  if(a.students > 10) return '单班上限 10 人，请调整人数';
-  return '';
+
+function blankTeacher(){ return { name:'', src:'own', tel:'', lang:'', exp:'', levels:[], slots:[], rate:0, rateUnit:'session', perfScore:3, perfNote:'', note:'' }; }
+function blankStudent(){ return { name:'', own:'own', source:'referral', lv:'HSK1', contact:'本人', phone:'', job:'学生', grade:'', goal:'both', slots:[], cls:'', joinedAt:'', intent:'', exam:{} }; }
+
+/* 把一份外来的数据（本机存盘）补成「完整可用的 DB」—— 与 admin 同一套口径 */
+function normalizeDB(o){
+  const n = seedDB();
+  Object.keys(o).forEach(k => {
+    if (k === '__app' || k === '__v' || k === '__at') return;
+    if (k === 'today') return;
+    if (k === 'money' || k === 'set') return;
+    n[k] = o[k];
+  });
+  ['money','set'].forEach(k => {
+    if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k])) n[k] = Object.assign(n[k], o[k]);
+  });
+  if (!Array.isArray(n.lessons)) n.lessons = [];
+  const fill = (base, rec) => { Object.keys(rec).forEach(k => { if (rec[k] !== undefined) base[k] = rec[k]; }); return base; };
+  n.teachers = (Array.isArray(n.teachers) ? n.teachers : []).map(t => fill(blankTeacher(), t));
+  n.students = (Array.isArray(n.students) ? n.students : []).map(s => fill(blankStudent(), s));
+  return n;
 }
-function submitForm(){
-  const a = collect();
-  const err = validate(a);
-  $('err').textContent = err;
-  if(err){ toast(err); return; }
-  const code = encodeApp(a);
-  $('code').textContent = code;
-  $('summary').innerHTML =
-    '<div class="k">姓名</div><div>' + esc(a.name) + '</div>' +
-    '<div class="k">联系方式</div><div>' + esc(a.contact) + '</div>' +
-    '<div class="k">身份</div><div>' + (a.src === 'out' ? '外包教师' : '自有教师') + '</div>' +
-    '<div class="k">可教级别</div><div>' + esc(a.levels.join('、')) + '</div>' +
-    '<div class="k">可上课时段</div><div>' + esc(a.slots.map(id => {
-      const s = SLOTS.find(x => x.id === id); return s ? s.code + ' ' + s.name : id;
-    }).join('、') || '—') + (a.slotNote ? '；其他：' + esc(a.slotNote) : '') + '</div>' +
-    '<div class="k">学生人数</div><div>' + a.students + ' 人</div>' +
-    '<div class="k">期望开课</div><div>' + (a.startDate || '未指定') + '</div>' +
-    '<div class="k">教学经验</div><div>' + esc($('fExp').selectedOptions[0].textContent) + '</div>' +
-    (a.note ? '<div class="k">备注</div><div>' + esc(a.note) + '</div>' : '');
-  $('out').classList.add('on');
-  $('out').scrollIntoView({ behavior:'smooth', block:'start' });
-  toast('申请已生成');
+
+function save(){
+  if (typeof localStorage === 'undefined') return false;
+  try{
+    const o = Object.assign({}, DB);
+    delete o.today;
+    const iso = new Date().toISOString();
+    o.__app = APP_TAG; o.__v = DB_VER; o.__at = iso;
+    localStorage.setItem(KEY, JSON.stringify(o));
+    lastSavedAt = iso;
+    markSaved(true);
+    return true;
+  }catch(e){ markSaved(false); return false; }
 }
-function copyCode(){
-  const t = $('code').textContent;
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(() => toast('已复制')).catch(() => fallbackCopy(t));
-  }else{
-    fallbackCopy(t);
+
+function load(){
+  if (typeof localStorage === 'undefined') return null;
+  let o = null;
+  try{ const raw = localStorage.getItem(KEY); if (raw) o = JSON.parse(raw); }catch(e){ o = null; }
+  if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return null;
+  if (!Array.isArray(o.teachers) || !Array.isArray(o.students) || !Array.isArray(o.classes)) return null;
+  if (!Array.isArray(o.apps) || !Array.isArray(o.slots) || !Array.isArray(o.absences)) return null;
+  loadedFromStore = true;
+  lastSavedAt = o.__at || null;
+  return normalizeDB(o);
+}
+
+let loadedFromStore = false;
+let lastSavedAt = null;
+let dState = null;            /* 占位：roomOf/clashOf 里会读，teacher 端不真正用抽屉 */
+
+const T  = id => DB.teachers.find(x => x.id === id) || {name:'—'};
+const S  = id => DB.slots.find(x => x.id === id) || {name:'—', time:'', days:''};
+const C  = id => DB.classes.find(x => x.id === id) || {name:'—', code:''};
+const STAGE = n => n<=12?'第一阶段':n<=21?'第二阶段':n<=27?'第三阶段':n<=34?'第四阶段':n<=40?'第五阶段':'第六阶段';
+const stageOf = n => n<=12?1:n<=21?2:n<=27?3:n<=34?4:n<=40?5:6;
+const lessonLabel = (lv, n) => !n ? '未开课' : lv === 'HSK1' ? ('L'+String(n).padStart(2,'0')+' · '+STAGE(n)) : ('第 '+n+' / 42 课');
+const progOf = n => n > 0 ? STAGE(n) + ' · 第 ' + n + ' 课' : '尚未开课';
+const progText = a => progOf(a.lesson);
+function appOwn(a){ if (a.src === 'own') return 'own'; if (a.src === 'out') return 'out'; return T(a.teacher).src || 'own'; }
+function roomOf(o){ return (dState && dState.form && dState.form.room != null) ? dState.form.room : (o.room || ''); }
+function clashOf(a){
+  const tc = DB.classes.find(c => c.slot === a.slot && c.teacher === a.teacher);
+  if (tc) return {kind:'clash', hit:tc};
+  const ta = DB.apps.find(x => x !== a && x.state === '已通过' && x.slot === a.slot && x.teacher === a.teacher);
+  if (ta) return {kind:'clash', hit:null};
+  const room = roomOf(a);
+  if (a.mode === 'offline' && room){
+    const rc = DB.classes.find(c => c.mode === 'offline' && c.slot === a.slot && c.room && c.room === room);
+    if (rc) return {kind:'room', hit:rc};
   }
+  return null;
 }
-function fallbackCopy(t){
-  const ta = document.createElement('textarea');
-  ta.value = t; document.body.appendChild(ta); ta.select();
-  try{ document.execCommand('copy'); toast('已复制'); }catch(e){ toast('复制失败，请手动选中'); }
-  document.body.removeChild(ta);
+function stamp(){
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
 }
-function downloadCode(){
-  const a = collect();
-  const blob = new Blob([$('code').textContent], { type:'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const el = document.createElement('a');
-  el.href = url;
-  el.download = '开班申请_' + (a.name || 'teacher') + '_' + new Date().toISOString().slice(0,10) + '.txt';
-  document.body.appendChild(el); el.click(); document.body.removeChild(el);
-  URL.revokeObjectURL(url);
-  toast('已下载');
+function hhmm(d){ return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+let DB = load() || seedDB();
+DB.today = [];                /* 教师端不渲染课次，today 留空即可 */
+
+function markSaved(ok){
+  const el = document.getElementById('stState');
+  if (!el) return;
+  if (ok === null){ el.textContent = '本机存储 · 尚无改动'; el.className = ''; return; }
+  if (!ok){ el.textContent = '存盘失败'; el.className = 'bad'; return; }
+  if (ok === 'loaded'){
+    el.textContent = '本机存储 · 已载入存盘' + (lastSavedAt ? ' · ' + hhmm(new Date(lastSavedAt)) : '');
+    el.className = 'ok'; return;
+  }
+  el.textContent = '已存盘 · ' + hhmm(new Date());
+  el.className = 'ok';
 }
-function restart(){
-  $('out').classList.remove('on');
-  $('err').textContent = '';
-  window.scrollTo({ top:0, behavior:'smooth' });
+if (loadedFromStore) markSaved('loaded'); else markSaved(null);
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1900);
+}
+
+/* ==================== 视图：两个子页签 ==================== */
+function $id(id){ return document.getElementById(id); }
+function showTab(tab){
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $id('applyView').classList.toggle('out', tab !== 'apply');
+  $id('applyView').classList.toggle('on', tab === 'apply');
+  $id('confirmView').classList.toggle('out', tab !== 'confirm');
+  if (tab === 'confirm') renderConfirm();
+}
+
+/* ==================== 提交开班申请 ==================== */
+function fillTeachers(){
+  $id('fTeacher').innerHTML = DB.teachers.map(t =>
+    '<option value="'+t.id+'">'+esc(t.name)+' · '+(t.src==='own'?'自有':'外包')+'</option>').join('');
+}
+function fillSlots(){
+  $id('fSlot').innerHTML = DB.slots.map(s =>
+    '<option value="'+s.id+'">'+esc(s.name)+' '+esc(s.time)+' · '+esc(s.days)+'</option>').join('');
+}
+function syncRoom(){
+  const offline = $id('fMode').value === 'offline';
+  $id('roomFld').style.display = offline ? 'block' : 'none';
+  if (!offline) $id('fRoom').value = '';
+}
+function addRosterRow(){
+  const wrap = $id('rosterRows');
+  const i = wrap.children.length;
+  const div = document.createElement('div');
+  div.className = 'grid2'; div.style.marginBottom = '8px';
+  div.innerHTML =
+    '<input placeholder="姓名" data-rn="'+i+'">' +
+    '<input placeholder="电话 / Zalo（选填）" data-rp="'+i+'">';
+  wrap.appendChild(div);
+}
+function collectRoster(){
+  const names = $id('rosterRows').querySelectorAll('[data-rn]');
+  const phones = $id('rosterRows').querySelectorAll('[data-rp]');
+  const map = {};
+  names.forEach(el => { map[el.dataset.rn] = { name: el.value.trim(), phone: '' }; });
+  phones.forEach(el => { if (map[el.dataset.rp]) map[el.dataset.rp].phone = el.value.trim(); });
+  return Object.keys(map).map(k => map[k]).filter(r => r.name);
+}
+function submitApply(){
+  const teacher = $id('fTeacher').value;
+  const lv = $id('fLv').value;
+  const mode = $id('fMode').value;
+  const slot = $id('fSlot').value;
+  const room = $id('fRoom').value.trim();
+  const n = parseInt($id('fN').value, 10) || 0;
+  const note = $id('fNote').value.trim();
+  if (!teacher){ return setErr('请选择教师'); }
+  if (!lv){ return setErr('请选择级别'); }
+  if (!slot){ return setErr('请选择时段'); }
+  if (mode === 'offline' && !room){ return setErr('线下课必须填教室'); }
+  if (!n || n < 1){ return setErr('请填写学生人数（至少 1 人）'); }
+  setErr('');
+  const t = T(teacher);
+  const roster = collectRoster();
+  const nums = DB.apps.map(a => parseInt(String(a.id).replace(/\D/g,''),10) || 0);
+  const id = 'a' + (Math.max(0, ...nums) + 1);
+  /* 软提示碰撞（不拦提交，操作员终审时会再查） */
+  const cl = clashOf({teacher, slot, mode, room});
+  if (cl){
+    const msg = cl.kind === 'clash' ? '该教师这个时段已经有课，管理员可能驳回' : '该教室此时段已被占用，管理员可能驳回';
+    toast(msg);
+  }
+  DB.apps.unshift({
+    id: id, src: t.src, own: t.src, teacher: teacher, lv: lv,
+    stage: 1, lesson: 1, mode: mode, slot: slot,
+    room: mode === 'offline' ? room : '',
+    n: n, roster: roster, note: note,
+    at: stamp(), state: '待审批',
+  });
+  save();
+  renderSummary({teacher:t.name, src:t.src, lv, mode, slot:S(slot).name+' '+S(slot).time, room, n, note, roster});
+  $id('form').classList.add('out');
+  $id('out').classList.add('on');
+  toast('申请已提交');
+}
+function setErr(m){ $id('err').textContent = m; }
+function renderSummary(a){
+  $id('summary').innerHTML =
+    '<div class="k">教师</div><div>'+esc(a.teacher)+' '+(a.src==='own'?'<span class="tg own">自有</span>':'<span class="tg out">外包</span>')+'</div>' +
+    '<div class="k">级别</div><div>'+esc(a.lv)+'</div>' +
+    '<div class="k">形态</div><div>'+(a.mode==='online'?'线上':'线下'+(a.room?' · '+esc(a.room):''))+'</div>' +
+    '<div class="k">时段</div><div>'+esc(a.slot)+'</div>' +
+    '<div class="k">学生人数</div><div>'+a.n+' 人</div>' +
+    (a.roster && a.roster.length ? '<div class="k">名单</div><div>'+a.roster.length+' 位（通过后建档编班）</div>' : '') +
+    (a.note ? '<div class="k">备注</div><div>'+esc(a.note)+'</div>' : '');
+}
+function restartApply(){
+  $id('form').classList.remove('out');
+  $id('out').classList.remove('on');
+  $id('fN').value = ''; $id('fRoom').value = ''; $id('fNote').value = '';
+  $id('rosterRows').innerHTML = '';
+  setErr('');
+}
+
+/* ==================== 回确认 ==================== */
+function renderConfirm(){
+  const list = DB.apps.filter(a => a.state === '已驳回' && a.advice);
+  $id('confCnt').textContent = list.length;
+  const box = $id('confirmList');
+  if (!list.length){ box.innerHTML = '<div class="empty">没有需要回确认的申请</div>'; return; }
+  box.innerHTML = list.map(a => {
+    const t = T(a.teacher);
+    const replied = a.teacherReply === 'accepted'
+      ? '<div class="replied ok">✓ 已接受反建议，重新提交待审批</div>'
+      : a.teacherReply === 'rejected'
+      ? '<div class="replied no">✗ 已回复：不接受（维持原时段）</div>' : '';
+    const acts = a.teacherReply ? '' :
+      '<div class="acts">' +
+        '<button class="primary" style="width:auto" onclick="acceptApp(\''+a.id+'\')">接受反建议</button>' +
+        '<button class="ghost" onclick="rejectApp(\''+a.id+'\')">不接受</button>' +
+      '</div>';
+    return '<div class="app-card">' +
+      '<div class="h"><b>'+esc(t.name)+' · '+esc(a.lv)+'</b>' +
+        '<span class="tags">'+esc(S(a.slot).name)+' '+esc(S(a.slot).time)+' · 原时段</span></div>' +
+      '<div class="reason">驳回原因：'+(a.reason==='clash'?'时间碰撞':a.reason==='room'?'线下教室被占用':'—')+
+        (a.note?' · '+esc(a.note):'')+'</div>' +
+      '<div class="advice">反建议时段：<b>'+esc(S(a.advice).name)+' '+esc(S(a.advice).time)+' · '+esc(S(a.advice).days)+'</b></div>' +
+      replied + acts +
+    '</div>';
+  }).join('');
+}
+function acceptApp(id){
+  const a = DB.apps.find(x => x.id === id); if (!a) return;
+  a.slot = a.advice;
+  a.state = '待审批';
+  a.reason = ''; a.advice = ''; a.note = '';
+  a.teacherReply = 'accepted';
+  a.stage = 1; a.lesson = 1;
+  a.at = stamp();
+  save(); renderConfirm(); toast('已接受反建议，重新提交待审批');
+}
+function rejectApp(id){
+  const a = DB.apps.find(x => x.id === id); if (!a) return;
+  a.teacherReply = 'rejected';
+  save(); renderConfirm(); toast('已回复：不接受');
 }
 
 /* ==================== 启动 ==================== */
-renderChips();
+fillTeachers(); fillSlots(); syncRoom(); renderConfirm();
+$id('fMode').addEventListener('change', syncRoom);
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 </script>
 </body>
 </html>
