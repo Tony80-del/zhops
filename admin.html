@@ -295,6 +295,35 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 .tabs button:hover{color:var(--brand);}
 .tabs button.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:650;}
 
+/* ---------------- 教室卡片（排课第 5 tab）----------------
+   方案 A · 讲台式 · 三色（背景色 / 教师色 / 学生色）
+   像一间真教室：老师「站在前面」（讲台位），学生像课桌成排排在后面 */
+.room-card{border:1px solid #0F6E56;border-radius:8px;padding:14px;background:#E1F5EE;
+  display:flex;flex-direction:column;}
+.room-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.room-h b{color:#04342C;font-size:15px;}
+.room-h .cnt{font-size:12px;color:#0F6E56;}
+/* 讲台：老师站位 —— 深青底胶囊、居中 */
+.room-front{text-align:center;margin-bottom:14px;}
+.room-front .teach{display:inline-block;font-size:13px;font-weight:650;padding:6px 24px;
+  background:#0F6E56;color:#fff;border-radius:6px;}
+.room-front .lbl{font-size:12px;color:#0F6E56;}
+/* 课桌区：学生像课桌成排（白底 + 浅青边） */
+.room-desks{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
+  gap:8px;align-items:start;}
+.room-desks .desk{font-size:12px;padding:9px 4px;background:#fff;border:1px solid #9FE1CB;
+  border-radius:6px;text-align:center;color:#04342C;}
+.room-desks .lbl{font-size:12px;color:#0F6E56;}
+/* 省 → 市 两级：每个省一个分组块 */
+.rooms-by-prov{padding:8px 0;}
+.prov-block{padding:12px 16px;border-bottom:1px solid var(--line);}
+.prov-block:last-child{border-bottom:0;}
+.prov-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.prov-h b{font-size:14px;color:var(--ink);}
+.prov-h .pcnt{font-size:12px;color:var(--ink3);}
+.room-empty{font-size:12px;color:var(--ink3);padding:6px 2px;}
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:0;}
+
 /* ---------------- 排课矩阵 ---------------- */
 .mx-wrap{overflow-x:auto;}
 .mx{border-collapse:collapse;font-size:12.5px;min-width:640px;width:100%;}
@@ -427,6 +456,8 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   font:12.5px var(--ui);padding:4px 10px;cursor:pointer;}
 .pick:hover{border-color:var(--brand);color:var(--brand);}
 .pick.on{background:var(--brand);border-color:var(--brand);color:#fff;}
+.pick.dis{opacity:.35;cursor:not-allowed;background:var(--surface-3);}
+.pick.dis:hover{border-color:var(--line2);color:var(--ink2);}
 /* 表格行可点开档案 */
 tr[data-open]{cursor:pointer;}
 tr[data-open]:hover td{background:var(--brand-soft);}
@@ -1163,6 +1194,23 @@ const RATEUNIT = [['session','按课次'],['student','按学员 × 课次']];
 const GOALS    = [['both','能听能讲'],['all','能听能讲能写']];
 const JOBS     = ['学生','上班族','经商','教师','其他'];
 const GRADES   = [['','（未结业）'],['HSK1','HSK1'],['HSK2','HSK2'],['HSK3','HSK3'],['HSK4','HSK4'],['HSK5','HSK5'],['HSK6','HSK6']];
+/* 教室 = 中国人口/GDP 前 10 省份（Tony 2026-10-14 定）。一个教室只能被一位教师选（独占互斥）。 */
+const ROOMS = ['北京','上海','广东','浙江','江苏','山东','四川','河南','湖北','湖南'];
+/* 省 → 市：属于该省的教师可认领市（市名 = 开班名）。
+   ⚠️ 市名全局唯一（学生直接按市选），各省之间不许重名。
+   取市列表一律用 CITIES[prov] || [] （没配的省 = 空，不报错）。 */
+const CITIES = {
+  '北京': ['朝阳','海淀','丰台','通州','昌平'],
+  '上海': ['苏州','杭州','宁波','南京','无锡'],
+  '广东': ['广州','深圳','珠海','佛山','东莞'],
+  '浙江': ['温州','嘉兴','绍兴','金华','台州'],
+  '江苏': ['徐州','常州','南通','扬州','镇江'],
+  '山东': ['济南','青岛','烟台','潍坊','淄博'],
+  '四川': ['成都','绵阳','德阳','宜宾','泸州'],
+  '河南': ['洛阳','开封','新乡','南阳','许昌'],
+  '湖北': ['武汉','宜昌','襄阳','荆州','十堰'],
+  '湖南': ['长沙','株洲','湘潭','衡阳','岳阳'],
+};
 const pick     = (list, v) => { const f = list.find(x => x[0]===v); return f ? f[1] : '—'; };
 const srcText      = v => pick(SRC, v);
 const rateUnitText = v => pick(RATEUNIT, v);
@@ -1321,7 +1369,7 @@ function vTeachers(){
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
         <th>教师</th><th>类型</th><th>联系方式</th><th>可授级别</th><th>可授时段</th>
-        <th class="num">单价/节</th><th class="num">学生</th><th>状态</th><th></th>
+        <th>教室</th><th class="num">单价/节</th><th class="num">学生</th><th>状态</th><th></th>
       </tr></thead>
       <tbody>${rows.map(t=>'<tr data-open="teacher:'+t.id+'">'+
         '<td><b>'+esc(t.name)+'</b></td>'+
@@ -1329,11 +1377,12 @@ function vTeachers(){
         '<td class="m">'+esc(t.tel)+'</td>'+
         '<td>'+t.levels.map(l=>'<span class="tg off">'+l+'</span>').join(' ')+'</td>'+
         '<td>'+(t.slots.length ? t.slots.map(s=>'<span class="tg own">'+S(s).name+'</span>').join(' ') : '<span class="tg bad">空 · 等于不限</span>')+'</td>'+
+        '<td>'+(t.room ? '<span class="tg off">'+esc(t.room)+'</span>' : '<span class="lbl">未选</span>')+'</td>'+
         '<td class="num">'+t.rate.toLocaleString('en-US')+'</td>'+
         '<td class="num">'+t.students+'</td>'+
         '<td>'+(t.state==='正常'?'<span class="tg on">正常</span>':'<span class="tg warn">'+esc(t.state)+'</span>')+'</td>'+
         '<td class="nowrap"><span class="lbl">查看档案 →</span></td>'+
-      '</tr>').join('') || '<tr><td colspan="9" class="empty">没有符合条件的教师</td></tr>'}</tbody>
+      '</tr>').join('') || '<tr><td colspan="10" class="empty">没有符合条件的教师</td></tr>'}</tbody>
     </table></div></div>
   </div>`;
 }
@@ -1380,7 +1429,7 @@ function vStudents(){
   <div class="card">
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
-        <th>学生</th><th>归属</th><th>级别</th><th>班级 / 意向</th><th>进度</th>
+        <th>学生</th><th>归属</th><th>级别</th><th>教室</th><th>进度</th>
         <th class="num">出勤</th><th>联系人</th><th>阶段考试</th><th></th>
       </tr></thead>
       <tbody>${rows.map(s=>{
@@ -1389,8 +1438,7 @@ function vStudents(){
         '<td><b>'+esc(s.name)+'</b></td>'+
         '<td>'+ownTag(s.own)+'</td>'+
         '<td><span class="tg off">'+s.lv+'</span></td>'+
-        '<td>'+(c ? '<b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span>'
-                  : (s.intent ? '<span class="tg warn">意向 '+esc(s.intent)+' · 尚未编班</span>' : '<span class="tg bad">未编班 · 无意向</span>'))+'</td>'+
+        '<td>'+(s.room ? '<span class="tg off">'+esc(s.city ? s.city+'（'+s.room+'）' : s.room)+'</span>' : '<span class="lbl">未选</span>')+'</td>'+
         /* 进度和出勤都是算出来的 —— 学生列表不再存"我上了几节"这种会过期的数字 */
         '<td class="m nowrap">'+(c ? lessonLabel(c.lv, classLesson(c)) : '—')+'</td>'+
         '<td class="num">'+(stuAttAll(s) ? stuAtt(s)+' / '+stuAttAll(s) : '—')+'</td>'+
@@ -1407,8 +1455,9 @@ let bTab = 'matrix';
 /* 从排课矩阵点班级卡片跳过来时，要聚焦哪一个班（只活一次 render，见 render() 末尾） */
 let bFocus = null;
 function vBoard(){
-  /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 4 个子页 */
-  const tabs = [['matrix','排课矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历']];
+  /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 5 个子页
+     （2026-10-14 加「教室」—— 按省份看教师 + 学生名单） */
+  const tabs = [['matrix','排课矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历'],['rooms','教室']];
   /* 从别处带着旧的 bTab 进来（比如以前从侧栏点过「开班申请」）→ 兜回矩阵，
      否则下面全不匹配，会渲染出一张空页 */
   if (!tabs.some(t => t[0] === bTab)) bTab = 'matrix';
@@ -1416,10 +1465,11 @@ function vBoard(){
   if (bTab === 'matrix')        body = bMatrix();
   else if (bTab === 'classes')  body = bClasses();
   else if (bTab === 'pool')     body = bPool();
+  else if (bTab === 'rooms')    body = bRooms();
   else                          body = bCalendar();
   return `
   <div class="page-h">
-    <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 —— 动手编排的地方</p></div>
+    <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
     <div class="sp"></div>
     <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
   </div>
@@ -1550,6 +1600,47 @@ function weekRange(iso){
   const dow = (new Date(iso + 'T00:00:00').getDay() + 6) % 7;   /* 周一 = 0 … 周日 = 6 */
   const from = addDays(iso, -dow);
   return { from: from, to: addDays(from, 6) };
+}
+
+/* ---------- 教室卡片视图（2026-10-14 新增 · 排课第 5 个 tab）----------
+   省 → 市 两级：每个省下，属于该省的教师认领的市 = 一间教室（市名 = 开班名）。
+   教师 = t.room=省 且 t.cities 含该市；学生 = s.city 匹配（学生归属教室，跟 s.cls 编班无关）。 */
+function bRooms(){
+  return '<div class="card"><div class="card-h"><h3>教室</h3><span class="sub">'+
+    ROOMS.length+' 个省份 · 按省 → 市看每个教室的教师 + 学生</span></div>'+
+    '<div class="bd rooms-by-prov">'+
+      ROOMS.map(prov => provBlock(prov)).join('')+
+    '</div></div>';
+}
+/* 一个省的分组：省名 + 该省下所有市（有教师认领的市出卡片；没有的给提示） */
+function provBlock(prov){
+  const cities = CITIES[prov] || [];
+  /* 有教师认领的市 */
+  const openCities = cities.filter(city =>
+    DB.teachers.some(t => t.room === prov && (t.cities||[]).includes(city)));
+  const inner = openCities.length
+    ? '<div class="room-grid">'+openCities.map(city =>
+        roomCard(city, DB.teachers.filter(t => t.room === prov && (t.cities||[]).includes(city)), prov)).join('')+'</div>'
+    : '<div class="room-empty">'+(cities.length ? '尚无教师认领该省的市' : '该省暂无市（待补）')+'</div>';
+  return '<div class="prov-block">'+
+    '<div class="prov-h"><b>'+esc(prov)+'</b><span class="pcnt">'+openCities.length+' 间开班</span></div>'+
+    inner+
+  '</div>';
+}
+/* 教室卡（方案 A · 讲台式）：老师「站在前面」（讲台位），学生像课桌排在后面 */
+function roomCard(cityName, teachers, prov){
+  const students = DB.students.filter(s => s.city === cityName);
+  return '<div class="room-card">'+
+    '<div class="room-h"><b>'+esc(cityName)+'</b><span class="cnt">'+esc(prov)+' · '+students.length+' 学生</span></div>'+
+    /* 讲台：老师在最前 */
+    '<div class="room-front">'+(teachers.length
+      ? teachers.map(t => '<span class="teach">'+esc(t.name)+' · 授课教师</span>').join(' ')
+      : '<span class="lbl">无教师</span>')+'</div>'+
+    /* 课桌区：学生成排 */
+    '<div class="room-desks">'+(students.length
+      ? students.map(s => '<span class="desk">'+esc(s.name)+'</span>').join('')
+      : '<span class="lbl">暂无学生</span>')+'</div>'+
+  '</div>';
 }
 
 /* 本周日历（2026-10-12 第 ③ 步：从硬编码改成读事实表）
@@ -2185,10 +2276,30 @@ function saveEdit(){
   $('#drawer').querySelectorAll('[data-d-inp]').forEach(el => {
     const f = el.dataset.dInp;
     let v = el.value;
-    if (f === 'rate' || f === 'perfScore') v = Number(v) || 0;
+    if (el.dataset.money) v = parseMoney(v);          /* 金额框：去掉千位逗号转数字 */
+    else if (f === 'rate' || f === 'perfScore') v = Number(v) || 0;
     dState.draft[f] = v;
   });
   const d = dState.draft;
+
+  /* ---- 学生：选了市 → 反查省写 s.room + 教师联动 / 守卫 ---- */
+  if (dState.kind === 'student'){
+    /* 由市反查省，写进 s.room（省在教师侧体现，学生只选市） */
+    d.room = d.city ? cityToProv(d.city) : '';
+    /* 选了市 + 教师为空 → 带出认领该市的教师 */
+    if (d.city && !d.teacherId){
+      const t = DB.teachers.find(t => (t.cities||[]).includes(d.city));
+      if (t) d.teacherId = t.id;
+    }
+    /* 选了市 + 教师 → 验证教师确实认领了该市 */
+    if (d.city && d.teacherId){
+      const t = T(d.teacherId);
+      if (t && (t.cities||[]).indexOf(d.city) < 0){
+        dState.err = (t.name||'该教师') + ' 未认领教室 ' + d.city;
+        renderDrawer(); return;
+      }
+    }
+  }
 
   /* ---- 新建：push 一条新记录 ---- */
   if (dState.isNew){
@@ -2261,6 +2372,8 @@ function tView(o){
     kv('可授课时段', o.slots.length
         ? o.slots.map(s => '<span class="tg off">'+esc(S(s).name)+'</span>').join(' ')
         : '<span class="tg bad">空 · 等于不限</span>')+
+    kv('教室（省份）', o.room ? esc(o.room) : '<span class="lbl">未选</span>')+
+    kv('教室（市）', (o.cities&&o.cities.length) ? o.cities.map(c=>'<span class="tg off">'+esc(c)+'</span>').join(' ') : '<span class="lbl">未选</span>')+
     kv('单价', '<span class="mono">'+Number(o.rate).toLocaleString('en-US')+'</span> <span class="lbl">VND</span>')+
     kv('计价方式', esc(rateUnitText(o.rateUnit)))+
     kv('教课表现', star(o.perfScore))+
@@ -2286,6 +2399,8 @@ function sView(o){
     kv('结业等级', o.grade ? esc(o.grade) : '<span class="lbl">未结业</span>')+
     kv('学习的要求', esc(goalText(o.goal)))+
     kv('可上课时段', slotTags(o.slots))+
+    kv('教室', o.city ? esc(o.city)+(o.room?' <span class="lbl">（'+esc(o.room)+'）</span>':'') : '<span class="lbl">未选</span>')+
+    kv('教师', o.teacherId ? esc(T(o.teacherId).name) : '<span class="lbl">未指定</span>')+
     kv('所属班级', clsCell)+
   '</dl>'+
   '<div class="note" style="margin:14px 0 0"><b>所属班级只在这里看</b> —— 编班 / 调班统一在「排课 → 班级」页做，跟老系统一致。</div>';
@@ -2300,6 +2415,17 @@ function fld(label, ctrl){
 /* attr 默认 data-d-inp（个人档案用）；开班申请的表单传 data-a-inp，两套互不干扰 */
 function inp(f, v, type, attr){
   return '<input class="inp" '+(attr||'data-d-inp')+'="'+f+'" type="'+(type||'text')+'" value="'+esc(v)+'">';
+}
+/* 金额显示 helpers —— 千位分隔符（500000 → 500,000），无小数 */
+function fmtMoney(v){
+  v = String(v==null?'':v).replace(/[^\d]/g,'');
+  return v ? Number(v).toLocaleString('en-US') : '';
+}
+function parseMoney(v){ return Number(String(v||'').replace(/[^\d]/g,'')) || 0; }
+/* 金额输入框：type=text（number 不让带逗号），喂千位分隔，data-money 标记走格式化 */
+function money(f, v){
+  return '<input class="inp" data-d-inp="'+f+'" data-money="1" inputmode="numeric" '+
+         'type="text" value="'+fmtMoney(v)+'">';
 }
 function area(f, v, attr){
   return '<textarea class="inp" '+(attr||'data-d-inp')+'="'+f+'">'+esc(v)+'</textarea>';
@@ -2323,6 +2449,49 @@ function picks(f, arr, list){
 function slotPicks(f, arr){
   return picks(f, arr, DB.slots.map(s => [s.id, s.name+' '+s.time]));
 }
+/* 教师选教室（省份）· 单选 · 互斥：被其他教师占了的灰色不可选。
+   不用 data-d-pick（那是多选 toggle），用 data-d-room 走独立的单选处理。 */
+function roomPicks(curRoom){
+  const myId = dState && dState.id ? dState.id : '';
+  return '<div class="picks">'+ROOMS.map(r => {
+    const taken = DB.teachers.some(t => t.id !== myId && t.room === r);
+    const on = curRoom === r;
+    const cls = 'pick' + (on?' on':'') + (taken && !on ? ' dis' : '');
+    return '<button type="button" class="'+cls+'" data-d-room="'+esc(r)+'"'+
+           (taken && !on ? ' disabled' : '')+'>'+esc(r)+'</button>';
+  }).join('')+'</div>';
+}
+/* 教师认领市（省下的市）· 多选 · 独占：被其他教师认领的市灰色不可选。
+   市名 = 开班名。没选省份 / 该省没配市 → 给提示。 */
+function cityPicks(prov, curCities){
+  const list = CITIES[prov] || [];
+  if (!list.length) return '<span class="lbl">'+(prov ? '该省暂无市（待补）' : '先选省份')+'</span>';
+  const myId = dState && dState.id ? dState.id : '';
+  return '<div class="picks">'+list.map(city => {
+    const taken = DB.teachers.some(t => t.id !== myId && (t.cities||[]).includes(city));
+    const on = (curCities||[]).indexOf(city) >= 0;
+    const cls = 'pick' + (on?' on':'') + (taken && !on ? ' dis' : '');
+    return '<button type="button" class="'+cls+'" data-d-city="'+esc(city)+'"'+
+           (taken && !on ? ' disabled' : '')+'>'+esc(city)+'</button>';
+  }).join('')+'</div>';
+}
+/* 教师换省后，重画「教室（市）」那一格的内容（不改抽屉其它部分） */
+function repaintCityPicks(){
+  if (!dState || !dState.draft) return;
+  const old = $('#drawer [data-d-city]');
+  const holder = old ? old.closest('.picks') : null;
+  if (holder) holder.outerHTML = cityPicks(dState.draft.room, dState.draft.cities);
+  else {
+    /* 原来显示的是「先选省份」提示 → 它不在 .picks 里，找含提示的空位替换 */
+    const lbls = $('#drawer').querySelectorAll('.lbl');
+    for (const l of lbls){
+      if (l.textContent === '先选省份' || l.textContent.indexOf('暂无市') >= 0){
+        l.outerHTML = cityPicks(dState.draft.room, dState.draft.cities);
+        break;
+      }
+    }
+  }
+}
 function tEdit(m){
   return fld('姓名', inp('name', m.name))+
     '<div class="g2">'+
@@ -2335,14 +2504,41 @@ function tEdit(m){
     '</div>'+
     fld('可授级别', picks('levels', m.levels, ['HSK1','HSK2','HSK3']))+
     fld('可授课时段', slotPicks('slots', m.slots))+
+    fld('教室（省份）', roomPicks(m.room))+
+    fld('教室（市）', cityPicks(m.room, m.cities))+
     '<div class="g2">'+
-      fld('单价 (VND)', inp('rate', m.rate, 'number'))+
+      fld('单价 (VND)', money('rate', m.rate))+
       fld('计价方式', sel('rateUnit', m.rateUnit, RATEUNIT))+
     '</div>'+
     fld('教课表现', sel('perfScore', m.perfScore,
       [[1,'★ 1'],[2,'★★ 2'],[3,'★★★ 3'],[4,'★★★★ 4'],[5,'★★★★★ 5']]))+
     fld('表现记录', area('perfNote', m.perfNote))+
     fld('备注', area('note', m.note));
+}
+/* 学生抽屉的教室下拉：直接选市（平铺所有「有教师认领的市」）。市名全局唯一。
+   显示 = 市名（省），value = 市名；学生存 s.city，s.room 由市反查省（见 saveEdit）。 */
+function citySel(cur){
+  const list = [];
+  ROOMS.forEach(prov => (CITIES[prov]||[]).forEach(city => {
+    if (DB.teachers.some(t => t.room === prov && (t.cities||[]).includes(city)))
+      list.push([city, city + '（' + prov + '）']);
+  }));
+  return sel('city', cur || '', [['','未选']].concat(list));
+}
+/* 市 → 省 反查 */
+function cityToProv(city){
+  for (const prov of ROOMS){ if ((CITIES[prov]||[]).indexOf(city) >= 0) return prov; }
+  return '';
+}
+/* 学生抽屉的教师下拉：有市时只显示认领该市的教师 */
+function teacherIdSel(tid, city){
+  const list = city
+    ? DB.teachers.filter(t => (t.cities||[]).includes(city))
+    : DB.teachers;
+  const opts = [['','未指定']].concat(
+    list.map(t => [t.id, t.name + '（'+(t.src==='own'?'自有':'外包')+'）'])
+  );
+  return sel('teacherId', tid || '', opts);
 }
 function sEdit(m){
   return fld('姓名', inp('name', m.name))+
@@ -2359,6 +2555,10 @@ function sEdit(m){
       fld('职业', sel('job', m.job, JOBS))+
       fld('结业等级', sel('grade', m.grade, GRADES))+
     '</div>'+
+    '<div class="g2">'+
+      fld('教室（市）', citySel(m.city))+
+      fld('教师', teacherIdSel(m.teacherId, m.city))+
+    '</div>'+
     fld('学习的要求', sel('goal', m.goal, GOALS))+
     fld('可上课时段', slotPicks('slots', m.slots));
 }
@@ -2371,6 +2571,8 @@ function blankTeacher(){
     name:'', src:'own', tel:'', lang:'', exp:'',
     levels:[], slots:[], rate:0, rateUnit:'session',
     perfScore:3, perfNote:'', note:'',
+    room:'',   /* 教师选的教室（省份，独占互斥） */
+    cities:[], /* 教师认领的市（属于 room 省下的市，独占互斥，市名 = 开班名） */
   };
 }
 function blankStudent(){
@@ -2380,6 +2582,7 @@ function blankStudent(){
     /* 这几个编辑表单里不出现，但列表 / 档案要用，先给上默认值。
        ⚠️ 没有 att / attAll —— 出勤是算出来的，存下来就会过期 */
     cls:'', joinedAt:'', intent:'', exam:{},
+    room:'', city:'', teacherId:'',   /* 教室（省 + 市）+ 教师 —— 学生归属教室，跟 s.cls 编班独立 */
   };
 }
 function blankMember(){
@@ -3332,6 +3535,36 @@ const VI = {
   /* 通用字段 / 标签 */
   '姓名':'Họ tên', '电话':'Điện thoại', '备注':'Ghi chú', '状态':'Trạng thái',
   '班级':'Lớp', '时段':'Ca học', '级别':'Cấp độ', '人数':'Số người', '教室':'Phòng học',
+  '教室（省份）':'Phòng học (tỉnh)',
+  '教室（市）':'Phòng học (thành phố)',
+  /* 中国省份名 */
+  '北京':'Bắc Kinh', '上海':'Thượng Hải', '广东':'Quảng Đông', '浙江':'Chiết Giang',
+  '江苏':'Giang Tô', '山东':'Sơn Đông', '四川':'Tứ Xuyên', '河南':'Hà Nam',
+  '湖北':'Hồ Bắc', '湖南':'Hồ Nam',
+  /* 市名（省 → 市）*/
+  /* 北京 */
+  '朝阳':'Triều Dương', '海淀':'Hải Điến', '丰台':'Phong Đài', '通州':'Thông Châu', '昌平':'Xương Bình',
+  /* 上海 */
+  '苏州':'Tô Châu', '杭州':'Hàng Châu', '宁波':'Ninh Ba', '南京':'Nam Kinh', '无锡':'Vô Tích',
+  /* 广东 */
+  '广州':'Quảng Châu', '深圳':'Thâm Quyến', '珠海':'Châu Hải', '佛山':'Phật Sơn', '东莞':'Đông Quản',
+  /* 浙江 */
+  '温州':'Ôn Châu', '嘉兴':'Gia Hưng', '绍兴':'Thiệu Hưng', '金华':'Kim Hoa', '台州':'Đài Châu',
+  /* 江苏 */
+  '徐州':'Từ Châu', '常州':'Thường Châu', '南通':'Nam Thông', '扬州':'Dương Châu', '镇江':'Trấn Giang',
+  /* 山东 */
+  '济南':'Tế Nam', '青岛':'Thanh Đảo', '烟台':'Yên Đài', '潍坊':'Duy Phường', '淄博':'Truy Bác',
+  /* 四川 */
+  '成都':'Thành Đô', '绵阳':'Miên Dương', '德阳':'Đức Dương', '宜宾':'Nghi Tân', '泸州':'Lô Châu',
+  /* 河南 */
+  '洛阳':'Lạc Dương', '开封':'Khai Phong', '新乡':'Tân Hương', '南阳':'Nam Dương', '许昌':'Hứa Xương',
+  /* 湖北 */
+  '武汉':'Vũ Hán', '宜昌':'Nghi Xương', '襄阳':'Tương Dương', '荆州':'Kinh Châu', '十堰':'Thập Yển',
+  /* 湖南 */
+  '长沙':'Trường Sa', '株洲':'Chu Châu', '湘潭':'Tương Đàm', '衡阳':'Hành Dương', '岳阳':'Nhạc Dương',
+  '先选省份':'Chọn tỉnh trước', '该省暂无市（待补）':'Tỉnh này chưa có thành phố (bổ sung sau)',
+  '尚无教师认领该省的市':'Chưa có giáo viên nhận thành phố của tỉnh này',
+  '间开班':'lớp đã mở',
   '类型':'Loại', '字段':'Trường', '权限':'Quyền', '视图':'Chế độ xem', '来源':'Nguồn',
   '结果':'Kết quả', '进度':'Tiến độ', '课程进度':'Tiến độ khóa học', '学费':'Học phí',
   '联系方式':'Liên hệ', '联系人':'Người liên hệ', '归属':'Thuộc về', '授课教师':'Giáo viên dạy',
@@ -3340,6 +3573,7 @@ const VI = {
   '申请内容':'Nội dung đơn', '驳回原因':'Lý do từ chối', '阶段考试':'Thi giai đoạn',
   '结业等级':'Cấp độ tốt nghiệp', '排课矩阵':'Ma trận xếp lớp', '候选池':'Nhóm chờ xếp lớp',
   '未填':'Chưa điền', '待定':'Chờ xác định', '本人':'Bản thân', '家长':'Phụ huynh',
+  '未选':'Chưa chọn', '未指定':'Chưa chỉ định',
   '操作':'Thao tác', '详情':'Chi tiết', '筛选':'Lọc', '排序':'Sắp xếp', '本月':'Tháng này',
   '本周':'Tuần này', '今日':'Hôm nay', '暂无':'Chưa có', '可选':'Tùy chọn', '必填':'Bắt buộc',
   /* 自有 / 外包 · 线上 / 线下 */
@@ -3757,6 +3991,39 @@ document.addEventListener('click', e => {
   if (e.target.closest('#drawer [data-d-cancel]')){ cancelEdit(); return; }
   const dp = e.target.closest('#drawer [data-d-pick]');
   if (dp){ togglePick(dp); return; }
+  /* ---- 教师选教室（省份）· 单选：点一个 = 覆盖 ---- */
+  const dr = e.target.closest('#drawer [data-d-room]');
+  if (dr){
+    if (dr.disabled) return;
+    if (dState && dState.draft){
+      const newProv = dr.dataset.dRoom;
+      /* 换省 → 清掉不属于新省的市（cities 只保留新省下的） */
+      if (newProv !== dState.draft.room){
+        const valid = CITIES[newProv] || [];
+        dState.draft.cities = (dState.draft.cities||[]).filter(c => valid.indexOf(c) >= 0);
+      }
+      dState.draft.room = newProv;
+      /* 只更新 DOM 的 on 类，不调 renderDrawer（避免冲文本框） */
+      const parent = dr.closest('.picks');
+      if (parent) parent.querySelectorAll('[data-d-room]').forEach(b => b.classList.toggle('on', b === dr));
+      /* 「教室（市）」区跟着重画（换省后市列表变了） */
+      repaintCityPicks();
+    }
+    return;
+  }
+  /* ---- 教师认领市（多选 toggle）---- */
+  const dc = e.target.closest('#drawer [data-d-city]');
+  if (dc){
+    if (dc.disabled) return;
+    if (dState && dState.draft){
+      const arr = dState.draft.cities || (dState.draft.cities = []);
+      const city = dc.dataset.dCity;
+      const i = arr.indexOf(city);
+      if (i >= 0) arr.splice(i,1); else arr.push(city);
+      dc.classList.toggle('on');
+    }
+    return;
+  }
   /* ---- 备份链路：导入抽屉里的「确认导入」 ---- */
   if (e.target.closest('#drawer [data-i-do]')){ doImport(); return; }
   /* ---- 点名抽屉：保存（2026-10-12 第 ③ 步）---- */
@@ -3885,8 +4152,26 @@ document.addEventListener('change', e => {
       renderAppDrawer(getDRec());
     }
   }
+  /* ---- 学生抽屉：选了市 → 教师下拉重画（只显示认领该市的教师） ---- */
+  const dCity = e.target.closest('#drawer [data-d-inp="city"]');
+  if (dCity && dState && dState.kind === 'student' && dState.edit){
+    const city = dCity.value;
+    const tSel = $('#drawer [data-d-inp="teacherId"]');
+    if (tSel){
+      /* 重画教师下拉的 options（不调 renderDrawer，避免冲文本框） */
+      const list = city
+        ? DB.teachers.filter(t => (t.cities||[]).includes(city))
+        : DB.teachers;
+      const opts = '<option value="">未指定</option>' + list.map(t =>
+        '<option value="'+esc(t.id)+'">'+esc(t.name+'（'+(t.src==='own'?'自有':'外包')+'）')+'</option>'
+      ).join('');
+      tSel.innerHTML = opts;
+      /* 如果当前选的教师不在新列表里，清空 */
+      const cur = tSel.value;
+      if (city && cur && !list.find(t => t.id === cur)) tSel.value = '';
+    }
+  }
 });
-$('#burger').addEventListener('click', ()=>{ $('#side').classList.toggle('open'); $('#scrim').classList.toggle('on'); });
 $('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
 /* 重置为演示数据：抹掉本机存盘 → 回到 seedDB 那批数据。
    加一句确认 —— 存盘里可能有他刚录的东西，误点代价太大 */
@@ -3905,6 +4190,21 @@ function onSearch(v){
   if (r === 'teachers' || r === 'students' || r === 'board') render();
 }
 $('#q').addEventListener('input', e => onSearch(e.target.value));
+/* 金额框实时格式化：输入 500000 → 显示 500,000（保留光标位置） */
+document.addEventListener('input', e => {
+  const el = e.target.closest('#drawer [data-money]');
+  if (!el) return;
+  const raw = el.value.replace(/[^\d]/g,'');
+  const formatted = raw ? Number(raw).toLocaleString('en-US') : '';
+  if (formatted !== el.value){
+    /* 光标前有多少位数字，格式化后放到同样的数字位后面 */
+    const before = el.value.slice(0, el.selectionStart).replace(/[^\d]/g,'').length;
+    el.value = formatted;
+    let pos = 0, seen = 0;
+    while (pos < formatted.length && seen < before){ if (/\d/.test(formatted[pos])) seen++; pos++; }
+    try { el.setSelectionRange(pos, pos); } catch(_){}
+  }
+});
 document.addEventListener('keydown', e => { if (e.key==='Escape' && dState) closeDrawer(); });
 window.addEventListener('hashchange', render);
 render();
