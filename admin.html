@@ -94,6 +94,9 @@ a{color:var(--brand);text-decoration:none;}
 .side-foot #stState{color:var(--navy-tx2);}
 .side-foot #stState.ok{color:#5eead4;}
 .side-foot #stState.bad{color:#fca5a5;}
+.side-foot #stCloud{color:var(--navy-tx2);}
+.side-foot #stCloud.ok{color:#5eead4;}
+.side-foot #stCloud.bad{color:#fca5a5;}
 .side-foot .sf-btn{
   display:inline-block;margin-top:3px;padding:0;background:none;border:0;
   font:inherit;font-family:var(--mono);font-size:10.5px;color:#67e8f9;
@@ -512,6 +515,9 @@ tr[data-open]:hover td{background:var(--brand-soft);}
            那是**建设进度标记**（第几步做完了），给开发时自己看的，不是给用户看的。
            Tony 指令「(清)」→ 连根拔掉（不是隐藏）。对应的 VI 词条一并删除。 -->
       <span id="stState">还没保存过</span><br>
+      <span id="stCloud"></span><br>
+      <button type="button" class="sf-btn" id="btnCloudPush">☁︎ 推送到云端</button>
+      <button type="button" class="sf-btn" id="btnCloudPull">☁︎ 从云端拉取</button><br>
       <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
     </div>
   </aside>
@@ -741,6 +747,7 @@ function save(){
     localStorage.setItem(KEY, JSON.stringify(o));
     lastSavedAt = iso;
     markSaved(true);
+    fsSchedulePush();   /* ★ 云同步：本地存好后延迟推云（断网静默失败，不影响本地） */
     return true;
   }catch(e){
     markSaved(false);
@@ -812,6 +819,81 @@ function toast(msg){
   el.classList.add('on');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('on'), 1900);
+}
+
+/* ==========================================================================
+   云同步（2026-10-16 · 照 BMSv1 的双轨思路，Tony 要「云 + 本地」）
+   —— 技术：Firestore REST + API Key（零依赖、不打 SDK），跟 schedule.html 读课表同一条路。
+   —— 位置：集合 zhops / 文档 master（单份数据）。与课程内容 lessons/meta 隔离。
+   —— 双向：本地改 → 自动推云（debounce）；启动 → 拉云（云端新才覆盖本地）。
+   —— 防覆盖：比对 updatedAt，云端不是更新的就不覆盖本地（BMSv1 吃过旧标签页覆盖的亏）。
+   —— 兜底：断网 / file:// / 规则没过 → 全部静默，本地照常能用（跟 schedule.html 一样）。
+   ========================================================================== */
+const FS = {
+  pid: 'hsk-class-v1',
+  key: 'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c',
+  coll: 'zhops',
+  doc: 'master',
+};
+let cloudState = 'idle';   /* idle | syncing | ok | fail */
+let cloudAt = null;        /* 云端那份的 updatedAt */
+let cloudTimer = null;
+function fsUrl(){
+  return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+    '/databases/(default)/documents/' + FS.coll + '/' + FS.doc + '?key=' + encodeURIComponent(FS.key);
+}
+/* 侧栏云状态小字（挨着本机存盘状态） */
+function markCloud(state, at){
+  if (state) cloudState = state;
+  if (at !== undefined) cloudAt = at;
+  const el = $('#stCloud');
+  if (!el) return;
+  if (cloudState === 'syncing'){ el.textContent = '☁︎ 同步中…'; el.className = ''; return; }
+  if (cloudState === 'ok'){ el.textContent = '☁︎ 已同步' + (cloudAt ? ' · ' + hhmm(new Date(cloudAt)) : ''); el.className = 'ok'; return; }
+  if (cloudState === 'fail'){ el.textContent = '☁︎ 离线（本地照常用）'; el.className = 'bad'; return; }
+  el.textContent = ''; el.className = '';
+}
+/* Firestore 类型化值 → JS（本系统只用一个字符串字段 payload） */
+function fsDec(v){
+  if (!v) return null;
+  if (v.stringValue !== undefined) return v.stringValue;
+  return null;
+}
+/* 拉云端。cb(ok, payloadStr)。云端没有 / 读失败都算 ok=false（静默回落本地） */
+function fsPull(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  markCloud('syncing');
+  fetch(fsUrl()).then(r => r.ok ? r.json() : null).then(raw => {
+    if (!raw || !raw.fields){ markCloud('fail'); if (cb) cb(false); return; }
+    const at = fsDec(raw.fields.at);
+    const payload = fsDec(raw.fields.payload);
+    cloudAt = at;
+    markCloud('ok', at);
+    if (cb) cb(!!payload, payload, at);
+  }).catch(() => { markCloud('fail'); if (cb) cb(false); });
+}
+/* 推到云端。cb(ok) */
+function fsPush(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  const o = Object.assign({}, DB);
+  delete o.today;                       /* 派生层不落库，同上 */
+  const iso = new Date().toISOString();
+  o.__app = APP_TAG; o.__v = DB_VER; o.__at = iso;
+  const body = { fields: {
+    payload: { stringValue: JSON.stringify(o) },
+    at:      { stringValue: iso },
+    app:     { stringValue: APP_TAG },
+  }};
+  markCloud('syncing');
+  fetch(fsUrl(), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(() => { cloudAt = iso; markCloud('ok', iso); if (cb) cb(true); })
+    .catch(() => { markCloud('fail'); if (cb) cb(false); });
+}
+/* 本地改动后延迟推云（合并短时间内的连续改动，别每敲一个字就发一次请求） */
+function fsSchedulePush(){
+  if (cloudTimer) clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => { cloudTimer = null; fsPush(); }, 1200);
 }
 
 /* 启动：有存盘用存盘，没有才播种 */
@@ -4181,6 +4263,27 @@ $('#btnReset').addEventListener('click', () => {
     : true;
   if (ok) resetDB();
 });
+/* 手动推 / 拉云端（自动同步之外的手动兜底 —— 想立刻同步时点） */
+const _bp = $('#btnCloudPush');
+if (_bp) _bp.addEventListener('click', () => { fsPush(ok => toast(ok ? '☁︎ 已推送到云端' : '☁︎ 推送失败（检查网络）')); });
+const _bl = $('#btnCloudPull');
+if (_bl) _bl.addEventListener('click', () => {
+  fsPull((ok, payload, at) => {
+    if (!ok || !payload){ toast('☁︎ 云端暂无数据'); return; }
+    let o = null;
+    try { o = JSON.parse(payload); } catch(e){ toast('☁︎ 云端数据损坏'); return; }
+    if (!o || o.__app !== APP_TAG){ toast('☁︎ 云端数据不是本系统'); return; }
+    const warn = (loadedFromStore && lastSavedAt && at && at < lastSavedAt)
+      ? '云端比本地旧，仍要覆盖吗？' : '用云端数据覆盖本机？';
+    const yes = (typeof window.confirm === 'function') ? window.confirm(warn) : true;
+    if (!yes) return;
+    DB = normalizeDB(o); buildFacts();
+    lastSavedAt = o.__at || at || new Date().toISOString();
+    try { localStorage.setItem(KEY, payload); } catch(e){}
+    loadedFromStore = true; markSaved('loaded'); render();
+    toast('☁︎ 已从云端载入');
+  });
+});
 /* 顶栏搜索：一个框管三处（教师 / 学生 / 排课 › 班级），跟 placeholder 的承诺对齐。
    在排课页搜索时自动切到「班级」子页签 —— 否则用户搜班名却盯着矩阵，会以为框坏了 */
 function onSearch(v){
@@ -4208,6 +4311,34 @@ document.addEventListener('input', e => {
 document.addEventListener('keydown', e => { if (e.key==='Escape' && dState) closeDrawer(); });
 window.addEventListener('hashchange', render);
 render();
+
+/* ★ 启动后拉云端：只有云端比本地「更新」才覆盖本地（防旧标签页覆盖，BMSv1 的教训）。
+   云端没有 / 拉失败 / 没网 → 静默，本地照常用。 */
+function cloudBootPull(){
+  fsPull((ok, payload, at) => {
+    if (!ok || !payload) return;                       /* 云端还没数据 → 不动本地 */
+    if (loadedFromStore && lastSavedAt && at && at <= lastSavedAt) return;  /* 本地不旧 → 保持本地 */
+    let o = null;
+    try { o = JSON.parse(payload); } catch(e){ return; }
+    if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return;
+    try {
+      DB = normalizeDB(o);
+      buildFacts();
+      lastSavedAt = o.__at || at || new Date().toISOString();
+      localStorage.setItem(KEY, payload);              /* 落回本地，两端一致 */
+      loadedFromStore = true;
+      markSaved('loaded');
+      render();
+      toast('☁︎ 已从云端载入');
+    } catch(e){ /* 云端那份坏了 → 绝不动本地 */ }
+  });
+}
+cloudBootPull();
+
+/* 手机 / 别的电脑在云端改了 → 回到这个标签页时拉一次（不必手动刷新） */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') cloudBootPull();
+});
 </script>
 </body>
 </html>

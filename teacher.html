@@ -162,6 +162,9 @@
      裸规则会连带把那里改色，所以这里用 #stState 限死作用域。 */
   #stState.ok{color:var(--ok);}
   #stState.bad{color:var(--bad);}
+  #stCloud{font-size:11.5px; color:var(--hint);}
+  #stCloud.ok{color:var(--ok);}
+  #stCloud.bad{color:var(--bad);}
   /* ==================== 三端适配：手机 / iPad / 电脑 ====================
      断点按**真实设备宽度**定（依据 docs/zhops-layers.html §3.5 + 本轮决策）：
        手机  ≤599px       最大手机竖屏 430；最小 iPad 竖屏 744
@@ -498,6 +501,7 @@
          改成一句老师看得懂的：数据存在哪、什么时候生效。 -->
     中文课 · 教师端。你在这里填的东西会自动保存在这台设备上，提交即生效。
     <div id="stState" style="margin-top:6px"></div>
+    <div id="stCloud" style="margin-top:4px"></div>
   </footer>
 </div>
 
@@ -574,6 +578,7 @@ function save(){
     localStorage.setItem(KEY, JSON.stringify(o));
     lastSavedAt = iso;
     markSaved(true);
+    fsSchedulePush();   /* ★ 云同步：本地存好后延迟推云 */
     return true;
   }catch(e){ markSaved(false); return false; }
 }
@@ -714,6 +719,68 @@ function toast(msg){
   el.textContent = msg; el.classList.add('show');
   clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1900);
   applyLang();
+}
+
+/* ==================== 云同步（2026-10-16 · 与主端同一套）====================
+   技术：Firestore REST + API Key（零依赖，跟 schedule.html 读课表同一条路）。
+   集合 zhops / 文档 master。与主端共用同一把钥匙 zhops.sched.v3 + 同一 APP_TAG，
+   所以老师在这边提交、主端在那边改，两端数据是同一份。
+   —— 本地改 → 自动推云（debounce）；启动 → 拉云（云端更新才覆盖本地）。
+   —— 断网 / file:// / 规则没过 → 全部静默，本地照常能用。 */
+const FS = {
+  pid: 'hsk-class-v1',
+  key: 'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c',
+  coll: 'zhops',
+  doc: 'master',
+};
+let cloudState = 'idle';
+let cloudAt = null;
+let cloudTimer = null;
+function fsUrl(){
+  return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+    '/databases/(default)/documents/' + FS.coll + '/' + FS.doc + '?key=' + encodeURIComponent(FS.key);
+}
+function markCloud(state, at){
+  if (state) cloudState = state;
+  if (at !== undefined) cloudAt = at;
+  const el = document.getElementById('stCloud');
+  if (!el) return;
+  if (cloudState === 'syncing'){ el.textContent = '☁︎ 同步中…'; el.className = ''; return; }
+  if (cloudState === 'ok'){ el.textContent = '☁︎ 已同步' + (cloudAt ? ' · ' + hhmm(new Date(cloudAt)) : ''); el.className = 'ok'; return; }
+  if (cloudState === 'fail'){ el.textContent = '☁︎ 离线（本地照常用）'; el.className = 'bad'; return; }
+  el.textContent = ''; el.className = '';
+}
+function fsDec(v){ return (v && v.stringValue !== undefined) ? v.stringValue : null; }
+function fsPull(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  markCloud('syncing');
+  fetch(fsUrl()).then(r => r.ok ? r.json() : null).then(raw => {
+    if (!raw || !raw.fields){ markCloud('fail'); if (cb) cb(false); return; }
+    const at = fsDec(raw.fields.at), payload = fsDec(raw.fields.payload);
+    cloudAt = at; markCloud('ok', at);
+    if (cb) cb(!!payload, payload, at);
+  }).catch(() => { markCloud('fail'); if (cb) cb(false); });
+}
+function fsPush(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  const o = Object.assign({}, DB);
+  delete o.today;
+  const iso = new Date().toISOString();
+  o.__app = APP_TAG; o.__v = DB_VER; o.__at = iso;
+  const body = { fields: {
+    payload: { stringValue: JSON.stringify(o) },
+    at:      { stringValue: iso },
+    app:     { stringValue: APP_TAG },
+  }};
+  markCloud('syncing');
+  fetch(fsUrl(), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(() => { cloudAt = iso; markCloud('ok', iso); if (cb) cb(true); })
+    .catch(() => { markCloud('fail'); if (cb) cb(false); });
+}
+function fsSchedulePush(){
+  if (cloudTimer) clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => { cloudTimer = null; fsPush(); }, 1200);
 }
 
 /* ==================== 视图路由（6 屏） ====================
@@ -1509,6 +1576,32 @@ $id('fTeacher').addEventListener('change', e => {
   renderView(curTab);
 });
 showTab('home');
+
+/* ★ 启动后拉云端（跟主端同一套）：只有云端比本地新才覆盖本地。
+   云端没有 / 拉失败 / 没网 → 静默，本地照常用。 */
+function cloudBootPull(){
+  fsPull((ok, payload, at) => {
+    if (!ok || !payload) return;
+    if (loadedFromStore && lastSavedAt && at && at <= lastSavedAt) return;
+    let o = null;
+    try { o = JSON.parse(payload); } catch(e){ return; }
+    if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return;
+    try {
+      DB = normalizeDB(o);
+      lastSavedAt = o.__at || at || new Date().toISOString();
+      localStorage.setItem(KEY, payload);
+      loadedFromStore = true;
+      markSaved('loaded');
+      fillTeachers(); fillSlots(); syncRoom(); renderConfirm();
+      renderView(curTab); applyLang();
+      toast('☁︎ 已从云端载入');
+    } catch(e){ /* 云端那份坏了 → 绝不动本地 */ }
+  });
+}
+cloudBootPull();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') cloudBootPull();
+});
 </script>
 </body>
 </html>
