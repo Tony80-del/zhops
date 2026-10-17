@@ -183,6 +183,10 @@ a{color:var(--brand);text-decoration:none;}
 .btn:hover{border-color:var(--brand);color:var(--brand);}
 .btn.pri{background:var(--brand);border-color:var(--brand);color:#fff;}
 .btn.pri:hover{background:var(--brand-ink);border-color:var(--brand-ink);color:#fff;}
+/* 2026-10-17：危险动作按钮（清理旧数据） */
+.btn.danger{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+.btn.danger:hover{background:var(--bad);border-color:var(--bad);color:#fff;}
+.btn[disabled]{opacity:.45;cursor:not-allowed;}
 .btn.sm{height:26px;padding:0 9px;font-size:12px;}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--ink2);}
 .btn.ghost:hover{background:var(--surface-3);color:var(--brand);}
@@ -227,6 +231,40 @@ a{color:var(--brand);text-decoration:none;}
 
 /* ---------------- 表格 ---------------- */
 .tbl-wrap{overflow-x:auto;}
+/* ==========================================================================
+   ★ 2026-10-17 · 「Excel 冻结窗格」布局（Tony 定 · 先只做学生页）
+   —— 页头（标题 + 统计 + 按钮 + 筛选 + 说明）固定不动
+   —— 表格区自己滚，表头 <thead> 也固定（sticky）
+   —— 页面本身不整体滚动
+   ⚠️ 全部规则都挂在 #view.is-freeze 下面 —— 其他页面一条都不命中。
+   ⚠️ 高度用 calc(100vh - 顶栏高度)：因为这个仓库的 #app 是 min-height:100vh（不是 height:100%），
+      靠 flex 撑不开，必须显式给高度；否则内容一多就把 body 撑高、整页滚。
+   结构：.freeze-page > .freeze-head + .freeze-body > .card > .card-b > .tbl-wrap */
+#view.is-freeze{
+  /* ⚠️ 2026-10-17 实测：这个仓库 #app 是 min-height:100vh（不是 height:100%），
+     所以 flex 撑不开、只给 #view 设高度会被内容顶高。
+     解法：用 :has() 让父级 #main 也跟着限高（只在本页生效，其他页不受影响）。 */
+  display:flex; flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden;
+  padding-bottom:14px;
+}
+/* 关键：父级也限高 —— 否则内容会把 #main 撑开，整页滚。
+   #main = #top(56px) + #view，所以它自己占满整个视口高即可 */
+#main:has(#view.is-freeze){
+  height:100vh;
+  max-height:100vh;
+  overflow:hidden;
+}
+#view.is-freeze .freeze-page{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+#view.is-freeze .freeze-head{flex:0 0 auto;}                       /* 页头：固定 */
+#view.is-freeze .freeze-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+#view.is-freeze .freeze-body > .card{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;margin:0;}
+/* 这一层才是真正的滚动容器（注意用 .card-b，不是 .bd） */
+#view.is-freeze .freeze-body .card-b{flex:1 1 auto;min-height:0;overflow:auto;}
+#view.is-freeze .freeze-body .tbl-wrap{overflow:visible;}
+#view.is-freeze .freeze-body .tbl thead th{position:sticky;top:0;z-index:2;}
 .tbl{width:100%;border-collapse:collapse;font-size:13px;}
 .tbl th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
   font-weight:650;padding:10px 13px;border-bottom:1px solid var(--line2);background:var(--surface-2);white-space:nowrap;}
@@ -241,6 +279,12 @@ a{color:var(--brand);text-decoration:none;}
 .tbl tbody tr.focus td:first-child{box-shadow:inset 3px 0 0 var(--brand);}
 .tbl .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;}
 .tbl .m{font-family:var(--mono);font-size:12.5px;}
+/* 2026-10-17 · 班级行的三个动作改成小按钮，删班用红字（原来挤成一行文字，容易看不见） */
+.tbl .act{display:inline-block;margin-right:5px;padding:3px 9px;border:1px solid var(--line2);
+  border-radius:4px;font-size:11.5px;color:var(--brand);text-decoration:none;background:var(--surface);}
+.tbl .act:hover{background:var(--brand-soft);border-color:var(--brand);}
+.tbl .act.danger{color:var(--bad);}
+.tbl .act.danger:hover{background:var(--bad-soft);border-color:var(--bad-line);}
 .tbl .nowrap{white-space:nowrap;}
 
 /* ---------------- 标签 / 点 ---------------- */
@@ -497,6 +541,25 @@ tr[data-open]:hover td{background:var(--brand-soft);}
 #drawer .stu-row .x2{flex:0 0 auto;width:26px;height:26px;padding:0;border:1px solid var(--line2);
   background:var(--surface);color:var(--ink3);cursor:pointer;font-size:12px;line-height:1;border-radius:0;}
 #drawer .stu-row .x2:hover{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+/* 2026-10-17 · 开班表单 · 学生（只读，自动带入候选池成员） */
+#drawer .ro-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+#drawer .ro-bar .lbl{font-size:11.5px;color:var(--ink3);}
+#drawer .ro-list{border:1px solid var(--line);background:var(--surface);max-height:260px;overflow-y:auto;}
+#drawer .ro-row{display:flex;align-items:center;gap:9px;padding:8px 11px;
+  border-bottom:1px solid var(--line);font-size:12.5px;}
+#drawer .ro-row:last-child{border-bottom:0;}
+#drawer .ro-row .pn{font-weight:600;color:var(--ink);}
+#drawer .ro-row .pl{margin-left:auto;font-size:11.5px;color:var(--ink3);font-family:var(--mono);}
+/* 2026-10-17 · 省份（ID）锁定态：不可改，点击要密码 */
+#drawer .pick.lock{cursor:pointer;background:var(--surface-3);border-color:var(--line2);
+  color:var(--ink2);font-weight:600;}
+#drawer .pick.lock:hover{background:var(--surface-2);}
+/* 2026-10-17 · 教师表「班级」列（详细版：班名 + 人数 + 进度） */
+.tbl .cls-list{display:flex;flex-direction:column;gap:4px;}
+.tbl .cls-item{display:flex;flex-direction:column;gap:1px;padding:4px 7px;
+  background:var(--surface-2);border-left:2px solid var(--brand);}
+.tbl .cls-item .cn{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;}
+.tbl .cls-item .cm{font-size:10.5px;color:var(--ink3);font-family:var(--mono);white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -519,6 +582,8 @@ tr[data-open]:hover td{background:var(--brand-soft);}
       <button type="button" class="sf-btn" id="btnCloudPush">☁︎ 推送到云端</button>
       <button type="button" class="sf-btn" id="btnCloudPull">☁︎ 从云端拉取</button><br>
       <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
+      <!-- ★ 2026-10-17：版本标记 —— 用来确认浏览器加载的是不是最新文件（file:// 也会缓存） -->
+      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v3 · freeze ×3</div>
     </div>
   </aside>
 
@@ -747,7 +812,11 @@ function save(){
     localStorage.setItem(KEY, JSON.stringify(o));
     lastSavedAt = iso;
     markSaved(true);
-    fsSchedulePush();   /* ★ 云同步：本地存好后延迟推云（断网静默失败，不影响本地） */
+    /* ★ 2026-10-17（Tony 定：全手动）：**不再自动推云**。
+       本地只管本地存盘；要上云必须由他手动点「☁︎ 推送到云端」。
+       这里只更新一下状态提示（有未推送的改动）。 */
+    cloudDirty = true;
+    markCloudIfIdle();
     return true;
   }catch(e){
     markSaved(false);
@@ -782,7 +851,7 @@ function resetDB(){
   DB = seedDB();
   buildFacts();
   autoResult = null;
-  closeDrawer();
+  closeDrawer(true);
   loadedFromStore = false; lastSavedAt = null;   /* 抹掉存盘了，就不再是「载入存盘」状态 */
   markSaved(null);
   if (location.hash === '#overview') render(); else location.hash = '#overview';
@@ -822,12 +891,15 @@ function toast(msg){
 }
 
 /* ==========================================================================
-   云同步（2026-10-16 · 照 BMSv1 的双轨思路，Tony 要「云 + 本地」）
+   云同步（2026-10-16 建 · 2026-10-17 改为【全手动】，Tony 定）
    —— 技术：Firestore REST + API Key（零依赖、不打 SDK），跟 schedule.html 读课表同一条路。
    —— 位置：集合 zhops / 文档 master（单份数据）。与课程内容 lessons/meta 隔离。
-   —— 双向：本地改 → 自动推云（debounce）；启动 → 拉云（云端新才覆盖本地）。
-   —— 防覆盖：比对 updatedAt，云端不是更新的就不覆盖本地（BMSv1 吃过旧标签页覆盖的亏）。
-   —— 兜底：断网 / file:// / 规则没过 → 全部静默，本地照常能用（跟 schedule.html 一样）。
+   —— ★ 2026-10-17 改：**取消一切自动行为**
+        · save() 不再自动推云 → 本地只管本地，要上云必须手动点「☁︎ 推送到云端」
+        · 启动 / 切回标签页不再自动拉云 → 打开页面永远用本地数据
+        · 要拉云必须手动点「☁︎ 从云端拉取」（带确认框）
+      理由（Tony 原话）：先在本地做测试，确定了之后再上传到云端。
+   —— 兜底：断网 / file:// / 规则没过 → 全部静默，本地照常能用。
    ========================================================================== */
 const FS = {
   pid: 'hsk-class-v1',
@@ -838,20 +910,30 @@ const FS = {
 let cloudState = 'idle';   /* idle | syncing | ok | fail */
 let cloudAt = null;        /* 云端那份的 updatedAt */
 let cloudTimer = null;
+var cloudDirty = false;    /* ★ 本地有改动但还没推送（用 var：save() 里会先引用，避免任何 TDZ 风险） */
 function fsUrl(){
   return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
     '/databases/(default)/documents/' + FS.coll + '/' + FS.doc + '?key=' + encodeURIComponent(FS.key);
 }
-/* 侧栏云状态小字（挨着本机存盘状态） */
+/* 侧栏云状态小字（挨着本机存盘状态）
+   ★ 全手动模式：本地有未推送改动时提示「有未推送的改动 · 点上方按钮上传」 */
 function markCloud(state, at){
   if (state) cloudState = state;
   if (at !== undefined) cloudAt = at;
   const el = $('#stCloud');
   if (!el) return;
   if (cloudState === 'syncing'){ el.textContent = '☁︎ 同步中…'; el.className = ''; return; }
-  if (cloudState === 'ok'){ el.textContent = '☁︎ 已同步' + (cloudAt ? ' · ' + hhmm(new Date(cloudAt)) : ''); el.className = 'ok'; return; }
+  if (cloudState === 'ok'){ el.textContent = '☁︎ 云端已是最新' + (cloudAt ? ' · ' + hhmm(new Date(cloudAt)) : ''); el.className = 'ok'; return; }
   if (cloudState === 'fail'){ el.textContent = '☁︎ 离线（本地照常用）'; el.className = 'bad'; return; }
-  el.textContent = ''; el.className = '';
+  el.textContent = '☁︎ 还没和云端同步过'; el.className = '';
+}
+/* 只在「不在同步中」时刷新提示 —— save() 每次调，别把同步中的文案冲掉 */
+function markCloudIfIdle(){
+  if (cloudState === 'syncing') return;
+  const el = $('#stCloud');
+  if (!el) return;
+  if (cloudDirty){ el.textContent = '☁︎ 有未推送的改动'; el.className = 'bad'; return; }
+  markCloud(cloudState);
 }
 /* Firestore 类型化值 → JS（本系统只用一个字符串字段 payload） */
 function fsDec(v){
@@ -872,7 +954,7 @@ function fsPull(cb){
     if (cb) cb(!!payload, payload, at);
   }).catch(() => { markCloud('fail'); if (cb) cb(false); });
 }
-/* 推到云端。cb(ok) */
+/* 推到云端。cb(ok) —— ★ 只有用户手动点按钮才会走到这里（2026-10-17 全手动） */
 function fsPush(cb){
   if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
   const o = Object.assign({}, DB);
@@ -887,10 +969,17 @@ function fsPush(cb){
   markCloud('syncing');
   fetch(fsUrl(), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(() => { cloudAt = iso; markCloud('ok', iso); if (cb) cb(true); })
+    .then(() => {
+      cloudAt = iso; cloudDirty = false;
+      /* ★ 2026-10-17：推云成功 → 清空标记失效（云端已经是新数据） */
+      try { localStorage.removeItem('zhops.wipedAt'); } catch(e){}
+      markCloud('ok', iso);
+      if (cb) cb(true);
+    })
     .catch(() => { markCloud('fail'); if (cb) cb(false); });
 }
-/* 本地改动后延迟推云（合并短时间内的连续改动，别每敲一个字就发一次请求） */
+/* ⚠️ 2026-10-17（Tony 定：全手动）：这个函数**保留但不再被 save() 调用**。
+   留着是为了万一以后要恢复自动模式；现在没有任何调用点，等于死代码。 */
 function fsSchedulePush(){
   if (cloudTimer) clearTimeout(cloudTimer);
   cloudTimer = setTimeout(() => { cloudTimer = null; fsPush(); }, 1200);
@@ -1062,7 +1151,7 @@ function applyBackup(o){
   DB = normalizeDB(o);
   buildFacts();      /* 有 lessons 就按今天重算；没有就补播种 */
   autoResult = null; /* 自动编班的结果属于上一批数据，作废 */
-  closeDrawer();
+  closeDrawer(true);
   save();            /* ★ 导完立刻落盘 —— 否则关掉再开又回到旧数据 */
   toast('已从备份恢复');
   /* hash 没变时 hashchange 不触发，得手动 render() */
@@ -1266,6 +1355,8 @@ const $  = s => document.querySelector(s);
 /* 启动就把「这次打开有没有读到存盘」写进侧栏 —— 一打开看得见，不用等第一次改动。
    ⚠️ 必须放在 $ 初始化之后（markSaved 里用了 $），否则会踩 TDZ 报错 */
 markSaved(loadedFromStore ? 'loaded' : null);
+/* 2026-10-17 全手动：启动时不拉云，云状态先显示「还没同步过」 */
+markCloud('idle');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ownTag = o => o==='own' ? '<span class="tg own">自有</span>' : '<span class="tg out">外包</span>';
 const modeTag = m => m==='online' ? '<span class="tg on">线上</span>' : '<span class="tg off">线下</span>';
@@ -1425,6 +1516,8 @@ function vTeachers(){
     (fTeacher.lv==='all' || t.levels.includes(fTeacher.lv)) &&
     (!fQ || t.name.includes(fQ)));
   return `
+  <div class="freeze-page">
+  <div class="freeze-head">
   <div class="page-h">
     <div><h2>教师</h2><p class="desc">${DB.teachers.length} 位 · 自有 ${DB.teachers.filter(t=>t.src==='own').length} · 外包 ${DB.teachers.filter(t=>t.src==='out').length}</p></div>
     <div class="sp"></div>
@@ -1446,12 +1539,14 @@ function vTeachers(){
     <div class="sp"></div>
     <span class="lbl">共 ${rows.length} 位</span>
   </div>
+  </div><!-- /freeze-head -->
 
+  <div class="freeze-body">
   <div class="card">
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
         <th>教师</th><th>类型</th><th>联系方式</th><th>可授级别</th><th>可授时段</th>
-        <th>教室</th><th class="num">单价/节</th><th class="num">学生</th><th>状态</th><th></th>
+        <th>教室</th><th>班级</th><th class="num">单价/节</th><th class="num">学生</th><th>状态</th><th></th>
       </tr></thead>
       <tbody>${rows.map(t=>'<tr data-open="teacher:'+t.id+'">'+
         '<td><b>'+esc(t.name)+'</b></td>'+
@@ -1460,13 +1555,36 @@ function vTeachers(){
         '<td>'+t.levels.map(l=>'<span class="tg off">'+l+'</span>').join(' ')+'</td>'+
         '<td>'+(t.slots.length ? t.slots.map(s=>'<span class="tg own">'+S(s).name+'</span>').join(' ') : '<span class="tg bad">空 · 等于不限</span>')+'</td>'+
         '<td>'+(t.room ? '<span class="tg off">'+esc(t.room)+'</span>' : '<span class="lbl">未选</span>')+'</td>'+
+        /* ★ 2026-10-17（Tony 定 · 详细版）：带该教师开的班 —— 班名 + 人数 + 进度 */
+        '<td>'+teacherClassesCell(t)+'</td>'+
         '<td class="num">'+t.rate.toLocaleString('en-US')+'</td>'+
         '<td class="num">'+t.students+'</td>'+
         '<td>'+(t.state==='正常'?'<span class="tg on">正常</span>':'<span class="tg warn">'+esc(t.state)+'</span>')+'</td>'+
         '<td class="nowrap"><span class="lbl">查看档案 →</span></td>'+
-      '</tr>').join('') || '<tr><td colspan="10" class="empty">没有符合条件的教师</td></tr>'}</tbody>
+      '</tr>').join('') || '<tr><td colspan="11" class="empty">没有符合条件的教师</td></tr>'}</tbody>
     </table></div></div>
-  </div>`;
+  </div>
+  </div><!-- /freeze-body -->
+  </div><!-- /freeze-page -->`;
+}
+/* 教师表「班级」列（2026-10-17 · Tony 定详细版）
+   每个班一行：班名 · N 人 · 进度。没有班 → 「—」。
+   ⚠️ 班名用「市名 + 班」（市名 = 开班名，Tony 定的规则）；没有市名时退回 c.name。 */
+function teacherClassesCell(t){
+  const cs = DB.classes.filter(c => c.teacher === t.id);
+  if (!cs.length) return '<span class="lbl">—</span>';
+  return '<div class="cls-list">'+cs.map(c => {
+    const room = c.room || '';
+    const label = room ? (room + ' 班') : c.name;
+    const n = classN(c);
+    const prog = classLesson(c) > 0
+      ? ('第 ' + classLesson(c) + '/' + (c.plannedLessons || 42) + ' 课')
+      : '未开课';
+    return '<div class="cls-item">'+
+      '<span class="cn">'+esc(label)+'</span>'+
+      '<span class="cm">'+n+' 人 · '+esc(prog)+'</span>'+
+    '</div>';
+  }).join('')+'</div>';
 }
 
 /* ---------- 视图：学生 ---------- */
@@ -1478,6 +1596,8 @@ function vStudents(){
     (fStu.where==='all' || (fStu.where==='in' ? !!s.cls : !s.cls)) &&
     (!fQ || s.name.includes(fQ)));
   return `
+  <div class="freeze-page">
+  <div class="freeze-head">
   <div class="page-h">
     <div><h2>学生</h2><p class="desc">${DB.students.length} 人 · 已编班 ${DB.students.filter(s=>s.cls).length} · 候选池 ${DB.students.filter(s=>!s.cls).length}</p></div>
     <div class="sp"></div>
@@ -1507,7 +1627,9 @@ function vStudents(){
   </div>
 
   <div class="note"><b>归属（自有 / 外包）是学生自己的字段</b>，不是从归属教师派生 —— 公司自家的学生也可能被派给外包老师教。</div>
+  </div><!-- /freeze-head -->
 
+  <div class="freeze-body">
   <div class="card">
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
@@ -1520,7 +1642,22 @@ function vStudents(){
         '<td><b>'+esc(s.name)+'</b></td>'+
         '<td>'+ownTag(s.own)+'</td>'+
         '<td><span class="tg off">'+s.lv+'</span></td>'+
-        '<td>'+(s.room ? '<span class="tg off">'+esc(s.city ? s.city+'（'+s.room+'）' : s.room)+'</span>' : '<span class="lbl">未选</span>')+'</td>'+
+        /* ★ 2026-10-17（Tony 定的三层链）：教室列显示「教师·市 → 班名」
+           省 = 教师 ID / 市 = 班名 / 学生按「教师 + 市」归属。
+           · 有市 + 班已开 → 「苏州 → 苏州班」（正常）
+           · 有市 + 班未开 → 「杭州 → 待开班」（候选池，开班后自动编入）
+           · 没选教师      → 「未选教师」 */
+        '<td>'+(function(){
+          if (!s.teacherId) return '<span class="lbl">未选教师</span>';
+          const t   = DB.teachers.find(x => x.id === s.teacherId);
+          const box = s.cls ? DB.classes.find(x => x.id === s.cls) : null;
+          let h = '<span class="tg off">'+esc(t ? t.name : '?')+'</span>';
+          if (!s.city) return h + ' <span class="lbl" style="font-size:11px">市未选</span>';
+          h += ' <span class="lbl" style="font-size:11px">· '+esc(s.city)+'</span>';
+          if (box) h += ' <span class="tg on" style="font-size:11px">'+esc(box.name)+'</span>';
+          else     h += ' <span class="tg warn" style="font-size:11px">待开班</span>';
+          return h;
+        })()+'</td>'+
         /* 进度和出勤都是算出来的 —— 学生列表不再存"我上了几节"这种会过期的数字 */
         '<td class="m nowrap">'+(c ? lessonLabel(c.lv, classLesson(c)) : '—')+'</td>'+
         '<td class="num">'+(stuAttAll(s) ? stuAtt(s)+' / '+stuAttAll(s) : '—')+'</td>'+
@@ -1529,6 +1666,8 @@ function vStudents(){
         '<td class="nowrap"><span class="lbl">查看档案 →</span></td>'+
       '</tr>';}).join('')}</tbody>
     </table></div></div>
+  </div>
+  </div><!-- /freeze-body -->
   </div>`;
 }
 
@@ -1549,6 +1688,25 @@ function vBoard(){
   else if (bTab === 'pool')     body = bPool();
   else if (bTab === 'rooms')    body = bRooms();
   else                          body = bCalendar();
+  /* ★ 2026-10-17（Tony 定）：候选池用「Excel 冻结窗格」—— 页头 + 页签固定，表格自己滚 */
+  const freeze = (bTab === 'pool');
+  if (freeze){
+    return `
+    <div class="freeze-page">
+    <div class="freeze-head">
+    <div class="page-h">
+      <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
+      <div class="sp"></div>
+      <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
+    </div>
+    ${autoBanner()}
+    <div class="tabs" id="btabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(bTab===id?'on':'')+'">'+n+'</button>').join('')}</div>
+    </div><!-- /freeze-head -->
+    <div class="freeze-body">
+    ${body}
+    </div><!-- /freeze-body -->
+    </div>`;
+  }
   return `
   <div class="page-h">
     <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
@@ -1646,9 +1804,9 @@ function bClasses(){
         '<td class="num">'+classN(c)+' / '+c.cap+' '+bar(p, p>=100?'full':'')+'</td>'+
         '<td>'+(classLesson(c)<=1?'<span class="tg on">刚开班</span>':'<span class="tg off">上课中</span>')+'</td>'+
         '<td class="nowrap">'+
-          '<a href="#" data-c-act="advance" data-cid="'+c.id+'">推进一课</a> · '+
-          '<a href="#" data-c-act="roll" data-cid="'+c.id+'">点名</a> · '+
-          '<a href="#" data-c-act="del" data-cid="'+c.id+'">删班</a></td>'+
+          '<a href="#" class="act" data-c-act="advance" data-cid="'+c.id+'">推进一课</a>'+
+          '<a href="#" class="act" data-c-act="roll" data-cid="'+c.id+'">点名</a>'+
+          '<a href="#" class="act danger" data-c-act="del" data-cid="'+c.id+'">删班</a></td>'+
       '</tr>';}).join('')
         : '<tr><td colspan="10" class="empty">没有匹配「'+esc(fQ)+'」的班级</td></tr>'}</tbody>
     </table></div></div>
@@ -2079,7 +2237,114 @@ function vData(){
     </table></div></div></div>`;
   }
   return `<div class="page-h"><div><h2>数据</h2><p class="desc">出勤 · 阶段考试 · 完成等级</p></div></div>
-    <div class="tabs" id="dtabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(dTab===id?'on':'')+'">'+n+'</button>').join('')}</div>${body}${backupCard()}`;
+    <div class="tabs" id="dtabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(dTab===id?'on':'')+'">'+n+'</button>').join('')}</div>${body}${backupCard()}${cleanupCard()}${wipeCard()}`;
+}
+
+/* ★ 2026-10-17（Tony 要）：清理旧数据残留。
+   症状：课次记录页还能看到已删除班级的课次 —— 因为 lessons 里留着孤儿记录。
+   这里只删「孤儿」（cid 指向已不存在的班级 / 学生已不存在），不动正常数据。
+   ⚠️ 必须先备份（旁边就是导出按钮）。 */
+function orphanStats(){
+  const cids = {}; DB.classes.forEach(c => { cids[c.id] = 1; });
+  const sids = {}; DB.students.forEach(s => { sids[s.id] = 1; });
+  const badLessons = DB.lessons.filter(l => !l.cid || !cids[l.cid]);
+  const badAbs = (DB.absences||[]).filter(a => a.sid && !sids[a.sid]);
+  const badApps = DB.apps.filter(a => a.link && a.linkMode === 'new' && !cids[a.link]);
+  return { badLessons, badAbs, badApps, cids, sids };
+}
+function cleanupCard(){
+  const s = orphanStats();
+  const total = s.badLessons.length + s.badAbs.length + s.badApps.length;
+  return '<div class="card" style="margin-top:18px">'+
+    '<div class="card-h"><h3>清理旧数据残留</h3>'+
+      '<span class="sub">'+(total ? '发现 '+total+' 条' : '没有残留')+'</span></div>'+
+    '<div class="card-b">'+
+      (total
+        ? '<p style="font-size:12px;color:var(--ink3);margin:0 0 12px">'+
+            '这些记录指向的<b>班级或学生已经不存在</b>（删班 / 删学生后留下的）：'+
+            '<br>· 孤儿课次 <b>'+s.badLessons.length+'</b> 条'+
+            '、孤儿缺勤 <b>'+s.badAbs.length+'</b> 条'+
+            '、失效的申请关联 <b>'+s.badApps.length+'</b> 条'+
+            '<br><b>⚠️ 先点「导出备份」再清理。</b></p>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+            '<button class="btn danger" data-act="cleanup">清理这 '+total+' 条残留</button>'+
+            '<button class="btn" data-act="export">先导出备份</button>'+
+          '</div>'
+        : '<p style="font-size:12px;color:var(--ink3);margin:0">课次记录里没有孤儿数据 —— 都是有效记录。</p>')+
+    '</div></div>';
+}
+function doCleanup(){
+  const s = orphanStats();
+  const total = s.badLessons.length + s.badAbs.length + s.badApps.length;
+  if (!total){ toast('没有需要清理的残留'); return; }
+  const yes = (typeof window.confirm === 'function')
+    ? window.confirm('将删除：\n· 孤儿课次 '+s.badLessons.length+' 条\n· 孤儿缺勤 '+s.badAbs.length+' 条\n· 失效关联 '+s.badApps.length+' 条\n\n这些数据指向的班级/学生已不存在，删了不会影响正常数据。继续吗？')
+    : true;
+  if (!yes) return;
+  const keepCids = s.cids, keepSids = s.sids;
+  DB.lessons  = DB.lessons.filter(l => l.cid && keepCids[l.cid]);
+  DB.absences = (DB.absences||[]).filter(a => !a.sid || keepSids[a.sid]);
+  DB.apps = DB.apps.filter(a => !(a.link && a.linkMode === 'new' && !keepCids[a.link]));
+  buildFacts();
+  save();
+  render();
+  toast('已清理 '+total+' 条残留');
+}
+
+/* ★ 2026-10-17（Tony 定）：清空业务记录 —— 回到干净起点。
+   清空：开班申请 / 课次记录 / 缺勤
+   保留：教师 / 学生 / 班级 / 时段 / 设置（这些是「档案」，不是「业务流水」）
+   ⚠️ 二次确认，确认框里逐项列出会删多少条。 */
+function wipeCard(){
+  const nApps = DB.apps.length;
+  const nLes  = DB.lessons.length;
+  const nAbs  = (DB.absences||[]).length;
+  const total = nApps + nLes + nAbs;
+  return '<div class="card" style="margin-top:18px">'+
+    '<div class="card-h"><h3>清空业务记录</h3>'+
+      '<span class="sub">'+(total ? '共 '+total+' 条' : '已经是空的')+'</span></div>'+
+    '<div class="card-b">'+
+      '<p style="font-size:12px;color:var(--ink3);margin:0 0 10px">'+
+        '<b>会清空</b>（业务流水）：'+
+        '开班申请 <b>'+nApps+'</b> 条 · 课次记录 <b>'+nLes+'</b> 条 · 缺勤 <b>'+nAbs+'</b> 条'+
+        '<br><b>不会动</b>（档案）：教师 '+DB.teachers.length+' 位 · 学生 '+DB.students.length+
+        ' 位 · 班级 '+DB.classes.length+' 个 · 时段 / 设置'+
+        '<br><span style="color:var(--bad)">⚠️ 清空后无法撤销。</span></p>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn danger" data-act="wipe"'+(total?'':' disabled')+'>'+
+          (total ? '清空这 '+total+' 条' : '没有可清空的记录')+'</button>'+
+        '<button class="btn" data-act="export">先导出备份</button>'+
+      '</div>'+
+    '</div></div>';
+}
+function doWipe(){
+  const nApps = DB.apps.length;
+  const nLes  = DB.lessons.length;
+  const nAbs  = (DB.absences||[]).length;
+  const total = nApps + nLes + nAbs;
+  if (!total){ toast('没有可清空的记录'); return; }
+  const msg = '即将清空：\n'+
+    '· 开班申请  '+nApps+' 条\n'+
+    '· 课次记录  '+nLes+' 条\n'+
+    '· 缺勤      '+nAbs+' 条\n\n'+
+    '保留：教师 '+DB.teachers.length+' 位 / 学生 '+DB.students.length+' 位 / 班级 '+DB.classes.length+' 个 / 时段 / 设置\n\n'+
+    '⚠️ 清空后无法撤销。确定继续吗？';
+  const yes = (typeof window.confirm === 'function') ? window.confirm(msg) : true;
+  if (!yes) return;
+  DB.apps = [];
+  DB.lessons = [];
+  DB.absences = [];
+  /* 清完把学生的班级挂载也清掉（班都没了/课次没了，挂着就是脏数据）
+     ⚠️ 只清「指向不存在班级」的，正常班的学生不动 */
+  const cids = {}; DB.classes.forEach(c => { cids[c.id] = 1; });
+  DB.students.forEach(s => { if (s.cls && !cids[s.cls]) s.cls = ''; });
+  /* ★ 2026-10-17（Tony 定「先跟本地版本」）：打一个「本地已清空」标记，
+     防止下次打开 / 切回标签页时被云端旧数据拉回来覆盖掉这次清空。 */
+  try { localStorage.setItem('zhops.wipedAt', new Date().toISOString()); } catch(e){}
+  buildFacts();
+  save();
+  render();
+  toast('已清空 '+total+' 条业务记录 · 云端旧数据不会再拉回来');
 }
 
 /* 备份 / 恢复卡 —— 放在「数据」页底部（老系统也是这个位置）。
@@ -2276,11 +2541,28 @@ function vMembers(){
       ).join('')
     : '<tr><td colspan="4" class="m">还没有成员，点右上「＋ 添加成员」加一位。</td></tr>';
   return `<div class="page-h"><div><h2>成员</h2><p class="desc">能登录主端的人（权限目前是标签，暂不做登录拦截）</p></div>
-    <div class="sp"></div><button class="btn pri" data-act="newmember">＋ 添加成员</button></div>
+    <div class="sp"></div>
+    ${list.length ? '<button class="btn danger" data-act="clearmembers">清空成员（'+list.length+' 位）</button>' : ''}
+    <button class="btn pri" data-act="newmember">＋ 添加成员</button></div>
   <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>姓名</th><th>权限</th><th>最近登录</th><th></th></tr></thead>
     <tbody>${body}</tbody>
   </table></div></div></div>`;
+}
+/* ★ 2026-10-17（Tony 要）：一键清空全部成员。
+   ⚠️ 只清 DB.members，不动教师/学生/班级/课次；带二次确认。 */
+function clearMembers(){
+  const n = (DB.members||[]).length;
+  if (!n){ toast('没有成员可清'); return; }
+  const names = (DB.members||[]).map(m => m.name).join('、');
+  const yes = (typeof window.confirm === 'function')
+    ? window.confirm('将清空全部 '+n+' 位成员：\n'+names+'\n\n成员数据清空后无法恢复。确定吗？')
+    : true;
+  if (!yes) return;
+  DB.members = [];
+  save();
+  render();
+  toast('已清空 '+n+' 位成员');
 }
 
 /* ==========================================================================
@@ -2325,8 +2607,36 @@ function openDrawer(key){
   renderDrawer();
   openPanel();
 }
-function closeDrawer(){
+/* ★ 2026-10-17（Tony 踩过这个坑）：编辑态直接点 ✕ / 按 ESC → 改动静默丢弃。
+   现在关闭前会检查「草稿和原记录是否不同」，不同就确认一次。 */
+function draftDirty(){
+  if (!dState || !dState.edit || !dState.draft) return false;
+  const orig = getDRec();
+  if (!orig) return true;
+  try {
+    const a = JSON.stringify(stripMeta(dState.draft));
+    const b = JSON.stringify(stripMeta(orig));
+    return a !== b;
+  } catch(e){ return false; }
+}
+/* 比较时忽略那些不属于「用户改动」的字段 */
+function stripMeta(o){
+  const c = {};
+  Object.keys(o || {}).sort().forEach(k => {
+    if (k === 'today') return;
+    c[k] = o[k];
+  });
+  return c;
+}
+function closeDrawer(force){
   if (!dState) return;
+  /* 有未保存改动 → 先问一句（force = 程序内部关闭，不再问） */
+  if (!force && draftDirty()){
+    const yes = (typeof window.confirm === 'function')
+      ? window.confirm('这个档案有改动还没保存。\n\n确定要关掉并丢弃改动吗？\n（点「取消」可以回去点「保存」）')
+      : true;
+    if (!yes) return;
+  }
   dState = null;
   $('#drawer').classList.remove('open');
   $('#dScrim').classList.remove('on');
@@ -2338,6 +2648,8 @@ function closeDrawer(){
 function refreshView(){
   const id = route();
   $('#view').innerHTML = (R[id] || vOverview)();
+  const freezeOn2 = (id === 'students' || id === 'teachers' || (id === 'board' && bTab === 'pool'));
+  $('#view').classList.toggle('is-freeze', freezeOn2);
 }
 function startEdit(){
   const o = getDRec();
@@ -2364,23 +2676,18 @@ function saveEdit(){
   });
   const d = dState.draft;
 
-  /* ---- 学生：选了市 → 反查省写 s.room + 教师联动 / 守卫 ---- */
+  /* ---- 学生：归属 = 教师 + 市（2026-10-17 重做 · Tony 定的三层链）----
+     省 = 教师 ID → 市 = 班名 → 学生按这两项归属。
+     ✅ 保存时自动推导 s.cls：教师 + 市 能对上已开的班就直接进班；对不上 = 候选池。
+     ✅ 不再要求「市必须属于某教师」的硬校验（下拉本来就只列该教师的市）。 */
   if (dState.kind === 'student'){
-    /* 由市反查省，写进 s.room（省在教师侧体现，学生只选市） */
-    d.room = d.city ? cityToProv(d.city) : '';
-    /* 选了市 + 教师为空 → 带出认领该市的教师 */
-    if (d.city && !d.teacherId){
-      const t = DB.teachers.find(t => (t.cities||[]).includes(d.city));
-      if (t) d.teacherId = t.id;
-    }
-    /* 选了市 + 教师 → 验证教师确实认领了该市 */
-    if (d.city && d.teacherId){
-      const t = T(d.teacherId);
-      if (t && (t.cities||[]).indexOf(d.city) < 0){
-        dState.err = (t.name||'该教师') + ' 未认领教室 ' + d.city;
-        renderDrawer(); return;
-      }
-    }
+    /* 省由教师带出来（教师 ID 所在省），市决定班名 */
+    const t = d.teacherId ? DB.teachers.find(x => x.id === d.teacherId) : null;
+    d.room = t ? (t.room || '') : (d.city ? cityToProv(d.city) : '');
+    if (!d.teacherId) d.city = '';              /* 没教师 → 市也无意义 */
+    /* ★ 自动归属：教师 + 市 → 对应的班 */
+    const cls = classOfStudent(d.teacherId, d.city);
+    d.cls = cls ? cls.id : '';                  /* 没班 = 候选池（等开班自动编入） */
   }
 
   /* ---- 新建：push 一条新记录 ---- */
@@ -2402,7 +2709,7 @@ function saveEdit(){
     list.push(d);
     save();
     const view = kind === 'teacher' ? 'teachers' : kind === 'student' ? 'students' : 'members';
-    closeDrawer();
+    closeDrawer(true);
     /* hash 没变时 hashchange 不触发，得手动 render() */
     if (location.hash === '#' + view) render(); else location.hash = '#' + view;
     return;
@@ -2531,30 +2838,43 @@ function picks(f, arr, list){
 function slotPicks(f, arr){
   return picks(f, arr, DB.slots.map(s => [s.id, s.name+' '+s.time]));
 }
-/* 教师选教室（省份）· 单选 · 互斥：被其他教师占了的灰色不可选。
-   不用 data-d-pick（那是多选 toggle），用 data-d-room 走独立的单选处理。 */
+/* ★ 2026-10-17（Tony 定）：省份 = 教师固定 ID
+   —— 还没选过 → 可以选（单选，被其他教师占的灰色）
+   —— 已经选过 → 只显示当前省份（锁定），**点它要输密码才能改** */
+const ROOM_PASS = 'Uyen2026';      /* 改省份 ID 的解锁密码（Tony 2026-10-17 定） */
 function roomPicks(curRoom){
   const myId = dState && dState.id ? dState.id : '';
+  /* 已锁定：显示当前省份 + 「🔒 锁定」提示，点它 = 要求密码 */
+  if (curRoom){
+    return '<div class="picks">'+
+      '<button type="button" class="pick on lock" data-d-roomlock="'+esc(curRoom)+'">'+
+        '🔒 '+esc(curRoom)+'</button>'+
+      '</div>'+
+      '<div class="note" style="margin:8px 0 0;font-size:11.5px">'+
+        '省份（ID）已锁定 —— 点它需输入密码才能改。'+
+        '要开新的班，去下面的<b>教室（市）</b>勾另一个市。</div>';
+  }
   return '<div class="picks">'+ROOMS.map(r => {
     const taken = DB.teachers.some(t => t.id !== myId && t.room === r);
-    const on = curRoom === r;
-    const cls = 'pick' + (on?' on':'') + (taken && !on ? ' dis' : '');
+    const cls = 'pick' + (taken ? ' dis' : '');
     return '<button type="button" class="'+cls+'" data-d-room="'+esc(r)+'"'+
-           (taken && !on ? ' disabled' : '')+'>'+esc(r)+'</button>';
+           (taken ? ' disabled' : '')+'>'+esc(r)+'</button>';
   }).join('')+'</div>';
 }
-/* 教师认领市（省下的市）· 多选 · 独占：被其他教师认领的市灰色不可选。
-   市名 = 开班名。没选省份 / 该省没配市 → 给提示。 */
+/* 教师认领市（省下的市）· 多选
+   ★ 2026-10-17（Tony 定）：锁定依据从「被其他教师认领」改成「**这个市已经开班了**」。
+     已开班 = DB.classes 里存在 room === 该市 → 灰色不可选（因为班已经开了）。
+     还没开班的市 → 可以勾（勾了 = 宣布要开这个班）。 */
 function cityPicks(prov, curCities){
   const list = CITIES[prov] || [];
   if (!list.length) return '<span class="lbl">'+(prov ? '该省暂无市（待补）' : '先选省份')+'</span>';
-  const myId = dState && dState.id ? dState.id : '';
   return '<div class="picks">'+list.map(city => {
-    const taken = DB.teachers.some(t => t.id !== myId && (t.cities||[]).includes(city));
+    const opened = DB.classes.some(c => c.room === city);   /* 已开班 → 锁死，不可点 */
     const on = (curCities||[]).indexOf(city) >= 0;
-    const cls = 'pick' + (on?' on':'') + (taken && !on ? ' dis' : '');
+    const cls = 'pick' + (on?' on':'') + (opened ? ' dis' : '');
     return '<button type="button" class="'+cls+'" data-d-city="'+esc(city)+'"'+
-           (taken && !on ? ' disabled' : '')+'>'+esc(city)+'</button>';
+           (opened ? ' disabled title="这个市已经开班了"' : '')+'>'+esc(city)+
+           (opened ? ' ✓ 已开班' : '')+'</button>';
   }).join('')+'</div>';
 }
 /* 教师换省后，重画「教室（市）」那一格的内容（不改抽屉其它部分） */
@@ -2597,32 +2917,53 @@ function tEdit(m){
     fld('表现记录', area('perfNote', m.perfNote))+
     fld('备注', area('note', m.note));
 }
-/* 学生抽屉的教室下拉：直接选市（平铺所有「有教师认领的市」）。市名全局唯一。
-   显示 = 市名（省），value = 市名；学生存 s.city，s.room 由市反查省（见 saveEdit）。 */
-function citySel(cur){
-  const list = [];
-  ROOMS.forEach(prov => (CITIES[prov]||[]).forEach(city => {
-    if (DB.teachers.some(t => t.room === prov && (t.cities||[]).includes(city)))
-      list.push([city, city + '（' + prov + '）']);
-  }));
-  return sel('city', cur || '', [['','未选']].concat(list));
+/* ===== 学生抽屉的「教师 → 市（班名）」两级（2026-10-17 重做 · Tony 定的三层链）=====
+   省 = 教师 ID → 市 = 班名 → 学生按「教师 + 市」归属。
+   ① 先选教师（可留空）
+   ② 市下拉只列**该教师认领的市**（五个），不把全国的市平铺
+   ③ 选完自动找对应班写 s.cls；班没开 = 候选池（等开班自动编入）
+   —— 教师可换，市跟着重算（换教师时市要重选，因为别的教师可能没这个市） */
+function teacherSel(tid){
+  const opts = [['','（未指定 · 先存候选池）']].concat(
+    DB.teachers.map(t => [t.id, t.name + '（' + (t.room || '未定省') + '）'])
+  );
+  return sel('teacherId', tid || '', opts);
 }
-/* 市 → 省 反查 */
+/* 市下拉：只列该教师认领的市（= 他能开的班名）。没选教师 → 提示先选 */
+function citySelOf(teacherId, cur){
+  if (!teacherId) return '<span class="lbl">先选教师，才会出现他的市（班名）</span>';
+  const t = DB.teachers.find(x => x.id === teacherId);
+  const cs = (t && t.cities) || [];
+  if (!cs.length) return '<span class="lbl">该教师还没在教师档案里勾市 — 先去勾</span>';
+  const opts = [['','（未选 · 先存候选池）']].concat(
+    cs.map(city => {
+      const cls = DB.classes.find(c => c.room === city);   /* 这个市是否已开班 */
+      return [city, city + (cls ? '班 · 已开班' : ' · 待开班')];
+    })
+  );
+  return sel('city', cur || '', opts);
+}
+/* 「教师 + 市」→ 该学生归属的班（找不到 = null，进候选池） */
+function classOfStudent(teacherId, city){
+  if (!teacherId || !city) return null;
+  return DB.classes.find(c => c.teacher === teacherId && c.room === city) || null;
+}
+/* 市 → 省 反查（省市省，用来写 s.room） */
 function cityToProv(city){
   for (const prov of ROOMS){ if ((CITIES[prov]||[]).indexOf(city) >= 0) return prov; }
   return '';
 }
-/* 学生抽屉的教师下拉：有市时只显示认领该市的教师 */
-function teacherIdSel(tid, city){
-  const list = city
-    ? DB.teachers.filter(t => (t.cities||[]).includes(city))
-    : DB.teachers;
-  const opts = [['','未指定']].concat(
-    list.map(t => [t.id, t.name + '（'+(t.src==='own'?'自有':'外包')+'）'])
-  );
-  return sel('teacherId', tid || '', opts);
-}
 function sEdit(m){
+  /* 归属结果预览：教师 + 市 能对上一个班就显示，对不上就说明进候选池 */
+  const cls = classOfStudent(m.teacherId, m.city);
+  const prov = m.teacherId ? ((DB.teachers.find(t=>t.id===m.teacherId)||{}).room || '') : '';
+  const ownerLine = !m.teacherId
+    ? '<span class="lbl">还没选教师 → 存为候选池</span>'
+    : !m.city
+      ? '<span class="lbl">还没选市 → 存为候选池</span>'
+      : cls
+        ? '<span class="tg on">已归入 '+esc(cls.name)+'</span>'
+        : '<span class="tg warn">「'+esc(m.city)+'」还没开班 → 候选池（开班后自动编入）</span>';
   return fld('姓名', inp('name', m.name))+
     '<div class="g2">'+
       fld('归属', sel('own', m.own, [['own','自有'],['out','外包']]))+
@@ -2637,9 +2978,15 @@ function sEdit(m){
       fld('职业', sel('job', m.job, JOBS))+
       fld('结业等级', sel('grade', m.grade, GRADES))+
     '</div>'+
+    /* ★ 三层链：教师（= 省 ID）→ 市（= 班名） */
     '<div class="g2">'+
-      fld('教室（市）', citySel(m.city))+
-      fld('教师', teacherIdSel(m.teacherId, m.city))+
+      fld('教师（省 = ID）', teacherSel(m.teacherId))+
+      fld('市（= 班名）', citySelOf(m.teacherId, m.city))+
+    '</div>'+
+    '<div class="note" style="margin:0 0 12px;font-size:11.5px">'+
+      '<b>学生归属 = 教师 + 市</b>（省是教师的 ID，市就是班名）。'+
+      (prov ? '<br>该教师所在省：<b>'+esc(prov)+'</b>' : '')+
+      '<br>归属结果：'+ownerLine+
     '</div>'+
     fld('学习的要求', sel('goal', m.goal, GOALS))+
     fld('可上课时段', slotPicks('slots', m.slots));
@@ -2727,7 +3074,7 @@ function renderDrawer(){
     return;
   }
   const o = getDRec();
-  if (!o){ closeDrawer(); return; }
+  if (!o){ closeDrawer(true); return; }
   if (dState.kind === 'app'){ renderAppDrawer(o); return; }
   const isT = dState.kind === 'teacher';
   const isM = dState.kind === 'member';
@@ -2765,9 +3112,9 @@ function renderDrawer(){
    第 7 步 列表筛选条：全部 / 待审批 / 已通过 / 已驳回 + 按具体驳回原因
    ========================================================================== */
 
-/* 演示用水果班名 / 代号 —— 跟 c1–c5 同一套命名，新开班顺着往下取 */
-const FRUIT = [['苹果','AP'],['凤梨','DN'],['芒果','MG'],['荔枝','LZ'],['龙眼','LY'],
-               ['榴莲','LL'],['山竹','SZ'],['红毛丹','HMD'],['椰子','YZ'],['火龙果','HLG']];
+/* ★ 2026-10-17（Tony 定）：原来这里有一套「水果班名」备用列表（苹果/凤梨/芒果…），
+   **已连根删除，不再使用**。班名一律 = 市名 + 「班」（苏州班 / 杭州班…）。
+   市的名称不够时，在 CITIES 常量里追加新市即可（Tony 原话）。 */
 
 /* 申请来源 → 归属：own=自家外境 → 自有；out=外包外境 → 外包；
    edit=操作员自己编辑的排班 → 按这位教师的档案 */
@@ -2815,14 +3162,19 @@ function findMatch(a){
 
 /* ---- 建班 / 驳回的表单草稿 ---- */
 function appFormOf(o){
-  const used = DB.classes.map(c => c.name);
-  const f = FRUIT.find(x => used.indexOf(x[0] + '班') < 0) || ['新班','NW'];
   const n = DB.classes.length + 1;
   const cl = clashOf(o);
+  /* ★ 2026-10-17（Tony 定）：班名 = 市名 + 「班」，**不再有水果名备用**。
+     没有市名（老申请 / 数据不全）→ 提示补，不自动编个名字。
+     代号：市名首字 + 序号（如 苏州 → SZ-01），保证唯一。 */
+  const cityName = String(o.room || '').trim();
+  const code = cityName
+    ? (cityName.slice(0,1) + String(n).padStart(2,'0'))
+    : ('NW-' + String(n).padStart(2,'0'));
   return {
     /* 第 3 步：预填跟来源走 —— 自家教师 / 外包教师默认值不一样 */
-    name: f[0] + '班',
-    code: f[1] + '-' + String(n).padStart(2,'0'),
+    name: cityName ? (cityName + '班') : '',
+    code: code,
     cap: DB.set.capMax,
     room: o.room || '',
     own: appOwn(o),
@@ -2975,18 +3327,63 @@ const stamp = () => {
   const d = new Date(), p = n => String(n).padStart(2,'0');
   return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
 };
+/* ★ 2026-10-17：总课次按 HSK 级别定（Tony 定：先按 HSK1/2/3 全套）。
+   只用来显示 + 记进班级（plannedLessons），**暂不自动生成课次**（记在打磨台以后做）。 */
+const LV_TOTAL = { 'HSK1': 42, 'HSK2': 42, 'HSK3': 42 };
+const lvTotal = lv => LV_TOTAL[lv] || 42;
+const WEEKDAYS = [['1','周一'],['2','周二'],['3','周三'],['4','周四'],['5','周五'],['6','周六'],['0','周日']];
+
 function newAppForm(){
   return {
     teacher: (DB.teachers[0]||{}).id || '',
     lv: 'HSK1',
-    slot: (DB.slots[0]||{}).id || '',
     mode: 'online',
     room: '',
+    /* ★ 2026-10-17 起：不再从固定 slots 里挑，改成自定义课表规则
+       （Tony 定：方案 B —— 周几 + 几点 + 每节多长；总课次按级别自动） */
+    days: [],                  /* ['1','3','5'] 周几（0=周日）*/
+    startTime: '19:00',        /* 上课开始时间 */
+    durationMin: DB.lessonMin || 45,
+    startDate: DB.todayDate || '',   /* 开班日期 */
     n: DB.set.minOpen,
-    /* 学生名单：开班时就把人登记下来，这样「每位学生跟哪位教师」一目了然。
-       审批通过建班时，填了姓名的会一起建进学生档案并编入这个班。 */
-    roster: [{ name: '', phone: '' }],
+    /* ★ 2026-10-17（Tony 定）：学生名单不再手填/勾选 ——
+       开班时从候选池（同教师 + 同级别 + 未编班）自动带入，只读。 */
   };
+}
+/* 自定义课表 → 一段可读文字（存进班级 + 显示给用户看） */
+function schedText(days, time, dur){
+  const ds = (days||[]).map(d => (WEEKDAYS.find(w => w[0]===String(d))||['','?'])[1]).join(' / ');
+  const end = addMin(time, dur);
+  return (ds ? ds + ' ' : '') + (time||'') + (end ? '–' + end : '') + (dur ? ' · ' + dur + ' 分钟' : '');
+}
+function addMin(t, m){
+  if (!t || !m) return '';
+  const [h, mi] = String(t).split(':').map(Number);
+  const tot = (h||0)*60 + (mi||0) + Number(m||0);
+  return String(Math.floor(tot/60)%24).padStart(2,'0') + ':' + String(tot%60).padStart(2,'0');
+}
+/* 开班候选：同教师 + 同级别 + 同教室（市）+ 还没编班。
+   ★ 2026-10-17 修（Tony 发现的 bug）：
+     原来只查「同教师 + 同级别 + 未编班」，**漏了「同教室（市）」**——
+     结果 Uyen 一个人认领了苏州 + 杭州，开苏州班时把杭州的学生也带进去了。
+     现在加上 city 过滤：只带「学生档案里的市 = 这个班的市」的人。
+   —— teacher：授课教师 id
+   —— lv：级别
+   —— city：开班教室（市名）。不传 = 不过滤（兼容旧调用） */
+function pickCandidates(teacher, lv, city){
+  return DB.students.filter(s =>
+    !s.cls &&                                   /* 还没编班 */
+    (!teacher || s.teacherId === teacher) &&    /* 同一教师（学生的归属教师）*/
+    (!lv || s.lv === lv) &&                     /* 同级别，避免 HSK1 班混进 HSK3 */
+    (!city || s.city === city)                  /* ★ 同教室（市）—— 苏州班只带苏州的学生 */
+  );
+}
+/* 已选学生 → roster 形状（审批时直接编入，不重复建人） */
+function pickedToRoster(ids){
+  return (ids||[]).map(id => {
+    const s = DB.students.find(x => x.id === id);
+    return s ? { name: s.name, phone: s.phone || '', sid: id } : null;
+  }).filter(Boolean);
 }
 function openNewApp(){
   dState = {kind:'app', id:'__new__', edit:false, draft:null, mode:'view', form:newAppForm(), isNew:true};
@@ -2999,14 +3396,37 @@ function renderNewAppDrawer(){
   const sOpts = DB.slots.map(s => [s.id, s.name+' '+s.time]);
   /* 学生名单至少留一行空行，免得删光了没法再加 */
   const roster = (f.roster && f.roster.length) ? f.roster : [{name:'',phone:''}];
-  const named = roster.filter(s => String(s.name||'').trim()).length;
-  const stuRows = roster.map((s,i) =>
-    '<div class="stu-row">'+
-      '<span class="n">'+(i+1)+'</span>'+
-      '<input class="inp" data-a-roster="name"  data-i="'+i+'" value="'+esc(s.name)+'"  placeholder="学生姓名">'+
-      '<input class="inp" data-a-roster="phone" data-i="'+i+'" value="'+esc(s.phone)+'" placeholder="电话 / Zalo">'+
-      '<button type="button" class="x2" data-act="delstu" data-i="'+i+'" title="删掉这一位" aria-label="删掉这一位">✕</button>'+
-    '</div>').join('');
+  /* ★ 2026-10-17：先把「这个班开在哪个市」算出来 —— 学生候选要按它过滤 */
+  const _t0 = DB.teachers.find(x => x.id === f.teacher);
+  const _cs0 = (_t0 && _t0.cities) || [];
+  const _free0 = _cs0.filter(city => !DB.classes.some(c => c.room === city));
+  const _classCity = (f.room && _free0.indexOf(f.room) >= 0) ? f.room : (_free0[0] || '');
+  /* ★ 2026-10-17（Tony 定）：学生**完全只读** —— 跟着「教师 + 级别 + 教室（市）」自动带出候选池的人，
+     不能勾选、不能取消。要调整成员就去「学生」页改他的教室/教师/级别。 */
+  const cand = pickCandidates(f.teacher, f.lv, _classCity);
+  const tName = (DB.teachers.find(t => t.id === f.teacher)||{}).name || '—';
+  const stRows = cand.length
+    ? cand.map(s => {
+        const loc = s.city ? (s.city+(s.room?'（'+s.room+'）':'')) : (s.room||'未选教室');
+        return '<div class="ro-row">'+
+          '<span class="pn">'+esc(s.name)+'</span>'+
+          '<span class="pl">'+esc(s.lv)+' · '+esc(loc)+'</span>'+
+        '</div>';
+      }).join('')
+    : '<div class="lbl" style="padding:10px 0">没有符合条件的学生（同教师「'+esc(tName)+'」+ 级别 '+esc(f.lv)+
+      (_classCity ? ' + 教室「'+esc(_classCity)+'」' : '') + ' + 尚未编班）</div>';
+  const stuSec =
+    '<div class="ro-bar"><span class="lbl">共 <b>'+cand.length+'</b> 人 · 自动带入（同教师 + 同级别'+
+      (_classCity ? ' + 同教室「'+esc(_classCity)+'」' : '') + ' + 未编班）</span></div>'+
+    '<div class="ro-list">'+stRows+'</div>'+
+    '<div class="note" style="margin:8px 0 0;font-size:11.5px">'+
+      '名单<b>只读</b> —— 开班时这 '+cand.length+' 人会直接编进班，<b>不会重复建档案</b>。'+
+      '要增删成员请先去「学生」页改他的<b>教室（市）</b> / 教师 / 级别；'+
+      (_classCity
+        ? '<br>⚠️ 只带<b>档案教室 = '+esc(_classCity)+'</b> 的学生 —— 别的市的学生不会混进来。'
+        : '')+
+      '</div>';
+
   $('#drawer').innerHTML =
     '<div class="d-h">'+
       '<div><div class="t">新建开班申请</div>'+
@@ -3016,23 +3436,40 @@ function renderNewAppDrawer(){
     '<div class="d-b">'+
       aSec('申请内容',
         fld('教师', sel('teacher', f.teacher, tOpts, 'data-a-inp'))+
+        /* ★ 2026-10-17（Tony 定）：省份 = 教师固定 ID，开班不再选省
+           教室（市）= 从「教师勾了但还没开班」的市里选 */
+        (function(){
+          const t = DB.teachers.find(x => x.id === f.teacher);
+          const cs = (t && t.cities) || [];
+          if (!cs.length) return fld('教室（市）', '<span class="lbl">该教师还没勾选市 —— 先去教师档案勾一个市</span>');
+          /* 只留「还没开班」的市（已开班的市开不了第二个班） */
+          const free = cs.filter(city => !DB.classes.some(c => c.room === city));
+          if (!free.length) return fld('教室（市）', '<span class="lbl">该教师勾的市都已开班 —— 去教师档案再勾一个新市</span>');
+          if (free.length === 1) return fld('教室（市）', '<span class="tg on">'+esc(free[0])+'</span> <span class="lbl">（唯一可开班的市）</span>');
+          return fld('教室（市）', sel('room', (free.indexOf(f.room)>=0? f.room : free[0]), free.map(c => [c, c]), 'data-a-inp'));
+        })()+
         fld('级别', sel('lv', f.lv, [['HSK1','HSK1'],['HSK2','HSK2'],['HSK3','HSK3']], 'data-a-inp'))+
-        fld('时段', sel('slot', f.slot, sOpts, 'data-a-inp'))+
         fld('形态', sel('mode', f.mode, [['online','线上'],['offline','线下']], 'data-a-inp'))+
-        (off ? fld('教室', inp('room', f.room, 'text', 'data-a-inp')) : '')+
         fld('学生人数', inp('n', f.n, 'number', 'data-a-inp'))+
         '<div class="note" style="margin:10px 0 0;font-size:11.5px">'+
-          '进度默认从 <b>第一阶段 · 第 1 课</b> 开始。提交后系统照样帮你查碰撞、'+
-          '找有没有能并进去的班。</div>')+
-      aSec('学生名单（姓名 + 电话）',
-        stuRows +
-        '<button type="button" class="btn sm" data-act="addstu">＋ 再加一位学生</button>'+
+          '总课次按级别自动：<b>'+esc(f.lv)+' = '+lvTotal(f.lv)+' 节</b>（进度从第一阶段 · 第 1 课开始）。</div>')+
+      /* ★ 自定义课表（方案 B：不再从固定时段里挑） */
+      aSec('上课时间（自定义）',
+        fld('开班日期', '<input class="inp" data-a-inp="startDate" type="date" value="'+esc(f.startDate||'')+'">')+
+        fld('每周哪几天',
+          '<div class="picks">'+WEEKDAYS.map(w => {
+            const on = (f.days||[]).indexOf(w[0]) >= 0;
+            return '<button type="button" class="pick'+(on?' on':'')+'" data-a-day="'+w[0]+'">'+w[1]+'</button>';
+          }).join('')+'</div>')+
+        '<div class="g2">'+
+          fld('几点开始', '<input class="inp" data-a-inp="startTime" type="time" value="'+esc(f.startTime||'19:00')+'">')+
+          fld('每节多少分钟', inp('durationMin', f.durationMin, 'number', 'data-a-inp'))+
+        '</div>'+
         '<div class="note" style="margin:10px 0 0;font-size:11.5px">'+
-          '已登记 <b>'+named+'</b> 位（申请人数 '+esc(f.n)+' 位）。'+
-          (named
-            ? '审批通过建班时，这 '+named+' 位会一起建进<b>学生档案</b>并编入这个班 —— 归属教师跟着班走。'
-            : '没填姓名的，通过后只按「申请人数」建班，不建学生档案。')+
-        '</div>')+
+          '当前课表：<b>'+esc(schedText(f.days, f.startTime, f.durationMin) || '（还没选周几）')+'</b>'+
+          '<br>⚠️ 课次暂时<b>不自动生成</b>，开班后按现有方式推进（打磨台已记，以后补）。</div>')+
+      /* ★ 学生（只读，自动带出候选池成员） */
+      aSec('学生（自动带入）', stuSec)+
     '</div>'+
     '<div class="d-f">'+
       '<button class="btn pri" data-a-do="create">提交申请</button>'+
@@ -3043,27 +3480,54 @@ function renderNewAppDrawer(){
 function createApp(){
   readAppForm();
   const f = dState.form;
-  const room = String(f.room||'').trim();
-  if (!f.teacher || !f.lv || !f.slot || !f.mode) return;
-  if (f.mode === 'offline' && !room) return;      /* 线下不填教室，碰撞就没法判 */
+  /* ★ 2026-10-17：不再用固定 slot，改成自定义课表
+     校验：教师 + 级别 + 形态 + 至少一个周几 + 开始时间 */
+  if (!f.teacher || !f.lv || !f.mode) return;
+  if (!(f.days||[]).length){ toast('请至少选一个上课日'); return; }
+  if (!f.startTime){ toast('请填上课时间'); return; }
+  /* 教室（市）：从「教师勾了但还没开班」的市里取
+     —— 教师只勾一个未开班市 → 用它；多个 → 用 f.room（用户在下拉里选的） */
+  const t = DB.teachers.find(x => x.id === f.teacher) || {};
+  const cs = t.cities || [];
+  const free = cs.filter(city => !DB.classes.some(c => c.room === city));
+  const finalRoom = (f.room && free.indexOf(f.room) >= 0) ? f.room : (free[0] || '');
+  if (!finalRoom){ toast('该教师没有可开班的市（都已开班，或还没勾市）'); return; }
+
   const nums = DB.apps.map(a => parseInt(String(a.id).replace(/\D/g,''), 10) || 0);
   const id = 'a' + (Math.max(0, ...nums) + 1);
-  /* 学生名单：只收填了姓名的行 */
-  const roster = (f.roster || [])
-    .map(s => ({ name: String(s.name||'').trim(), phone: String(s.phone||'').trim() }))
-    .filter(s => s.name);
+  /* ★ 2026-10-17（Tony 定）：学生只读 —— 直接取候选池（同教师 + 同级别 + 同教室市 + 未编班），
+     不再有勾选 / 手工输入。审批通过时带 sid 直接编班，绝不重复建档案。
+     ⚠️ 必须传 finalRoom：否则 Uyen 认领苏州+杭州时，苏州班会带进杭州的学生（Tony 发现的 bug）。 */
+  const roster = pickCandidates(f.teacher, f.lv, finalRoom).map(s => ({
+    name: s.name, phone: s.phone || '', sid: s.id,
+  }));
+  if (!roster.length){ toast('该教师 + 该级别 + 教室「'+finalRoom+'」下没有可编班的学生（先去「学生」页建好并绑定教师 + 教室）'); return; }
+  const n = roster.length;
+
+  /* 合成一个 slot 对象存进申请 —— 保持与旧数据结构兼容（审批 / 碰撞检查 / 教师端都读 slot） */
+  const slotId = 'sl_' + id;
+  const slotObj = {
+    id: slotId, name: '自定义',
+    time: f.startTime + '–' + addMin(f.startTime, f.durationMin),
+    days: (f.days||[]).map(d => (WEEKDAYS.find(w => w[0]===String(d))||['','?'])[1]).join(' / '),
+    startDate: f.startDate || DB.todayDate,
+    durationMin: Number(f.durationMin) || DB.lessonMin,
+  };
+  /* 把这条自定义时段登记进 DB.slots（课程表 / 矩阵要按 id 找它） */
+  if (!DB.slots.some(s => s.id === slotId)) DB.slots.push(slotObj);
+
   DB.apps.unshift({
     id: id, src: 'edit', teacher: f.teacher, lv: f.lv,
     stage: stageOf(1), lesson: 1,
-    mode: f.mode, slot: f.slot,
-    room: f.mode === 'offline' ? room : '',
-    n: Math.max(0, parseInt(f.n, 10) || 0),
+    mode: f.mode, slot: slotId,
+    room: finalRoom,                      /* 市名 = 开班名 */
+    n: n,
     roster: roster,
+    plannedLessons: lvTotal(f.lv),
     at: stamp(), state: '待审批',
   });
   save();
-  closeDrawer();
-  /* hash 没变时 hashchange 不触发，得手动 render() */
+  closeDrawer(true);
   if (location.hash === '#apply') render(); else location.hash = '#apply';
 }
 
@@ -3077,6 +3541,20 @@ function addStudentsFromRoster(o, classId){
   const nums = DB.students.map(s => parseInt(String(s.id).replace(/\D/g,''), 10) || 0);
   let seq = Math.max(0, ...nums);
   roster.forEach(r => {
+    /* ★ 2026-10-17：带 sid 的 = 从已有学生里勾的 → 直接编班，绝不重复建档案。
+       这正是 Tony 的流程：人先建好，开班时只负责「把他们收进班」。 */
+    if (r.sid){
+      const s = DB.students.find(x => x.id === r.sid);
+      if (s){
+        if (!s.cls){                       /* 还没编班才收；已编班的跳过 */
+          s.cls = classId;
+          s.joinedAt = DB.todayDate;
+          if (!s.teacherId) s.teacherId = o.teacher;
+        }
+        return;                            /* 不新建、也不占 seq */
+      }
+      /* sid 指向的学生已被删 → 退化成「按名字新建」，别静默丢人 */
+    }
     seq++;
     DB.students.push({
       id: 'st' + seq,
@@ -3257,7 +3735,7 @@ function saveRoll(){
   picked.forEach(sid => DB.absences.push({ sid:sid, cid:cid, no:no }));
   buildFacts();
   save();
-  closeDrawer();
+  closeDrawer(true);
   toast('已记 ' + picked.length + ' 人缺勤');
   render();
   return true;
@@ -3298,7 +3776,7 @@ function enrollWhy(s, c){
 
 function renderEnrollDrawer(){
   const s = DB.students.find(x => x.id === dState.sid);
-  if (!s){ closeDrawer(); return; }
+  if (!s){ closeDrawer(true); return; }
   const rows = DB.classes.length ? DB.classes.map(c => {
     const w = enrollWhy(s, c);
     return '<div class="enrrow'+(w ? ' no' : '')+'">'+
@@ -3337,7 +3815,7 @@ function openAttDrawer(sid){
 }
 function renderAttDrawer(){
   const s = DB.students.find(x => x.id === dState.sid);
-  if (!s || !s.cls){ closeDrawer(); return; }
+  if (!s || !s.cls){ closeDrawer(true); return; }
   const c = C(s.cls), from = stuJoinedAt(s);
   const ls = lessonsOf(s.cls).filter(l => l.status === 'done' && (!from || l.date >= from));
   const absent = {};
@@ -3384,7 +3862,7 @@ function openExamDrawer(sid){
 }
 function renderExamDrawer(){
   const s = DB.students.find(x => x.id === dState.sid);
-  if (!s){ closeDrawer(); return; }
+  if (!s){ closeDrawer(true); return; }
   const c = s.cls ? C(s.cls) : null;
   const st = c ? stageOf(classLesson(c)) : 0;
   const rows = [1,2,3].map(i => {
@@ -3431,7 +3909,7 @@ function enrollInto(cid){
   /* ⚠️ 不再 c.n++ —— 人数由 classN() 从学生表现算 */
   buildFacts();
   save();
-  closeDrawer();
+  closeDrawer(true);
   toast(s.name + ' 已编入 ' + c.name);
   render();
   return true;
@@ -3488,6 +3966,9 @@ function approveApp(){
   if (clashOf(o)) return;          /* 有碰撞，按钮本来就是禁用的，这里双保险 */
   readAppForm();
   const f = dState.form;
+  /* ★ 2026-10-17（Tony 定）：班名 = 市名，没有市名就不许建班（不再自动编水果名） */
+  const cityName = String(o.room || f.room || '').trim();
+  if (!cityName){ toast('这条申请没有教室（市）—— 无法开班，请驳回重开'); return; }
   const mt = findMatch(o);
   const t = T(o.teacher);
   /* ⚠️ 2026-10-12：这里以前会算 addN（名单人数，没名单就退回申请人数）然后 mt.n += addN。
@@ -3500,7 +3981,6 @@ function approveApp(){
     const nc = {
       id: 'c' + (DB.classes.length + 1) + '-' + Date.now().toString(36),
       code: f.code || ('NW-' + String(DB.classes.length+1).padStart(2,'0')),
-      name: f.name || '新班',
       lv: o.lv, mode: o.mode, slot: o.slot,
       teacher: o.teacher,
       /* ⚠️ 仍然不写死 lesson —— 进度一律从事实表数出来。
@@ -3509,7 +3989,10 @@ function approveApp(){
       cap: Number(f.cap) || DB.set.capMax,
       /* ⚠️ 不写 n —— 人数从学生表现算（新班建出来时 0 人，
          名单里的学生由下面 addStudentsFromRoster 落成档案后自动计入） */
-      room: o.mode === 'offline' ? (f.room || '') : '',
+      /* ★ 2026-10-17（Tony 定）：市名 = 开班名，线上班也要记 room。
+         以前只在线下才存 room，导致线上班在「教室」页看不见、班名也取不到市名。 */
+      room: cityName,
+      name: cityName + '班',
       own: f.own,
     };
     DB.classes.push(nc);
@@ -3582,13 +4065,18 @@ function route(){ return (location.hash||'#overview').slice(1); }
 function render(){
   const id = route();
   $('#view').innerHTML = (R[id]||vOverview)();
+  /* ★ 2026-10-17：学生页 / 教师页 / 排课›候选池 用「Excel 冻结窗格」布局
+     （页头固定、表格自己滚；候选池是排课页的子页签，vBoard 内部已包 freeze 结构）。
+     其他页面一律不启用 —— 它们没有 is-freeze，CSS 一条都不命中。 */
+  const freezeOn = (id === 'students' || id === 'teachers' || (id === 'board' && bTab === 'pool'));
+  $('#view').classList.toggle('is-freeze', freezeOn);
   renderNav();
   /* 兜底到总览：hash 写错（比如旧书签 #design）时视图渲染的是 vOverview，
      面包屑也得跟着说「总览」，不能还挂着别的名字 */
   const v = VIEWS.find(x=>x.id===id) || VIEWS[0];
   $('#crumb').innerHTML = '主端<span class="sep">/</span><b>'+v.name+'</b>';
   $('#side').classList.remove('open'); $('#scrim').classList.remove('on');
-  closeDrawer();   /* 导航 / 筛选 / 搜索离开当前视图时，顺手把档案抽屉收起来 */
+  closeDrawer(true);   /* 导航 / 筛选 / 搜索离开当前视图时，顺手把档案抽屉收起来 */
   window.scrollTo(0,0);
   bFocus = null;   /* 矩阵点卡片点亮的那个班只亮这一次 render，下次重画就恢复正常 */
   applyLang();     /* 渲染完再套语言层（中文 → 越南语） */
@@ -4065,7 +4553,8 @@ document.getElementById('langSwitch').addEventListener('click', e => {
 
 /* ---------- 事件 ---------- */
 document.addEventListener('click', e => {
-  /* ---- 抽屉优先：抽屉内的按钮绝不能被下面的全局分支截获 ---- */
+  /* ---- 抽屉优先：抽屉内的按钮绝不能被下面的全局分支截获 ----
+     ★ 2026-10-17：点遮罩 / 点 ✕ = 用户主动关闭 → **不传 force**，有未保存改动会先确认 */
   if (e.target.closest('#dScrim')){ closeDrawer(); return; }
   if (e.target.closest('#drawer [data-d-close]')){ closeDrawer(); return; }
   if (e.target.closest('#drawer [data-d-edit]')){ startEdit(); return; }
@@ -4073,6 +4562,23 @@ document.addEventListener('click', e => {
   if (e.target.closest('#drawer [data-d-cancel]')){ cancelEdit(); return; }
   const dp = e.target.closest('#drawer [data-d-pick]');
   if (dp){ togglePick(dp); return; }
+  /* ★ 2026-10-17：点「已锁定的省份」→ 输密码才能改 ID（Tony 定） */
+  const dl = e.target.closest('#drawer [data-d-roomlock]');
+  if (dl){
+    if (!dState || !dState.draft) return;
+    const cur = dl.dataset.dRoomlock;
+    const input = (typeof window.prompt === 'function')
+      ? window.prompt('省份（ID）已锁定：' + cur + '\n要改省份，请输入密码：')
+      : '';
+    if (input === null) return;                 /* 取消 */
+    if (input !== ROOM_PASS){ toast('密码不对，省份保持锁定'); return; }
+    /* 密码对了 → 临时解锁：把 draft.room 清空，重画成「可重新选省」 */
+    dState.draft.room = '';
+    dState.draft.cities = [];                   /* 换省必须重选市（省变了，市也变） */
+    renderDrawer();
+    toast('已解锁 —— 请重新选择省份');
+    return;
+  }
   /* ---- 教师选教室（省份）· 单选：点一个 = 覆盖 ---- */
   const dr = e.target.closest('#drawer [data-d-room]');
   if (dr){
@@ -4168,21 +4674,40 @@ document.addEventListener('click', e => {
     else if (k === 'sealmonth') sealSettle();
     else if (k === 'editmember'){ e.preventDefault(); openDrawer('member:'+act.dataset.i); }
     else if (k === 'delmember'){ e.preventDefault(); delMember(act.dataset.i); }
+    /* ★ 2026-10-17：一键清空全部成员 */
+    else if (k === 'clearmembers'){ e.preventDefault(); clearMembers(); }
     /* 备份链路：教师页 / 学生页 / 数据页三处入口，走的是同一对函数 */
     else if (k === 'export') exportData();
     else if (k === 'import') openImportDrawer();
+    /* ★ 2026-10-17：清理孤儿课次 / 缺勤 / 失效关联 */
+    else if (k === 'cleanup') doCleanup();
+    /* ★ 2026-10-17：清空业务记录（开班申请 / 课次 / 缺勤） */
+    else if (k === 'wipe') doWipe();
     else if (k === 'goclasses'){
       /* 总览「差 N 人开班」那条：班级没有自己的抽屉，就跳到排课 › 班级 子页签去看它 */
       if (bTab !== 'classes') bTab = 'classes';
       if (location.hash === '#board') render(); else location.hash = '#board';
     }
-    else if ((k === 'addstu' || k === 'delstu') && dState && dState.isNew){
-      readAppForm();                                   /* 先把已填的名单收回来，否则重画会丢 */
-      const i = Number(act.dataset.i) || 0;
-      if (k === 'addstu') dState.form.roster.push({ name:'', phone:'' });
-      else                dState.form.roster.splice(i, 1);
-      if (!dState.form.roster.length) dState.form.roster.push({ name:'', phone:'' });
-      renderNewAppDrawer();
+    /* ★ 2026-10-17：开班表单的学生改为「只读自动带入」，
+       原 addstu / delstu / rmode / pickall / picknone 全部删除（Tony 定：开班只从候选池拉人） */
+    return;
+  }
+  /* ★ 2026-10-17：自定义课表 —— 周几多选（toggle，不整页重画） */
+  const dDay = e.target.closest('#drawer [data-a-day]');
+  if (dDay && dState && dState.isNew && dState.form){
+    const d = dDay.dataset.aDay;
+    const arr = dState.form.days || (dState.form.days = []);
+    const i = arr.indexOf(d);
+    if (i >= 0) arr.splice(i,1); else arr.push(d);
+    dDay.classList.toggle('on', i < 0);
+    /* 更新「当前课表」那行预览文字 */
+    const notes = $('#drawer').querySelectorAll('.note');
+    for (const n of notes){
+      if (n.textContent.indexOf('当前课表') >= 0){
+        const b = n.querySelector('b');
+        if (b) b.textContent = schedText(dState.form.days, dState.form.startTime, dState.form.durationMin) || '（还没选周几）';
+        break;
+      }
     }
     return;
   }
@@ -4227,31 +4752,58 @@ document.addEventListener('change', e => {
   if (a && dState && dState.kind === 'app'){
     const f = a.dataset.aInp;
     if (dState.isNew){
-      /* 新建态：切「线上 / 线下」要重画（教室字段跟着出现或消失） */
+      /* 新建态：
+         · 切「线上 / 线下」→ 重画（教室字段跟着出现或消失）
+         · 切「教师」或「级别」→ 重画（'pick' 模式的候选学生跟着变） */
       if (f === 'mode'){ readAppForm(); renderNewAppDrawer(); }
+      else if (f === 'teacher' || f === 'lv'){
+        readAppForm();
+        /* 换了教师/级别 → 已勾的人可能不再属于候选，清掉重选，避免带进不匹配的人 */
+        dState.form.picked = [];
+        renderNewAppDrawer();
+      }
     } else if ((dState.mode !== 'reject' && f === 'room') || (dState.mode === 'reject' && f === 'reason')){
       readAppForm();
       renderAppDrawer(getDRec());
     }
   }
-  /* ---- 学生抽屉：选了市 → 教师下拉重画（只显示认领该市的教师） ---- */
+  /* ---- 学生抽屉：教师 → 市 两级（2026-10-17 重做）----
+     选教师 → 市下拉要换成「该教师的市」，所以整抽屉重画；
+     选市   → 只更新「归属结果」那行文字，不整页重画（免得文本框失焦）。 */
+  const dTeacher = e.target.closest('#drawer [data-d-inp="teacherId"]');
+  if (dTeacher && dState && dState.kind === 'student' && dState.edit){
+    // 先收下面单里已填的东西，再换教师、清掉旧市（别的教师可能没这个市）
+    const keep = dState.draft;
+    const flds = {};
+    $('#drawer').querySelectorAll('[data-d-inp]').forEach(el => { flds[el.dataset.dInp] = el.value; });
+    if (flds.name !== undefined) keep.name = flds.name;
+    if (flds.phone !== undefined) keep.phone = flds.phone;
+    keep.teacherId = dTeacher.value;
+    keep.city = '';                                  /* 换教师 → 市必须重选 */
+    const t = DB.teachers.find(x => x.id === keep.teacherId);
+    keep.room = t ? (t.room || '') : '';
+    renderDrawer();
+    return;
+  }
   const dCity = e.target.closest('#drawer [data-d-inp="city"]');
-  if (dCity && dState && dState.kind === 'student' && dState.edit){
+  if (dCity && dState && dState.kind === 'student' && dState.edit && dState.draft){
     const city = dCity.value;
-    const tSel = $('#drawer [data-d-inp="teacherId"]');
-    if (tSel){
-      /* 重画教师下拉的 options（不调 renderDrawer，避免冲文本框） */
-      const list = city
-        ? DB.teachers.filter(t => (t.cities||[]).includes(city))
-        : DB.teachers;
-      const opts = '<option value="">未指定</option>' + list.map(t =>
-        '<option value="'+esc(t.id)+'">'+esc(t.name+'（'+(t.src==='own'?'自有':'外包')+'）')+'</option>'
-      ).join('');
-      tSel.innerHTML = opts;
-      /* 如果当前选的教师不在新列表里，清空 */
-      const cur = tSel.value;
-      if (city && cur && !list.find(t => t.id === cur)) tSel.value = '';
+    const tId  = dState.draft.teacherId;
+    dState.draft.city = city;
+    /* 只更新「归属结果」那行文字（在 .note 里） */
+    const cls = classOfStudent(tId, city);
+    const notes = $('#drawer').querySelectorAll('.note');
+    for (const n of notes){
+      if (n.textContent.indexOf('归属结果') >= 0){
+        const tail = !tId ? '还没选教师 → 存为候选池'
+          : !city ? '还没选市 → 存为候选池'
+          : cls ? '<span class="tg on">已归入 '+esc(cls.name)+'</span>'
+          : '<span class="tg warn">「'+esc(city)+'」还没开班 → 候选池（开班后自动编入）</span>';
+        n.innerHTML = n.innerHTML.replace(/归属结果：[\s\S]*$/, '归属结果：' + tail);
+        break;
+      }
     }
+    return;
   }
 });
 $('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
@@ -4263,9 +4815,17 @@ $('#btnReset').addEventListener('click', () => {
     : true;
   if (ok) resetDB();
 });
-/* 手动推 / 拉云端（自动同步之外的手动兜底 —— 想立刻同步时点） */
+/* ===== 手动推 / 拉云端（2026-10-17 全手动模式：这是唯一的同步入口）=====
+   —— 推：把本机数据整份写进云端（覆盖云端）
+   —— 拉：把云端数据整份覆盖本机（有确认框，防手滑） */
 const _bp = $('#btnCloudPush');
-if (_bp) _bp.addEventListener('click', () => { fsPush(ok => toast(ok ? '☁︎ 已推送到云端' : '☁︎ 推送失败（检查网络）')); });
+if (_bp) _bp.addEventListener('click', () => {
+  const yes = (typeof window.confirm === 'function')
+    ? window.confirm('把本机数据整份上传到云端？\n\n云端现有数据会被覆盖。')
+    : true;
+  if (!yes) return;
+  fsPush(ok => toast(ok ? '☁︎ 已推送到云端' : '☁︎ 推送失败（检查网络）'));
+});
 const _bl = $('#btnCloudPull');
 if (_bl) _bl.addEventListener('click', () => {
   fsPull((ok, payload, at) => {
@@ -4273,14 +4833,19 @@ if (_bl) _bl.addEventListener('click', () => {
     let o = null;
     try { o = JSON.parse(payload); } catch(e){ toast('☁︎ 云端数据损坏'); return; }
     if (!o || o.__app !== APP_TAG){ toast('☁︎ 云端数据不是本系统'); return; }
-    const warn = (loadedFromStore && lastSavedAt && at && at < lastSavedAt)
-      ? '云端比本地旧，仍要覆盖吗？' : '用云端数据覆盖本机？';
+    const newer = (loadedFromStore && lastSavedAt && at && at < lastSavedAt);
+    const warn = '⚠️ 用云端数据覆盖本机？\n\n' +
+      '本机现有：教师 ' + DB.teachers.length + ' / 学生 ' + DB.students.length +
+      ' / 班级 ' + DB.classes.length + ' / 课次 ' + DB.lessons.length + '\n' +
+      (newer ? '\n注意：云端那次比本机还旧。\n' : '') +
+      '\n覆盖后本机数据无法恢复（除非有导出备份）。';
     const yes = (typeof window.confirm === 'function') ? window.confirm(warn) : true;
     if (!yes) return;
     DB = normalizeDB(o); buildFacts();
     lastSavedAt = o.__at || at || new Date().toISOString();
+    cloudDirty = false;
     try { localStorage.setItem(KEY, payload); } catch(e){}
-    loadedFromStore = true; markSaved('loaded'); render();
+    loadedFromStore = true; markSaved('loaded'); markCloud('ok', at); render();
     toast('☁︎ 已从云端载入');
   });
 });
@@ -4312,12 +4877,18 @@ document.addEventListener('keydown', e => { if (e.key==='Escape' && dState) clos
 window.addEventListener('hashchange', render);
 render();
 
-/* ★ 启动后拉云端：只有云端比本地「更新」才覆盖本地（防旧标签页覆盖，BMSv1 的教训）。
-   云端没有 / 拉失败 / 没网 → 静默，本地照常用。 */
+/* ⚠️⚠️ 2026-10-17（Tony 定：全手动）：
+   原来这里有 cloudBootPull() —— 启动时自动拉云端、切回标签页也拉。
+   **已停用**（函数保留但不再自动调用）。
+   理由：Tony 要在本地做测试，确认后才上传云端；自动拉会把本地测试数据覆盖掉。
+   现在只有他手动点「☁︎ 从云端拉取」才会执行 pullCloudManually()。 */
 function cloudBootPull(){
   fsPull((ok, payload, at) => {
-    if (!ok || !payload) return;                       /* 云端还没数据 → 不动本地 */
-    if (loadedFromStore && lastSavedAt && at && at <= lastSavedAt) return;  /* 本地不旧 → 保持本地 */
+    if (!ok || !payload) return;
+    if (loadedFromStore && lastSavedAt && at && at <= lastSavedAt) return;
+    let wipedAt = null;
+    try { wipedAt = localStorage.getItem('zhops.wipedAt'); } catch(e){}
+    if (wipedAt && at && at < wipedAt) return;
     let o = null;
     try { o = JSON.parse(payload); } catch(e){ return; }
     if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return;
@@ -4325,20 +4896,19 @@ function cloudBootPull(){
       DB = normalizeDB(o);
       buildFacts();
       lastSavedAt = o.__at || at || new Date().toISOString();
-      localStorage.setItem(KEY, payload);              /* 落回本地，两端一致 */
+      localStorage.setItem(KEY, payload);
       loadedFromStore = true;
+      cloudDirty = false;
       markSaved('loaded');
       render();
       toast('☁︎ 已从云端载入');
     } catch(e){ /* 云端那份坏了 → 绝不动本地 */ }
   });
 }
-cloudBootPull();
+/* ★ 不再自动调用 cloudBootPull() —— 全手动模式 */
 
-/* 手机 / 别的电脑在云端改了 → 回到这个标签页时拉一次（不必手动刷新） */
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') cloudBootPull();
-});
+/* ⚠️ 2026-10-17（全手动）：切回标签页**不再自动拉云端**。
+   原来这里挂了 visibilitychange → cloudBootPull()，会把本地测试数据冲掉。已停用。 */
 </script>
 </body>
 </html>
