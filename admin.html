@@ -583,7 +583,7 @@ tr[data-open]:hover td{background:var(--brand-soft);}
       <button type="button" class="sf-btn" id="btnCloudPull">☁︎ 从云端拉取</button><br>
       <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
       <!-- ★ 2026-10-17：版本标记 —— 用来确认浏览器加载的是不是最新文件（file:// 也会缓存） -->
-      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v3 · freeze ×3</div>
+      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v4 · vi-clean</div>
     </div>
   </aside>
 
@@ -1465,7 +1465,7 @@ function vOverview(){
           return '<tr>'+
             '<td><span class="donut '+dotCls+'" title="'+dotTip+'"></span></td>'+
             '<td class="m nowrap">'+r.time+'<span style="color:var(--ink3)">–'+endOf(r.time)+'</span></td>'+
-            '<td><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+            '<td><b>'+esc(c.name)+'</b></td>'+
             '<td class="m nowrap">'+lessonLabel(c.lv, r.lesson)+'</td>'+
             '<td>'+modeTag(r.mode)+'</td>'+
             '<td>'+esc(t.name)+' '+ownTag(t.src)+'</td>'+
@@ -1488,7 +1488,7 @@ function vOverview(){
       ${anom
         ? noSlot.map(t=>'<div class="note amber" data-open="teacher:'+t.id+'"><b>教师未配可授时段</b> —— '+esc(t.name)+'（'+ownTag(t.src)+'）的可授时段是空的，系统会把空时段解释成「不限」，等于<b>全时段都能排</b>。请补上。<span class="go">去补时段 ›</span></div>').join('')+
           noTeacher.map(s=>'<div class="note amber" data-open="student:'+s.id+'"><b>学生没有归属也没有意向</b> —— '+esc(s.name)+'（'+s.lv+'），既没编班也没填意向班级。<span class="go">去看这个学生 ›</span></div>').join('')+
-          thin.map(c=>'<div class="note" data-act="goclasses"><b>差 '+(c.cap-classN(c))+' 人开班</b> —— '+esc(c.name)+' '+c.code+'（'+c.lv+'）目前 '+classN(c)+' / '+c.cap+' 人，进度 '+lessonLabel(c.lv,classLesson(c))+'。<span class="go">去排课 › 班级 看这个班 ›</span></div>').join('')
+          thin.map(c=>'<div class="note" data-act="goclasses"><b>差 '+(c.cap-classN(c))+' 人开班</b> —— '+esc(c.name)+'（'+c.lv+'）目前 '+classN(c)+' / '+c.cap+' 人，进度 '+lessonLabel(c.lv,classLesson(c))+'。<span class="go">去排课 › 班级 看这个班 ›</span></div>').join('')
         : '<div class="empty"><div class="big">没有需要处理的异常</div>教师可授时段 / 学生归属 / 班级人数都齐了</div>'}
     </div>
   </div>
@@ -1774,7 +1774,7 @@ function bMatrix(){
               return '<a href="#" class="chip '+(c.mode==='online'?'':'off')+'"'+
                      ' data-c-act="open" data-cid="'+c.id+'" title="点开看这个班">'+
                      '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
-                     '<span class="nm">'+esc(c.name)+' '+c.code+'</span></b>'+
+                     '<span class="nm">'+esc(c.name)+'</span></b>'+
                      '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
                      '<span class="tn">'+esc(t.name)+(c.mode==='offline'&&c.room?' · '+esc(c.room):'')+'</span></a>';
             }).join('')+'</td>';
@@ -1792,7 +1792,7 @@ function bClasses(){
       <tbody>${rows.length ? rows.map(c=>{
         const t=T(c.teacher), sl=S(c.slot), p=classN(c)/c.cap*100;
         return '<tr'+(c.id === bFocus ? ' class="focus"' : '')+'>'+
-        '<td><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+        '<td><b>'+esc(c.name)+'</b></td>'+
         '<td><span class="tg off">'+c.lv+'</span></td>'+
         '<td>'+modeTag(c.mode)+'</td>'+
         '<td class="nowrap">'+sl.name+' <span class="m" style="color:var(--ink3)">'+sl.time+'</span><br><span style="color:var(--ink3);font-size:11.5px">'+sl.days+'</span></td>'+
@@ -1906,7 +1906,7 @@ function bCalendar(){
       '<td class="m nowrap">'+l.date+' <span style="color:var(--ink3)">'+weekdayText(l.date)+'</span>'+
         (isToday ? ' <span class="tg on">今天</span>' : '')+'</td>'+
       '<td class="m nowrap">'+slotStart(l.time)+'<span style="color:var(--ink3)">–'+endOf(slotStart(l.time))+'</span></td>'+
-      '<td><b>'+esc(cn)+'</b> <span class="m" style="color:var(--ink3)">'+cc+'</span></td>'+
+      '<td><b>'+esc(cn)+'</b></td>'+
       '<td class="m nowrap">'+lessonLabel(clv, l.no)+'</td>'+
       '<td>'+modeTag(cm)+'</td>'+
       '<td>'+esc(t.name)+'</td>'+
@@ -2061,7 +2061,7 @@ function vLessons(){
           /* 已取消的整行压暗 —— 一眼看出来它「在，但不算数」 */
           return '<tr' + (l.status === 'cancel' ? ' style="opacity:.55"' : '') + '>' +
             '<td class="m nowrap">' + l.date + ' <span style="color:var(--ink3)">' + weekdayText(l.date) + '</span></td>' +
-            '<td><b>' + esc(cn) + '</b> <span class="m" style="color:var(--ink3)">' + cc + '</span></td>' +
+            '<td><b>' + esc(cn) + '</b></td>' +
             '<td class="m nowrap">' + lessonLabel(clv, l.no) + '</td>' +
             '<td class="m nowrap">' + slotStart(l.time) + '<span style="color:var(--ink3)">–' + endOf(slotStart(l.time)) + '</span></td>' +
             '<td>' + modeTag(cm) + '</td>' +
@@ -2089,7 +2089,7 @@ function vLessons(){
       <tbody>${live.length ? live.map(c => {
         const n = list.filter(l => l.cid === c.id).length;
         return '<tr>' +
-          '<td><b>' + esc(c.name) + '</b> <span class="m" style="color:var(--ink3)">' + c.code + '</span></td>' +
+          '<td><b>' + esc(c.name) + '</b></td>' +
           '<td><span class="tg off">' + c.lv + '</span></td>' +
           '<td class="m nowrap">' + (c.startedAt || '—') + '</td>' +
           '<td class="m nowrap">' + (c.endedAt ? c.endedAt : '<span style="color:var(--ink3)">未结课</span>') + '</td>' +
@@ -2195,7 +2195,7 @@ function vData(){
         /* 出勤三件套全是算出来的：应出勤 = 入班后班级已上课次，缺勤 = 缺勤事实表条数 */
         const c=C(s.cls), all=stuAttAll(s), att=stuAtt(s), abs=stuAbsent(s), r=all?Math.round(att/all*100):0;
         const last=stuLastAbsent(s);
-        return '<tr data-open="att:'+s.id+'"><td><b>'+esc(s.name)+'</b></td><td>'+esc(c.name)+' <span class="m" style="color:var(--ink3)">'+c.code+'</span></td>'+
+        return '<tr data-open="att:'+s.id+'"><td><b>'+esc(s.name)+'</b></td><td>'+esc(c.name)+'</td>'+
         '<td class="m nowrap">'+lessonLabel(c.lv,classLesson(c))+'</td>'+
         '<td class="num">'+att+' / '+all+'</td>'+
         '<td>'+bar(r, r>=90?'full':(r<70?'hi':''))+' <span class="m" style="font-size:11.5px">'+r+'%</span></td>'+
@@ -2229,7 +2229,7 @@ function vData(){
         const c = s.cls ? C(s.cls) : null;
         return '<tr data-open="student:'+s.id+'"><td><b>'+esc(s.name)+'</b></td>'+
           '<td><span class="tg on">'+esc(s.grade)+'</span></td>'+
-          '<td>'+(c ? esc(c.name)+' <span class="m" style="color:var(--ink3)">'+esc(c.code)+'</span>'
+          '<td>'+(c ? esc(c.name)
                     : '<span class="lbl">已结业 · 不在班</span>')+'</td>'+
           '<td class="mono">'+esc(s.phone || '—')+'</td></tr>';}).join('')
         : '<tr><td colspan="4" class="empty">还没有结业的学生</td></tr>'}
@@ -2774,7 +2774,7 @@ function tView(o){
 function sView(o){
   const c = o.cls ? C(o.cls) : null;
   const clsCell = c
-    ? '<b>'+esc(c.name)+'</b> <span class="mono lbl">'+esc(c.code)+'</span>'
+    ? '<b>'+esc(c.name)+'</b>'
     : (o.intent ? '<span class="tg warn">意向 '+esc(o.intent)+' · 尚未编班</span>'
                 : '<span class="tg bad">未编班 · 无意向</span>');
   return '<dl class="kv">'+
@@ -3162,15 +3162,20 @@ function findMatch(a){
 
 /* ---- 建班 / 驳回的表单草稿 ---- */
 function appFormOf(o){
-  const n = DB.classes.length + 1;
   const cl = clashOf(o);
   /* ★ 2026-10-17（Tony 定）：班名 = 市名 + 「班」，**不再有水果名备用**。
      没有市名（老申请 / 数据不全）→ 提示补，不自动编个名字。
-     代号：市名首字 + 序号（如 苏州 → SZ-01），保证唯一。 */
+  /* ★ 2026-10-18（Tony 定）：代号**按「市」各自计数**，不再跨市累计。
+     苏州班第 1 期 苏01、杭州班第 1 期 杭01、广州班第 1 期 广01；
+     苏州第 2 期才是 苏02。
+     ⚠️ 代号 `c.code` **仍然存在数据里**（导出 / 查历史 / 多期靠它），
+        但**界面上不再显示**（班级表 / 课次记录 / 点名 / 出勤 全部隐藏）。
+        只有「开班审批」抽屉保留显示，方便管理员建班时核对。 */
   const cityName = String(o.room || '').trim();
+  const sameCity = DB.classes.filter(c => (c.room||'') === cityName).length;
   const code = cityName
-    ? (cityName.slice(0,1) + String(n).padStart(2,'0'))
-    : ('NW-' + String(n).padStart(2,'0'));
+    ? (cityName.slice(0,1) + String(sameCity + 1).padStart(2,'0'))
+    : ('NW-' + String(DB.classes.length + 1).padStart(2,'0'));
   return {
     /* 第 3 步：预填跟来源走 —— 自家教师 / 外包教师默认值不一样 */
     name: cityName ? (cityName + '班') : '',
@@ -3680,7 +3685,7 @@ function renderRollDrawer(){
   if (!rollable.length){
     $('#drawer').innerHTML =
       '<div class="d-h"><div><div class="t">'+esc(c.name)+'</div>'+
-        '<div class="s">点名 · '+esc(c.code)+'</div></div>'+
+        '<div class="s">点名 · '+esc(c.name)+'</div></div>'+
         '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button></div>'+
       '<div class="d-b"><div class="note amber"><b>这个班还没有「已上」的课次，没法点名。</b><br>'+
         '先在班级列表里点一次「推进一课」，把那节课标成已上，再回来点名。</div></div>'+
@@ -3708,7 +3713,7 @@ function renderRollDrawer(){
   $('#drawer').innerHTML =
     '<div class="d-h">'+
       '<div><div class="t">'+esc(c.name)+'</div>'+
-      '<div class="s">点名 · '+esc(c.code)+' · '+esc(c.lv)+' · '+esc(T(c.teacher).name)+'</div></div>'+
+      '<div class="s">点名 · '+esc(c.lv)+' · '+esc(T(c.teacher).name)+'</div></div>'+
       '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
     '</div>'+
     '<div class="d-b">'+
@@ -3780,7 +3785,7 @@ function renderEnrollDrawer(){
   const rows = DB.classes.length ? DB.classes.map(c => {
     const w = enrollWhy(s, c);
     return '<div class="enrrow'+(w ? ' no' : '')+'">'+
-      '<div class="e1"><b>'+esc(c.name)+'</b> <span class="m" style="color:var(--ink3)">'+esc(c.code)+'</span></div>'+
+      '<div class="e1"><b>'+esc(c.name)+'</b></div>'+
       '<div class="e2"><span class="tg off">'+c.lv+'</span> '+modeTag(c.mode)+' · '+
         esc(S(c.slot).name)+' · '+esc(T(c.teacher).name)+' · '+classN(c)+'/'+c.cap+'</div>'+
       '<div class="e3">'+(w ? '<span class="tg bad">'+w+'</span>'
@@ -3833,7 +3838,7 @@ function renderAttDrawer(){
   $('#drawer').innerHTML =
     '<div class="d-h">'+
       '<div><div class="t">'+esc(s.name)+'</div>'+
-      '<div class="s">出勤明细 · '+esc(c.name)+' '+esc(c.code)+'</div></div>'+
+      '<div class="s">出勤明细 · '+esc(c.name)+'</div></div>'+
       '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
     '</div>'+
     '<div class="d-b">'+
@@ -3880,7 +3885,7 @@ function renderExamDrawer(){
   $('#drawer').innerHTML =
     '<div class="d-h">'+
       '<div><div class="t">'+esc(s.name)+'</div>'+
-      '<div class="s">阶段考试 · '+esc(s.lv)+' · '+(c ? esc(c.name)+' '+esc(c.code) : '未编班')+'</div></div>'+
+      '<div class="s">阶段考试 · '+esc(s.lv)+' · '+(c ? esc(c.name) : '未编班')+'</div></div>'+
       '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
     '</div>'+
     '<div class="d-b">'+
@@ -4183,8 +4188,10 @@ const VI = {
   '查看档案 →':'Xem hồ sơ →', '看全部 ›':'Xem tất cả ›', '去补时段 ›':'Bổ sung ca ›',
   '去看这个学生 ›':'Xem học viên này ›', '明细':'Chi tiết', '历史':'Lịch sử', '结论':'Kết luận',
   '职业':'Nghề nghiệp', '资历':'Kinh nghiệm', '内部':'Nội bộ', '方向':'Hướng', '显示':'Hiển thị',
-  '点':'Bấm', '页':'trang', '行':'dòng', '月':'tháng', '条':'mục', '项':'mục', '位':'vị',
-  '次':'lần', '分':'điểm', '共':'Tổng', '不限':'Không giới hạn', '未结业':'Chưa tốt nghiệp',
+  /* ★ 2026-10-18：原来这里有一串**单字**词条（点/页/行/月/条/项/位/次/分/共/缺），
+     已全部移除 —— 单字子串替换会误伤（「几点」→「几Bấm」、「分钟」→「điểm钟」）。
+     单字现在只走 _viSolo，带数字的走 _viPre / _viRe。**以后别再往这里加单字。** */
+  '不限':'Không giới hạn', '未结业':'Chưa tốt nghiệp',
   '尚未登录':'Chưa đăng nhập', '已冻结':'Đã đóng băng', '冻结':'Đóng băng', '已取消':'Đã hủy',
   '代课':'Dạy thay', '全勤':'Đi học đủ', '结课':'Kết thúc khóa', '未结课':'Chưa kết thúc khóa',
   '刚开班':'Vừa mở lớp', '上课中':'Đang học', '进入课堂':'Vào lớp', '点名':'Điểm danh',
@@ -4344,7 +4351,7 @@ const VI = {
   /* 运行时测试（带演示数据 + 打开抽屉）补的最后一批 */
   ' 在 ':' tại ', '出勤明细':'Chi tiết điểm danh', '年教学':' năm kinh nghiệm giảng dạy',
   '反馈很好，续报率高':'phản hồi tốt, tỷ lệ tái đăng ký cao', '未配可授时段':'chưa cấu hình ca có thể dạy',
-  '可带':'Có thể dạy', '冲刺班':'lớp cấp tốc', '缺':'thiếu',
+  '可带':'Có thể dạy', '冲刺班':'lớp cấp tốc',
   '—— 要考的就是这一阶段。':'—— cần thi chính là giai đoạn này.',
   /* 申请审批抽屉 · 落点 / 表单 / 驳回 / 结果 */
   '落点 · 并入已有班':'Điểm đến · gộp vào lớp có sẵn',
@@ -4446,17 +4453,141 @@ const VI = {
   '完成等级读的是':'Cấp độ hoàn thành đọc từ', '· 尚未编班':'· chưa xếp lớp',
   /* ★ 2026-10-14 新增（代课入口） */
   '常任':'Giáo viên chính', '已更新代课安排':'Đã cập nhật giáo viên dạy thay',
+  /* ===== ★ 2026-10-18 新增：越南语零残留专项（开班抽屉 + 侧栏云端） =====
+     ⚠️ 这里**不许放单字词条** —— 单字由 _viSolo 处理，放进字典会误伤（见 viSwap 上方注释）。 */
+  /* 自定义课表 */
+  '自定义':'Tùy chỉnh',
+  '上课时间':'Giờ học',
+  '开班日期':'Ngày mở lớp',
+  '每周哪几天':'Học những thứ nào',
+  '几点开始':'Mấy giờ bắt đầu',
+  '每节多少分钟':'Mỗi buổi bao nhiêu phút',
+  '当前课表：':'Lịch hiện tại:',
+  '（还没选周几）':'(chưa chọn thứ)',
+  /* 学生自动带入 */
+  '自动带入':'tự động đưa vào',
+  '同教师':'cùng giáo viên',
+  '同级别':'cùng cấp độ',
+  '同教室':'cùng phòng học',
+  '未编班':'chưa xếp lớp',
+  '尚未编班':'chưa xếp lớp',
+  '编班':'xếp lớp',
+  '只读':'chỉ đọc',
+  '档案':'hồ sơ',
+  '未选教室':'chưa chọn phòng học',
+  '没有符合条件的学生':'Không có học viên phù hợp',
+  '总课次':'Tổng số buổi',
+  '按级别自动':'tự động theo cấp độ',
+  '第一阶段':'giai đoạn 1',
+  '第二阶段':'giai đoạn 2',
+  '第三阶段':'giai đoạn 3',
+  '进度从':'tiến độ từ',
+  '暂时':'tạm thời',
+  '课次暂时':'Buổi học tạm thời ',
+  /* ⚠️ 末尾的空格是故意的：原文是「名单<b>只读</b>」，两个词分处两个文本节点，
+     中文不加空格，翻成越南语会黏成「Danh sáchchỉ đọc」。 */
+  '名单':'Danh sách ',
+  '不自动生成':'không tự động tạo',
+  /* 开班抽屉：字段 / 说明 */
+  '教室（市）':'Phòng học (thành phố)',
+  '学生人数':'Số học viên',
+  '开班申请':'Đơn mở lớp',
+  '新建开班申请':'Tạo mới đơn mở lớp',
+  '申请内容':'Nội dung đơn',
+  '提交申请':'Gửi đơn',
+  '操作员自己排的班 · 提交后进「开班申请」等审批':'Lớp do người vận hành tự xếp · gửi xong vào「Đơn mở lớp」chờ duyệt',
+  '该教师还没勾选市 —— 先去教师档案勾一个市':'Giáo viên này chưa chọn thành phố —— vào hồ sơ giáo viên chọn một thành phố',
+  '该教师勾的市都已开班 —— 去教师档案再勾一个新市':'Các thành phố giáo viên đã chọn đều đã mở lớp —— vào hồ sơ giáo viên chọn thêm thành phố mới',
+  '（唯一可开班的市）':'(thành phố duy nhất có thể mở lớp)',
+  '，开班后按现有方式推进（打磨台已记，以后补）。':', sau khi mở lớp vẫn đẩy theo cách hiện có (đã ghi ở bàn đánh bóng, sau này bổ sung).',
+  '。要增删成员请先去「学生」页改他的':'。Muốn thêm/bớt thành viên, vào trang 「Học viên」 sửa ',
+  ' / 教师 / 级别；':' / giáo viên / cấp độ;',
+  '⚠️ 只带':'⚠️ Chỉ lấy',
+  '档案教室 = ':'phòng học hồ sơ = ',
+  ' 的学生 —— 别的市的学生不会混进来。':' —— học viên của thành phố khác không bị lẫn vào.',
+  /* 侧栏云同步状态（全手动） */
+  '云端':'đám mây',
+  '还没和云端同步过':'Chưa đồng bộ với đám mây',
+  '推送到云端':'Đẩy lên đám mây',
+  '从云端拉取':'Kéo từ đám mây',
+  '有未推送的改动':'Có thay đổi chưa đẩy',
+  '同步中…':'Đang đồng bộ…',
+  '云端已是最新':'Đám mây đã mới nhất',
+  '离线（本地照常用）':'Ngoại tuyến (vẫn dùng bản địa)',
+  '已推送到云端':'Đã đẩy lên đám mây',
+  '推送失败（检查网络）':'Đẩy thất bại (kiểm tra mạng)',
+  /* ===== 2026-10-18 第二轮：全视图扫描后补的零散词条 ===== */
+  '个人档案':'Hồ sơ cá nhân',
+  '不会重复建档案':'không tạo lại hồ sơ',
+  '矩阵':'Ma trận',
+  '省份':'tỉnh thành',
+  '清理旧数据残留':'Dọn dẹp dữ liệu cũ còn sót',
+  '没有残留':'Không còn gì sót lại',
+  '课次记录里没有孤儿数据 —— 都是有效记录。':'Lịch sử buổi học không có dữ liệu mồ côi —— đều là bản ghi hợp lệ.',
+  '清空业务记录':'Xóa sạch bản ghi nghiệp vụ',
+  '已经是空的':'Đã trống rồi',
+  '会清空':'Sẽ xóa sạch',
+  '业务流水':'luồng nghiệp vụ',
+  '条 ·':'mục ·',
+  '不会动':'không bị đụng tới',
+  '设置':'Cài đặt',
+  '⚠️ 清空后无法撤销。':'⚠️ Xóa xong không thể hoàn tác.',
+  '没有可清空的记录':'Không có bản ghi nào để xóa',
+  '先导出备份':'Hãy xuất bản sao lưu trước',
+  '点「':'Bấm 「',
+  '清空成员':'Xóa sạch thành viên',
+  /* 期数（班名后可能带「第二期」） */
+  '第一期':'kỳ 1', '第二期':'kỳ 2', '第三期':'kỳ 3', '第四期':'kỳ 4', '第五期':'kỳ 5',
+  '第六期':'kỳ 6', '第七期':'kỳ 7', '第八期':'kỳ 8', '第九期':'kỳ 9', '第十期':'kỳ 10',
 };
 const _langOrig = new WeakMap();   /* 记下中文原文，切回中文时还原 */
-/* 长的先替 —— 否则「课次」会先把「课次记录」啃掉一半 */
-const _viKeys = Object.keys(VI).sort((a, b) => b.length - a.length);
-/* 少数需要「换位 / 带数字」的形态：子串替换做不到，先在前面用正则改一次。
-   例：2026 年 10 月 → Tháng 10 năm 2026（越南语是「月在前、年在后」）
-   ⚠️ 顺序敏感：长的、具体的规则必须排在前面（「3 个班」要先于「3 个」） */
-const _viRe = [
+/* 长的先替 —— 否则「课次」会先把「课次记录」啃掉一半。
+   ★ 2026-10-18：**单字一律不进子串替换**。
+   以前把「点」「分」「行」「页」「月」「条」「项」「位」「次」「共」「缺」也当词条，
+   结果「几点开始」→「几Bấm开始」、「分钟」→「điểm钟」、「姓名」被「名」啃。
+   现在单字只走 _viSolo（整个节点就这一个字才翻），带数字的交给 _viRe。 */
+const _viKeys = Object.keys(VI).filter(k => k.length > 1).sort((a, b) => b.length - a.length);
+/* 市名（含省名）—— 用来把「苏州班」按越南语语序前置成「Lớp 苏州」。
+   从 CITIES / ROOMS 自动生成，不写死；以后加市不用动这里。 */
+const _viCityAlt = (function(){
+  const all = [];
+  ROOMS.forEach(p => all.push(p));
+  Object.keys(CITIES).forEach(p => (CITIES[p] || []).forEach(c => all.push(c)));
+  return all.filter((v, i) => all.indexOf(v) === i)
+            .sort((a, b) => b.length - a.length)
+            .map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('|');
+})();
+/* ① 整句级：**必须跑在量词规则之前** —— 否则「(\d+) 人」先把数字吃掉，整句就再也匹配不上。
+   越南语语序 / 带变量的句子，子串替换做不到，只能在这里整句改。 */
+const _viPre = [
+  /* 「苏州班」→「Lớp 苏州」，再由字典把「苏州」翻成「Tô Châu」。
+     负向断言避开「班级 / 班名 / 班主任」这类词尾不是「班」的复合词。 */
+  [new RegExp('(' + _viCityAlt + ')班(?![级名主])', 'g'), 'Lớp $1'],
+  /* 2026 年 10 月 → Tháng 10 năm 2026（越南语「月在前、年在后」） */
   [/(\d{4})\s*年\s*(\d{1,2})\s*月/g, 'Tháng $2 năm $1'],
   [/差\s*(\d+)\s*人开班/g, 'Thiếu $1 người mở lớp'],
   [/(\d+)\s*人缺勤/g, '$1 người vắng mặt'],
+  /* 开班抽屉里带变量的整句 */
+  [/共\s*(\d+)\s*人\s*·\s*自动带入/g, 'Tổng $1 người · tự động đưa vào'],
+  [/^(\s*)人\s*·\s*自动带入/g, '$1người · tự động đưa vào'],
+  [/ —— 开班时这\s*(\d+)\s*人(?:会)?直接编进班，/g, ' —— khi mở lớp, $1 người này sẽ được xếp thẳng vào lớp, '],
+  [/总课次按级别自动：/g, 'Tổng số buổi tự động theo cấp độ: '],
+  [/（进度从第一阶段\s*·\s*第\s*1\s*课开始）。/g, '(tiến độ bắt đầu từ giai đoạn 1 · bài 1).'],
+  /* 「10 个省份」不能走「(\d+) 个 → lớp」（那会变成 10 个班） */
+  [/(\d+)\s*个省份/g, '$1 tỉnh'],
+  [/按省 → 市看每个教室的教师 \+ 学生/g, 'Theo tỉnh → thành phố, xem giáo viên + học viên của từng phòng học'],
+  /* 「共 N …」—— 共 是单字，进不了子串替换，只能带数字一起改 */
+  [/共\s*(\d+)/g, 'Tổng $1'],
+  /* 「第 2 期」（阿拉伯数字）；中文数字那几种走字典词条 */
+  [/第\s*(\d+)\s*期/g, 'kỳ $1'],
+];
+/* ② 量词 / 单位：带数字的才翻。顺序敏感 ——「分钟」必须在「分」前面，「第 N 课」在「N 课」前面 */
+const _viRe = [
+  [/(\d+)\s*分钟/g, '$1 phút'],
+  [/(\d+)\s*分(?!钟)/g, '$1 phút'],
+  [/(\d+)\s*点/g, '$1 giờ'],
+  [/(\d+)\s*月/g, 'Tháng $1'],
   [/(\d+)\s*个班/g, '$1 lớp'],
   [/(\d+)\s*个/g, '$1 lớp'],
   [/(\d+)\s*节/g, '$1 buổi'],
@@ -4464,15 +4595,21 @@ const _viRe = [
   [/(\d+)\s*位/g, '$1 vị'],
   [/(\d+)\s*次/g, '$1 lần'],
   [/(\d+)\s*条/g, '$1 mục'],
+  [/(\d+)\s*项/g, '$1 mục'],
+  [/(\d+)\s*行/g, '$1 dòng'],
+  [/(\d+)\s*页/g, '$1 trang'],
   [/(\d+)\s*名/g, '$1 người'],
+  [/(\d+)\s*天/g, '$1 ngày'],
   [/第\s*(\d+)\s*课/g, 'Bài $1'],
   [/(\d+)\s*课(?!次)/g, '$1 buổi'],
 ];
 /* 单字量词：**只有整个节点就这一个字**时才替换。
-   ⚠️ 不能放进下面的子串替换 —— 「个」会把「这个班」啃成「这lớp班」、「人」会把「这个学生」啃坏。 */
-const _viSolo = {'个':'lớp','节':'buổi','人':'người','位':'vị','次':'lần','条':'mục','名':'người','课':'buổi'};
+   ⚠️ 不能放进子串替换 —— 「个」会把「这个班」啃成「这lớp班」、「点」会把「几点」啃成「几Bấm」。 */
+const _viSolo = {'个':'lớp','节':'buổi','人':'người','位':'vị','次':'lần','条':'mục','名':'người','课':'buổi',
+                 '点':'giờ','分':'phút','行':'dòng','页':'trang','月':'tháng','项':'mục','共':'Tổng','缺':'thiếu'};
 function viSwap(s){
   let out = s;
+  for (let i = 0; i < _viPre.length; i++) out = out.replace(_viPre[i][0], _viPre[i][1]);
   for (let i = 0; i < _viRe.length; i++) out = out.replace(_viRe[i][0], _viRe[i][1]);
   const solo = out.trim();
   if (solo.length === 1 && _viSolo[solo]) return out.split(solo).join(_viSolo[solo]);
@@ -4480,6 +4617,11 @@ function viSwap(s){
     const k = _viKeys[i];
     if (out.indexOf(k) !== -1) out = out.split(k).join(VI[k]);
   }
+  /* 标点收尾：中文全角括号 / 引号 → 半角。
+     不做这步，翻译完会留下「tự động đưa vào（cùng giáo viên…」，一眼还是中文味。
+     ⚠️ 必须放在字典替换**之后** —— 字典里不少词条本身就带全角括号（如「教室（市）」）。 */
+  out = out.replace(/（/g, '(').replace(/）/g, ')').replace(/「/g, '"').replace(/」/g, '"');
+  out = out.replace(/([^\s(])(\()/g, '$1 $2');   /* 「vào(」→「vào (」 */
   return out;
 }
 function langWalk(root){
@@ -4503,7 +4645,7 @@ function langWalk(root){
       n.nodeValue = _langOrig.get(n);
     }
   }
-  ['placeholder','title'].forEach(attr => {
+  ['placeholder','title','aria-label'].forEach(attr => {
     root.querySelectorAll('['+attr+']').forEach(el => {
       const raw = el.getAttribute(attr); if (!raw) return;
       if (vi){
