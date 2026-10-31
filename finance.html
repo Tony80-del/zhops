@@ -340,12 +340,13 @@ table.fmt td.bad{color:var(--neg)}
       <button data-v="expense"><span class="k">2</span>支出</button>
       <button data-v="settle"><span class="k">3</span>结算<span class="hot">核心</span></button>
       <button data-v="report"><span class="k">4</span>报表</button>
-      <button data-v="config"><span class="k">5</span>配置</button>
-      <button data-v="export"><span class="k">6</span>导出</button>
+      <button data-v="approve"><span class="k">5</span>审批<span class="hot">新</span></button>
+      <button data-v="config"><span class="k">6</span>配置</button>
+      <button data-v="export"><span class="k">7</span>导出</button>
     </nav>
     <div class="sidefoot">
       左侧点板块，右侧内容直接换，不刷新。<br>
-      键盘 <b>0–6</b> 也能切。
+      键盘 <b>0–7</b> 也能切。
     </div>
   </aside>
 
@@ -363,10 +364,10 @@ table.fmt td.bad{color:var(--neg)}
       </div>
 
       <div class="card">
-        <div class="card-h"><h3>布局：两栏，不是七个页面</h3></div>
+        <div class="card-h"><h3>布局：两栏，不是八个页面</h3></div>
         <div class="wire">
           <div class="wtop">顶栏 · 系统名 / 配色 / 主体 / 存储方式</div>
-          <div class="wside">左侧导航<br>0–6 七个入口</div>
+          <div class="wside">左侧导航<br>0–7 八个入口</div>
           <div class="wmain">右侧主区<br>当前板块的表格 / 图表</div>
         </div>
         <p class="sm mu" style="margin:10px 0 0">所有板块在<b>同一个页面</b>里，切换只是把右边内容换掉。数据不重载，页面不刷新。</p>
@@ -377,7 +378,7 @@ table.fmt td.bad{color:var(--neg)}
         <div class="steps">
           <div class="step"><div class="sn">1</div><div>
             <div class="st">看左边导航，找到要去的板块</div>
-            <div class="sd">编号 0–6 跟做账顺序一致：先记收入，再记支出，才能算结算。</div>
+            <div class="sd">编号 0–7 跟做账顺序一致：先记收入，再记支出，才能算结算。</div>
           </div></div>
           <div class="step"><div class="sn">2</div><div>
             <div class="st">点一下板块名</div>
@@ -395,16 +396,17 @@ table.fmt td.bad{color:var(--neg)}
       </div>
 
       <div class="card">
-        <div class="card-h"><h3>六个板块的分工</h3><span class="sp"></span><span class="tag pending">0 是说明，不算板块</span></div>
+        <div class="card-h"><h3>七个板块的分工</h3><span class="sp"></span><span class="tag pending">0 是说明，不算板块</span></div>
         <table class="grid">
           <thead><tr><th style="width:60px">板块</th><th style="width:110px">干什么</th><th>数据从哪来</th><th style="width:100px">要手填吗</th></tr></thead>
           <tbody>
             <tr><td>① 收入</td><td>记学费进来</td><td>手填</td><td><span class="tag has">全手填</span></td></tr>
-            <tr><td>② 支出</td><td>记钱出去</td><td>课时费自动，工资社保和其他手填</td><td><span class="tag partial">一半自动</span></td></tr>
+            <tr><td>② 支出</td><td>记钱出去</td><td>工资社保来自人事单据；课时费只作参考；其他手填</td><td><span class="tag partial">大部分自动</span></td></tr>
             <tr><td>③ 结算</td><td>每节课赚多少</td><td>班级课次 + ①②</td><td><span class="tag partial">班级要填</span></td></tr>
             <tr><td>④ 报表</td><td>月毛利、班级盈亏</td><td>③ 汇总</td><td><span class="tag has">不用填</span></td></tr>
-            <tr><td>⑤ 配置</td><td>税率、社保费率</td><td>手填，改一次长期用</td><td><span class="tag has">手填</span></td></tr>
-            <tr><td>⑥ 导出</td><td>给代账的三张表</td><td>①② 汇总</td><td><span class="tag has">点一下</span></td></tr>
+            <tr><td>⑤ 审批</td><td>核对人事单据 → 批 → 付</td><td>人事部提交，云端拉取</td><td><span class="tag has">只点按钮</span></td></tr>
+            <tr><td>⑥ 配置</td><td>税率、社保费率</td><td>手填，改一次长期用</td><td><span class="tag has">手填</span></td></tr>
+            <tr><td>⑦ 导出</td><td>给代账的三张表</td><td>①② 汇总</td><td><span class="tag has">点一下</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -512,15 +514,14 @@ table.fmt td.bad{color:var(--neg)}
           <div class="card-h">
             <h3>工资社保</h3><span class="sp"></span>
             <select id="payMonth" title="切换月份" style="width:auto;flex:0 0 auto;font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surf);color:var(--tx)"></select>
-            <span class="tag partial">按月存档</span>
-            <button class="mini" id="addPay">+ 加一个人</button>
+            <span class="tag pending" id="paySrc">本月无单据</span>
           </div>
           <div class="tw">
           <table class="grid">
             <thead><tr>
-              <th style="width:120px">姓名</th><th style="width:86px">角色</th><th style="width:112px">月薪（应发）</th>
+              <th style="width:120px">姓名</th><th style="width:100px">计价</th><th style="width:112px">应发</th>
               <th style="width:92px">社保个人</th><th style="width:88px">个税</th><th style="width:104px">实发</th>
-              <th style="width:100px">社保公司</th><th style="width:44px"></th>
+              <th style="width:100px">社保公司</th><th style="width:100px">课时费</th>
             </tr></thead>
             <tbody id="tb-pay"></tbody>
             <tfoot><tr>
@@ -531,12 +532,13 @@ table.fmt td.bad{color:var(--neg)}
           </table>
           </div>
           <p class="sm mu" style="margin:9px 0 0">
-            社保个人 = 月薪 × 个人费率，从工资里扣；社保公司 = 月薪 × 公司费率，不进工资条但真花钱。
-            <b>个税留 0 由代账算</b>，这里只做估算位。
+            <b>这张表现在只读</b> —— 数据全部来自人事部提交的工资单（「审批」页拉取）。
+            财务不在这里改数字：应发、社保个人、个税都是人事算的，这里改不了，也不该改。<br>
+            <b>社保公司</b> = 应发 × 公司费率，不进工资条但真花钱。单据里没有这一项，财务按自己的费率估。
           </p>
           <p class="sm mu" style="margin:5px 0 0">
-            <b>本页按选定月份</b>（每月一份，互不覆盖）。<b>收入 / 支出 / 结算 / 报表仍是全部月份累计</b> ——
-            两个口径不同，别混着看。全页按月化等课时费接单据时一起做。
+            <b>本页按选定月份</b>，一个月一张单据。<b>收入 / 支出 / 结算 / 报表仍是全部月份累计</b> ——
+            两个口径不同，别混着看。<b>没批的单据不进报表</b>：待审批、已驳回的都不算支出。
           </p>
         </div>
       </div>
@@ -649,7 +651,65 @@ table.fmt td.bad{color:var(--neg)}
       </div>
     </section>
 
-    <!-- ================= 5 配置 ================= -->
+    <!-- ================= 5 审批 ================= -->
+    <section class="view" id="v-approve">
+      <div class="phead">
+        <div class="pnum">5</div>
+        <div><div class="ptitle">审批 · 人事提交的工资单</div><div class="psub">核对 → 批准 / 驳回 → 付款。财务不改数字。</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>待办单据</h3><span class="sp"></span>
+          <span class="tag pending" id="apState">还没拉取</span>
+          <button class="mini" id="apPull">☁︎ 从云端拉取</button>
+        </div>
+        <div class="tw">
+          <table class="grid">
+            <thead><tr>
+              <th style="width:92px">月份</th>
+              <th style="width:146px">单据号</th>
+              <th style="width:60px">人数</th>
+              <th style="width:124px">应发合计</th>
+              <th style="width:124px">实发合计</th>
+              <th style="width:90px">状态</th>
+              <th style="width:70px"></th>
+            </tr></thead>
+            <tbody id="tb-appr"></tbody>
+          </table>
+        </div>
+        <p class="sm mu" style="margin:9px 0 0">
+          单据来自人事部「提交财务」，存在云端 <b>zhops/approvals</b>。
+          <b>财务只核对、只批、只付，不改任何数字</b> —— 数字不对就驳回，让人事改完重提。
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>单据明细</h3><span class="sp"></span><span class="tag pending" id="apTitle">还没选单据</span></div>
+        <div id="apDetail">
+          <p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示每个人的明细。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>三个动作各写什么</h3></div>
+        <table class="fmt">
+          <thead><tr><th style="width:90px">动作</th><th style="width:176px">要填</th><th>写回云端</th></tr></thead>
+          <tbody>
+            <tr><td>批准</td><td class="f">不用填</td><td>状态 → 已批准 + 批准时间</td></tr>
+            <tr><td>驳回</td><td class="f">理由（必填）</td><td>状态 → 已驳回 + 理由 + 时间。人事那边原样看到理由</td></tr>
+            <tr><td>付款</td><td class="f">日期 + 金额 + 凭证号</td><td>状态 → 已付款 + 这三个数。金额默认等于实发，可改</td></tr>
+          </tbody>
+        </table>
+        <p class="sm mu" style="margin:9px 0 0">
+          <b>必须先批准才能付款。</b> 没批就付，等于绕过审批，那审批就白做了。<br>
+          <b>社保和个税已经在实发里扣过了</b>（实发 = 应发 − 社保个人 − 个税），付款时不要再扣一次。
+          预支 / 其他扣款 / 补发归人事部管，财务不碰。
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= 6 配置 ================= -->
     <section class="view" id="v-config">
       <div class="phead">
         <div class="pnum">5</div>
@@ -750,13 +810,43 @@ table.fmt td.bad{color:var(--neg)}
 (function(){
 'use strict';
 var KEY = 'zhops.fin.v1';
-var NAMES = {guide:'使用说明',income:'收入',expense:'支出',settle:'结算',report:'报表',config:'配置',export:'导出'};
+var NAMES = {guide:'使用说明',income:'收入',expense:'支出',settle:'结算',report:'报表',config:'配置',approve:'审批',export:'导出'};
+
+/* ================= 云端（2026-10-31 · 只读人事单据 zhops/approvals） =================
+   配置跟人事页同一份（同项目、同集合）。财务只碰 approvals 这一个文档，
+   绝不写 master —— 排课数据是主端 / 教师端的，财务没有写权限的理由。
+   断网 / file:// 被拦 / 规则不过 → 全部静默，财务页照常能用，只是审批页空着。 */
+var FS = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', coll:'zhops' };
+function fsUrlOf(doc){
+  return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+    '/databases/(default)/documents/' + FS.coll + '/' + doc + '?key=' + encodeURIComponent(FS.key);
+}
+function fsDec(v){
+  if(!v) return null;
+  if(v.stringValue !== undefined) return v.stringValue;
+  return null;
+}
+
+/* 单据状态：人事提交时写 '已提交'；财务往后只能推着走。
+   待审批 → 已批 → 已付 ／ 待审批 → 已驳（驳回后等人事重提，重提会把状态盖回「已提交」）。
+   ★ 财务不改数字：应发、社保、个税全部来自人事单据，财务只认、只批、只付。 */
+var ST_WAIT = '已提交', ST_OK = '已批', ST_NO = '已驳', ST_PAID = '已付';
+var ST_TXT = {};
+ST_TXT[ST_WAIT] = '待审批'; ST_TXT[ST_OK] = '已批准'; ST_TXT[ST_NO] = '已驳回'; ST_TXT[ST_PAID] = '已付款';
+var ST_CLS = {};
+ST_CLS[ST_WAIT] = 'pending'; ST_CLS[ST_OK] = 'has'; ST_CLS[ST_NO] = 'nodata'; ST_CLS[ST_PAID] = 'has';
+
+/* 审批页当前选中的单据 id（空 = 还没选） */
+var AP_SEL = '';
 
 /* ================= 空数据结构 ================= */
 function blank(){
   return {
     cfg:{ siEmp:10.5, siComp:21.5, cit:20, divPit:5, vatDefault:'0', invoiceOn:'off' },
-    income:[], expense:[], payroll:[], classes:[]
+    income:[], expense:[], payroll:[], classes:[],
+    /* 云端人事单据的本地缓存（只读镜像）。每次「从云端拉取」整份覆盖。
+       存下来是为了断网时也能看到上次拉到的东西，不是为了离线审批。 */
+    approvals:[], approvalsAt:''
   };
 }
 function demo(){
@@ -783,7 +873,8 @@ function demo(){
       {name:'芒果班', lessons:'42', done:'6', fee:'8400000',  teacher:'陈文海', rate:'120000', own:false},
       {name:'柚子班', lessons:'42', done:'5', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
       {name:'柠檬班', lessons:'42', done:'4', fee:'7140000',  teacher:'黎明俊', rate:'150000', own:true}
-    ]
+    ],
+    approvals:[], approvalsAt:''
   };
 }
 var S = blank();
@@ -805,22 +896,30 @@ function setMonth(m){
 }
 function monthList(){
   var seen = {}, out = [];
-  /* 缺 month 的老数据归「真实当月」（monthTag），不能归「当前选中月」——
-     否则它会跟着选择器漂移，每个月都算它一次。 */
-  S.payroll.forEach(function(p){ var m = p.month || monthTag(); if(!seen[m]){ seen[m] = 1; out.push(m); } });
+  /* 月份来源改成人事单据 —— 工资表不再手填，月份自然跟着单据走 */
+  (S.approvals || []).forEach(function(v){
+    if(!v || v.dept !== 'hr' || v.type !== 'salary' || !v.month) return;
+    if(!seen[v.month]){ seen[v.month] = 1; out.push(v.month); }
+  });
   if(!seen[CUR_MONTH]) out.push(CUR_MONTH);
   out.sort(); out.reverse();
   return out;
 }
-/* 当月工资行 —— 返回 {p:行, i:在 S.payroll 里的下标}。
-   ★ 必须带原始下标，data-k="payroll.i.字段" 靠它定位，不能拿过滤后的序号。
-   ★ 缺 month 的行归「真实当月」，不归 CUR_MONTH（见 monthList 里的说明）。 */
-function payRows(){
-  var out = [];
-  S.payroll.forEach(function(p, i){
-    if((p.month || monthTag()) === CUR_MONTH) out.push({ p:p, i:i });
+/* 某个月的工资单（一张）。同月出现多张时取最后一张。 */
+function voucherOfMonth(m){
+  var hit = null;
+  (S.approvals || []).forEach(function(v){
+    if(v && v.dept === 'hr' && v.type === 'salary' && v.month === m) hit = v;
   });
-  return out;
+  return hit;
+}
+/* 当月工资行 —— ★ 来源只有人事单据，不再手填。
+   工资表现在是「单据镜像」：财务只读，不改。返回 {p:单据行, i:行下标, v:所属单据}。
+   手填的 S.payroll 老数据不删、不显示、不进支出 —— 留作历史，谁也不再算它。 */
+function payRows(){
+  var v = voucherOfMonth(CUR_MONTH);
+  if(!v) return [];
+  return (v.items || []).map(function(it, i){ return { p:it, i:i, v:v }; });
 }
 function renderMonthSel(){
   var el = document.getElementById('payMonth');
@@ -854,9 +953,11 @@ function load(){
     var o = JSON.parse(raw);
     if(!o || typeof o !== 'object') return blank();
     var b = blank();
-    ['income','expense','payroll','classes'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    ['income','expense','payroll','classes','approvals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
     b.cfg = Object.assign(b.cfg, o.cfg || {});
     b.income = o.income; b.expense = o.expense; b.payroll = o.payroll; b.classes = o.classes;
+    b.approvals = o.approvals;
+    b.approvalsAt = String(o.approvalsAt || '');
     /* 迁移（2026-10-31 · Phase 1）：老工资行没有 month → 归到当月。
        不归的话，加了月份选择器以后这些行会「一条都看不见」。 */
     b.payroll.forEach(function(p){
@@ -888,16 +989,28 @@ function calc(){
     if(r.inv) invoiced++;
   });
 
+  /* ★ 2026-10-31（Tony 定）：人工成本只认「已批 / 已付」的人事单据。
+     财务不自己估工资 —— 单据没批，就是 0，报表上明说。
+     待批 / 已驳的单据不进账：没确认的钱不算支出。
+     ★ 社保个人 / 个税直接读单据里的数（人事算的），财务不按费率重算 ——
+       两边各算一遍就会出现两个数，对不上账分不清谁的错。 */
   var grossAll=0, siEmpAll=0, siCompAll=0, netAll=0, pitAll=0, teacherGross=0;
   var socialByTeacher = {};
-  S.payroll.forEach(function(p){
-    var g = val(p.gross), pit = val(p.pit);
-    var se = g*siEmp/100, sc = g*siComp/100;
-    grossAll+=g; siEmpAll+=se; siCompAll+=sc; pitAll+=pit; netAll += (g-se-pit);
-    if(p.role === '教师'){
-      teacherGross += g;
-      socialByTeacher[p.name] = (socialByTeacher[p.name]||0) + sc;
-    }
+  var voucherN = 0;
+  (S.approvals || []).forEach(function(v){
+    if(!v || v.dept !== 'hr' || v.type !== 'salary') return;
+    if(v.state !== ST_OK && v.state !== ST_PAID) return;
+    voucherN++;
+    (v.items || []).forEach(function(it){
+      var g = val(it.gross), pit = val(it.pit), se = val(it.siEmp);
+      var sc = g * siComp / 100;          /* 社保公司部分单据里没有，按财务费率估 */
+      grossAll += g; siEmpAll += se; siCompAll += sc; pitAll += pit;
+      netAll += (g - se - pit);
+      if(it.tid || /课时/.test(String(it.payType || ''))){
+        teacherGross += g;
+        socialByTeacher[it.name] = (socialByTeacher[it.name] || 0) + sc;
+      }
+    });
   });
 
   var tchAll=0, doneAll=0, doneByTeacher={};
@@ -915,7 +1028,10 @@ function calc(){
     else byCat['其他'] += a;
   });
 
-  var expAll = tchAll + grossAll + siCompAll + othAll;
+  /* ★ 2026-10-31：tchAll 从支出里拿掉。
+     单据的「应发」= 底薪 + 课时，已经含了课时费；再单独加一次 tchAll 就是双算。
+     tchAll 不删，留在「结算」页给人看单课毛利。 */
+  var expAll = grossAll + siCompAll + othAll;
   var profit = inc - expAll;
   var margin = inc > 0 ? profit/inc*100 : 0;
 
@@ -938,10 +1054,12 @@ function calc(){
   return {
     inc:inc, vat:vat, invoiced:invoiced,
     grossAll:grossAll, siEmpAll:siEmpAll, siCompAll:siCompAll, netAll:netAll, pitAll:pitAll,
-    teacherGross:teacherGross,
+    teacherGross:teacherGross, voucherN:voucherN,
     tchAll:tchAll, doneAll:doneAll, othAll:othAll, byCat:byCat,
     expAll:expAll, profit:profit, margin:margin, rows:rows,
-    teacherCost: tchAll + teacherGross
+    /* ★ 教师相关成本只算教师那份应发（单据里已含课时费）——
+       原来是 tchAll + teacherGross，跟 expAll 一样双算，已改。 */
+    teacherCost: teacherGross
   };
 }
 
@@ -1004,39 +1122,43 @@ function renderTch(){
 
 function renderPay(){
   var tb = document.getElementById('tb-pay');
-  var siEmp = val(S.cfg.siEmp), siComp = val(S.cfg.siComp);
-  var list = payRows();
-  if(!list.length){
-    tb.innerHTML = emptyRow(8, CUR_MONTH + ' 还没有工资记录 —— 点右上角「+ 加一个人」');
+  var siComp = val(S.cfg.siComp);
+  var v = voucherOfMonth(CUR_MONTH);
+  if(!v){
+    tb.innerHTML = emptyRow(8, CUR_MONTH + ' 还没有人事单据 —— 到「审批」页点「☁︎ 从云端拉取」');
+  }else if(!(v.items || []).length){
+    tb.innerHTML = emptyRow(8, '这张单据是空的 —— 人事生成时一个人都没算出来');
   }else{
-    tb.innerHTML = list.map(function(it){
-      var p = it.p, i = it.i;
-      var g = val(p.gross), se = g*siEmp/100, sc = g*siComp/100, pit = val(p.pit);
-      return '<tr data-i="'+i+'">'+
-        '<td><input data-k="payroll.'+i+'.name" value="'+esc(p.name)+'" placeholder="姓名"></td>'+
-        '<td><select data-k="payroll.'+i+'.role">'+
-          ['教师','员工'].map(function(x){return '<option'+(p.role===x?' selected':'')+'>'+x+'</option>';}).join('')+
-        '</select></td>'+
-        '<td><input class="w-money num" data-k="payroll.'+i+'.gross" type="number" value="'+esc(p.gross)+'" placeholder="3000000"></td>'+
-        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(se)+'"></td>'+
-        '<td><input class="w-tax num" data-k="payroll.'+i+'.pit" type="number" value="'+esc(p.pit)+'" placeholder="0"></td>'+
-        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(g-se-pit)+'"></td>'+
-        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(sc)+'"></td>'+
-        '<td><button class="mini" data-del="payroll" data-i="'+i+'" style="padding:2px 7px">×</button></td>'+
+    tb.innerHTML = (v.items || []).map(function(it){
+      var g = val(it.gross), se = val(it.siEmp), sc = g*siComp/100, pit = val(it.pit);
+      return '<tr class="auto">'+
+        '<td>'+esc(it.name || '—')+'</td>'+
+        '<td>'+esc(it.payType || '—')+'</td>'+
+        '<td class="num">'+money(g)+'</td>'+
+        '<td class="num">'+money(se)+'</td>'+
+        '<td class="num">'+money(pit)+'</td>'+
+        '<td class="num">'+money(g-se-pit)+'</td>'+
+        '<td class="num">'+money(sc)+'</td>'+
+        '<td class="num">'+money(val(it.tch))+'</td>'+
       '</tr>';
     }).join('');
   }
   /* 合计只算当月 —— 不能用 calc()，那是全部月份累计 */
   renderPayTotals();
   renderMonthSel();
+  var tagEl = document.getElementById('paySrc');
+  if(tagEl){
+    tagEl.textContent = v ? (ST_TXT[v.state] || v.state || '待审批') : '本月无单据';
+    tagEl.className = 'tag ' + (v ? (ST_CLS[v.state] || 'pending') : 'pending');
+  }
 }
 /* 当月工资合计。单独抽出来是为了「只刷脚注、不重建表」——
    重建表会让正在输入的那一格失焦（这是这个系统踩过两次的坑）。 */
 function payTotals(){
-  var siEmp = val(S.cfg.siEmp), siComp = val(S.cfg.siComp);
+  var siComp = val(S.cfg.siComp);
   var g=0, se=0, sc=0, pit=0, net=0;
   payRows().forEach(function(it){
-    var p = it.p, gg = val(p.gross), s1 = gg*siEmp/100, s2 = gg*siComp/100, pt = val(p.pit);
+    var gg = val(it.p.gross), s1 = val(it.p.siEmp), s2 = gg*siComp/100, pt = val(it.p.pit);
     g += gg; se += s1; sc += s2; pit += pt; net += (gg - s1 - pt);
   });
   return { g:g, se:se, sc:sc, pit:pit, net:net };
@@ -1068,6 +1190,244 @@ function renderExpense(){
     }).join('');
   }
   document.getElementById('sumExpense').textContent = money(calc().othAll);
+}
+
+/* ================= 审批：拉取 / 渲染 / 三个动作（2026-10-31） =================
+   财务只碰 zhops/approvals 一个文档，绝不写 master。
+   ★ 财务不改数字：应发 / 社保个人 / 个税全部来自人事单据，这里只认、只批、只付。 */
+
+/* 拉云端整份 approvals → 覆盖本地缓存。人事那边每提交一次，这里拉一次就同步。 */
+function fsPullApprovals(cb){
+  if(typeof fetch !== 'function'){ if(cb) cb(false, '这个环境不支持网络'); return; }
+  var el = document.getElementById('apState');
+  if(el){ el.textContent = '☁︎ 读云端…'; el.className = 'tag pending'; }
+  fetch(fsUrlOf('approvals')).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    if(!raw || !raw.fields){ if(cb) cb(false, '云端还没有 approvals 文档（人事还没提交过）'); return; }
+    var p = fsDec(raw.fields.payload);
+    if(!p){ if(cb) cb(false, '云端文档里没有 payload'); return; }
+    var o = null;
+    try{ o = JSON.parse(p); }catch(e){ if(cb) cb(false, 'payload 不是 JSON'); return; }
+    if(!o || !Array.isArray(o.vouchers)){ if(cb) cb(false, '云端结构不认识（没有 vouchers）'); return; }
+    /* 只收人事的工资单。以后市场 / 其他部门的单据混进来也不影响财务这页。 */
+    S.approvals = o.vouchers.filter(function(v){ return v && v.dept === 'hr'; });
+    S.approvalsAt = new Date().toISOString();
+    save();
+    renderApprove(); renderPay(); refreshDerived();
+    if(cb) cb(true, S.approvals.length);
+  }).catch(function(e){ if(cb) cb(false, String((e && e.message) || e)); });
+}
+
+/* 写回一张单据的审批字段。
+   先读整份 → 只改这一张 → 整份写回，跟人事 fsPushVoucher 同一套。
+   ★ 云端结构不认识 / 找不到这张单 → 拒绝写入，绝不清空别人的数据。
+   ★ 只合并 patch 里的字段，金额一个字不动。 */
+function fsPatchVoucher(id, patch, cb){
+  if(typeof fetch !== 'function'){ if(cb) cb(false, '这个环境不支持网络'); return; }
+  fetch(fsUrlOf('approvals')).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    if(!raw || !raw.fields){ if(cb) cb(false, '云端没有 approvals 文档'); return; }
+    var p = fsDec(raw.fields.payload);
+    if(!p){ if(cb) cb(false, '云端文档里没有 payload'); return; }
+    var full = null;
+    try{ full = JSON.parse(p); }catch(e){ if(cb) cb(false, '云端那份不是 JSON，拒绝覆盖'); return; }
+    if(!full || !Array.isArray(full.vouchers)){ if(cb) cb(false, '云端文档结构不认识，拒绝覆盖'); return; }
+    var hit = null;
+    for(var i = 0; i < full.vouchers.length; i++){
+      if(full.vouchers[i] && full.vouchers[i].id === id){ hit = full.vouchers[i]; break; }
+    }
+    if(!hit){ if(cb) cb(false, '云端找不到这张单据（可能人事重提覆盖了），先重新拉取'); return; }
+    for(var k in patch){ if(Object.prototype.hasOwnProperty.call(patch, k)) hit[k] = patch[k]; }
+    var body = { fields: {
+      payload: { stringValue: JSON.stringify(full) },
+      at:      { stringValue: new Date().toISOString() },
+      app:     { stringValue: 'zhops.fin' }
+    }};
+    return fetch(fsUrlOf('approvals'), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  }).then(function(res){
+    if(!res){ return; }
+    if(cb) cb(res.ok, res.ok ? '' : ('HTTP ' + res.status));
+  }).catch(function(e){ if(cb) cb(false, String((e && e.message) || e)); });
+}
+
+/* 单据合计：应发 / 实发 / 社保个人 / 个税 / 课时费 */
+function apTotals(v){
+  var gross=0, net=0, siEmp=0, pit=0, tch=0;
+  (v.items || []).forEach(function(it){
+    var g = val(it.gross), se = val(it.siEmp), pt = val(it.pit);
+    gross += g; siEmp += se; pit += pt; tch += val(it.tch);
+    net += (g - se - pt);
+  });
+  return { gross:gross, net:net, siEmp:siEmp, pit:pit, tch:tch };
+}
+function apFind(id){
+  var hit = null;
+  (S.approvals || []).forEach(function(v){ if(v && v.id === id) hit = v; });
+  return hit;
+}
+
+function renderApprove(){
+  var tb = document.getElementById('tb-appr');
+  if(!tb) return;
+  var list = (S.approvals || []).slice();
+  list.sort(function(a,b){ return String(b.month || '').localeCompare(String(a.month || '')); });
+  if(!list.length){
+    tb.innerHTML = emptyRow(7, '还没有单据 —— 点右上角「☁︎ 从云端拉取」');
+  }else{
+    tb.innerHTML = list.map(function(v){
+      var t = apTotals(v);
+      var st = v.state || ST_WAIT;
+      return '<tr>'+
+        '<td>'+esc(v.month || '—')+'</td>'+
+        '<td class="sm">'+esc(v.id || '—')+'</td>'+
+        '<td class="num">'+((v.items || []).length)+'</td>'+
+        '<td class="num">'+money(t.gross)+'</td>'+
+        '<td class="num">'+money(t.net)+'</td>'+
+        '<td><span class="tag '+(ST_CLS[st] || 'pending')+'">'+esc(ST_TXT[st] || st)+'</span></td>'+
+        '<td><button class="mini" data-ap="'+esc(v.id || '')+'" style="padding:2px 7px">查看</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  var el = document.getElementById('apState');
+  if(el){
+    el.textContent = S.approvalsAt ? ('上次拉取 ' + String(S.approvalsAt).slice(11,16)) : '还没拉取';
+    el.className = 'tag ' + (S.approvalsAt ? 'has' : 'pending');
+  }
+  renderApDetail();
+}
+
+function renderApDetail(){
+  var box = document.getElementById('apDetail');
+  var ttl = document.getElementById('apTitle');
+  if(!box) return;
+  var v = apFind(AP_SEL);
+  if(!v){
+    box.innerHTML = '<p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示每个人的明细。</p>';
+    if(ttl){ ttl.textContent = '还没选单据'; ttl.className = 'tag pending'; }
+    return;
+  }
+  var st = v.state || ST_WAIT;
+  if(ttl){
+    ttl.textContent = (v.month || '') + ' · ' + (ST_TXT[st] || st);
+    ttl.className = 'tag ' + (ST_CLS[st] || 'pending');
+  }
+  var t = apTotals(v);
+
+  var head = '<div class="tw"><table class="grid"><thead><tr>'+
+    '<th style="width:110px">姓名</th><th style="width:70px">工号</th><th style="width:64px">排课ID</th>'+
+    '<th style="width:96px">计价</th><th style="width:96px">底薪</th><th style="width:56px">课时</th>'+
+    '<th style="width:88px">单价</th><th style="width:96px">课时费</th><th style="width:100px">应发</th>'+
+    '<th style="width:88px">社保个人</th><th style="width:76px">个税</th><th style="width:96px">实发</th>'+
+    '</tr></thead><tbody>';
+  var rows = (v.items || []).map(function(it){
+    var g = val(it.gross), se = val(it.siEmp), pt = val(it.pit);
+    return '<tr>'+
+      '<td>'+esc(it.name || '—')+'</td>'+
+      '<td class="sm">'+esc(it.eid || '—')+'</td>'+
+      '<td class="sm">'+esc(it.tid || '—')+'</td>'+
+      '<td class="sm">'+esc(it.payType || '—')+'</td>'+
+      '<td class="num">'+money(it.base)+'</td>'+
+      '<td class="num">'+val(it.lessons)+'</td>'+
+      '<td class="num">'+money(it.rate)+'</td>'+
+      '<td class="num">'+money(it.tch)+'</td>'+
+      '<td class="num">'+money(g)+'</td>'+
+      '<td class="num">'+money(se)+'</td>'+
+      '<td class="num">'+money(pt)+'</td>'+
+      '<td class="num">'+money(g - se - pt)+'</td>'+
+    '</tr>';
+  }).join('');
+  var foot = '</tbody><tfoot><tr><td colspan="4" class="mu">合计</td>'+
+    '<td class="num">—</td><td class="num">—</td><td class="num">—</td>'+
+    '<td class="num">'+money(t.tch)+'</td>'+
+    '<td class="num">'+money(t.gross)+'</td>'+
+    '<td class="num">'+money(t.siEmp)+'</td>'+
+    '<td class="num">'+money(t.pit)+'</td>'+
+    '<td class="num">'+money(t.net)+'</td>'+
+    '</tr></tfoot></table></div>';
+
+  var info = '';
+  if(st === ST_NO){
+    info = '<p class="sm" style="margin:12px 0 0;color:var(--neg)"><b>已驳回</b>：'+esc(v.reason || '（没写理由）')+
+      '<br><span class="mu">'+esc(String(v.rejectedAt || '').slice(0,16).replace('T',' '))+'　人事会原样看到这段</span></p>';
+  }else if(st === ST_PAID){
+    info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已付款</b>　'+money(v.paidAmt)+' ₫　·　日期 '+
+      esc(v.paidOn || '—')+'　·　凭证 '+esc(v.voucherNo || '—')+'</p>';
+  }else if(st === ST_OK){
+    info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已批准</b>　'+
+      esc(String(v.approvedAt || '').slice(0,16).replace('T',' '))+'　可以付款了</p>';
+  }else{
+    info = '<p class="sm mu" style="margin:12px 0 0">人事已提交，等财务核对。核对数字无误点「批准」；数字不对点「驳回」并写理由。</p>';
+  }
+
+  var btns = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">';
+  if(st === ST_WAIT){
+    btns += '<button class="mini" data-act="ok" style="padding:6px 14px">✓ 批准</button>';
+    btns += '<button class="mini" data-act="no" style="padding:6px 14px">✗ 驳回</button>';
+  }else if(st === ST_OK){
+    btns += '<button class="mini" data-act="pay" style="padding:6px 14px">₫ 付款</button>';
+  }
+  btns += '</div>';
+
+  box.innerHTML = head + rows + foot + info + btns;
+}
+
+/* 三个动作。状态机：待审批 → 已批 → 已付 ／ 待审批 → 已驳（驳回后等人事重提）。 */
+function apAct(act){
+  var v = apFind(AP_SEL);
+  if(!v){ alert('先在上面选一张单据'); return; }
+  var st = v.state || ST_WAIT;
+  var now = new Date().toISOString();
+  var t = apTotals(v);
+
+  if(act === 'ok'){
+    if(st !== ST_WAIT){ alert('这张单据现在是「'+(ST_TXT[st] || st)+'」，不能再批准。'); return; }
+    if(!confirm('批准 ' + v.month + ' 这张工资单？\n\n应发 ' + money(t.gross) + ' ₫\n实发 ' + money(t.net) +
+      ' ₫\n\n批准之后才可以付款。财务不改数字，数字不对请驳回。')) return;
+    fsPatchVoucher(v.id, { state:ST_OK, approvedAt:now, approvedBy:'finance' }, function(ok, msg){
+      if(!ok){ alert('批准没成功：' + msg); return; }
+      v.state = ST_OK; v.approvedAt = now; v.approvedBy = 'finance';
+      save(); renderApprove(); renderPay(); refreshDerived();
+    });
+    return;
+  }
+
+  if(act === 'no'){
+    if(st !== ST_WAIT){ alert('这张单据现在是「'+(ST_TXT[st] || st)+'」，不能再驳回。'); return; }
+    var reason = prompt('驳回 ' + v.month + ' 这张工资单。\n\n理由（必填，人事会原样看到）：');
+    if(reason === null) return;
+    reason = String(reason).trim();
+    if(!reason){ alert('理由不能空 —— 人事要知道改哪儿。'); return; }
+    fsPatchVoucher(v.id, { state:ST_NO, reason:reason, rejectedAt:now, rejectedBy:'finance' }, function(ok, msg){
+      if(!ok){ alert('驳回没成功：' + msg); return; }
+      v.state = ST_NO; v.reason = reason; v.rejectedAt = now; v.rejectedBy = 'finance';
+      save(); renderApprove(); renderPay(); refreshDerived();
+    });
+    return;
+  }
+
+  if(act === 'pay'){
+    if(st !== ST_OK){ alert('必须先批准才能付款。没批就付，等于绕过审批。'); return; }
+    var d = prompt('付款日期（YYYY-MM-DD）：', today());
+    if(d === null) return;
+    d = String(d).trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ alert('日期格式要 YYYY-MM-DD'); return; }
+    var amt = prompt('付款金额（默认等于实发 ' + money(t.net) + '）：', String(t.net));
+    if(amt === null) return;
+    amt = Number(String(amt).replace(/[^0-9.\-]/g, ''));
+    if(!isFinite(amt) || amt <= 0){ alert('金额要大于 0'); return; }
+    var vno = prompt('凭证号（必填）：', '');
+    if(vno === null) return;
+    vno = String(vno).trim();
+    if(!vno){ alert('凭证号不能空 —— 不记凭证号，账对不上。'); return; }
+    fsPatchVoucher(v.id, { state:ST_PAID, paidOn:d, paidAmt:amt, voucherNo:vno, paidAt:now, paidBy:'finance' }, function(ok, msg){
+      if(!ok){ alert('付款没记上：' + msg); return; }
+      v.state = ST_PAID; v.paidOn = d; v.paidAmt = amt; v.voucherNo = vno; v.paidAt = now; v.paidBy = 'finance';
+      save(); renderApprove(); renderPay(); refreshDerived();
+    });
+    return;
+  }
 }
 
 /* ================= 渲染：结算 ================= */
@@ -1121,9 +1481,10 @@ function renderReport(){
   mg.innerHTML = (x.inc > 0 ? x.margin.toFixed(1) : '—') + (x.inc > 0 ? '<span class="un">%</span>' : '');
   mg.style.color = x.margin > 0 ? 'var(--pos)' : (x.margin < 0 ? 'var(--neg)' : '');
 
+  /* ★ 2026-10-31：原来单列「课时费」+「工资社保」两条，合计会比 expAll 多出课时费。
+     单据的应发里已经含课时费，所以合并成「人工成本」一条 —— 合计才等于 expAll。 */
   var items = [
-    ['课时费', x.tchAll, 'var(--b3)'],
-    ['工资社保', x.grossAll + x.siCompAll, 'var(--b2)'],
+    ['人工成本', x.grossAll + x.siCompAll, 'var(--b2)'],
     ['房租', x.byCat['房租'], 'var(--b1)'],
     ['渠道投放', x.byCat['渠道投放'], 'var(--b4)'],
     ['其他', x.byCat['其他'], 'var(--dim)']
@@ -1190,7 +1551,7 @@ function renderCfg(){
 
 function renderAll(){
   renderIncome(); renderTch(); renderPay(); renderExpense();
-  renderSettle(); renderReport(); renderCfg();
+  renderSettle(); renderReport(); renderApprove(); renderCfg();
 }
 
 /* ================= 视图 ================= */
@@ -1201,6 +1562,8 @@ function show(v){
   var btns = document.querySelectorAll('#nav button');
   for(var j=0;j<btns.length;j++) btns[j].className = (btns[j].getAttribute('data-v') === v ? 'on' : '');
   document.getElementById('crumbName').textContent = NAMES[v];
+  /* 切到审批页时重画一遍 —— 状态可能被另一台设备改过，重画最省事 */
+  if(v === 'approve') renderApprove();
   window.scrollTo(0,0);
 }
 
@@ -1248,15 +1611,8 @@ function refreshRow(tbl, i){
     }
   }
   if(tbl === 'payroll'){
-    var tr2 = document.querySelector('#tb-pay tr[data-i="'+i+'"]');
-    if(tr2){
-      var p = S.payroll[i];
-      var gg = val(p.gross), se = gg*val(S.cfg.siEmp)/100, sc = gg*val(S.cfg.siComp)/100, pit = val(p.pit);
-      var cells = tr2.querySelectorAll('.w-tax');
-      if(cells[0]) cells[0].value = money(se);
-      if(cells[2]) cells[2].value = money(gg-se-pit);
-      if(cells[3]) cells[3].value = money(sc);
-    }
+    /* ★ 2026-10-31：工资表改成「单据镜像」，不再手填 —— 这里没有可刷的输入格。
+       保留分支只是为了让别的代码万一还调 refreshRow('payroll', i) 时不炸。 */
   }
   if(tbl === 'classes'){
     var tr3 = document.querySelector('#tb-settle tr[data-i="'+i+'"]');
@@ -1340,12 +1696,28 @@ document.getElementById('addExpense').addEventListener('click', function(){
   S.expense.push({d:today(), cat:'其他', payee:'', amt:'', inv:'', note:''});
   save(); renderExpense(); refreshDerived();
 });
-document.getElementById('addPay').addEventListener('click', function(){
-  /* 新行落在当前选定月份 —— 不落月份的话切回去就看不见了 */
-  S.payroll.push({name:'', role:'员工', gross:'', pit:'0', month:CUR_MONTH, paidOn:''});
-  save(); renderPay(); refreshDerived();
-});
+/* ★ 2026-10-31：工资表改成「单据镜像」，不再手填 —— 「+ 加一个人」按钮已撤。
+   S.payroll 里的老数据不删，只是不再显示、不进支出。 */
 document.getElementById('payMonth').addEventListener('change', function(){ setMonth(this.value); });
+
+/* 审批页：拉取 / 查看 / 三个动作。用事件委托，列表重建也不丢绑定。 */
+document.getElementById('apPull').addEventListener('click', function(){
+  fsPullApprovals(function(ok, n){
+    if(!ok){ alert('拉取没成功：' + n); return; }
+    if(!n){ alert('云端有文档，但里面还没有人事单据。'); return; }
+  });
+});
+document.getElementById('tb-appr').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-ap]') : null;
+  if(!b) return;
+  AP_SEL = b.getAttribute('data-ap');
+  renderApprove();
+});
+document.getElementById('apDetail').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(!b) return;
+  apAct(b.getAttribute('data-act'));
+});
 document.getElementById('addClass').addEventListener('click', function(){
   S.classes.push({name:'', lessons:'42', done:'0', fee:'', teacher:'', rate:'', own:true});
   save(); renderSettle(); refreshDerived();
@@ -1366,7 +1738,7 @@ document.getElementById('expPayroll').addEventListener('click', expPayroll);
 
 document.addEventListener('keydown', function(e){
   if(e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
-  var map = {'0':'guide','1':'income','2':'expense','3':'settle','4':'report','5':'config','6':'export'};
+  var map = {'0':'guide','1':'income','2':'expense','3':'settle','4':'report','5':'approve','6':'config','7':'export'};
   if(map[e.key]) show(map[e.key]);
 });
 
@@ -1451,17 +1823,19 @@ function expExpense(){
 }
 
 function expPayroll(){
-  var siEmp = val(S.cfg.siEmp), siComp = val(S.cfg.siComp);
-  var head = ['姓名','角色','应发','社保个人','个税','实发','社保公司'];
-  /* 2026-10-31：只导选定月份，文件名也用选定月份（原来是当天日期） */
+  var siComp = val(S.cfg.siComp);
+  /* ★ 2026-10-31：导出的列跟着单据走 —— 底薪 / 课时 / 单价 / 课时费拆开，
+     财务拿这张表能逐项对人，不用再翻人事的单子。 */
+  var head = ['姓名','工号','排课ID','计价','底薪','课时','单价','课时费','应发','社保个人','个税','实发','社保公司'];
   var g=0, se=0, pit=0, net=0, sc=0;
   var body = payRows().map(function(it){
-    var p = it.p, gg = val(p.gross), s1 = gg*siEmp/100, s2 = gg*siComp/100, pt = val(p.pit);
+    var p = it.p, gg = val(p.gross), s1 = val(p.siEmp), s2 = gg*siComp/100, pt = val(p.pit);
     g += gg; se += s1; sc += s2; pit += pt; net += (gg - s1 - pt);
-    return [p.name, p.role, gg, s1, pt, gg-s1-pt, s2];
+    return [p.name, p.eid, p.tid, p.payType, val(p.base), val(p.lessons), val(p.rate), val(p.tch),
+            gg, s1, pt, gg-s1-pt, s2];
   });
-  if(!body.length) body.push(['（' + CUR_MONTH + ' 没有工资记录）','','','','','','']);
-  body.push(['合计','', g, se, pit, net, sc]);
+  if(!body.length) body.push(['（' + CUR_MONTH + ' 没有人事单据）','','','','','','','','','','','','']);
+  body.push(['合计','','','','','','','', g, se, pit, net, sc]);
   download('工资社保-' + CUR_MONTH + '.xls', sheetHtml('工资社保', head, body));
 }
 
@@ -1472,6 +1846,36 @@ try{ savedTheme = localStorage.getItem('zhops.fin.theme') || 'ivory'; }catch(e){
 setTheme(savedTheme);
 renderAll();
 show('guide');
+
+/* ★ 2026-10-31：给探针留一个窗口（不影响任何逻辑）。
+   整段脚本在 IIFE 里，外部拿不到内部函数 —— 要验审批状态机只能开这一扇门。
+   只挂只读状态与业务函数，不额外放权限。 */
+if (typeof window !== 'undefined'){
+  window.__FIN_TEST__ = {
+    getS: function(){ return S; },
+    calc: calc,
+    payRows: payRows,
+    voucherOfMonth: voucherOfMonth,
+    apTotals: apTotals,
+    apFind: apFind,
+    apAct: apAct,
+    apSelect: function(id){ AP_SEL = id; renderApprove(); },
+    apGetSel: function(){ return AP_SEL; },
+    fsPullApprovals: fsPullApprovals,
+    fsPatchVoucher: fsPatchVoucher,
+    renderApprove: renderApprove,
+    renderApDetail: renderApDetail,
+    renderPay: renderPay,
+    renderAll: renderAll,
+    setMonth: setMonth,
+    getMonth: function(){ return CUR_MONTH; },
+    val: val,
+    money: money,
+    ST: { WAIT: ST_WAIT, OK: ST_OK, NO: ST_NO, PAID: ST_PAID },
+    FS: FS,
+    save: save,
+  };
+}
 })();
 </script>
 </body>

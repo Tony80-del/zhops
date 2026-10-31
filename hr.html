@@ -783,6 +783,7 @@ table.fmt td.bad{color:var(--neg)}
         <p class="sm mu" style="margin:5px 0 0">
           <b>提交财务</b>会把这一个月写成一张单据送到云端 <code>zhops/approvals</code>；同一个月重复提交是<b>覆盖同一张</b>，不会堆出重复单据。
         </p>
+        <div id="fsBox" style="margin-top:10px"></div>
       </div>
 
       <div class="card">
@@ -1085,7 +1086,10 @@ function pullMaster(cb){
       markZh('ok', ZH.at);
       if(ok) ZH.doneN = n;
       renderTidList();
-      if(cb) cb(true);
+      /* 顺手把财务那边的审批结果也读回来（同一份云端文档，多一次请求） */
+      fsPullVoucherState(function(){
+        if(cb) cb(true);
+      });
     });
   }).catch(function(){ markZh('fail'); if(cb) cb(false); });
 }
@@ -1334,6 +1338,7 @@ function renderSum(){
     }
   }
   renderSumMonthSel();
+  renderFsBox();
 }
 
 /* 写单据到云端 zhops/approvals。同 id 覆盖 —— 一个月只有一张工资单。
@@ -1372,6 +1377,80 @@ function fsPushVoucher(v, cb){
     if(!res){ return; }
     if(cb) cb(res.ok, res.ok ? '' : ('HTTP ' + res.status));
   }).catch(function(e){ if(cb) cb(false, String((e && e.message) || e)); });
+}
+
+/* ================= 读回审批结果（2026-10-31） =================
+   人事提交单据后，财务在云端改同一张：批准 / 驳回 / 付款。
+   这里把状态读回来，让提交的人知道结果 —— 尤其**驳回理由必须原样显示**，
+   否则人事不知道要改哪儿。只读，绝不回写（回写只有 pushSum 一个入口）。 */
+var FS_STATE = {};   /* { 单据id: {state, reason, approvedAt, rejectedAt, paidOn, paidAmt, voucherNo} } */
+
+function fsPullVoucherState(cb){
+  if(typeof fetch !== 'function'){ if(cb) cb(false); return; }
+  fetch(fsUrlOf('approvals')).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    if(!raw || !raw.fields){ if(cb) cb(false); return; }
+    var p = fsDec(raw.fields.payload);
+    if(!p){ if(cb) cb(false); return; }
+    var o = null;
+    try{ o = JSON.parse(p); }catch(e){ if(cb) cb(false); return; }
+    if(!o || !Array.isArray(o.vouchers)){ if(cb) cb(false); return; }
+    o.vouchers.forEach(function(v){
+      if(!v || !v.id) return;
+      FS_STATE[v.id] = {
+        state:      v.state || '已提交',
+        reason:     v.reason || '',
+        approvedAt: v.approvedAt || '',
+        rejectedAt: v.rejectedAt || '',
+        paidOn:     v.paidOn || '',
+        paidAmt:    v.paidAmt,
+        voucherNo:  v.voucherNo || ''
+      };
+    });
+    renderFsBox();
+    if(cb) cb(true);
+  }).catch(function(){ if(cb) cb(false); });
+}
+
+/* 财务那边什么结果，直接写在汇总卡下面。没结果就不占地方。 */
+function renderFsBox(){
+  var box = document.getElementById('fsBox');
+  if(!box) return;
+  var d = sumDraft(SUM_MONTH);
+  var vid = d && d.voucherId;
+  if(!vid){ box.innerHTML = ''; return; }
+  var f = FS_STATE[vid];
+  if(!f){
+    box.innerHTML = '<p class="sm mu" style="margin:0">还没读到财务的结果 —— 点顶栏「☁︎ 拉取云端」。</p>';
+    return;
+  }
+  var s = f.state, when = '';
+  if(s === '已批'){
+    when = String(f.approvedAt || '').slice(0, 16).replace('T', ' ');
+    box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+      '<span class="tag has">财务已批准</span>'+
+      '<span class="sm">' + esc(when) + '　可以付款了</span></div>';
+    return;
+  }
+  if(s === '已驳'){
+    when = String(f.rejectedAt || '').slice(0, 16).replace('T', ' ');
+    box.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">'+
+      '<span class="tag nodata">财务已驳回</span>'+
+      '<div class="sm" style="flex:1;min-width:220px">'+
+        '<b>理由：</b>' + esc(f.reason || '（财务没写理由）')+
+        '<br><span class="mu">' + esc(when) + '　改完重新「生成」再「提交财务」</span>'+
+      '</div></div>';
+    return;
+  }
+  if(s === '已付'){
+    box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+      '<span class="tag has">财务已付款</span>'+
+      '<span class="sm">金额 <b>' + money(f.paidAmt) + '</b>　·　日期 ' + esc(f.paidOn || '—') +
+      '　·　凭证 ' + esc(f.voucherNo || '—') + '</span></div>';
+    return;
+  }
+  box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+    '<span class="tag partial">等财务审批</span>'+
+    '<span class="sm mu">财务核对后会批准或驳回，驳回理由会显示在这里。</span></div>';
 }
 
 /* 提交财务。★ 2026-10-31：无排课 ID 的教师先拦一道 —— 空着交上去财务没法对课时。 */
@@ -2766,6 +2845,9 @@ if (typeof window !== 'undefined'){
     sumTotals: sumTotals,
     pushSum: pushSum,
     renderSum: renderSum,
+    fsPullVoucherState: fsPullVoucherState,
+    renderFsBox: renderFsBox,
+    FS_STATE: FS_STATE,
     val: val,
     ZH: ZH,
     getS: function(){ return S; },
