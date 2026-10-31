@@ -1338,6 +1338,9 @@ function doneRecord(l){
     cname:   c.name || l.cname || '',
     ccode:   c.code || l.ccode || '',
     lv:      c.lv || l.clv || '',
+    /* ★ 2026-11-01（P-73）：带上「市」—— 人事要按「教师 × 市」拆账。
+       课次上有快照就用快照（历史不变），没有才回落到班当前值。 */
+    city:    l.city || c.city || c.room || '',
     state:   l.status,                /* done / today / plan / cancel —— 人事部只认 done */
     absent:  abs,                     /* 缺席人数（只给业务部看，不算工资） */
     size:    cap,
@@ -1593,6 +1596,12 @@ function seedLessonsOf(c){
   const snap = {
     cname: c.name, ccode: c.code, clv: c.lv,
     cmode: c.mode, croom: c.room || '', ctch: c.teacher,
+    /* ★ 2026-11-01（P-73）：课次记「市」。
+       以前只能从班反推「省」，查不到「每节课在哪个市上的」—— 教师跨市上课时
+       人事没法按「教师 × 市」拆账（t1 · 苏州 12 节 / t1 · 杭州 8 节）。
+       跟 cname / croom 一样是**快照**：班以后换市，历史课次不能跟着变。
+       取值优先级：班上有独立 city 字段就用它，否则用 room（当前口径：市名 = 开班名 = room）。 */
+    city: c.city || c.room || '',
   };
   let d = c.startedAt, no = 0, guard = 0;
   while (d <= stop && no < (c.plannedLessons || 42) && guard++ < 900){
@@ -2386,7 +2395,7 @@ function seedDemoClass(){
     DB.lessons.push({
       id:cid+'#'+i, cid, no:i, date:addDays('2026-07-01', (i-1)*7),
       time:sl.time, status:'done', teacher:tid,
-      cname:'苏州班', ccode:'苏01', clv:'HSK1', cmode:'online',
+      cname:'苏州班', ccode:'苏01', clv:'HSK1', cmode:'online', city:'苏州',
     });
   }
   save(); buildFacts();

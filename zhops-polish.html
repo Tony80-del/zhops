@@ -254,7 +254,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <div class="day-panel" data-day="2026-10-31">
     <div class="card">
-      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 10 · 等验收 1 · 待打磨 2</span><span class="sp"></span>
+      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 11 · 等验收 1 · 待打磨 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -399,10 +399,21 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-73</td>
               <td><b>课次记「市」（原 P-72 ②，教室归属进人事）</b><br><span style="color:#8899aa;font-size:12px">「要记就记到市这一层：t1 + 苏州、t1 + 杭州」</span></td>
               <td class="nw">排课 · 人事</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">10-31</td>
-              <td class="mono nw">—</td>
-              <td>课次 <span class="mono">l</span> 上没有 city 字段，只能查到「班 → 省」，查不到「每课 → 市」。<br>
+              <td class="mono nw">11-01</td>
+              <td><b>做法（11-01）</b>：<br>
+              ① <b>主端</b> <span class="mono">seedLessonsOf()</span> 的课次快照加 <span class="mono">city</span>，取值 <span class="mono">c.city || c.room</span>（班上有独立 city 字段就用它，否则用 room —— 当前口径市名 = 开班名）；<span class="mono">doneRecord()</span> 也带上 <span class="mono">city</span>，取值 <span class="mono">l.city || c.city || c.room</span>。<br>
+              ② <b>教师端</b> <span class="mono">pushDoneRecord()</span> 同口径加 <span class="mono">city</span>（两端写进同一个 <span class="mono">zhops/done_*</span>，口径必须一致）。<br>
+              ③ <b>人事</b>新增 <span class="mono">lessonsByCity(tid, month)</span> / <span class="mono">cityBreakdown()</span>：按「教师 × 市」分桶，口径与 <span class="mono">lessonsOf()</span> 完全一致（谁上的、只算 done、按月份筛）；工资汇总表「课时」格里挂一行小字 <span class="mono">苏州 12 · 杭州 8</span>。<br>
+              ④ <b>老数据兜底</b>：没有 city 的课次落到「未标市」，<b>课时不丢</b>（数不出来比算错好，但洞里要能看见）。<br>
+              <b>为什么 ① 的取值是 <span class="mono">c.city || c.room</span></b>：主端现在「市」和「教室名」是同一个字符串（<span class="mono">room:'苏州'</span>）。留出 <span class="mono">c.city</span> 这一层优先级，是给以后教室名细化成「苏州-1 号」留的位 —— 那时只要给班加个 city 字段，课次快照自动跟着走，不用再改一次排课。<br>
+              <b>★ 快照的意义</b>：课次上的 city 是开班时带下来的一份拷贝，班以后换市，<b>历史课次不跟着变</b>。探针专门验了这条：造苏州班 → 把班改杭州 → 历史课次仍是苏州，而改之后新排的课次才是杭州。<br>
+              <b>排序</b>：按课时数从多到少（中文按字符码排「杭州 &lt; 苏州」毫无意义）；「未标市」永远排最后；只有一个市时不显示拆分（省地方）。<br>
+              <b>探针</b> <span class="mono">check-p73-city.js</span> <b>25 条全绿</b>（run.sh ⑯），跨主端 / 教师端 / 人事三个文件。反向控制：<span class="mono">doneRecord</span> 改成直接读班当前值 → 报红 2 条；sha256 确认逐字还原。<br>
+              <b>没做</b>：人事侧目前只<b>展示</b>按市拆分，<b>不按市算不同单价</b>（现在所有市一个单价）。要做「同一个教师不同市不同价」得等 Tony 定口径。<br>
+              <br><span style="color:#8899aa">— 以下为 10-31 立项时的原始说明 —</span><br>
+              课次 <span class="mono">l</span> 上没有 city 字段，只能查到「班 → 省」，查不到「每课 → 市」。<br>
               做法：课次加 <span class="mono">l.city</span>（开班时从班级带下来当快照，跟 cname 一样，班以后换教室历史不跟着变），<span class="mono">done_*</span> 一起带上，人事才能按「教师 × 市」分组：<span class="mono">t1 · 苏州 12 节 / t1 · 杭州 8 节</span>。</td>
             </tr>
 

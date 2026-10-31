@@ -804,6 +804,9 @@ function pushDoneRecord(l){
     tname: (DB.teachers.find(x => x.id === tid) || {}).name || '',
     cname: c.name || l.cname || '', ccode: c.code || l.ccode || '',
     lv: c.lv || l.clv || '', state: l.status,
+    /* ★ 2026-11-01（P-73）：跟主端同一口径 —— 带「市」，人事才能按「教师 × 市」拆账。
+       课次快照优先，没有才回落到班当前值。 */
+    city: l.city || c.city || c.room || '',
     absent: abs, size: (DB.set && DB.set.capMax) || 0,
     at: new Date().toISOString(),
   };

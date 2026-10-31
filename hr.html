@@ -1170,6 +1170,9 @@ function mergeDoneRecords(cb){
       l.status  = want;
       if(r.date) l.date = r.date;
       if(r.tid)  l.teacher = r.tid;
+      /* ★ 2026-11-01（P-73）：增量记录里带了「市」就以它为准 —— 排课端改过市，
+         人事这边要跟着最新的走（历史课次不受影响，因为每条 done_* 各存各的）。 */
+      if(r.city) l.city = r.city;
       l.absentN = r.absent;
     });
     if(cb) cb(true, Object.keys(best).length);
@@ -1184,6 +1187,45 @@ function renderTidList(){
     return '<option value="'+esc(t.id)+'">'+esc(t.id + (nm ? ' · ' + nm : ''))+'</option>';
   }).join('');
 }
+/* 某位排课教师在**每个市**各上了几节「已完成」的课（2026-11-01 · P-73）
+   —— 教师跨市上课时要能拆账：t1 · 苏州 12 节 / t1 · 杭州 8 节。
+   —— 口径与 lessonsOf() 完全一致（谁上的、只算 done、按月份筛），只是多按市分了个桶。
+   —— 没有 city 的老记录落到「未标市」，不丢课时 —— 数不出来比算错好，但要能看见。 */
+function lessonsByCity(tid, month){
+  var out = {}, order = [];
+  if(!tid) return { map: out, order: order, total: 0 };
+  for(var i = 0; i < ZH.lessons.length; i++){
+    var l = ZH.lessons[i];
+    if(!l || l.status !== 'done') continue;
+    var who = (l.teacher && l.teacher !== (l.ctch || '')) ? l.teacher : (l.teacher || l.ctch || '');
+    if(who !== tid) continue;
+    if(month && String(l.date || '').slice(0, 7) !== month) continue;
+    var city = String(l.city || '').trim() || '未标市';
+    if(!(city in out)){ out[city] = 0; order.push(city); }
+    out[city]++;
+  }
+  /* 排序：①「未标市」永远排最后（那是数据洞，不是正常维度，别把正常数据挤下去）
+           ② 其余按课时数从多到少 —— 中文按字符码排（杭州 < 苏州）毫无意义，
+              谁上得多谁排前面才对人有用的。同数时再按名字，保证结果稳定。 */
+  order.sort(function(a, b){
+    if(a === '未标市') return 1;
+    if(b === '未标市') return -1;
+    if(out[b] !== out[a]) return out[b] - out[a];
+    return a < b ? -1 : (a > b ? 1 : 0);
+  });
+  var total = 0; for(var k in out) total += out[k];
+  return { map: out, order: order, total: total };
+}
+/* 把分组结果渲染成一行小字：苏州 12 · 杭州 8（只有一个市就不重复显示，省地方） */
+function cityBreakdown(tid, month){
+  var r = lessonsByCity(tid, month);
+  if(r.total === 0) return '';
+  if(r.order.length <= 1 && r.order[0] !== '未标市') return '';
+  return r.order.map(function(c){
+    return esc(c) + ' ' + r.map[c];
+  }).join(' · ');
+}
+
 /* 某位排课教师在某月上了几节「已完成」的课。
    ★ 代课口径与主端一致：l.teacher 有值就用它，否则用班常任快照 l.ctch。 */
 function lessonsOf(tid, month){
@@ -1292,6 +1334,9 @@ function genSum(month){
       payType:payType,
       base:base,                 /* ★ 底薪 */
       lessons:les,
+      /* ★ 2026-11-01（P-73）：跨市上课时在课时数下面补一行「苏州 12 · 杭州 8」。
+         只有一个市时不显示（省地方），没有市数据时显示「未标市 N」。 */
+      city:cityBreakdown(e.zhopsTid, month),
       rate:rate,
       tch:tch,                   /* ★ 课时费小计 = lessons × rate */
       gross:gross,               /* 底薪 + 课时 */
@@ -1341,7 +1386,9 @@ function renderSum(){
         '<td>'+esc(r.name)+(r.tid ? ' <span class="sm mu">'+esc(r.tid)+'</span>' : ' <span class="sm" style="color:var(--bad)">无ID</span>')+'</td>'+
         '<td>'+esc(r.payType)+'</td>'+
         '<td class="num">'+(val(r.base) > 0 ? money(r.base) : '—')+'</td>'+
-        '<td class="num">'+(hasRate ? r.lessons : '—')+'</td>'+
+        '<td class="num">'+(hasRate ? r.lessons : '—')+
+          /* P-73：课时下面挂一行「按市拆分」，跨市教师才显示 */
+          (hasRate && r.city ? '<div class="sm mu" style="font-weight:400;margin-top:2px">'+r.city+'</div>' : '')+'</td>'+
         '<td class="num">'+(hasRate ? money(r.rate) : '—')+'</td>'+
         '<td class="num">'+(hasRate ? money(val(r.tch)) : '—')+'</td>'+
         '<td class="num">'+money(r.gross)+'</td>'+
@@ -2945,6 +2992,9 @@ if (typeof window !== 'undefined'){
     mergeDoneRecords: mergeDoneRecords,
     pullMaster: pullMaster,
     lessonsOf: lessonsOf,
+    /* ★ 2026-11-01（P-73）：按「教师 × 市」拆课时 —— 探针要验分组口径 */
+    lessonsByCity: lessonsByCity,
+    cityBreakdown: cityBreakdown,
     contractOf: contractOf,
     genSum: genSum,
     sumDraft: sumDraft,
