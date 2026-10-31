@@ -758,14 +758,15 @@ table.fmt td.bad{color:var(--neg)}
         <table class="grid">
           <thead><tr>
             <th style="width:104px">姓名</th><th style="width:78px">计价</th>
-            <th style="width:64px">课时</th><th style="width:104px">单价</th>
+            <th style="width:96px">底薪</th>
+            <th style="width:64px">课时</th><th style="width:100px">单价</th><th style="width:104px">课时费</th>
             <th style="width:112px">应发</th><th style="width:96px">社保个人</th>
             <th style="width:88px">个税</th><th style="width:112px">实发</th>
             <th style="width:150px">备注</th>
           </tr></thead>
           <tbody id="tb-sum"></tbody>
           <tfoot><tr>
-            <td colspan="4" class="mu">合计</td>
+            <td colspan="6" class="mu">合计</td>
             <td class="num" id="sumGross2">0</td>
             <td class="num" id="sumSi2">0</td>
             <td class="num" id="sumPit2">0</td>
@@ -775,7 +776,8 @@ table.fmt td.bad{color:var(--neg)}
         </table>
         </div>
         <p class="sm mu" style="margin:9px 0 0">
-          <b>月薪</b> 取合同「月薪（约定）」；<b>课时费</b> = 合同「课时单价」× 当月已完成课次。
+          <b>底薪</b> 取合同「月薪（约定）」；<b>课时费</b> = 合同「课时单价」× 当月已完成课次。
+          <b>应发 = 底薪 + 课时费</b> —— 合同哪个格子空着，那一项就是 0，不用选。
           课次读不到（没填排课ID / 断网 / 主端没推过云端）→ 显示 0，<b>不会瞎猜</b>。
         </p>
         <p class="sm mu" style="margin:5px 0 0">
@@ -1221,26 +1223,42 @@ function genSum(month){
     if(!String(e.zh || '').trim()){ skipNoName++; return; }
     var c = contractOf(e.id, month);
     if(!c) return;
-    var payType = c.payType || '月薪';
-    var les = 0, rate = 0, gross = 0;
-    if(payType === '课时费'){
-      rate = val(c.rate);
-      les  = lessonsOf(e.zhopsTid, month);
-      gross = les * rate;
-      if(!e.zhopsTid) skipNoTid++;
-    } else {
-      gross = val(c.salary);
-      /* 月薪是 0 或没填 —— 没什么可发的，不进单据（课时费 0 节要保留，那是真信息） */
-      if(gross <= 0){ skipNoPay++; return; }
-    }
+    /* ★ 2026-10-31（Tony 定 · 方案 C）：底薪 + 课时，不再靠 payType 二选一。
+       合同两个格子有就填、没有就空着；
+       只有月薪 → rate=0 → gross=底薪；只有课时 → salary=0 → gross=课时；
+       底薪+课时 → gross=底薪+课时。一套公式三个都对，不用分支。
+       ⚠️ 改之前：payType==='课时费' 时 salary 那格根本没读 ——
+          阮氏兰合同填了 12,000,000 底薪，一分钱没进工资。 */
+    var base = val(c.salary);                 /* 底薪（合同「月薪（约定）」） */
+    var rate = val(c.rate);                   /* 课时单价 */
+    var les  = lessonsOf(e.zhopsTid, month);  /* 当月已完成课次 —— 只算 done */
+    var tch  = les * rate;                    /* 课时费小计 */
+    var gross = base + tch;                   /* 应发 = 底薪 + 课时 */
+    /* ★ 有课时单价却没 tid → 课时永远算 0，这是「数据有洞」不是「这人没钱」：
+       必须留在单据里，让人看见并去补 ID。不能按「金额 0」跳过 —— 那等于把洞藏起来。 */
+    var missingTid = (!e.zhopsTid && rate > 0);
+    if(missingTid) skipNoTid++;
+    /* 真的没什么可发（金额 0 且不是缺 ID）→ 不进单据 */
+    if(gross <= 0 && !missingTid){ skipNoPay++; return; }
+    /* 标签只给人看，不参与计算 */
+    var payType = (base > 0 && rate > 0) ? '底薪+课时'
+                : (rate > 0)             ? '课时费'
+                :                          '月薪';
     var so = socialOf(e.id);
     var siEmp = (so && so.status === '参保')
       ? Math.round(val(so.base) * val(S.cfg.siEmp) / 100)
       : 0;
     var pit = prev[e.id] ? val(prev[e.id].pit) : 0;
     rows.push({
-      eid:e.id, name:e.zh, payType:payType,
-      lessons:les, rate:rate, gross:gross,
+      eid:e.id,
+      tid:e.zhopsTid || '',      /* ★ 排课教师 ID —— 财务按这个对课时 */
+      name:e.zh,
+      payType:payType,
+      base:base,                 /* ★ 底薪 */
+      lessons:les,
+      rate:rate,
+      tch:tch,                   /* ★ 课时费小计 = lessons × rate */
+      gross:gross,               /* 底薪 + 课时 */
       siEmp:siEmp, pit:pit, net:gross - siEmp - pit,
       note: prev[e.id] ? (prev[e.id].note || '') : ''
     });
@@ -1256,8 +1274,8 @@ function genSum(month){
   save(); renderSum();
   var warn = [];
   if(skipNoName) warn.push(skipNoName + ' 人没填中文名，已跳过');
-  if(skipNoPay)  warn.push(skipNoPay + ' 人合同月薪是 0 或没填，已跳过');
-  if(skipNoTid)  warn.push(skipNoTid + ' 位课时费教师没填排课ID，课时按 0 算');
+  if(skipNoPay)  warn.push(skipNoPay + ' 人合同底薪和课时单价都是 0，已跳过');
+  if(skipNoTid)  warn.push(skipNoTid + ' 位有课时单价的教师没填排课ID，课时按 0 算');
   if(warn.length) toastish('生成完了，但有情况：' + warn.join('；') + '。');
   else if(!rows.length) toastish(month + ' 一个人都没算出来 —— 检查花名册有没有人、合同有没有填金额。');
 }
@@ -1282,17 +1300,19 @@ function renderSum(){
     tb.innerHTML = emptyRow(9, SUM_MONTH + ' 还没有汇总 —— 点「生成」按合同算一次');
   }else{
     tb.innerHTML = rows.map(function(r){
-      var isT = r.payType === '课时费';
+      var hasRate = val(r.rate) > 0;
       return '<tr>'+
-        '<td>'+esc(r.name)+'</td>'+
+        '<td>'+esc(r.name)+(r.tid ? ' <span class="sm mu">'+esc(r.tid)+'</span>' : ' <span class="sm" style="color:var(--bad)">无ID</span>')+'</td>'+
         '<td>'+esc(r.payType)+'</td>'+
-        '<td class="num">'+(isT ? r.lessons : '—')+'</td>'+
-        '<td class="num">'+(isT ? money(r.rate) : '—')+'</td>'+
+        '<td class="num">'+(val(r.base) > 0 ? money(r.base) : '—')+'</td>'+
+        '<td class="num">'+(hasRate ? r.lessons : '—')+'</td>'+
+        '<td class="num">'+(hasRate ? money(r.rate) : '—')+'</td>'+
+        '<td class="num">'+(hasRate ? money(val(r.tch)) : '—')+'</td>'+
         '<td class="num">'+money(r.gross)+'</td>'+
         '<td class="num">'+money(r.siEmp)+'</td>'+
         '<td class="num">'+money(r.pit)+'</td>'+
         '<td class="num">'+money(r.net)+'</td>'+
-        '<td class="sm mu">'+esc(r.note || (isT && !r.lessons ? '课时 0' : ''))+'</td>'+
+        '<td class="sm mu">'+esc(r.note || (hasRate && !r.lessons ? '课时 0' : ''))+'</td>'+
       '</tr>';
     }).join('');
   }
@@ -1354,18 +1374,31 @@ function fsPushVoucher(v, cb){
   }).catch(function(e){ if(cb) cb(false, String((e && e.message) || e)); });
 }
 
+/* 提交财务。★ 2026-10-31：无排课 ID 的教师先拦一道 —— 空着交上去财务没法对课时。 */
 function pushSum(){
   var d = sumDraft(SUM_MONTH);
   if(!d || !d.rows || !d.rows.length){ toastish('这个月还没生成汇总，先点「生成」。'); return; }
   var t = sumTotals(d.rows);
+  /* ★ 缺排课 ID 的拦截：有课时单价却没 tid，课时永远算 0 */
+  var noTid = d.rows.filter(function(r){ return val(r.rate) > 0 && !r.tid; });
+  if(noTid.length){
+    var names = noTid.slice(0, 5).map(function(r){ return '· ' + r.name + '（' + r.eid + '）'; }).join('\n');
+    var more = noTid.length > 5 ? '\n… 还有 ' + (noTid.length - 5) + ' 位' : '';
+    if(!confirm('⚠️ 这 ' + noTid.length + ' 位教师没有排课 ID（tid），课时算不出来：\n\n' +
+        names + more +
+        '\n\n交上去财务也没法对课时。\n\n[确定] 仍然提交    [取消] 回去补排课 ID')) return;
+  }
   if(t.gross <= 0 && !confirm('这张单据总额是 0。\n确定要提交给财务吗？（财务那边会收到一张空单）')) return;
   var v = {
     id: 'v-hr-' + SUM_MONTH,
     type: 'salary', dept: 'hr', month: SUM_MONTH,
     title: SUM_MONTH + ' 工资汇总',
+    /* ★ 2026-10-31：每行带 eid（人事认人）+ tid（财务对课时）+ 底薪/课时拆开 ——
+       财务一眼能对：底薪 12,000,000 + 20 节 × 1,000,000 = 32,000,000 */
     items: d.rows.map(function(r){
-      return { eid:r.eid, name:r.name, payType:r.payType, lessons:r.lessons,
-               rate:r.rate, gross:r.gross, siEmp:r.siEmp, pit:r.pit, net:r.net };
+      return { eid:r.eid, tid:r.tid || '', name:r.name, payType:r.payType,
+               base:val(r.base), lessons:r.lessons, rate:r.rate, tch:val(r.tch),
+               gross:r.gross, siEmp:r.siEmp, pit:r.pit, net:r.net };
     }),
     total: t,
     state: '已提交',
@@ -2729,6 +2762,11 @@ if (typeof window !== 'undefined'){
     lessonsOf: lessonsOf,
     contractOf: contractOf,
     genSum: genSum,
+    sumDraft: sumDraft,
+    sumTotals: sumTotals,
+    pushSum: pushSum,
+    renderSum: renderSum,
+    val: val,
     ZH: ZH,
     getS: function(){ return S; },
   };
