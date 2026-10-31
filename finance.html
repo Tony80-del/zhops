@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>财务系统 · 中文教学运营</title>
+<style>
+/* ============================================================
+   语义变量 —— 所有底色/描边/文字都走变量，换配色只换变量
+   ============================================================ */
+body[data-theme="ivory"]{
+  --bg:#F5F7FA; --panel:#FFFFFF; --panel2:#FAFBFD;
+  --line:#DCE3EC; --line2:#EDF1F6;
+  --tx:#16202B; --mu:#5A6B7E; --dim:#8A99AA;
+  --b1:#7FB0E0; --b2:#4E8FD0; --b3:#2A6FB5; --b4:#164E82;
+  --ok:#2E8B6B; --warn:#B37A12; --bad:#C0392B;
+  --ink:#FFFFFF; --surf:#FFFFFF; --surf2:#EEF3F9; --sel:#E1EDFA;
+  --note:#F0F6FC; --noteTx:#24405A; --track:#EDF1F6; --chipbg:#E8EEF6;
+  --topbar:rgba(245,247,250,.94); --statusbg:rgba(255,255,255,.96);
+  --pos:#0F6B4F; --neg:#B3261E; --hi:#8A5A00;
+  --shadow:0 1px 2px rgba(16,32,48,.06);
+}
+body[data-theme="mint"]{
+  --bg:#F2F8F6; --panel:#FFFFFF; --panel2:#F8FCFA;
+  --line:#D5E5DF; --line2:#E9F2EE;
+  --tx:#122A24; --mu:#5C7D74; --dim:#8AA79E;
+  --b1:#79C2AE; --b2:#4AA98F; --b3:#248A70; --b4:#136351;
+  --ok:#2E8B6B; --warn:#A9761A; --bad:#BC4034;
+  --ink:#FFFFFF; --surf:#FFFFFF; --surf2:#EAF5F1; --sel:#DDF0E9;
+  --note:#EDF8F4; --noteTx:#1C4438; --track:#E9F2EE; --chipbg:#E4F1EC;
+  --topbar:rgba(242,248,246,.94); --statusbg:rgba(255,255,255,.96);
+  --pos:#0F6B4F; --neg:#A8332A; --hi:#8A5A00;
+  --shadow:0 1px 2px rgba(18,42,36,.06);
+}
+body[data-theme="paper"]{
+  --bg:#FAF7F2; --panel:#FFFFFF; --panel2:#FDFBF7;
+  --line:#E6DCCE; --line2:#F1EAE0;
+  --tx:#2A2118; --mu:#7A6A57; --dim:#A2927E;
+  --b1:#C79A62; --b2:#B07C42; --b3:#8F5E2C; --b4:#6B4419;
+  --ok:#4E8A5B; --warn:#A9761A; --bad:#B24A3A;
+  --ink:#FFFFFF; --surf:#FFFFFF; --surf2:#F5EFE6; --sel:#EFE3D2;
+  --note:#FBF4EA; --noteTx:#4A3826; --track:#F1EAE0; --chipbg:#F0E7DA;
+  --topbar:rgba(250,247,242,.94); --statusbg:rgba(255,255,255,.96);
+  --pos:#3D6B45; --neg:#9B3A2C; --hi:#8A5A00;
+  --shadow:0 1px 2px rgba(42,33,24,.07);
+}
+body[data-theme="slate"]{
+  --bg:#F1F3F6; --panel:#FFFFFF; --panel2:#F8FAFC;
+  --line:#D8DEE6; --line2:#E9EDF2;
+  --tx:#1B2430; --mu:#64748B; --dim:#93A1B0;
+  --b1:#8FA6BF; --b2:#66829F; --b3:#41637F; --b4:#274A63;
+  --ok:#2F7F68; --warn:#9C7418; --bad:#B8433A;
+  --ink:#FFFFFF; --surf:#FFFFFF; --surf2:#EDF1F6; --sel:#E3EAF2;
+  --note:#F2F6FA; --noteTx:#2A3A4A; --track:#E9EDF2; --chipbg:#E6EBF1;
+  --topbar:rgba(241,243,246,.94); --statusbg:rgba(255,255,255,.96);
+  --pos:#1F5F4C; --neg:#9B342B; --hi:#7A5500;
+  --shadow:0 1px 2px rgba(27,36,48,.07);
+}
+body[data-theme="deep"]{
+  --bg:#060D1A; --panel:#0D1A2E; --panel2:#0A1526;
+  --line:#1C3350; --line2:#12233B;
+  --tx:#E8F1FB; --mu:#7FA3C8; --dim:#4E6C8C;
+  --b1:#B5D4F4; --b2:#85B7EB; --b3:#378ADD; --b4:#185FA5;
+  --ok:#5DCAA5; --warn:#EF9F27; --bad:#E24B4A;
+  --ink:#08192E; --surf:#081426; --surf2:#10203A; --sel:#142B4A;
+  --note:#0A1A2E; --noteTx:#C4DCF2; --track:#0A1526; --chipbg:#122238;
+  --topbar:rgba(6,13,26,.94); --statusbg:rgba(10,21,38,.96);
+  --pos:#9FE1CB; --neg:#F7C1C1; --hi:#FAC775; --shadow:none;
+}
+body[data-theme="jade"]{
+  --bg:#04120D; --panel:#0A1F18; --panel2:#071A14;
+  --line:#1B3A2F; --line2:#123026;
+  --tx:#E6F4EE; --mu:#7FB8A4; --dim:#4E7C6B;
+  --b1:#A8E6CF; --b2:#6FD3AE; --b3:#2E9E7B; --b4:#16705A;
+  --ok:#5DCAA5; --warn:#E9B949; --bad:#E25C4A;
+  --ink:#04150F; --surf:#07170F; --surf2:#0D2A20; --sel:#113A2C;
+  --note:#08211A; --noteTx:#BFE6D8; --track:#071A13; --chipbg:#0D2A20;
+  --topbar:rgba(4,18,13,.94); --statusbg:rgba(7,26,20,.96);
+  --pos:#9FE1CB; --neg:#F7C1C1; --hi:#FAC775; --shadow:none;
+}
+body[data-theme="graphite"]{
+  --bg:#0A0A0B; --panel:#15171A; --panel2:#101214;
+  --line:#2B3035; --line2:#1F2429;
+  --tx:#ECEDEF; --mu:#9AA3AC; --dim:#6A747D;
+  --b1:#D6DCE3; --b2:#B4BEC9; --b3:#7C8896; --b4:#4E5A66;
+  --ok:#6FBF9A; --warn:#D9A84E; --bad:#D96B62;
+  --ink:#0C0E10; --surf:#101214; --surf2:#1C2126; --sel:#242B31;
+  --note:#15181C; --noteTx:#C9D2DA; --track:#161A1E; --chipbg:#1C2126;
+  --topbar:rgba(10,10,11,.94); --statusbg:rgba(21,23,26,.96);
+  --pos:#8FD6B4; --neg:#E9A49E; --hi:#E3BE79; --shadow:none;
+}
+body[data-theme="sand"]{
+  --bg:#110D09; --panel:#1D1712; --panel2:#171109;
+  --line:#3A2C20; --line2:#2A2016;
+  --tx:#F2E9DE; --mu:#BFA48B; --dim:#8A7360;
+  --b1:#F0D6B0; --b2:#DDB884; --b3:#C08A4E; --b4:#8A5F33;
+  --ok:#8FBF7A; --warn:#E0A33A; --bad:#D2685C;
+  --ink:#140F0A; --surf:#171009; --surf2:#2A1F14; --sel:#332618;
+  --note:#1D1610; --noteTx:#E3D2BC; --track:#191309; --chipbg:#2A1F14;
+  --topbar:rgba(17,13,9,.94); --statusbg:rgba(29,23,18,.96);
+  --pos:#B9DDA6; --neg:#EFB3AB; --hi:#EDC078; --shadow:none;
+}
+body[data-theme="violet"]{
+  --bg:#0A0715; --panel:#161027; --panel2:#110C1E;
+  --line:#2D2450; --line2:#231B3E;
+  --tx:#ECE8FB; --mu:#9D93C4; --dim:#6B6291;
+  --b1:#D8CCF5; --b2:#B9A6EE; --b3:#8B6FE0; --b4:#5E45A8;
+  --ok:#5DCAA5; --warn:#EF9F27; --bad:#E2607A;
+  --ink:#0C0818; --surf:#100B1E; --surf2:#1E1636; --sel:#271C46;
+  --note:#150F26; --noteTx:#D5CBF0; --track:#120D22; --chipbg:#1E1636;
+  --topbar:rgba(10,7,21,.94); --statusbg:rgba(22,16,39,.96);
+  --pos:#A9E3CB; --neg:#F2A8B6; --hi:#FAC775; --shadow:none;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--tx);
+  font:400 13px/1.65 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;font-weight:500}
+table{border-collapse:collapse;width:100%}
+.mu{color:var(--mu)} .dim{color:var(--dim)} .num{font-variant-numeric:tabular-nums;text-align:right}
+.sm{font-size:11.5px}
+.pos{color:var(--pos)} .neg{color:var(--neg)} .hi{color:var(--hi)}
+.tw{overflow-x:auto}
+
+/* ---------- 顶栏 ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:10px 18px; background:var(--topbar);
+  border-bottom:1px solid var(--line); backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:var(--b3);box-shadow:0 0 0 4px rgba(55,138,221,.14)}
+.brand b{font-weight:500;letter-spacing:.3px}
+.crumb{color:var(--mu);font-size:12px}
+.crumb b{color:var(--b3);font-weight:500}
+.topsp{flex:1}
+.badge{font-size:11px;line-height:1;padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mu)}
+
+/* ---------- 配色 ---------- */
+.themes{display:flex;align-items:center;gap:6px}
+.themes .lb{font-size:10.5px;color:var(--dim);margin-right:2px}
+.themes .sep{width:1px;height:14px;background:var(--line);margin:0 4px}
+.theme-dot{
+  width:15px;height:15px;border-radius:50%;border:2px solid transparent;
+  background:var(--sw);cursor:pointer;padding:0;
+  box-shadow:0 0 0 1px rgba(128,140,155,.35) inset;
+  transition:transform .12s,border-color .12s;
+}
+.theme-dot:hover{transform:scale(1.18)}
+.theme-dot.on{border-color:var(--tx);transform:scale(1.18)}
+
+/* ---------- 壳 ---------- */
+.shell{display:grid;grid-template-columns:206px 1fr;min-height:calc(100vh - 49px)}
+.side{
+  border-right:1px solid var(--line); background:var(--panel2);
+  padding:14px 10px; position:sticky; top:49px; height:calc(100vh - 49px); overflow:auto;
+}
+.side .grp{font-size:10.5px;letter-spacing:1.4px;color:var(--dim);margin:6px 10px 8px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{
+  display:flex;align-items:center;gap:9px;width:100%;
+  padding:9px 10px;border:0;border-radius:8px;background:transparent;
+  color:var(--mu);font:inherit;font-size:12.5px;text-align:left;cursor:pointer;
+  transition:background .14s,color .14s;
+}
+.nav button:hover{background:var(--surf2);color:var(--tx)}
+.nav button.on{background:var(--sel);color:var(--tx)}
+.nav button .k{
+  width:18px;height:18px;border-radius:5px;flex:none;
+  display:grid;place-items:center;font-size:10px;
+  background:var(--chipbg);color:var(--dim);border:1px solid var(--line);
+}
+.nav button.on .k{background:var(--b3);color:#fff;border-color:var(--b3)}
+.nav button .hot{margin-left:auto;font-size:10px;color:var(--warn)}
+.sidefoot{margin:14px 8px 0;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);line-height:1.7}
+.main{padding:22px 26px 74px;min-width:0}
+.view{display:none} .view.on{display:block}
+
+/* ---------- 页头 ---------- */
+.phead{display:flex;align-items:flex-start;gap:13px;margin-bottom:6px}
+.pnum{
+  flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  font-size:11.5px;background:var(--chipbg);border:1px solid var(--line);color:var(--b3);
+}
+.ptitle{font-size:19px;letter-spacing:.2px}
+.psub{color:var(--mu);font-size:12px;margin-top:2px}
+.pnote{
+  margin:14px 0 18px;padding:11px 14px;border-left:2px solid var(--b3);
+  background:var(--note);border-radius:0 8px 8px 0;font-size:12.5px;color:var(--noteTx);
+}
+.pnote b{color:var(--tx);font-weight:500}
+
+/* ---------- 卡片 ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card-h h3{font-size:13px}
+.card-h .sp{flex:1}
+.tag{display:inline-flex;align-items:center;font-size:11px;line-height:1;padding:4px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.tag.has{background:var(--pos);color:var(--panel);border-color:var(--ok)}
+.tag.partial{background:var(--b2);color:var(--ink);border-color:var(--b3)}
+.tag.nodata{background:var(--neg);color:var(--panel);border-color:var(--bad)}
+.tag.nologic{background:transparent;color:var(--hi);border-color:var(--warn)}
+.tag.pending{background:var(--chipbg);color:var(--mu);border-color:var(--dim)}
+body[data-theme="deep"] .tag.has,body[data-theme="jade"] .tag.has,body[data-theme="graphite"] .tag.has,
+body[data-theme="sand"] .tag.has,body[data-theme="violet"] .tag.has{
+  background:#085041;color:#9FE1CB;border-color:#5DCAA5;
+}
+body[data-theme="deep"] .tag.nodata,body[data-theme="jade"] .tag.nodata,body[data-theme="graphite"] .tag.nodata,
+body[data-theme="sand"] .tag.nodata,body[data-theme="violet"] .tag.nodata{
+  background:#501313;color:#F7C1C1;border-color:#E24B4A;
+}
+
+/* ---------- 表格 ---------- */
+table.grid th{font-weight:400;font-size:11px;color:var(--mu);text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.grid td{padding:6px 8px;border-bottom:1px solid var(--line2);font-size:12.5px}
+table.grid tr:last-child td{border-bottom:0}
+table.grid tfoot td{border-top:1px solid var(--line);border-bottom:0;padding-top:9px;color:var(--b3);font-weight:500}
+table.grid tbody tr:hover td{background:var(--surf2)}
+tr.auto td{color:var(--mu)}
+.empty{text-align:center;color:var(--dim);padding:26px 8px;font-size:12px}
+
+input,select{
+  width:100%;background:var(--surf);border:1px solid var(--line);border-radius:6px;
+  color:var(--tx);font:inherit;font-size:12.5px;padding:5px 7px;
+}
+input:focus,select:focus{outline:0;border-color:var(--b3);box-shadow:0 0 0 2px rgba(42,111,181,.14)}
+input.num{text-align:right;font-variant-numeric:tabular-nums}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+input.ro{background:var(--track);color:var(--mu);border-style:dashed}
+.w-date{width:112px} .w-mid{width:150px} .w-money{width:116px}
+.w-tax{width:74px} .w-inv{width:100px} .w-n{width:64px} .w-cls{width:104px}
+
+/* ---------- 说明表 ---------- */
+table.fmt th{font-weight:400;font-size:11px;color:var(--mu);text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+table.fmt td{padding:8px;border-bottom:1px solid var(--line2);font-size:12px;vertical-align:top}
+table.fmt td.f{color:var(--b3);white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+table.fmt td.e{color:var(--ok);font-family:ui-monospace,Menlo,monospace;font-size:11.5px;white-space:nowrap}
+table.fmt td.bad{color:var(--neg)}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow)}
+.kpi .lb{font-size:11px;color:var(--mu);margin-bottom:7px}
+.kpi .vl{font-size:23px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.kpi .un{font-size:11px;color:var(--dim);margin-left:3px}
+.kpi.hl{border-color:var(--b3);background:var(--note)}
+
+/* ---------- 条 ---------- */
+.bars{display:flex;flex-direction:column;gap:11px}
+.brow{display:grid;grid-template-columns:104px 1fr 96px;align-items:center;gap:10px;font-size:12px}
+.btrack{height:20px;background:var(--track);border-radius:5px;overflow:hidden;position:relative}
+.bfill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:8px;font-size:10.5px;color:var(--ink);font-weight:500}
+.bval{text-align:right;font-variant-numeric:tabular-nums;color:var(--b3);font-size:12px}
+
+/* ---------- 步骤 ---------- */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:30px 1fr;gap:12px;position:relative;padding-bottom:18px}
+.step:last-child{padding-bottom:0}
+.step .sn{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--chipbg);border:1px solid var(--line);font-size:11px;color:var(--b3);z-index:1}
+.step:not(:last-child)::before{content:"";position:absolute;left:11px;top:26px;bottom:0;width:1px;background:var(--line)}
+.step .st{font-size:12.5px;margin-bottom:3px}
+.step .sd{font-size:11.5px;color:var(--mu);line-height:1.7}
+.step code{background:var(--track);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;color:var(--b3)}
+
+/* ---------- 线框 ---------- */
+.wire{display:grid;grid-template-columns:120px 1fr;grid-template-rows:26px 1fr;gap:5px;height:168px;margin-top:4px}
+.wire div{border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font-size:10.5px;color:var(--dim);background:var(--surf)}
+.wire .wtop{grid-column:1/3;background:var(--note);color:var(--mu)}
+.wire .wside{background:var(--note);color:var(--b3);border-color:var(--b3)}
+.wire .wmain{color:var(--mu)}
+
+/* ---------- 子页签 ---------- */
+.subtabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.subtabs button{
+  padding:6px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel);
+  color:var(--mu);font:inherit;font-size:12px;cursor:pointer;
+}
+.subtabs button:hover{background:var(--surf2)}
+.subtabs button.on{background:var(--b3);border-color:var(--b3);color:#fff}
+.subview{display:none} .subview.on{display:block}
+
+/* ---------- 状态条 ---------- */
+.statusbar{
+  position:fixed;left:206px;right:0;bottom:0;z-index:15;
+  display:flex;align-items:center;gap:10px;
+  padding:8px 26px;background:var(--statusbg);border-top:1px solid var(--line);
+  font-size:11px;color:var(--dim);
+}
+.statusbar .sp{flex:1}
+.mini{
+  background:var(--surf2);border:1px solid var(--line);color:var(--b3);border-radius:6px;
+  padding:4px 10px;font:inherit;font-size:11.5px;cursor:pointer;
+}
+.mini:hover{background:var(--sel)}
+@media(max-width:880px){
+  .shell{grid-template-columns:1fr}
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .statusbar{left:0}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .main{padding:16px 14px 80px}
+}
+</style>
+</head>
+<body data-theme="ivory">
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><b>财务系统</b></div>
+  <div class="crumb">中文教学运营 · <b id="crumbName">使用说明</b></div>
+  <div class="topsp"></div>
+  <div class="themes" id="themes">
+    <span class="lb">配色</span>
+    <button class="theme-dot" data-th="ivory"    style="--sw:#F5F7FA" title="象牙白"></button>
+    <button class="theme-dot" data-th="mint"     style="--sw:#F2F8F6" title="薄荷白"></button>
+    <button class="theme-dot" data-th="paper"    style="--sw:#FAF7F2" title="米纸白"></button>
+    <button class="theme-dot" data-th="slate"    style="--sw:#F1F3F6" title="冷雾灰"></button>
+    <span class="sep"></span>
+    <button class="theme-dot" data-th="deep"     style="--sw:#378ADD" title="深海蓝"></button>
+    <button class="theme-dot" data-th="jade"     style="--sw:#2E9E7B" title="墨玉绿"></button>
+    <button class="theme-dot" data-th="graphite" style="--sw:#7C8896" title="石墨灰"></button>
+    <button class="theme-dot" data-th="sand"     style="--sw:#C08A4E" title="暖砂褐"></button>
+    <button class="theme-dot" data-th="violet"   style="--sw:#8B6FE0" title="暮紫"></button>
+  </div>
+  <span class="badge">内资有限公司</span>
+  <span class="badge">本机存储</span>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="grp">板块</div>
+    <nav class="nav" id="nav">
+      <button data-v="guide" class="on"><span class="k">0</span>使用说明</button>
+      <button data-v="income"><span class="k">1</span>收入</button>
+      <button data-v="expense"><span class="k">2</span>支出</button>
+      <button data-v="settle"><span class="k">3</span>结算<span class="hot">核心</span></button>
+      <button data-v="report"><span class="k">4</span>报表</button>
+      <button data-v="config"><span class="k">5</span>配置</button>
+      <button data-v="export"><span class="k">6</span>导出</button>
+    </nav>
+    <div class="sidefoot">
+      左侧点板块，右侧内容直接换，不刷新。<br>
+      键盘 <b>0–6</b> 也能切。
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+
+    <!-- ================= 0 ================= -->
+    <section class="view on" id="v-guide">
+      <div class="phead">
+        <div class="pnum">0</div>
+        <div><div class="ptitle">这套系统怎么用</div><div class="psub">先看布局和切换，再看每页填什么</div></div>
+      </div>
+      <div class="pnote">
+        这是财务系统的<b>使用说明</b>。第一次用建议按 1 → 2 → 3 → 4 的顺序走一遍：
+        先记收入，再记支出，才能算结算和报表。
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>布局：两栏，不是七个页面</h3></div>
+        <div class="wire">
+          <div class="wtop">顶栏 · 系统名 / 配色 / 主体 / 存储方式</div>
+          <div class="wside">左侧导航<br>0–6 七个入口</div>
+          <div class="wmain">右侧主区<br>当前板块的表格 / 图表</div>
+        </div>
+        <p class="sm mu" style="margin:10px 0 0">所有板块在<b>同一个页面</b>里，切换只是把右边内容换掉。数据不重载，页面不刷新。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>切换板块：四步</h3></div>
+        <div class="steps">
+          <div class="step"><div class="sn">1</div><div>
+            <div class="st">看左边导航，找到要去的板块</div>
+            <div class="sd">编号 0–6 跟做账顺序一致：先记收入，再记支出，才能算结算。</div>
+          </div></div>
+          <div class="step"><div class="sn">2</div><div>
+            <div class="st">点一下板块名</div>
+            <div class="sd">右边内容立刻换。当前板块左边高亮，顶部面包屑同步显示名字。</div>
+          </div></div>
+          <div class="step"><div class="sn">3</div><div>
+            <div class="st">板块内部还有子页签</div>
+            <div class="sd"><b>支出</b>分三页：课时费（自动）/ 工资社保 / 其他支出。子页签只换表格，不换板块。</div>
+          </div></div>
+          <div class="step"><div class="sn">4</div><div>
+            <div class="st">填完就走，不用点保存</div>
+            <div class="sd">输入即存。关掉再打开内容还在，左下角显示「已自动保存」。<b>数据存在这台电脑的浏览器里</b>，换电脑看不到。</div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>六个板块的分工</h3><span class="sp"></span><span class="tag pending">0 是说明，不算板块</span></div>
+        <table class="grid">
+          <thead><tr><th style="width:60px">板块</th><th style="width:110px">干什么</th><th>数据从哪来</th><th style="width:100px">要手填吗</th></tr></thead>
+          <tbody>
+            <tr><td>① 收入</td><td>记学费进来</td><td>手填</td><td><span class="tag has">全手填</span></td></tr>
+            <tr><td>② 支出</td><td>记钱出去</td><td>课时费自动，工资社保和其他手填</td><td><span class="tag partial">一半自动</span></td></tr>
+            <tr><td>③ 结算</td><td>每节课赚多少</td><td>班级课次 + ①②</td><td><span class="tag partial">班级要填</span></td></tr>
+            <tr><td>④ 报表</td><td>月毛利、班级盈亏</td><td>③ 汇总</td><td><span class="tag has">不用填</span></td></tr>
+            <tr><td>⑤ 配置</td><td>税率、社保费率</td><td>手填，改一次长期用</td><td><span class="tag has">手填</span></td></tr>
+            <tr><td>⑥ 导出</td><td>给代账的三张表</td><td>①② 汇总</td><td><span class="tag has">点一下</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>第一次用，按这个顺序</h3></div>
+        <div class="steps">
+          <div class="step"><div class="sn">A</div><div>
+            <div class="st">先到「配置」核对四个费率</div>
+            <div class="sd">社保个人 / 公司、企业所得税、分红个税。默认值是常见口径，<b>要本地会计确认过再用</b>。</div>
+          </div></div>
+          <div class="step"><div class="sn">B</div><div>
+            <div class="st">到「支出 → 工资社保」把人录进去</div>
+            <div class="sd">教师和员工都录。教师姓名要跟结算页的班级教师对得上，社保才能摊到课上。</div>
+          </div></div>
+          <div class="step"><div class="sn">C</div><div>
+            <div class="st">到「结算」把班级填进去</div>
+            <div class="sd">班级名、计划课次、本月课次、整班学费、教师、单价。接排课系统后这步由系统自动填。</div>
+          </div></div>
+          <div class="step"><div class="sn">D</div><div>
+            <div class="st">日常只做两件事：记收入、记支出</div>
+            <div class="sd">结算和报表全自动。月底到「导出」拿三张表给代账。</div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 1 收入 ================= -->
+    <section class="view" id="v-income">
+      <div class="phead">
+        <div class="pnum">1</div>
+        <div><div class="ptitle">收入 · 记钱进来</div><div class="psub">学费、材料费、补课费 —— 一笔一行</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <h3>收款记录</h3><span class="sp"></span>
+          <span class="tag pending" id="incCount">0 笔</span>
+          <button class="mini" id="addIncome">+ 记一笔</button>
+        </div>
+        <div class="tw">
+        <table class="grid">
+          <thead><tr>
+            <th style="width:112px">日期</th><th style="width:160px">学生 / 班级</th><th style="width:104px">类型</th>
+            <th style="width:116px">金额</th><th style="width:92px">收款方式</th><th style="width:100px">发票号</th>
+            <th style="width:70px">税率</th><th style="width:82px">税额</th><th style="width:44px"></th>
+          </tr></thead>
+          <tbody id="tb-income"></tbody>
+          <tfoot><tr>
+            <td colspan="3" class="mu">合计</td>
+            <td class="num" id="sumIncome">0</td>
+            <td colspan="2" class="mu sm" id="incNote">—</td>
+            <td class="mu sm">—</td>
+            <td class="num" id="sumVat">0</td><td></td>
+          </tr></tfoot>
+        </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>格式怎么填</h3><span class="sp"></span><span class="tag nologic">最常错：金额带逗号</span></div>
+        <table class="fmt">
+          <thead><tr><th style="width:106px">字段</th><th style="width:146px">格式</th><th style="width:146px">正确例子</th><th>规则 / 填错会怎样</th></tr></thead>
+          <tbody>
+            <tr><td>日期</td><td class="f">YYYY-MM-DD</td><td class="e">2026-10-30</td><td>点开是日期选择器。手打「10月30日」「30/10」认不出，算不进当月。</td></tr>
+            <tr><td>学生 / 班级</td><td class="f">文本，写清是谁</td><td class="e">苹果班 · 整班学费</td><td>现在能随便打。正式版要从名单里选，否则按班算毛利对不上。</td></tr>
+            <tr><td>类型</td><td class="f">下拉</td><td class="e">学费</td><td>学费 / 材料费 / 补课费 / 其他。只有学费进班级毛利。</td></tr>
+            <tr><td>金额</td><td class="f">纯数字</td><td class="e">10500000</td><td><b class="bad">不要打逗号、不要打 ₫</b>。打了逗号会被当文本，合计变 0。千分位系统自动加。</td></tr>
+            <tr><td>收款方式</td><td class="f">下拉</td><td class="e">银行转账</td><td>现金 / 银行转账 / Momo / 其他。对银行流水靠这栏。</td></tr>
+            <tr><td>发票号</td><td class="f">字母 + 数字</td><td class="e">0000123</td><td>没开票<b>留空</b>，自动算「未开票」。不影响毛利，只是不算税务口径。</td></tr>
+            <tr><td>税率</td><td class="f">下拉 0 / 5 / 8 / 10 %</td><td class="e">0</td><td>教育培训通常 0。选了非 0 才要发票号。</td></tr>
+            <tr><td>税额</td><td class="f">自动，只读</td><td class="e">0</td><td>金额 × 税率。灰底虚线框 = 不用填。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= 2 支出 ================= -->
+    <section class="view" id="v-expense">
+      <div class="phead">
+        <div class="pnum">2</div>
+        <div><div class="ptitle">支出 · 记钱出去</div><div class="psub">课时费自动算，工资社保和其他手填</div></div>
+      </div>
+
+      <div class="subtabs" id="expTabs">
+        <button data-s="tch" class="on">课时费（自动）</button>
+        <button data-s="pay">工资社保</button>
+        <button data-s="oth">其他支出</button>
+      </div>
+
+      <div class="subview on" id="sv-tch">
+        <div class="card">
+          <div class="card-h"><h3>本月课时费</h3><span class="sp"></span><span class="tag has">不用手填</span></div>
+          <div class="tw">
+          <table class="grid">
+            <thead><tr><th style="width:120px">班级</th><th style="width:110px">教师</th><th style="width:80px">类型</th><th style="width:96px">单价</th><th style="width:84px">本月课次</th><th style="width:110px">课时费</th></tr></thead>
+            <tbody id="tb-tch"></tbody>
+            <tfoot><tr><td colspan="4" class="mu">合计</td><td class="num" id="sumTchN">0</td><td class="num" id="sumTch">0</td></tr></tfoot>
+          </table>
+          </div>
+          <p class="sm mu" style="margin:9px 0 0">来源：结算页填的班级课次 × 教师单价。接排课系统后课次由系统自动填。</p>
+        </div>
+      </div>
+
+      <div class="subview" id="sv-pay">
+        <div class="card">
+          <div class="card-h">
+            <h3>工资社保</h3><span class="sp"></span>
+            <select id="payMonth" title="切换月份" style="width:auto;flex:0 0 auto;font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surf);color:var(--tx)"></select>
+            <span class="tag partial">按月存档</span>
+            <button class="mini" id="addPay">+ 加一个人</button>
+          </div>
+          <div class="tw">
+          <table class="grid">
+            <thead><tr>
+              <th style="width:120px">姓名</th><th style="width:86px">角色</th><th style="width:112px">月薪（应发）</th>
+              <th style="width:92px">社保个人</th><th style="width:88px">个税</th><th style="width:104px">实发</th>
+              <th style="width:100px">社保公司</th><th style="width:44px"></th>
+            </tr></thead>
+            <tbody id="tb-pay"></tbody>
+            <tfoot><tr>
+              <td colspan="2" class="mu">合计</td><td class="num" id="sumGross">0</td>
+              <td class="num" id="sumSiEmp">0</td><td class="num" id="sumPit">0</td>
+              <td class="num" id="sumNet">0</td><td class="num" id="sumSiComp">0</td><td></td>
+            </tr></tfoot>
+          </table>
+          </div>
+          <p class="sm mu" style="margin:9px 0 0">
+            社保个人 = 月薪 × 个人费率，从工资里扣；社保公司 = 月薪 × 公司费率，不进工资条但真花钱。
+            <b>个税留 0 由代账算</b>，这里只做估算位。
+          </p>
+          <p class="sm mu" style="margin:5px 0 0">
+            <b>本页按选定月份</b>（每月一份，互不覆盖）。<b>收入 / 支出 / 结算 / 报表仍是全部月份累计</b> ——
+            两个口径不同，别混着看。全页按月化等课时费接单据时一起做。
+          </p>
+        </div>
+      </div>
+
+      <div class="subview" id="sv-oth">
+        <div class="card">
+          <div class="card-h"><h3>其他支出</h3><span class="sp"></span><button class="mini" id="addExpense">+ 记一笔</button></div>
+          <div class="tw">
+          <table class="grid">
+            <thead><tr><th style="width:112px">日期</th><th style="width:126px">类别</th><th style="width:150px">收款方</th><th style="width:116px">金额</th><th style="width:100px">发票号</th><th>备注</th><th style="width:44px"></th></tr></thead>
+            <tbody id="tb-expense"></tbody>
+            <tfoot><tr><td colspan="3" class="mu">合计</td><td class="num" id="sumExpense">0</td><td colspan="3" class="mu sm">—</td></tr></tfoot>
+          </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>格式怎么填</h3></div>
+          <table class="fmt">
+            <thead><tr><th style="width:106px">字段</th><th style="width:146px">格式</th><th style="width:146px">正确例子</th><th>规则</th></tr></thead>
+            <tbody>
+              <tr><td>类别</td><td class="f">下拉，三选一</td><td class="e">房租</td><td>房租 / 渠道投放 / 其他。课时费、工资社保有专门页签，这里别重复填。</td></tr>
+              <tr><td>收款方</td><td class="f">人名或公司名</td><td class="e">Minh Land</td><td>写全名，别写「房东」。以后对账靠这个搜。</td></tr>
+              <tr><td>金额</td><td class="f">纯数字</td><td class="e">2400000</td><td>同上：不带逗号、不带 ₫。</td></tr>
+              <tr><td>备注</td><td class="f">一句话，≤30 字</td><td class="e">10 月办公室租金</td><td>别写长段落。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 3 结算 ================= -->
+    <section class="view" id="v-settle">
+      <div class="phead">
+        <div class="pnum">3</div>
+        <div><div class="ptitle">结算 · 每节课赚多少</div><div class="psub">这套系统真正的核心，通用财务软件没有这块</div></div>
+      </div>
+      <div class="pnote">
+        毛利<b>不用手填</b>：课次来自这张表的班级，单价来自这里，社保来自工资页 —— 三边对上自动算。
+        <b>班级现在要手填</b>，接排课系统后由系统自动带出。
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <h3>按班结算</h3><span class="sp"></span>
+          <span class="tag partial">实时计算</span>
+          <button class="mini" id="addClass">+ 加班级</button>
+        </div>
+        <div class="tw">
+        <table class="grid">
+          <thead><tr>
+            <th style="width:104px">班级</th><th style="width:64px">计划课次</th><th style="width:64px">本月课次</th>
+            <th style="width:110px">学费（整班）</th><th style="width:96px">教师</th><th style="width:92px">单价</th>
+            <th style="width:64px">类型</th><th style="width:88px">单课收入</th><th style="width:80px">课时费</th>
+            <th style="width:84px">社保分摊</th><th style="width:88px">单课毛利</th><th style="width:96px">本月毛利</th><th style="width:44px"></th>
+          </tr></thead>
+          <tbody id="tb-settle"></tbody>
+          <tfoot><tr>
+            <td colspan="3" class="mu">合计</td><td class="num" id="sumFee">0</td>
+            <td colspan="3"></td><td></td><td class="num" id="sumTch2">0</td><td class="num" id="sumSocial">0</td>
+            <td></td><td class="num" id="sumMonthProfit">0</td><td></td>
+          </tr></tfoot>
+        </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>三个数怎么来的</h3></div>
+        <table class="fmt">
+          <thead><tr><th style="width:120px">数</th><th style="width:230px">算法</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>单课收入</td><td class="f">整班学费 ÷ 计划课次</td><td>按计划课次平均摊。学生请假不退钱，所以不按实际出勤摊。</td></tr>
+            <tr><td>课时费</td><td class="f">教师单价 × 1 节</td><td>自有、外包都从这里出。</td></tr>
+            <tr><td>社保分摊</td><td class="f">教师月社保公司额 ÷ 该教师月总课次</td><td>只摊自有教师。外包没有社保，这栏是 0。<b>教师姓名要和工资页对得上</b>。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= 4 报表 ================= -->
+    <section class="view" id="v-report">
+      <div class="phead">
+        <div class="pnum">4</div>
+        <div><div class="ptitle">报表 · 这个月到底赚没赚</div><div class="psub">数字全部跟着收入 / 支出 / 工资页变</div></div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="lb">本月收入（实收）</div><div class="vl" id="kIncome">0</div></div>
+        <div class="kpi"><div class="lb">本月支出</div><div class="vl" id="kExpense">0</div></div>
+        <div class="kpi hl"><div class="lb">本月毛利</div><div class="vl" id="kProfit">0</div></div>
+        <div class="kpi"><div class="lb">毛利率</div><div class="vl" id="kMargin">—</div></div>
+      </div>
+      <div style="margin:14px 0 0;border-left:3px solid var(--warn);background:var(--note);color:var(--noteTx);padding:10px 14px;font-size:12px;border-radius:6px">
+        <b>口径提醒（2026-10-31）</b>：上面四个数按<b>全部月份累计</b>算，<b>不是单月</b>。
+        「工资社保」页已经改成<b>按月存档</b>，两边口径不同 —— 跨月录过数据以后，这里的毛利会偏高。
+        全页按月化等课时费接单据时一起做。
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>成本结构</h3><span class="sp"></span><span class="tag pending" id="costWarn">—</span></div>
+        <div class="bars" id="costBars"></div>
+        <p class="sm mu" style="margin:12px 0 0" id="costNote">还没有数据。</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>班级盈亏排名</h3><span class="sp"></span><span class="tag has">按单课毛利</span></div>
+        <div class="bars" id="classBars"></div>
+        <p class="sm mu" style="margin:12px 0 0" id="classNote">还没有班级。</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>口径提醒</h3></div>
+        <p class="sm" style="margin:0;line-height:1.8;color:var(--noteTx)">
+          上面「收入」是<b>实收</b>（收入页填的钱）；「班级盈亏」用的是<b>应收学费</b>（整班学费）。
+          两者差多少 = 还有多少没收到。正式版要把这两个数分两栏显示。
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= 5 配置 ================= -->
+    <section class="view" id="v-config">
+      <div class="phead">
+        <div class="pnum">5</div>
+        <div><div class="ptitle">配置 · 改一次，长期用</div><div class="psub">这些数字会变（政策、主体、费率），所以不写死</div></div>
+      </div>
+      <div class="pnote">
+        下面每一格都能改，<b>改完立刻影响工资页、结算页、报表页</b>。标「须核实」的三项请找越南本地会计确认。
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>基础参数</h3></div>
+        <table class="fmt">
+          <thead><tr><th style="width:170px">项目</th><th style="width:130px">值</th><th style="width:110px">格式</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>主体类型</td><td class="e">内资有限公司</td><td class="f">只读</td><td>已定。改主体等于换公司，不是改参数。</td></tr>
+            <tr><td>员工社保 %</td><td><input class="num" type="number" step="0.1" data-k="cfg.siEmp" style="width:80px"></td><td class="f">一位小数</td><td><span class="tag nologic">须核实</span> 从工资里代扣的部分。</td></tr>
+            <tr><td>公司社保 %</td><td><input class="num" type="number" step="0.1" data-k="cfg.siComp" style="width:80px"></td><td class="f">一位小数</td><td><span class="tag nologic">须核实</span> 公司额外承担，不进工资条。</td></tr>
+            <tr><td>企业所得税 %</td><td><input class="num" type="number" step="0.1" data-k="cfg.cit" style="width:80px"></td><td class="f">整数</td><td><span class="tag nologic">须核实</span> 只用于估算，实际由代账算。</td></tr>
+            <tr><td>分红个税 %</td><td><input class="num" type="number" step="0.1" data-k="cfg.divPit" style="width:80px"></td><td class="f">整数</td><td>个人股东分红代扣。内资分红不出境，只这一道。</td></tr>
+            <tr><td>学费默认税率</td><td>
+              <select data-k="cfg.vatDefault" style="width:80px">
+                <option value="0">0%</option><option value="5">5%</option><option value="8">8%</option><option value="10">10%</option>
+              </select></td><td class="f">下拉</td><td>教育培训通常 0。改这里，新记的收入默认带出这个值。</td></tr>
+            <tr><td>开票功能</td><td>
+              <select data-k="cfg.invoiceOn" style="width:80px">
+                <option value="off">关</option><option value="on">开</option>
+              </select></td><td class="f">开 / 关</td><td>现在关着。开了之后收入表发票号变必填，并计入税务口径。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>为什么不做成写死的</h3></div>
+        <p class="sm" style="margin:0;line-height:1.8;color:var(--noteTx)">
+          社保费率和增值税优惠每年在调（越南 8% 增值税减征期到 2026-12-31）。写死在代码里，明年政策一改就得改程序；
+          做成参数，改一个数字就行。<b>这也是配置单独占一个板块、而不是塞进某个弹窗的原因。</b>
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>数据</h3><span class="sp"></span><span class="tag pending">建设期工具</span></div>
+        <p class="sm mu" style="margin:0 0 10px">数据存在这台电脑的浏览器里（localStorage）。换浏览器、换电脑都看不到。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="mini" id="loadDemo">载入示例数据（看效果）</button>
+          <button class="mini" id="clearAll">清空全部数据</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 6 导出 ================= -->
+    <section class="view" id="v-export">
+      <div class="phead">
+        <div class="pnum">6</div>
+        <div><div class="ptitle">导出 · 喂给代账</div><div class="psub">你有代账，这三张表是系统最重要的出口</div></div>
+      </div>
+      <div class="pnote">
+        没有这个出口，系统就是孤岛 —— 数字好看，代账用不上，最后还是两张皮。<b>代账要的是 Excel，不是看板。</b>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>三张表，每月导一次</h3></div>
+        <table class="fmt">
+          <thead><tr><th style="width:130px">文件</th><th style="width:270px">里面有什么</th><th>代账拿它干什么</th></tr></thead>
+          <tbody>
+            <tr><td>收入明细.xls</td><td class="f">日期 / 学生 / 班级 / 类型 / 金额 / 收款方式 / 发票号 / 税额</td><td>做收入凭证、核对银行到账</td></tr>
+            <tr><td>支出明细.xls</td><td class="f">日期 / 类别 / 收款方 / 金额 / 发票号 / 备注</td><td>做费用凭证、算可抵扣成本</td></tr>
+            <tr><td>工资社保.xls</td><td class="f">姓名 / 应发 / 社保个人 / 社保公司 / 个税 / 实发</td><td>做工资凭证 + 个税社保申报</td></tr>
+          </tbody>
+        </table>
+        <p class="sm mu" style="margin:10px 0 0">文件名自动带月份（例：<b>收入明细-2026-10.xls</b>）。点了会存到浏览器的下载目录，一般是「下载」文件夹。用 Excel / WPS / Numbers 都能直接打开。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="mini" id="expIncome">↓ 收入明细</button>
+          <button class="mini" id="expExpense">↓ 支出明细</button>
+          <button class="mini" id="expPayroll">↓ 工资社保</button>
+        </div>
+        <p class="sm dim" style="margin:12px 0 0">现在导的是<b>全部数据</b>，不分月。等确定要按月切之后再加日期筛选 —— 一次一个月的表才好对账。</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>技术取舍：一个文件一张表</h3><span class="sp"></span><span class="tag has">已按方案 1 做</span></div>
+        <table class="fmt">
+          <thead><tr><th style="width:150px">方案</th><th style="width:230px">做法</th><th>代价</th></tr></thead>
+          <tbody>
+            <tr><td>伪装 .xls<br><span class="tag has">采用</span></td><td class="f">HTML 表格存成 .xls</td><td>零依赖、双击能开、离线也能导。但<b>一个文件只能一张表</b>，格式糙（没有合并单元格、没有公式）。</td></tr>
+            <tr><td>内联 SheetJS</td><td class="f">库打包进 HTML</td><td>能做多页签真 xlsx。但文件<b>大 900KB 左右</b>，打开变慢。</td></tr>
+          </tbody>
+        </table>
+        <p class="sm mu" style="margin:10px 0 0">导三个独立文件，代账拿到直接开。<b>如果代账明确要「一个文件三个页签」，再换方案 2。</b></p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="statusbar">
+  <span id="saveState">已自动保存</span>
+  <span class="sp"></span>
+  <span>数据在本机浏览器 · 换设备看不到</span>
+  <button class="mini" id="resetView">回到使用说明</button>
+</div>
+
+<script>
+(function(){
+'use strict';
+var KEY = 'zhops.fin.v1';
+var NAMES = {guide:'使用说明',income:'收入',expense:'支出',settle:'结算',report:'报表',config:'配置',export:'导出'};
+
+/* ================= 空数据结构 ================= */
+function blank(){
+  return {
+    cfg:{ siEmp:10.5, siComp:21.5, cit:20, divPit:5, vatDefault:'0', invoiceOn:'off' },
+    income:[], expense:[], payroll:[], classes:[]
+  };
+}
+function demo(){
+  return {
+    cfg:{ siEmp:10.5, siComp:21.5, cit:20, divPit:5, vatDefault:'0', invoiceOn:'off' },
+    income:[
+      {d:'2026-10-03', who:'苹果班 · 整班学费', type:'学费',   amt:'10500000', pay:'银行转账', inv:'', vat:'0'},
+      {d:'2026-10-08', who:'芒果班 · 整班学费', type:'学费',   amt:'8400000',  pay:'银行转账', inv:'', vat:'0'},
+      {d:'2026-10-12', who:'柚子班 · 整班学费', type:'学费',   amt:'10500000', pay:'现金',     inv:'', vat:'0'},
+      {d:'2026-10-20', who:'柠檬班 · 整班学费', type:'学费',   amt:'7140000',  pay:'Momo',     inv:'', vat:'0'},
+      {d:'2026-10-22', who:'黎明俊 · 材料费',   type:'材料费', amt:'180000',   pay:'Momo',     inv:'0000123', vat:'10'}
+    ],
+    expense:[
+      {d:'2026-10-01', cat:'房租',     payee:'Minh Land', amt:'2400000', inv:'', note:'10 月办公室租金'},
+      {d:'2026-10-12', cat:'渠道投放', payee:'Zalo Ads',  amt:'1590000', inv:'0000451', note:'10 月投放'}
+    ],
+    payroll:[
+      {name:'阮氏兰', role:'教师', gross:'3000000', pit:'0', month:'2026-10', paidOn:''},
+      {name:'黎明俊', role:'教师', gross:'2000000', pit:'0', month:'2026-10', paidOn:''},
+      {name:'陈氏香', role:'员工', gross:'6000000', pit:'0', month:'2026-10', paidOn:''}
+    ],
+    classes:[
+      {name:'苹果班', lessons:'42', done:'8', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
+      {name:'芒果班', lessons:'42', done:'6', fee:'8400000',  teacher:'陈文海', rate:'120000', own:false},
+      {name:'柚子班', lessons:'42', done:'5', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
+      {name:'柠檬班', lessons:'42', done:'4', fee:'7140000',  teacher:'黎明俊', rate:'150000', own:true}
+    ]
+  };
+}
+var S = blank();
+
+/* ================= 月份维度（2026-10-31 · 三系统打通 Phase 1） =================
+   工资社保从「单期覆盖」改成「按月存档」：每月一份，互不覆盖，导出跟月份走。
+   ★ 只给工资社保加了月份。收入 / 支出 / 结算 / 报表 仍是**全部月份累计** ——
+     页面上已用一行小字写明，别让数字骗人。全页按月化留到 Phase 3（课时费改从单据读时一起做）。 */
+var MKEY = 'zhops.fin.month';
+function curMonth(){
+  try{ var m = localStorage.getItem(MKEY); if(m && /^\d{4}-\d{2}$/.test(m)) return m; }catch(e){}
+  return monthTag();
+}
+var CUR_MONTH = curMonth();
+function setMonth(m){
+  CUR_MONTH = m;
+  try{ localStorage.setItem(MKEY, m); }catch(e){}
+  renderPay();
+}
+function monthList(){
+  var seen = {}, out = [];
+  /* 缺 month 的老数据归「真实当月」（monthTag），不能归「当前选中月」——
+     否则它会跟着选择器漂移，每个月都算它一次。 */
+  S.payroll.forEach(function(p){ var m = p.month || monthTag(); if(!seen[m]){ seen[m] = 1; out.push(m); } });
+  if(!seen[CUR_MONTH]) out.push(CUR_MONTH);
+  out.sort(); out.reverse();
+  return out;
+}
+/* 当月工资行 —— 返回 {p:行, i:在 S.payroll 里的下标}。
+   ★ 必须带原始下标，data-k="payroll.i.字段" 靠它定位，不能拿过滤后的序号。
+   ★ 缺 month 的行归「真实当月」，不归 CUR_MONTH（见 monthList 里的说明）。 */
+function payRows(){
+  var out = [];
+  S.payroll.forEach(function(p, i){
+    if((p.month || monthTag()) === CUR_MONTH) out.push({ p:p, i:i });
+  });
+  return out;
+}
+function renderMonthSel(){
+  var el = document.getElementById('payMonth');
+  if(!el) return;
+  el.innerHTML = monthList().map(function(m){
+    return '<option value="'+m+'"'+(m === CUR_MONTH ? ' selected' : '')+'>'+m+'</option>';
+  }).join('');
+}
+
+/* ================= 工具 ================= */
+function val(v){ var n = Number(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; }
+function money(n){
+  n = Number(n);
+  if(!isFinite(n)) return '0';
+  var neg = n < 0; n = Math.abs(Math.round(n));
+  var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (neg?'-':'') + s;
+}
+function moneyU(n){ return money(n) + '<span class="un">₫</span>'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function today(){ var d=new Date(),p=function(n){return (n<10?'0':'')+n;}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+
+/* ================= 持久化 ================= */
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); markSaved(); }catch(e){}
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return blank();
+    var o = JSON.parse(raw);
+    if(!o || typeof o !== 'object') return blank();
+    var b = blank();
+    ['income','expense','payroll','classes'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    b.cfg = Object.assign(b.cfg, o.cfg || {});
+    b.income = o.income; b.expense = o.expense; b.payroll = o.payroll; b.classes = o.classes;
+    /* 迁移（2026-10-31 · Phase 1）：老工资行没有 month → 归到当月。
+       不归的话，加了月份选择器以后这些行会「一条都看不见」。 */
+    b.payroll.forEach(function(p){
+      if(!p.month) p.month = monthTag();
+      if(p.paidOn === undefined) p.paidOn = '';
+    });
+    return b;
+  }catch(e){ return blank(); }
+}
+var stTimer = null;
+function markSaved(){
+  var el = document.getElementById('saveState');
+  if(!el) return;
+  el.textContent = '已自动保存 · 刚刚';
+  el.style.color = 'var(--ok)';
+  clearTimeout(stTimer);
+  stTimer = setTimeout(function(){ el.textContent='已自动保存'; el.style.color=''; }, 1800);
+}
+
+/* ================= 计算核心 ================= */
+function calc(){
+  var cfg = S.cfg || {};
+  var siEmp = val(cfg.siEmp), siComp = val(cfg.siComp);
+
+  var inc = 0, vat = 0, invoiced = 0;
+  S.income.forEach(function(r){
+    inc += val(r.amt);
+    vat += val(r.amt) * Number(r.vat||0) / 100;
+    if(r.inv) invoiced++;
+  });
+
+  var grossAll=0, siEmpAll=0, siCompAll=0, netAll=0, pitAll=0, teacherGross=0;
+  var socialByTeacher = {};
+  S.payroll.forEach(function(p){
+    var g = val(p.gross), pit = val(p.pit);
+    var se = g*siEmp/100, sc = g*siComp/100;
+    grossAll+=g; siEmpAll+=se; siCompAll+=sc; pitAll+=pit; netAll += (g-se-pit);
+    if(p.role === '教师'){
+      teacherGross += g;
+      socialByTeacher[p.name] = (socialByTeacher[p.name]||0) + sc;
+    }
+  });
+
+  var tchAll=0, doneAll=0, doneByTeacher={};
+  S.classes.forEach(function(c){
+    tchAll += val(c.rate) * val(c.done);
+    doneAll += val(c.done);
+    doneByTeacher[c.teacher] = (doneByTeacher[c.teacher]||0) + val(c.done);
+  });
+
+  var byCat = {'房租':0, '渠道投放':0, '其他':0};
+  var othAll = 0;
+  S.expense.forEach(function(r){
+    var a = val(r.amt); othAll += a;
+    if(byCat[r.cat] !== undefined) byCat[r.cat] += a;
+    else byCat['其他'] += a;
+  });
+
+  var expAll = tchAll + grossAll + siCompAll + othAll;
+  var profit = inc - expAll;
+  var margin = inc > 0 ? profit/inc*100 : 0;
+
+  var rows = S.classes.map(function(c){
+    var les = val(c.lessons), done = val(c.done), fee = val(c.fee);
+    var perIn = les > 0 ? fee/les : 0;
+    var perTch = val(c.rate);
+    var social = 0;
+    if(c.own){
+      var m = socialByTeacher[c.teacher] || 0;
+      var d = doneByTeacher[c.teacher] || 0;
+      social = d > 0 ? m/d : 0;
+    }
+    var perCost = perTch + social;
+    var perProfit = perIn - perCost;
+    return { name:c.name, done:done, fee:fee, perIn:perIn, perTch:perTch,
+             social:social, perCost:perCost, perProfit:perProfit, monthProfit:perProfit*done };
+  });
+
+  return {
+    inc:inc, vat:vat, invoiced:invoiced,
+    grossAll:grossAll, siEmpAll:siEmpAll, siCompAll:siCompAll, netAll:netAll, pitAll:pitAll,
+    teacherGross:teacherGross,
+    tchAll:tchAll, doneAll:doneAll, othAll:othAll, byCat:byCat,
+    expAll:expAll, profit:profit, margin:margin, rows:rows,
+    teacherCost: tchAll + teacherGross
+  };
+}
+
+/* ================= 空行提示 ================= */
+function emptyRow(cols, txt){
+  return '<tr><td colspan="'+cols+'" class="empty">'+txt+'</td></tr>';
+}
+
+/* ================= 渲染：收入 ================= */
+function renderIncome(){
+  var tb = document.getElementById('tb-income');
+  if(!S.income.length){
+    tb.innerHTML = emptyRow(9, '还没有收入记录 —— 点右上角「+ 记一笔」');
+  }else{
+    tb.innerHTML = S.income.map(function(r,i){
+      var tax = val(r.amt)*Number(r.vat||0)/100;
+      return '<tr data-i="'+i+'">'+
+        '<td><input class="w-date" data-k="income.'+i+'.d" type="date" value="'+esc(r.d)+'"></td>'+
+        '<td><input class="w-mid" data-k="income.'+i+'.who" value="'+esc(r.who)+'" placeholder="学生 · 班级"></td>'+
+        '<td><select data-k="income.'+i+'.type">'+
+          ['学费','材料费','补课费','其他'].map(function(x){return '<option'+(r.type===x?' selected':'')+'>'+x+'</option>';}).join('')+
+        '</select></td>'+
+        '<td><input class="w-money num" data-k="income.'+i+'.amt" type="number" value="'+esc(r.amt)+'" placeholder="10500000"></td>'+
+        '<td><select data-k="income.'+i+'.pay">'+
+          ['现金','银行转账','Momo','其他'].map(function(x){return '<option'+(r.pay===x?' selected':'')+'>'+x+'</option>';}).join('')+
+        '</select></td>'+
+        '<td><input class="w-inv" data-k="income.'+i+'.inv" value="'+esc(r.inv)+'" placeholder="留空"></td>'+
+        '<td><select data-k="income.'+i+'.vat">'+
+          ['0','5','8','10'].map(function(x){return '<option value="'+x+'"'+(String(r.vat)===x?' selected':'')+'>'+x+'%</option>';}).join('')+
+        '</select></td>'+
+        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(tax)+'"></td>'+
+        '<td><button class="mini" data-del="income" data-i="'+i+'" style="padding:2px 7px">×</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  var c = calc();
+  document.getElementById('sumIncome').textContent = money(c.inc);
+  document.getElementById('sumVat').textContent = money(c.vat);
+  document.getElementById('incCount').textContent = S.income.length + ' 笔';
+  document.getElementById('incNote').textContent = '其中已开票 ' + c.invoiced + ' 笔';
+}
+
+/* ================= 渲染：支出 ================= */
+function renderTch(){
+  var tb = document.getElementById('tb-tch');
+  if(!S.classes.length){
+    tb.innerHTML = emptyRow(6, '还没有班级 —— 到「结算」页加班级');
+  }else{
+    tb.innerHTML = S.classes.map(function(c){
+      return '<tr class="auto"><td>'+esc(c.name)+'</td><td>'+esc(c.teacher)+'</td>'+
+        '<td>'+(c.own?'自有':'外包')+'</td>'+
+        '<td class="num">'+money(c.rate)+'</td><td class="num">'+val(c.done)+'</td>'+
+        '<td class="num">'+money(val(c.rate)*val(c.done))+'</td></tr>';
+    }).join('');
+  }
+  var x = calc();
+  document.getElementById('sumTch').textContent = money(x.tchAll);
+  document.getElementById('sumTchN').textContent = x.doneAll;
+}
+
+function renderPay(){
+  var tb = document.getElementById('tb-pay');
+  var siEmp = val(S.cfg.siEmp), siComp = val(S.cfg.siComp);
+  var list = payRows();
+  if(!list.length){
+    tb.innerHTML = emptyRow(8, CUR_MONTH + ' 还没有工资记录 —— 点右上角「+ 加一个人」');
+  }else{
+    tb.innerHTML = list.map(function(it){
+      var p = it.p, i = it.i;
+      var g = val(p.gross), se = g*siEmp/100, sc = g*siComp/100, pit = val(p.pit);
+      return '<tr data-i="'+i+'">'+
+        '<td><input data-k="payroll.'+i+'.name" value="'+esc(p.name)+'" placeholder="姓名"></td>'+
+        '<td><select data-k="payroll.'+i+'.role">'+
+          ['教师','员工'].map(function(x){return '<option'+(p.role===x?' selected':'')+'>'+x+'</option>';}).join('')+
+        '</select></td>'+
+        '<td><input class="w-money num" data-k="payroll.'+i+'.gross" type="number" value="'+esc(p.gross)+'" placeholder="3000000"></td>'+
+        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(se)+'"></td>'+
+        '<td><input class="w-tax num" data-k="payroll.'+i+'.pit" type="number" value="'+esc(p.pit)+'" placeholder="0"></td>'+
+        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(g-se-pit)+'"></td>'+
+        '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(sc)+'"></td>'+
+        '<td><button class="mini" data-del="payroll" data-i="'+i+'" style="padding:2px 7px">×</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  /* 合计只算当月 —— 不能用 calc()，那是全部月份累计 */
+  renderPayTotals();
+  renderMonthSel();
+}
+/* 当月工资合计。单独抽出来是为了「只刷脚注、不重建表」——
+   重建表会让正在输入的那一格失焦（这是这个系统踩过两次的坑）。 */
+function payTotals(){
+  var siEmp = val(S.cfg.siEmp), siComp = val(S.cfg.siComp);
+  var g=0, se=0, sc=0, pit=0, net=0;
+  payRows().forEach(function(it){
+    var p = it.p, gg = val(p.gross), s1 = gg*siEmp/100, s2 = gg*siComp/100, pt = val(p.pit);
+    g += gg; se += s1; sc += s2; pit += pt; net += (gg - s1 - pt);
+  });
+  return { g:g, se:se, sc:sc, pit:pit, net:net };
+}
+function renderPayTotals(){
+  var t = payTotals();
+  var set = function(id, v){ var el = document.getElementById(id); if(el) el.textContent = money(v); };
+  set('sumGross', t.g); set('sumSiEmp', t.se); set('sumPit', t.pit);
+  set('sumNet', t.net);  set('sumSiComp', t.sc);
+}
+
+function renderExpense(){
+  var tb = document.getElementById('tb-expense');
+  if(!S.expense.length){
+    tb.innerHTML = emptyRow(7, '还没有其他支出 —— 点右上角「+ 记一笔」');
+  }else{
+    tb.innerHTML = S.expense.map(function(r,i){
+      return '<tr data-i="'+i+'">'+
+        '<td><input class="w-date" data-k="expense.'+i+'.d" type="date" value="'+esc(r.d)+'"></td>'+
+        '<td><select data-k="expense.'+i+'.cat">'+
+          ['房租','渠道投放','其他'].map(function(x){return '<option'+(r.cat===x?' selected':'')+'>'+x+'</option>';}).join('')+
+        '</select></td>'+
+        '<td><input class="w-mid" data-k="expense.'+i+'.payee" value="'+esc(r.payee)+'" placeholder="人名或公司名"></td>'+
+        '<td><input class="w-money num" data-k="expense.'+i+'.amt" type="number" value="'+esc(r.amt)+'" placeholder="2400000"></td>'+
+        '<td><input class="w-inv" data-k="expense.'+i+'.inv" value="'+esc(r.inv)+'" placeholder="可空"></td>'+
+        '<td><input data-k="expense.'+i+'.note" value="'+esc(r.note)+'" placeholder="一句话"></td>'+
+        '<td><button class="mini" data-del="expense" data-i="'+i+'" style="padding:2px 7px">×</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  document.getElementById('sumExpense').textContent = money(calc().othAll);
+}
+
+/* ================= 渲染：结算 ================= */
+function renderSettle(){
+  var x = calc();
+  var tb = document.getElementById('tb-settle');
+  if(!S.classes.length){
+    tb.innerHTML = emptyRow(13, '还没有班级 —— 点右上角「+ 加班级」');
+  }else{
+    tb.innerHTML = S.classes.map(function(c,i){
+      var r = x.rows[i];
+      var cls = r.perProfit >= 0 ? 'pos' : 'neg';
+      return '<tr data-i="'+i+'">'+
+        '<td><input class="w-cls" data-k="classes.'+i+'.name" value="'+esc(c.name)+'" placeholder="班级名"></td>'+
+        '<td><input class="w-n num" data-k="classes.'+i+'.lessons" type="number" value="'+esc(c.lessons)+'" placeholder="42"></td>'+
+        '<td><input class="w-n num" data-k="classes.'+i+'.done" type="number" value="'+esc(c.done)+'" placeholder="8"></td>'+
+        '<td><input class="w-money num" data-k="classes.'+i+'.fee" type="number" value="'+esc(c.fee)+'" placeholder="10500000"></td>'+
+        '<td><input class="w-cls" data-k="classes.'+i+'.teacher" value="'+esc(c.teacher)+'" placeholder="教师名"></td>'+
+        '<td><input class="w-money num" data-k="classes.'+i+'.rate" type="number" value="'+esc(c.rate)+'" placeholder="100000"></td>'+
+        '<td><select data-k="classes.'+i+'.own">'+
+          '<option value="true"'+(c.own?' selected':'')+'>自有</option>'+
+          '<option value="false"'+(c.own?'':' selected')+'>外包</option>'+
+        '</select></td>'+
+        '<td class="num">'+money(r.perIn)+'</td>'+
+        '<td class="num">'+money(r.perTch)+'</td>'+
+        '<td class="num">'+money(r.social)+'</td>'+
+        '<td class="num '+cls+'">'+money(r.perProfit)+'</td>'+
+        '<td class="num '+cls+'">'+money(r.monthProfit)+'</td>'+
+        '<td><button class="mini" data-del="classes" data-i="'+i+'" style="padding:2px 7px">×</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  var feeAll = x.rows.reduce(function(a,r){return a+r.fee;},0);
+  var socialAll = x.rows.reduce(function(a,r){return a+r.social*r.done;},0);
+  var monthAll = x.rows.reduce(function(a,r){return a+r.monthProfit;},0);
+  document.getElementById('sumFee').textContent = money(feeAll);
+  document.getElementById('sumTch2').textContent = money(x.tchAll);
+  document.getElementById('sumSocial').textContent = money(socialAll);
+  document.getElementById('sumMonthProfit').textContent = money(monthAll);
+}
+
+/* ================= 渲染：报表 ================= */
+function renderReport(){
+  var x = calc();
+  document.getElementById('kIncome').innerHTML = moneyU(x.inc);
+  document.getElementById('kExpense').innerHTML = moneyU(x.expAll);
+  var pe = document.getElementById('kProfit');
+  pe.innerHTML = moneyU(x.profit);
+  pe.style.color = x.profit > 0 ? 'var(--pos)' : (x.profit < 0 ? 'var(--neg)' : '');
+  var mg = document.getElementById('kMargin');
+  mg.innerHTML = (x.inc > 0 ? x.margin.toFixed(1) : '—') + (x.inc > 0 ? '<span class="un">%</span>' : '');
+  mg.style.color = x.margin > 0 ? 'var(--pos)' : (x.margin < 0 ? 'var(--neg)' : '');
+
+  var items = [
+    ['课时费', x.tchAll, 'var(--b3)'],
+    ['工资社保', x.grossAll + x.siCompAll, 'var(--b2)'],
+    ['房租', x.byCat['房租'], 'var(--b1)'],
+    ['渠道投放', x.byCat['渠道投放'], 'var(--b4)'],
+    ['其他', x.byCat['其他'], 'var(--dim)']
+  ];
+  var tot = items.reduce(function(a,b){return a+b[1];},0);
+  var shown = items.filter(function(it){return it[1]>0;});
+  document.getElementById('costBars').innerHTML = shown.length
+    ? shown.map(function(it){
+        var pct = tot>0 ? it[1]/tot*100 : 0;
+        var w = Math.max(pct, 3);
+        return '<div class="brow"><span class="mu">'+it[0]+'</span>'+
+          '<div class="btrack"><div class="bfill" style="width:'+w.toFixed(1)+'%;background:'+it[2]+'">'+pct.toFixed(0)+'%</div></div>'+
+          '<span class="bval">'+money(it[1])+'</span></div>';
+      }).join('')
+    : '<p class="sm dim">还没有支出数据。</p>';
+
+  var ratioShow = x.inc>0 ? (x.teacherCost)/x.inc*100 : 0;
+  var wEl = document.getElementById('costWarn');
+  if(x.inc > 0){
+    wEl.textContent = '教师相关 ' + ratioShow.toFixed(0) + '%';
+    wEl.className = 'tag ' + (ratioShow > 60 ? 'nologic' : 'has');
+    document.getElementById('costNote').textContent =
+      '教师相关成本（课时费 + 教师工资）占收入 ' + ratioShow.toFixed(1) + '%。' +
+      (ratioShow > 60 ? '超过 60%，收入再涨也翻不过来 —— 该调学费或减班。' : '在安全区间内。');
+  }else{
+    wEl.textContent = '—';
+    wEl.className = 'tag pending';
+    document.getElementById('costNote').textContent = '还没有收入数据，占比算不出来。';
+  }
+
+  var sorted = x.rows.slice().sort(function(a,b){ return b.perProfit - a.perProfit; });
+  if(sorted.length){
+    var maxAbs = sorted.reduce(function(m,r){ return Math.max(m, Math.abs(r.perProfit)); }, 1);
+    document.getElementById('classBars').innerHTML = sorted.map(function(r){
+      var w = Math.max(Math.abs(r.perProfit)/maxAbs*100, 2);
+      var col = r.perProfit > 0 ? 'var(--ok)' : (r.perProfit === 0 ? 'var(--dim)' : 'var(--bad)');
+      var sign = r.perProfit > 0 ? '+' : '';
+      return '<div class="brow"><span class="mu">'+esc(r.name||'未命名')+'</span>'+
+        '<div class="btrack"><div class="bfill" style="width:'+w.toFixed(1)+'%;background:'+col+'">'+
+        (r.perProfit===0?'0':sign+money(r.perProfit))+'</div></div>'+
+        '<span class="bval" style="color:'+(r.perProfit<0?'var(--neg)':'var(--b3)')+'">'+
+        (r.perProfit===0?'0':sign+money(r.perProfit))+'</span></div>';
+    }).join('');
+    var bad = sorted.filter(function(r){ return r.perProfit < 0; });
+    document.getElementById('classNote').textContent = bad.length
+      ? bad.map(function(r){ return (r.name||'未命名') + ' 每节课亏 ' + money(-r.perProfit); }).join('；') + ' —— 要么涨学费，要么停班。'
+      : '所有班级单课毛利都为正。';
+  }else{
+    document.getElementById('classBars').innerHTML = '<p class="sm dim">还没有班级数据。</p>';
+    document.getElementById('classNote').textContent = '到「结算」页加班级。';
+  }
+}
+
+/* ================= 渲染：配置 ================= */
+function renderCfg(){
+  var map = { 'cfg.siEmp':S.cfg.siEmp, 'cfg.siComp':S.cfg.siComp, 'cfg.cit':S.cfg.cit,
+              'cfg.divPit':S.cfg.divPit, 'cfg.vatDefault':String(S.cfg.vatDefault),
+              'cfg.invoiceOn':S.cfg.invoiceOn };
+  Object.keys(map).forEach(function(k){
+    var el = document.querySelector('[data-k="'+k+'"]');
+    if(el) el.value = map[k];
+  });
+}
+
+function renderAll(){
+  renderIncome(); renderTch(); renderPay(); renderExpense();
+  renderSettle(); renderReport(); renderCfg();
+}
+
+/* ================= 视图 ================= */
+function show(v){
+  if(!NAMES[v]) v = 'guide';
+  var secs = document.querySelectorAll('.view');
+  for(var i=0;i<secs.length;i++) secs[i].className = 'view' + (secs[i].id === 'v-'+v ? ' on' : '');
+  var btns = document.querySelectorAll('#nav button');
+  for(var j=0;j<btns.length;j++) btns[j].className = (btns[j].getAttribute('data-v') === v ? 'on' : '');
+  document.getElementById('crumbName').textContent = NAMES[v];
+  window.scrollTo(0,0);
+}
+
+/* ================= 配色 ================= */
+var THEMES = ['ivory','mint','paper','slate','deep','jade','graphite','sand','violet'];
+function setTheme(t){
+  if(THEMES.indexOf(t) < 0) t = 'ivory';
+  document.body.setAttribute('data-theme', t);
+  var ds = document.querySelectorAll('.theme-dot');
+  for(var i=0;i<ds.length;i++) ds[i].className = 'theme-dot' + (ds[i].getAttribute('data-th') === t ? ' on' : '');
+  try{ localStorage.setItem('zhops.fin.theme', t); }catch(e){}
+}
+
+/* ================= 只刷派生数，不重建正在编辑的表 ================= */
+function refreshDerived(skip){
+  var x = calc();
+  var g = function(id){ return document.getElementById(id); };
+  if(g('sumIncome'))  g('sumIncome').textContent  = money(x.inc);
+  if(g('sumVat'))     g('sumVat').textContent     = money(x.vat);
+  if(g('incNote'))    g('incNote').textContent    = '其中已开票 ' + x.invoiced + ' 笔';
+  if(g('incCount'))   g('incCount').textContent   = S.income.length + ' 笔';
+  if(g('sumExpense')) g('sumExpense').textContent = money(x.othAll);
+  if(g('sumTch'))     g('sumTch').textContent     = money(x.tchAll);
+  if(g('sumTchN'))    g('sumTchN').textContent    = x.doneAll;
+  /* 工资社保脚注：只算选定月份，不是全部月份累计 */
+  renderPayTotals();
+  /* 结算页脚 */
+  if(g('sumFee'))          g('sumFee').textContent          = money(x.rows.reduce(function(a,r){return a+r.fee;},0));
+  if(g('sumTch2'))         g('sumTch2').textContent         = money(x.tchAll);
+  if(g('sumSocial'))       g('sumSocial').textContent       = money(x.rows.reduce(function(a,r){return a+r.social*r.done;},0));
+  if(g('sumMonthProfit'))  g('sumMonthProfit').textContent  = money(x.rows.reduce(function(a,r){return a+r.monthProfit;},0));
+  renderTch();
+  if(skip !== 'classes') renderSettle();
+  renderReport();
+}
+
+/* 只更新某行的只读格 */
+function refreshRow(tbl, i){
+  if(tbl === 'income'){
+    var tr = document.querySelector('#tb-income tr[data-i="'+i+'"]');
+    if(tr){
+      var r = S.income[i];
+      var c = tr.querySelector('.w-tax');
+      if(c) c.value = money(val(r.amt)*Number(r.vat||0)/100);
+    }
+  }
+  if(tbl === 'payroll'){
+    var tr2 = document.querySelector('#tb-pay tr[data-i="'+i+'"]');
+    if(tr2){
+      var p = S.payroll[i];
+      var gg = val(p.gross), se = gg*val(S.cfg.siEmp)/100, sc = gg*val(S.cfg.siComp)/100, pit = val(p.pit);
+      var cells = tr2.querySelectorAll('.w-tax');
+      if(cells[0]) cells[0].value = money(se);
+      if(cells[2]) cells[2].value = money(gg-se-pit);
+      if(cells[3]) cells[3].value = money(sc);
+    }
+  }
+  if(tbl === 'classes'){
+    var tr3 = document.querySelector('#tb-settle tr[data-i="'+i+'"]');
+    if(!tr3) return;
+    var x = calc(), row = x.rows[i];
+    if(!row) return;
+    var tds = tr3.querySelectorAll('td');
+    var cls = row.perProfit >= 0 ? 'pos' : 'neg';
+    if(tds[7])  tds[7].textContent  = money(row.perIn);
+    if(tds[8])  tds[8].textContent  = money(row.perTch);
+    if(tds[9])  tds[9].textContent  = money(row.social);
+    if(tds[10]){ tds[10].textContent = money(row.perProfit); tds[10].className = 'num ' + cls; }
+    if(tds[11]){ tds[11].textContent = money(row.monthProfit); tds[11].className = 'num ' + cls; }
+  }
+}
+
+/* ================= 事件 ================= */
+document.getElementById('nav').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('button') : null;
+  if(b && b.getAttribute('data-v')) show(b.getAttribute('data-v'));
+});
+
+document.getElementById('themes').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('.theme-dot') : null;
+  if(b) setTheme(b.getAttribute('data-th'));
+});
+
+document.getElementById('expTabs').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('button') : null;
+  if(!b) return;
+  var s = b.getAttribute('data-s');
+  var btns = this.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++) btns[i].className = (btns[i] === b ? 'on' : '');
+  var subs = document.querySelectorAll('.subview');
+  for(var j=0;j<subs.length;j++) subs[j].className = 'subview' + (subs[j].id === 'sv-'+s ? ' on' : '');
+});
+
+document.addEventListener('input', function(e){
+  var el = e.target;
+  var k = el.getAttribute && el.getAttribute('data-k');
+  if(!k) return;
+  var p = k.split('.');
+  if(p[0] === 'cfg'){ S.cfg[p[1]] = el.value; save(); renderPay(); renderSettle(); renderReport(); return; }
+  var tbl = p[0], i = Number(p[1]), f = p[2];
+  if(!S[tbl] || !S[tbl][i]) return;
+  if(f === 'own'){ S[tbl][i][f] = (el.value === 'true'); }
+  else { S[tbl][i][f] = el.value; }
+  save();
+  refreshRow(tbl, i);
+  refreshDerived(tbl === 'classes' ? 'classes' : null);
+});
+document.addEventListener('change', function(e){
+  var el = e.target;
+  var k = el.getAttribute && el.getAttribute('data-k');
+  if(!k) return;
+  var p = k.split('.');
+  if(p[0] === 'cfg'){ S.cfg[p[1]] = el.value; save(); renderPay(); renderSettle(); renderReport(); return; }
+  var tbl = p[0], i = Number(p[1]), f = p[2];
+  if(!S[tbl] || !S[tbl][i]) return;
+  if(f === 'own'){ S[tbl][i][f] = (el.value === 'true'); }
+  else { S[tbl][i][f] = el.value; }
+  save();
+  refreshRow(tbl, i);
+  refreshDerived(tbl === 'classes' ? 'classes' : null);
+});
+
+document.addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-del]') : null;
+  if(!b) return;
+  var t = b.getAttribute('data-del'), i = Number(b.getAttribute('data-i'));
+  if(!S[t]) return;
+  S[t].splice(i,1);
+  save(); renderAll();
+});
+
+document.getElementById('addIncome').addEventListener('click', function(){
+  S.income.push({d:today(), who:'', type:'学费', amt:'', pay:'现金', inv:'', vat:String(S.cfg.vatDefault||0)});
+  save(); renderIncome(); refreshDerived();
+});
+document.getElementById('addExpense').addEventListener('click', function(){
+  S.expense.push({d:today(), cat:'其他', payee:'', amt:'', inv:'', note:''});
+  save(); renderExpense(); refreshDerived();
+});
+document.getElementById('addPay').addEventListener('click', function(){
+  /* 新行落在当前选定月份 —— 不落月份的话切回去就看不见了 */
+  S.payroll.push({name:'', role:'员工', gross:'', pit:'0', month:CUR_MONTH, paidOn:''});
+  save(); renderPay(); refreshDerived();
+});
+document.getElementById('payMonth').addEventListener('change', function(){ setMonth(this.value); });
+document.getElementById('addClass').addEventListener('click', function(){
+  S.classes.push({name:'', lessons:'42', done:'0', fee:'', teacher:'', rate:'', own:true});
+  save(); renderSettle(); refreshDerived();
+});
+
+document.getElementById('loadDemo').addEventListener('click', function(){
+  if(!confirm('载入示例数据？会覆盖当前所有数据。')) return;
+  S = demo(); save(); renderAll();
+});
+document.getElementById('clearAll').addEventListener('click', function(){
+  if(!confirm('清空全部数据？这个不能撤销。')) return;
+  S = blank(); save(); renderAll();
+});
+document.getElementById('resetView').addEventListener('click', function(){ show('guide'); });
+document.getElementById('expIncome').addEventListener('click', expIncome);
+document.getElementById('expExpense').addEventListener('click', expExpense);
+document.getElementById('expPayroll').addEventListener('click', expPayroll);
+
+document.addEventListener('keydown', function(e){
+  if(e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  var map = {'0':'guide','1':'income','2':'expense','3':'settle','4':'report','5':'config','6':'export'};
+  if(map[e.key]) show(map[e.key]);
+});
+
+/* ================= 导出：伪装 .xls（零依赖） ================= */
+function htm(s){
+  return String(s==null?'':s).replace(/[&<>]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];
+  });
+}
+function monthTag(){
+  var d = new Date(), p = function(n){ return (n<10?'0':'')+n; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1);
+}
+function sheetHtml(title, head, body){
+  var s = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">'
+    + '<head><meta charset="utf-8">'
+    + '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
+    + '<x:Name>' + htm(title) + '</x:Name>'
+    + '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>'
+    + '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
+    + '</head><body>';
+  s += '<table border="1" cellspacing="0" cellpadding="4"><thead><tr>';
+  head.forEach(function(h){
+    s += '<th style="background:#EEEEEE;font-weight:bold;text-align:center">' + htm(h) + '</th>';
+  });
+  s += '</tr></thead><tbody>';
+  body.forEach(function(r){
+    s += '<tr>';
+    r.forEach(function(c){
+      var isNum = (typeof c === 'number');
+      s += '<td' + (isNum?' style="mso-number-format:0"':'') + '>' + htm(c) + '</td>';
+    });
+    s += '</tr>';
+  });
+  s += '</tbody></table></body></html>';
+  return s;
+}
+function download(name, html){
+  try{
+    var blob = new Blob(['\ufeff' + html], {type:'application/vnd.ms-excel;charset=utf-8'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){
+      try{ URL.revokeObjectURL(a.href); a.parentNode.removeChild(a); }catch(e){}
+    }, 1500);
+    var el = document.getElementById('saveState');
+    if(el){
+      el.textContent = '已导出 · ' + name;
+      el.style.color = 'var(--ok)';
+      clearTimeout(stTimer);
+      stTimer = setTimeout(function(){ el.textContent = '已自动保存'; el.style.color = ''; }, 2800);
+    }
+  }catch(e){
+    alert('这个浏览器不让下载。换 Chrome 或 Edge 试。');
+  }
+}
+
+function expIncome(){
+  var x = calc();
+  var head = ['日期','学生/班级','类型','金额','收款方式','发票号','税率%','税额'];
+  var body = S.income.map(function(r){
+    var a = val(r.amt), t = Number(r.vat||0);
+    return [r.d, r.who, r.type, a, r.pay, r.inv||'', t, a*t/100];
+  });
+  if(!body.length) body.push(['（本月没有收入记录）','','','','','','','']);
+  body.push(['合计','','', x.inc, '', '', '', x.vat]);
+  download('收入明细-' + monthTag() + '.xls', sheetHtml('收入明细', head, body));
+}
+
+function expExpense(){
+  var x = calc();
+  var head = ['日期','类别','收款方','金额','发票号','备注'];
+  var body = S.expense.map(function(r){
+    return [r.d, r.cat, r.payee, val(r.amt), r.inv||'', r.note||''];
+  });
+  if(!body.length) body.push(['（本月没有其他支出）','','','','','']);
+  body.push(['合计','','', x.othAll, '', '']);
+  download('支出明细-' + monthTag() + '.xls', sheetHtml('支出明细', head, body));
+}
+
+function expPayroll(){
+  var siEmp = val(S.cfg.siEmp), siComp = val(S.cfg.siComp);
+  var head = ['姓名','角色','应发','社保个人','个税','实发','社保公司'];
+  /* 2026-10-31：只导选定月份，文件名也用选定月份（原来是当天日期） */
+  var g=0, se=0, pit=0, net=0, sc=0;
+  var body = payRows().map(function(it){
+    var p = it.p, gg = val(p.gross), s1 = gg*siEmp/100, s2 = gg*siComp/100, pt = val(p.pit);
+    g += gg; se += s1; sc += s2; pit += pt; net += (gg - s1 - pt);
+    return [p.name, p.role, gg, s1, pt, gg-s1-pt, s2];
+  });
+  if(!body.length) body.push(['（' + CUR_MONTH + ' 没有工资记录）','','','','','','']);
+  body.push(['合计','', g, se, pit, net, sc]);
+  download('工资社保-' + CUR_MONTH + '.xls', sheetHtml('工资社保', head, body));
+}
+
+/* ================= 启动 ================= */
+S = load();
+var savedTheme = 'ivory';
+try{ savedTheme = localStorage.getItem('zhops.fin.theme') || 'ivory'; }catch(e){}
+setTheme(savedTheme);
+renderAll();
+show('guide');
+})();
+</script>
+</body>
+</html>

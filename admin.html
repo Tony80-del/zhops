@@ -338,6 +338,12 @@ a{color:var(--brand);text-decoration:none;}
 .tg.on{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
 .tg.warn{color:var(--warn);border-color:#e8d9a8;background:var(--warn-soft);}
 .lsub{font:inherit;font-size:12px;max-width:130px;padding:3px 4px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);}
+/* ★ 2026-10-31：课次记录「状态」下拉 —— 按值分色，一眼分出哪节上了 / 没上 / 取消了 */
+.lstat{max-width:84px;padding-right:2px;}
+.lstat[data-st="done"]{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
+.lstat[data-st="cancel"]{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+.lstat[data-st="plan"]{color:var(--ink2);}
+.lstat.due{border-color:#e8d9a8;background:var(--warn-soft);}
 .tg.bad{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
 .tg.off{color:var(--ink2);border-color:var(--line2);background:var(--surface-3);}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto;}
@@ -1264,6 +1270,55 @@ function writeSlices(cb){
 function fsSchedulePush(){
   if (cloudTimer) clearTimeout(cloudTimer);
   cloudTimer = setTimeout(() => { cloudTimer = null; fsPush(); }, 1200);
+}
+
+/* ==========================================================================
+   ★ 2026-10-31（Tony 定）：课次 done → 写一条给人事部的完成记录 zhops/done_<课次ID>
+   —— 用途：人事部按 teacher 统计 done 课次，算课时费。**只算 done**。
+   —— 与「全量推送」分开：全量推送是整份 DB 备份（手动）；这里是单节课增量（自动）。
+      两条路互不覆盖 —— 全量推 zhops/master，增量写 zhops/done_xxx，路径不同。
+   —— 手推仍保留（系统还在搭建，Tony 要整份备份）。互不干扰。
+   —— ⚠️ 只写不删：课次被改回 plan / cancel 时，这里 **写一条 state 覆盖它**，
+        人事部只认最新 at 的那条，不到最后不删（账不能撕，只能冲销）。
+   ========================================================================== */
+function doneRecord(l){
+  if (!l || !l.id) return null;
+  const c = (DB.classes || []).find(x => x.id === l.cid) || {};
+  /* 上课教师：代课优先（l.teacher 有值且不同于常任），否则常任 ctch */
+  const tid = l.teacher || c.teacher || c.ctch || '';
+  const abs = (DB.absences || []).filter(a => a.cid === l.cid && a.no === l.no).length;
+  const cap = DB.set && DB.set.capMax ? DB.set.capMax : 0;
+  return {
+    id:      l.id,                    /* 课次 ID（c1#8） */
+    cid:     l.cid,                   /* 班级 ID */
+    cno:     l.no,                    /* 课次号 */
+    date:    l.date,                  /* 日期 —— 人事部按这个月的 */
+    tid:     tid,                     /* 教师 ID —— 人事部按这个分组 */
+    tname:   (DB.teachers.find(x => x.id === tid) || {}).name || '',
+    cname:   c.name || l.cname || '',
+    ccode:   c.code || l.ccode || '',
+    lv:      c.lv || l.clv || '',
+    state:   l.status,                /* done / today / plan / cancel —— 人事部只认 done */
+    absent:  abs,                     /* 缺席人数（只给业务部看，不算工资） */
+    size:    cap,
+    at:      new Date().toISOString(),
+  };
+}
+function pushDoneRecord(l){
+  if (typeof fetch !== 'function') return;
+  const r = doneRecord(l);
+  if (!r) return;
+  const docId = 'done_' + String(r.id).replace(/[^A-Za-z0-9_-]/g, '_');
+  const body = { fields: {
+    payload: { stringValue: JSON.stringify(r) },
+    at:      { stringValue: r.at },
+    app:     { stringValue: APP_TAG },
+    tid:     { stringValue: String(r.tid || '') },
+    state:   { stringValue: String(r.state || '') },
+  }};
+  fetch(fsUrlOf('zhops', docId), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }).catch(() => {});   /* 静默 —— 离线照常用，本地数据不受影响 */
 }
 
 /* 启动：有存盘用存盘，没有才播种 */
@@ -2541,10 +2596,19 @@ function vLessons(){
           /* 代课：这节课的授课教师 ≠ 班级的常任教师（边界 #11）—— 必须显示出来，
              否则将来跟老师对账时「这节课到底谁上的」说不清 */
           const sub = l.teacher && l.teacher !== ctc;
-          const st = l.status === 'done'   ? '<span class="tg on">已上</span>'
-                   : l.status === 'today'  ? '<span class="tg warn">今天</span>'
-                   : l.status === 'cancel' ? '<span class="tg bad">已取消</span>'
-                   :                         '<span class="tg off">待上</span>';
+          /* ★ 2026-10-31（Tony 定）：状态改成**可改的下拉**（待上 / 已上 / 已取消）。
+   —— 「今天」是系统按开班日派生出来的（跟教师端提交、审批通过的日期走），
+      不是人手填的：下拉里显示成「待上」，旁边单挂一个橙色「今天」小签；
+      想要「今天这节上了」就选「已上」。 */
+          const stDue = (l.status === 'today');
+          const stNow = stDue ? 'plan' : l.status;
+          const st = '<select class="lsub lstat' + (stDue ? ' due' : '') + '" data-st="' + stNow + '"' +
+              ' title="' + (stDue ? '今天这节 —— 选「已上」= 今天这节课上了' : '改这节课的状态') + '"' +
+              ' onchange="setLessonStatus(\'' + l.id + '\', this.value)">' +
+              '<option value="plan"'   + (stNow === 'plan'   ? ' selected' : '') + '>待上</option>' +
+              '<option value="done"'   + (stNow === 'done'   ? ' selected' : '') + '>已上</option>' +
+              '<option value="cancel"' + (stNow === 'cancel' ? ' selected' : '') + '>已取消</option>' +
+            '</select>' + (stDue ? '<span class="tg warn">今天</span>' : '');
           /* 已取消的整行压暗 —— 一眼看出来它「在，但不算数」 */
           return '<tr' + (l.status === 'cancel' ? ' style="opacity:.55"' : '') + '>' +
             '<td class="m nowrap">' + l.date + ' <span style="color:var(--ink3)">' + weekdayText(l.date) + '</span></td>' +
@@ -4117,6 +4181,8 @@ function advanceClass(cid){
   if (next.date > DB.todayDate) next.date = DB.todayDate;   /* 上掉的课不记在未来 */
   buildFacts();          /* 派生层「今日课程」跟着重算 */
   save();
+  /* ★ 2026-10-31：这一节 done → 立刻把完成记录写一份给人事部（不管全量推没推） */
+  pushDoneRecord(next);
   toast('已推进：' + c.name + ' 第 ' + next.no + ' 课');
   render();
   return true;
@@ -4244,6 +4310,59 @@ function setLessonTeacher(lid, tid){
   save();
   toast('已更新代课安排');
   render();
+}
+
+/* ★ 2026-10-31（Tony 定）：课次记录页「状态」下拉 —— 让人能**逐节**改待上 / 已上 / 已取消。
+   为什么要有：原来只能「推进一课」（系统自己找下一节推，挑不了），
+   标错了**退不回来**，想取消某一节也只能「删班」把整班冲销。这里补的是「能上能退」。
+   —— 三种状态都要 pushDoneRecord：done 是计工资，plan / cancel 是**撤回**（同一条 done_<id> 覆盖）。
+      人事端 mergeDoneRecords 只认 done/plan/cancel，其余一律忽略（见 hr.html）。
+   —— 退课不删缺勤（Tony 定）：记录留着，只在确认框里报条数 —— 缺勤后面要单独出口到业务部。 */
+function setLessonStatus(lid, st){
+  const l = DB.lessons.find(x => x.id === lid);
+  if (!l){ toast('这节课已经不在了'); render(); return false; }
+  if (st !== 'plan' && st !== 'done' && st !== 'cancel'){ render(); return false; }
+  /* 「今天」在 DB 里存不住 —— deriveToday() 每次都会按日期重算，写 today 等于白写。
+     所以下拉把 today 显示成「待上」，选「待上」就当成「把今天这节标成已上」，
+     只有这一种读法说得通（今天这节的日期就是今天，选待上不可能表示「挪到以后」）。 */
+  if (st === 'plan' && l.status === 'today'){
+    return setLessonStatus(l.id, 'done');   /* 交给同一条路：发 done_* / 推进度 / 刷新 */
+  }
+  if (st === l.status){ render(); return false; }     /* 没变 → 不写库、不弹窗 */
+  const c = C(l.cid);
+
+  if (st === 'done'){
+    /* 越界保护：跟 advanceClass 一个口径，超了总课次不许再标已上 */
+    const total = c.plannedLessons || 42;
+    if (l.status !== 'done' && classLesson(c) >= total){
+      toast(c.name + ' 已完成全部 ' + total + ' 课次');
+      render(); return false;
+    }
+  } else {
+    const abs = (DB.absences || []).filter(a => a.cid === l.cid && a.no === l.no).length;
+    const absTip = abs ? '\n\n这节有 ' + abs + ' 条缺勤记录 —— 保留不动。' : '';
+    const msg = (st === 'plan')
+      ? '把「' + c.name + '」第 ' + l.no + ' 课改回「待上」？\n\n' +
+        '· 这一节会从人事部课时费里扣掉\n' +
+        '· 班级进度会少一节' + absTip +
+        '\n\n（用「待上」= 这节没上，记错了；只是这节不算，其余不动）'
+      : '把「' + c.name + '」第 ' + l.no + ' 课改成「已取消」？\n\n' +
+        '· 不算课时费\n' +
+        '· 课次记录留着（账不撕，只冲销）' + absTip;
+    if (typeof window.confirm === 'function' && !window.confirm(msg)){
+      render();                     /* 用户点了取消 → 下拉弹回原值 */
+      return false;
+    }
+  }
+
+  l.status = st;
+  buildFacts();
+  save();
+  pushDoneRecord(l);                /* done = 计工资；plan / cancel = 撤回 */
+  const Txt = { plan:'待上', done:'已上', cancel:'已取消' }[st];
+  toast(c.name + ' 第 ' + l.no + ' 课 → ' + Txt);
+  render();
+  return true;
 }
 
 /* ---- 编入班级抽屉（候选池 → 已有班，2026-10-12 第 ③ 步）----
@@ -4826,6 +4945,15 @@ const VI = {
   '能听能讲':'Nghe nói được', '自家教师':'Giáo viên tự có', '」的班级':'」của lớp',
   '全部原因':'Tất cả lý do', '统计口径':'Cách thống kê', '（找不到':' (không tìm thấy',
   '已推进：':'Đã đẩy:', '的课次；':'buổi học;', '· 批准':'· Duyệt', '按课次':'Theo buổi học',
+  /* ★ 2026-10-31：课次记录「状态」下拉 + 退课 / 取消 的确认文案 */
+  '这一节会从人事部课时费里扣掉':'Buổi này sẽ bị trừ khỏi lương giờ dạy ở phòng nhân sự',
+  '班级进度会少一节':'Tiến độ lớp sẽ giảm 1 buổi',
+  '不算课时费':'Không tính lương giờ dạy',
+  '课次记录留着（账不撕，只冲销）':'Giữ lại ghi nhận buổi học (không xóa sổ, chỉ đảo bút toán)',
+  '条缺勤记录 —— 保留不动。':'ghi nhận vắng —— giữ nguyên, không xóa.',
+  '这节课已经不在了':'Buổi học này không còn tồn tại',
+  '改回「待上」':'chuyển về「Chờ học」',
+  '改成「已取消」':'chuyển thành「Đã hủy」',
   '上班族':'Nhân viên văn phòng', '）目前':' ) hiện', '文件。':'tệp.', '已经被':'đã bị',
   '· 第':'· Thứ', '说明：':'Ghi chú:', '经商':'Kinh doanh', '其他':'Khác', '文案':'Nội dung chữ',
   '操作员编辑':'Người thao tác sửa', '自家外境教师':'Giáo viên ngoại cảnh tự có',

@@ -271,6 +271,15 @@
   .trow .t-name b{font-size:13px;}
   .trow .t-name .code{color:var(--hint); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;}
   .trow .t-prog,.trow .t-link{font-size:12px; color:var(--muted);}
+  /* ★ 2026-10-31：今日课「这节课已上完」按钮 */
+  .trow .t-act{margin-left:auto;}
+  .trow .t-act .tbtn{
+    font:inherit; font-size:12px; padding:5px 12px; border-radius:7px; cursor:pointer;
+    background:var(--accb); color:var(--acc); border:1px solid var(--acc);
+  }
+  .trow .t-act .tbtn:active{transform:scale(.98);}
+  .ls-done-tg{font-size:11.5px; color:var(--ok); border:1px solid var(--okb); border-radius:6px; padding:3px 8px;}
+  .ls-cancel-tg{font-size:11.5px; color:var(--hint); border:1px solid var(--line); border-radius:6px; padding:3px 8px;}
   /* 弱化占位（教室待定 / 链接待发布）与空态文案 */
   .dim{color:var(--hint);}
   .noclass{color:var(--hint); font-size:12.5px;}
@@ -338,8 +347,9 @@
     .sturow{display:grid; grid-template-columns:1.3fr .55fr 1.5fr 1fr 1.35fr; gap:10px;}
     /* 流程表：纵向 7 步，铺满 1100px 反而难扫读 —— 限到易读宽度 */
     .flowlist{max-width:780px;}
-    /* B3：今日课摊成一行五列（时间 / 班级 / 形态 / 第几课 / 链接） */
-    .trow{display:grid; grid-template-columns:.6fr 1.4fr .7fr .8fr 1.3fr; gap:10px;}
+    /* B3：今日课摊成一行六列（时间 / 班级 / 形态 / 第几课 / 链接 / 已上完） */
+    .trow{display:grid; grid-template-columns:.6fr 1.4fr .7fr .8fr 1.3fr auto; gap:10px;}
+    .trow .t-act{margin-left:0;}
     /* B3：班级卡两列 —— §3.5「电脑：多列」，把多出来的宽度真用起来 */
     .clscards{display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start;}
     .clscards .clscard{margin-bottom:0;}
@@ -754,6 +764,40 @@ function fsUrlOf(coll, doc){
   return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
     '/databases/(default)/documents/' + coll + '/' + doc + '?key=' + encodeURIComponent(FS.key);
 }
+
+/* ==========================================================================
+   ★ 2026-10-31（Tony 定）：课次 done → 写一条给人事部的完成记录 zhops/done_<课次ID>
+   —— 教师端点「这节课已上完」/「推进课次」时触发。
+   —— 只写这一节，不覆盖别人，也不覆盖主端的全量推送（路径不同：zhops/done_xxx）。
+   —— 人事部按 tid 分组统计 done 课次算课时费。缺席人数只记录、不算钱。
+   —— 失败静默：离线照常用。
+   ========================================================================== */
+function pushDoneRecord(l){
+  if (typeof fetch !== 'function') return;
+  if (!l || !l.id) return;
+  const c = (DB.classes || []).find(x => x.id === l.cid) || {};
+  const tid = l.teacher || c.teacher || c.ctch || '';
+  const abs = (DB.absences || []).filter(a => a.cid === l.cid && a.no === l.no).length;
+  const r = {
+    id: l.id, cid: l.cid, cno: l.no, date: l.date, tid: tid,
+    tname: (DB.teachers.find(x => x.id === tid) || {}).name || '',
+    cname: c.name || l.cname || '', ccode: c.code || l.ccode || '',
+    lv: c.lv || l.clv || '', state: l.status,
+    absent: abs, size: (DB.set && DB.set.capMax) || 0,
+    at: new Date().toISOString(),
+  };
+  const docId = 'done_' + String(r.id).replace(/[^A-Za-z0-9_-]/g, '_');
+  const body = { fields: {
+    payload: { stringValue: JSON.stringify(r) },
+    at:      { stringValue: r.at },
+    app:     { stringValue: APP_TAG },
+    tid:     { stringValue: String(r.tid || '') },
+    state:   { stringValue: String(r.state || '') },
+  }};
+  fetch(fsUrlOf('zhops', docId), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }).catch(() => {});
+}
 /* ==================== 公共只读 zhops/public（第 3 步）====================
    主端每次推云都重写一份。这里只读：时段表 · 课程目录（课名）· 阶段名 ·
    教室省/市 · 开班门槛。
@@ -1013,12 +1057,18 @@ function todayRow(l){
   const c = C(l.cid);
   const sub = l.teacher && l.teacher !== (c.teacher || '');   /* 代课：这节课授课教师 ≠ 班常任教师 */
   const nm = courseName(c.lv, l.no);                          /* 课名来自 zhops/public */
+  /* ★ 2026-10-31：没上完的课给一个「已上完」按钮 —— 一点就 done + 同步人事部 */
+  const btn = (l.status === 'done')
+    ? '<span class="ls-done-tg">已上完</span>'
+    : (l.status === 'cancel' ? '<span class="ls-cancel-tg">已取消</span>'
+       : '<button class="tbtn" onclick="markDone(\'' + l.id + '\')">这节课已上完</button>');
   return '<div class="trow">' +
     '<span class="t-time">' + esc(l.time || S(c.slot).time) + '</span>' +
     '<span class="t-name"><b>' + esc(c.name) + '</b> <span class="code">' + esc(c.code) + '</span></span>' +
     '<span class="t-mode">' + modeTag(c.mode) + (sub ? ' <span class="tg sub">代课 · ' + esc(T(l.teacher).name) + '</span>' : '') + '</span>' +
     '<span class="t-prog">第 ' + l.no + ' 课' + (nm ? ' · ' + esc(nm) : '') + '</span>' +
     '<span class="t-link">' + placeText(c) + '</span>' +
+    '<span class="t-act">' + btn + '</span>' +
   '</div>';
 }
 
@@ -1086,7 +1136,27 @@ function advanceClass(cid){
   next.status = 'done';
   if (next.date > DB.todayDate) next.date = DB.todayDate;   /* 上掉的课不记在未来 */
   save();
+  /* ★ 2026-10-31：这一节 done → 立刻把完成记录写一份给人事部 */
+  pushDoneRecord(next);
   toast('已推进：' + c.name + ' 第 ' + next.no + ' 课');
+  refresh();
+  return true;
+}
+
+/* ★ 2026-10-31（Tony 定）：单节课「已上完」—— 今日课上直接标，不用去我的班级点「推进课次」。
+   Uyen 上完课 → 点这个 → 状态变 done → 自动推一份完成记录给人事部 → 人事部算课时费。 */
+function markDone(lid){
+  const me = SELF(); if (!me){ toast('先选你是谁'); return false; }
+  const l = (DB.lessons || []).find(x => x.id === lid);
+  if (!l){ toast('这节课找不到了'); return false; }
+  if (!myClasses().some(c => c.id === l.cid)){ toast('这个班不是你教的'); return false; }
+  if (l.status === 'done'){ toast('这一节已经标过「已上完」了'); return false; }
+  if (l.status === 'cancel'){ toast('这一节已取消，不能标完成'); return false; }
+  l.status = 'done';
+  if (l.date > DB.todayDate) l.date = DB.todayDate;   /* 上掉的课不记在未来 */
+  save();
+  pushDoneRecord(l);
+  toast('第 ' + l.no + ' 课已上完 · 已同步给人事部');
   refresh();
   return true;
 }
@@ -1134,7 +1204,8 @@ function renderRollModal(){
       '<button class="btn ghost" onclick="closeRollModal()">取消</button></div>';
   applyLang();
 }
-/* 保存点名：先删该班该节的全部缺勤，再按勾选重建 —— 幂等，重复保存结果一致 */
+/* 保存点名：先删该班该节的全部缺勤，再按勾选重建 —— 幂等，重复保存结果一致
+   ★ 2026-10-31：如果这一节已经是 done，点名后把缺席人数重新写一遍给人事部/业务部。 */
 function saveRoll(){
   if (!rState) return false;
   const cid = rState.cid, no = rState.no;
@@ -1144,6 +1215,9 @@ function saveRoll(){
   DB.absences = DB.absences.filter(a => !(a.cid === cid && a.no === no));
   picked.forEach(sid => DB.absences.push({ sid: sid, cid: cid, no: no }));
   save();
+  /* 这一节已经 done → 重推一次，带上新的缺席人数 */
+  const doneL = (DB.lessons || []).find(x => x.cid === cid && x.no === no && x.status === 'done');
+  if (doneL) pushDoneRecord(doneL);
   closeRollModal();
   toast('已记 ' + picked.length + ' 人缺勤');
   refresh();
@@ -1559,6 +1633,9 @@ const VI = {
   '学生':'Học viên', '本人':'Bản thân',
   /* ★ 2026-10-14 新增（B4 · 推进课次 + 点名 + 代课显示） */
   '推进课次':'Tiến buổi học', '点名':'Điểm danh',
+  /* ★ 2026-10-31 新增（单节课已上完 → 同步人事部） */
+  '这节课已上完':'Buổi này đã học xong', '已上完':'Đã học xong',
+  '第 ':'Buổi ', '课已上完 · 已同步给人事部':'đã học xong · đã đồng bộ cho Phòng Nhân sự',
   '只记缺勤':'Chỉ ghi vắng',
   '默认全勤，勾上谁没来就行。':'Mặc định đủ, tích người vắng.',
   '任意一节系统课次都能点名，可事后补录。':'Có thể điểm danh bất kỳ buổi nào, bù sau được.',
