@@ -254,7 +254,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <div class="day-panel" data-day="2026-10-31">
     <div class="card">
-      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 10 · 待打磨 3</span><span class="sp"></span>
+      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 10 · 等验收 1 · 待打磨 2</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -423,10 +423,19 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-75</td>
               <td><b>主端平板适配（iPad 竖屏 / 横屏）</b><br><span style="color:#8899aa;font-size:12px">「之前我们搭建平板电脑是给教师端（教师端是独立的），主端从来没搭建过」</span></td>
               <td class="nw">主端 · 适配</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b wait">等验收</span></td>
               <td class="mono nw">10-31</td>
-              <td class="mono nw">—</td>
-              <td>主端 <span class="mono">zhops-admin.html</span> 里有一套 920px 断点（侧栏变抽屉 + 汉堡按钮），<b>代码在、没在真机校过</b> —— 平板那套当初是给教师端做的，教师端独立，两边不共用样式。<br>
+              <td class="mono nw">11-01</td>
+              <td><b>做法（11-01）</b>：新写 <span class="mono">check-tablet.js</span>，用真 Chrome 在 <b>5 档真视口</b>（1280 桌面 / 1024 iPad 横屏 / 834 iPad Pro 11 竖 / 768 iPad 竖 / 560 手机）逐档量，<b>102 条全绿</b>。量出来的真缺陷只有两个，都已修：<br>
+              ① <b>汉堡点了没反应 —— 平板/手机上整个导航打不开。</b><span class="mono">#burger</span> 和 <span class="mono">#scrim</span> 只有 CSS、<b>根本没有点击处理器</b>，≤920px 侧栏被推到屏幕外后没有任何入口。已接线：点汉堡开 / 点遮罩关 / 点导航项自动收起 / Esc 关。<br>
+              ② <b>侧栏项 40px，不到 44px 触控目标。</b>改成 <span class="mono">@media (max-width:1024px), (pointer:coarse)</span> 下 <span class="mono">min-height:44px</span> —— 两个条件取并集，第二条专门盖 iPad Pro 12.9 横屏（1366）这种超宽平板；桌面鼠标保持原 40px 密度。<br>
+              ③ 顺带修：<span class="mono">#drawer</span> / <span class="mono">#side</span> 高度补 <span class="mono">100dvh</span>（原来只有 100vh）—— iPad 弹键盘时底部保存按钮会被压在键盘后，dvh 会跟着可视区缩。<br>
+              <b>量了没问题的</b>：整页横向滚动条 5 档都没有；表格挤不下时能横向滚（总览 1 张 / 班级表 1 张 / 课次记录 2 张，每档都真量到）；卡片区 768 档 3 列；右侧抽屉 ≤92vw（560 档整屏是有意的）。<br>
+              <b>没做的</b>：<b>真机验证</b> —— 上面全是无头 Chrome 模拟视口，摸不到真 iPad 的滚动惯性、键盘遮挡、双指缩放。要 Tony 在 iPad 上真开一次才算完。<br>
+              <b>踩过的坑</b>：<span class="mono">hscroll.js</span> 判据是「元素越出视口」，把两个<b>故意 translateX 到屏幕外</b>的抽屉全判成溢出，5 档全红假警报 —— 平板量测不能复用它。另外第一版按 <span class="mono">.tbl-wrap</span> 抓表格，班级表 0 张还报「通过」，是空转；改成直接扫 <span class="mono">&lt;table&gt;</span> 并要求「量到 ≥1 张」。<br>
+              <b>反向控制</b>：掐掉汉堡接线 → 报红 6 条（3 档 × 开抽屉 + 遮罩）；sha256 确认逐字还原。<br>
+              <br><span style="color:#8899aa">— 以下为 10-31 立项时的原始说明 —</span><br>
+              主端 <span class="mono">zhops-admin.html</span> 里有一套 920px 断点（侧栏变抽屉 + 汉堡按钮），<b>代码在、没在真机校过</b> —— 平板那套当初是给教师端做的，教师端独立，两边不共用样式。<br>
               <b>要做什么</b>：① 侧栏抽屉在 iPad 竖屏的手感（滑出 / 遮罩 / 点完是否收）② <b>表格横向滚动</b>（排课矩阵 / 学生表 / 课次记录列多，768px 会挤爆；教师端做过 <span class="mono">hscroll</span> 探针，主端没做过）③ 卡片区三档列数实测（1240 / 920 / 560）④ 触控目标放大到 ≥44px（侧栏项现在行高约 35px）⑤ iPad 弹键盘会不会遮住保存按钮 ⑥ 真机验证。<br>
               <b>边界</b>：跟 P-51 / P-53 的入口不是一回事 —— 入口已经加好，且点了会顺手收抽屉；这一项是把主端<b>真正能用</b>在平板上。</td>
             </tr>

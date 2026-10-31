@@ -63,7 +63,7 @@ a{color:var(--brand);text-decoration:none;}
 #app{display:flex;min-height:100vh;}
 #side{
   width:var(--side-w);flex:0 0 auto;background:var(--navy);color:var(--navy-tx);
-  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;
   background-image:
     linear-gradient(rgba(103,232,249,.055) 1px,transparent 1px),
     linear-gradient(90deg,rgba(103,232,249,.055) 1px,transparent 1px);
@@ -489,6 +489,17 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 .scrim{display:none;position:fixed;inset:0;background:rgba(13,36,54,.45);z-index:50;}
 
 /* ---------------- 响应式 ---------------- */
+
+/* ★ 2026-11-01（P-75 平板适配）：触摸屏上侧栏项撑到 44px —— 苹果的最小触控目标。
+   原来 40px，鼠标下没问题，手指按容易点错。
+   两个条件取并集：
+     ① 宽度 ≤1024 —— iPad 竖屏 768 / 横屏 1024 都在内
+     ② pointer:coarse —— 任何触摸设备。这条专门覆盖 iPad Pro 12.9 横屏（1366px）
+        这种「比 1024 还宽」的平板，光靠宽度断点盖不住。
+   桌面鼠标（pointer:fine 且 >1024）保持 40px 原密度，不动。 */
+@media (max-width:1024px), (pointer:coarse){
+  #nav a{min-height:44px;padding-top:0;padding-bottom:0;}
+}
 /* 6 列需要 ≥1240px 才放得下，否则每张卡不足 150px、数字会溢出 → 中间档降到 3 列 */
 @media (max-width:1240px){
   .stats{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -517,7 +528,11 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
    层级：#top(20) < #scrim(50) < #side 窄屏(60) < #dScrim(65) < #drawer(70) */
 #dScrim{display:none;position:fixed;inset:0;background:rgba(13,36,54,.45);z-index:65;}
 #dScrim.on{display:block;}
-#drawer{position:fixed;top:0;right:0;height:100vh;width:min(430px,92vw);
+/* ★ 2026-11-01（P-75 平板适配）：高度写两遍 —— 100vh 是兜底，100dvh 是给
+   iPad 弹键盘用的。iOS 上 100vh 是「不含键盘」的布局高度，键盘一起来
+   底部保存按钮就被压在键盘后面；100dvh 会跟着可视区缩，按钮始终露在外面。
+   （iOS 15.4+ / Chrome 108+ 支持；老浏览器忽略第二行，退回 100vh 原样。） */
+#drawer{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(430px,92vw);
   background:var(--surface);border-left:1px solid var(--line2);
   box-shadow:-10px 0 28px rgba(13,36,54,.12);z-index:70;
   display:flex;flex-direction:column;transform:translateX(100%);
@@ -5372,6 +5387,30 @@ document.getElementById('langSwitch').addEventListener('click', e => {
 })();
 
 /* ---------- 事件 ---------- */
+
+/* ★ 2026-11-01（P-75 平板适配）：汉堡开合侧栏抽屉。
+   ⚠️ 之前 #burger / #scrim 只有 CSS、**没有任何点击处理器** —— ≤920px 时侧栏被
+      transform 推到屏幕外，于是平板和手机上整个导航打不开（等于没有导航）。
+      这一项从来没在真机校过，探针 check-tablet.js 一量就露。
+   桌面端（>920px）汉堡是 display:none，这里加的类不起作用，不影响原布局。 */
+(function(){
+  const bg = $('#burger'), side = $('#side'), sc = $('#scrim');
+  if (!bg || !side || !sc) return;
+  const openNav  = () => { side.classList.add('open');    sc.classList.add('on'); };
+  const closeNav = () => { side.classList.remove('open'); sc.classList.remove('on'); };
+  bg.addEventListener('click', e => {
+    e.stopPropagation();                       /* 别让下面那个全局分发器当成别的按钮 */
+    side.classList.contains('open') ? closeNav() : openNav();
+  });
+  sc.addEventListener('click', closeNav);
+  /* 点了导航项就收起 —— 窄屏才看得见效果；宽屏本来就没抽屉 */
+  side.addEventListener('click', e => {
+    if (e.target.closest('a[data-v],a[data-ext]')) closeNav();
+  });
+  /* Esc 收起（iPad 接了键盘时好用） */
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNav(); });
+})();
+
 document.addEventListener('click', e => {
   /* ---- ★ P-48 班级资料库链接优先（必须放在整个分发器最前面）----
      为什么不能靠默认行为自然跳转：教师表的 <tr> 带 data-open="teacher:<id>"
