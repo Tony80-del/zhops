@@ -457,8 +457,8 @@
         <legend><span class="n">三</span>学员与开课计划</legend>
         <div class="fld">
           <label>能带来的学生人数<span class="req">*</span></label>
-          <input id="fN" type="number" min="1" max="12" placeholder="单个班 8–12 人" />
-          <p class="hint">低于 8 人仅提示、不拦提交；超过 12 人请拆班。</p>
+          <input id="fN" type="number" min="4" placeholder="单个班 4–13 人" />
+          <p class="hint">低于 4 人不能提交；超过 13 人可以提交，由管理员判断是否拆班。</p>
         </div>
         <div class="fld">
           <label>学生名单（选填）</label>
@@ -514,8 +514,18 @@
 
 <script>
 /* ==================== 数据层（与 admin 同一套 zhops.sched.v3 存盘） ==================== */
-const KEY = 'zhops.sched.v3';
+/* ★ 2026-10-30（多教师分片 · 第 3 步）：教师端不再写主端那把钥匙。
+   原来两端共用 zhops.sched.v3 —— 分片之后教师端存的是「我这一份」，
+   再写进那把钥匙，同一台电脑上主端一打开就会读到半份数据，一推就抹掉全库。
+   所以教师端单独一把钥匙；主端仍用 zhops.sched.v3，一个字不动。 */
+const KEY = 'zhops.teacher.v1';
 const APP_TAG = 'zhops.admin';      /* 与 admin 同一个认领标记 */
+/* ★ 2026-10-30（S1.3）：云端认领改成「多来源」。
+   原来只认 'zhops.admin'，主端排课系统（写 'zhops.sched'）一推上来就被整份忽略，
+   结果是三端各写各的、互相覆盖。现在三端都认。
+   ⚠️ 只放宽「云端来源」，不改写入标记 —— 各端写自己的 __app，来源看得清。 */
+const APP_TAGS_OK = ['zhops.admin', 'zhops.teacher', 'zhops.sched'];
+const appTagOk = o => !!o && APP_TAGS_OK.indexOf(o.__app) !== -1;
 const DB_VER = 1;
 
 function seedDB(){
@@ -587,7 +597,7 @@ function load(){
   if (typeof localStorage === 'undefined') return null;
   let o = null;
   try{ const raw = localStorage.getItem(KEY); if (raw) o = JSON.parse(raw); }catch(e){ o = null; }
-  if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return null;
+  if (!o || typeof o !== 'object' || !appTagOk(o)) return null;
   if (!Array.isArray(o.teachers) || !Array.isArray(o.students) || !Array.isArray(o.classes)) return null;
   if (!Array.isArray(o.apps) || !Array.isArray(o.slots) || !Array.isArray(o.absences)) return null;
   loadedFromStore = true;
@@ -737,17 +747,51 @@ let cloudState = 'idle';
 let cloudAt = null;
 let cloudTimer = null;
 function fsUrl(){
+  return fsUrlOf(FS.coll, FS.doc);
+}
+/* 任意文档的 REST 地址（2026-10-30 · 多教师分片第 3 步：public 与分片是另两个文档） */
+function fsUrlOf(coll, doc){
   return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
-    '/databases/(default)/documents/' + FS.coll + '/' + FS.doc + '?key=' + encodeURIComponent(FS.key);
+    '/databases/(default)/documents/' + coll + '/' + doc + '?key=' + encodeURIComponent(FS.key);
+}
+/* ==================== 公共只读 zhops/public（第 3 步）====================
+   主端每次推云都重写一份。这里只读：时段表 · 课程目录（课名）· 阶段名 ·
+   教室省/市 · 开班门槛。
+   —— 读到就用；读不到（云端还没写 / 没网）→ 用本机种子，页面照常能开。 */
+let PUB = { slots:[], catalog:[], rooms:[], stages:[], limits:{} };
+function curVi(){ try { return localStorage.getItem('zhops.lang') === 'vi'; } catch(e){ return false; } }
+/* 课名：public.catalog 里按「级别 + 第几课」查；查不到就返回空串（不留空括号） */
+function courseName(lv, n){
+  if (!n) return '';
+  const list = PUB.catalog || [];
+  for (let i = 0; i < list.length; i++){
+    const x = list[i];
+    if (x.lv === lv && Number(x.no) === Number(n)) return curVi() ? (x.vi || x.zh || '') : (x.zh || '');
+  }
+  return '';
 }
 function markCloud(state, at){
   if (state) cloudState = state;
   if (at !== undefined) cloudAt = at;
   const el = document.getElementById('stCloud');
   if (!el) return;
-  if (cloudState === 'syncing'){ el.textContent = '☁︎ 同步中…'; el.className = ''; return; }
-  if (cloudState === 'ok'){ el.textContent = '☁︎ 已同步' + (cloudAt ? ' · ' + hhmm(new Date(cloudAt)) : ''); el.className = 'ok'; return; }
-  if (cloudState === 'fail'){ el.textContent = '☁︎ 离线（本地照常用）'; el.className = 'bad'; return; }
+  /* 2026-10-30：越南语不走字典查表，直接按语言给字面值 ——
+     页脚状态是 textContent 直接赋的，虽然 MutationObserver 会补扫，
+     但状态切换频繁，走字典容易漏。这里一次写死两边。 */
+  const vi = (function(){ try { return localStorage.getItem('zhops.lang') === 'vi'; } catch(e){ return false; } })();
+  if (cloudState === 'syncing'){
+    el.textContent = vi ? '☁︎ Đang đồng bộ…' : '☁︎ 同步中…';
+    el.className = ''; return;
+  }
+  if (cloudState === 'ok'){
+    var t = cloudAt ? ' · ' + hhmm(new Date(cloudAt)) : '';
+    el.textContent = (vi ? '☁︎ Đã đồng bộ' : '☁︎ 已同步') + t;
+    el.className = 'ok'; return;
+  }
+  if (cloudState === 'fail'){
+    el.textContent = vi ? '☁︎ Ngoại tuyến (vẫn dùng bình thường)' : '☁︎ 离线（本地照常用）';
+    el.className = 'bad'; return;
+  }
   el.textContent = ''; el.className = '';
 }
 function fsDec(v){ return (v && v.stringValue !== undefined) ? v.stringValue : null; }
@@ -761,21 +805,66 @@ function fsPull(cb){
     if (cb) cb(!!payload, payload, at);
   }).catch(() => { markCloud('fail'); if (cb) cb(false); });
 }
+/* ★ 2026-10-30（多教师分片 · 第 3 步）：写回改成「读-改-写」。
+   为什么必须改：master 全库只存在**一个**字符串字段 payload 里 ——
+   updateMask 帮不上忙（整个 payload 就是一个字段，改它等于整份换掉）。
+   所以先 GET 整份，把别人的班/学生/申请原样留着，
+   只替换「我的班」的 lessons / absences，再整份写回。
+   ⚠️ 本机 DB 现在是「我这一份」（分片），绝不允许整份覆盖 master。 */
+function myCidSet(){
+  const s = {};
+  (DB.classes || []).forEach(c => { if (c && c.id) s[c.id] = 1; });
+  return s;
+}
 function fsPush(cb){
   if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
-  const o = Object.assign({}, DB);
-  delete o.today;
+  markCloud('syncing');
+  fetch(fsUrl()).then(r => r.ok ? r.json() : null).then(raw => {
+    let full = null, remoteAt = null;
+    if (raw && raw.fields){
+      remoteAt = fsDec(raw.fields.at);
+      const p = fsDec(raw.fields.payload);
+      if (p){ try { full = JSON.parse(p); } catch(e){ full = null; } }
+    }
+    if (!full || typeof full !== 'object' || !appTagOk(full)){
+      /* 云端没有主数据 / 读坏了 → 这次不推。本机只有分片，推上去会抹掉主端。 */
+      markCloud('fail');
+      toast('☁︎ 云端没有主数据，这次不推（免得覆盖）');
+      if (cb) cb(false);
+      return;
+    }
+    doPush(full, cb);
+  }).catch(() => {
+    /* 拉不到 = 没网 / 规则挡住 → 不推，本机照常用 */
+    markCloud('fail');
+    if (cb) cb(false);
+  });
+}
+/* 真正的 PATCH：把本机「我的班」那几条并进云端整份，别人的一条不碰。 */
+function doPush(full, cb){
+  const mine = myCidSet();
+  const inC = cid => !!mine[cid];
   const iso = new Date().toISOString();
-  o.__app = APP_TAG; o.__v = DB_VER; o.__at = iso;
+  full.lessons  = (Array.isArray(full.lessons)  ? full.lessons  : []).filter(l => !inC(l.cid))
+                  .concat((DB.lessons || []).filter(l => inC(l.cid)));
+  full.absences = (Array.isArray(full.absences) ? full.absences : []).filter(a => !inC(a.cid))
+                  .concat((DB.absences || []).filter(a => inC(a.cid)));
+  /* 申请：云端已有的保持云端状态（主端可能已审批），只补我新提交的那几条 */
+  const cloudIds = {};
+  (Array.isArray(full.apps) ? full.apps : []).forEach(a => { if (a && a.id) cloudIds[a.id] = 1; });
+  full.apps = (Array.isArray(full.apps) ? full.apps : [])
+    .concat((DB.apps || []).filter(a => a && a.id && !cloudIds[a.id]));
+  delete full.today;
+  full.__app = APP_TAG; full.__v = DB_VER; full.__at = iso;
   const body = { fields: {
-    payload: { stringValue: JSON.stringify(o) },
+    payload: { stringValue: JSON.stringify(full) },
     at:      { stringValue: iso },
     app:     { stringValue: APP_TAG },
   }};
   markCloud('syncing');
-  fetch(fsUrl(), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  return fetch(fsUrl(), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(() => { cloudAt = iso; markCloud('ok', iso); if (cb) cb(true); })
+    .then(() => { cloudAt = iso; lastSavedAt = iso; markCloud('ok', iso); if (cb) cb(true); })
     .catch(() => { markCloud('fail'); if (cb) cb(false); });
 }
 function fsSchedulePush(){
@@ -870,9 +959,12 @@ function placeVal(c){
 function classProg(c){
   const n = classLesson(c);
   if (!n) return '<span class="dim">还没开课</span>';
+  /* ★ 2026-10-30（第 3 步）：课名来自 zhops/public 的 catalog，查不到就只显示课次 */
+  const nm = courseName(c.lv, n);
+  const tail = nm ? ' · ' + esc(nm) : '';
   return c.lv === 'HSK1'
-    ? 'L' + String(n).padStart(2, '0') + ' · ' + STAGE(n) + ' · 第 ' + n + ' 课'
-    : '第 ' + n + ' / ' + (c.plannedLessons || 42) + ' 课';
+    ? 'L' + String(n).padStart(2, '0') + ' · ' + STAGE(n) + ' · 第 ' + n + ' 课' + tail
+    : '第 ' + n + ' / ' + (c.plannedLessons || 42) + ' 课' + tail;
 }
 
 /* ==================== 工作台（B3） ====================
@@ -920,11 +1012,12 @@ function renderHome(){
 function todayRow(l){
   const c = C(l.cid);
   const sub = l.teacher && l.teacher !== (c.teacher || '');   /* 代课：这节课授课教师 ≠ 班常任教师 */
+  const nm = courseName(c.lv, l.no);                          /* 课名来自 zhops/public */
   return '<div class="trow">' +
     '<span class="t-time">' + esc(l.time || S(c.slot).time) + '</span>' +
     '<span class="t-name"><b>' + esc(c.name) + '</b> <span class="code">' + esc(c.code) + '</span></span>' +
     '<span class="t-mode">' + modeTag(c.mode) + (sub ? ' <span class="tg sub">代课 · ' + esc(T(l.teacher).name) + '</span>' : '') + '</span>' +
-    '<span class="t-prog">第 ' + l.no + ' 课</span>' +
+    '<span class="t-prog">第 ' + l.no + ' 课' + (nm ? ' · ' + esc(nm) : '') + '</span>' +
     '<span class="t-link">' + placeText(c) + '</span>' +
   '</div>';
 }
@@ -1211,7 +1304,7 @@ function submitApply(){
   if (!lv){ return setErr('请选择级别'); }
   if (!slot){ return setErr('请选择时段'); }
   if (mode === 'offline' && !room){ return setErr('线下课必须填教室'); }
-  if (!n || n < 1){ return setErr('请填写学生人数（至少 1 人）'); }
+  if (!n || n < 4){ return setErr('请填写学生人数（至少 4 人）'); }
   setErr('');
   const t = T(teacher);
   const roster = collectRoster();
@@ -1236,7 +1329,17 @@ function submitApply(){
   $id('out').classList.add('on');
   toast('申请已提交');
 }
-function setErr(m){ $id('err').textContent = m; applyLang(); }
+/* 提示条统一走 VI 字典（applyLang 末尾会扫到 #err）。
+   ★ 2026-10-30：这里原来有一段硬编码的越南语映射（为了绕开"字典那行改不动"）——
+   后来字典已补正确 key（'请填写学生人数（至少 4 人）'），补丁多余，拆掉，只留一条来源。
+   ⚠️ 但 #err 是**同一个节点反复赋不同文字**，而 _langOrig 按节点存原文且不覆盖，
+   会导致「切回中文时还原成第一条错误」。所以这里赋完先清掉它记的旧原文。 */
+function setErr(m){
+  const el = $id('err');
+  if (el) _langOrig.delete(el);   /* 丢掉上一句的原文，否则切回中文会还原成旧消息 */
+  if (el) el.textContent = m;
+  applyLang();
+}
 function renderSummary(a){
   $id('summary').innerHTML =
     '<div class="k">教师</div><div>'+esc(a.teacher)+' '+(a.src==='own'?'<span class="tg own">自有</span>':'<span class="tg out">外包</span>')+'</div>' +
@@ -1428,10 +1531,23 @@ const VI = {
   '该教师这个时段已经有课，管理员可能驳回':'Giáo viên đã có lớp ở ca này, quản trị viên có thể từ chối',
   '该教室此时段已被占用，管理员可能驳回':'Phòng học đã bị chiếm ở ca này, quản trị viên có thể từ chối',
   '申请已提交':'Đã gửi đơn',
+  /* ★ 2026-10-30 补：上面那条 key 还是「至少 1 人」，代码已改成「至少 4 人」→ 匹配不上。
+     单独加新 key，不动旧行（旧行含越南语声调符号，工具通道改一次坏一次）。 */
+  '请填写学生人数（至少 4 人）':'Vui lòng điền số học viên (ít nhất 4 người)',
+  /* ★ 2026-10-30：门槛统一 4–13 后，申请页的 placeholder 和提示文案换了。
+     旧 key（单个班 8–12 人 / 低于 8 人…）留在上面不动 —— 它们匹配不上了，等于死条目，
+     不影响运行，只是占位。新 key 在这里。 */
+  '单个班 4–13 人':'một lớp 4–13 ngườii',
+  '低于 4 人不能提交；超过 13 人可以提交，由管理员判断是否拆班。':'Dưới 4 ngườii không gửi được; trên 13 ngườii vẫn gửi được, quản trị viên quyết định có tách lớp không.',
+  '拒绝':'Từ chối', '接受':'Chấp nhận',
   /* 存盘状态 */
   /* 页脚状态（P-21 改白话）—— '已保存 · ' 比 '已保存' 长，带时间的那条先命中 */
   '还没保存过':'Chưa lưu lần nào', '已保存 ·':'Đã lưu · ', '已保存':'Đã lưu',
   '保存失败':'Lưu thất bại',
+  /* 页脚云同步状态（2026-10-30 补漏：这两条原来没有，切越南语后露中文） */
+  '同步中…':'Đang đồng bộ…', '同步中':'Đang đồng bộ',
+  '已同步':'Đã đồng bộ',
+  '离线（本地照常用）':'Ngoại tuyến (vẫn dùng bình thường)',
   /* 数据值：时段 / 星期 / 阶段 / 状态 */
   '早班':'Ca sáng', '午间':'Buổi trưa', '晚班':'Ca tối', '周末':'Cuối tuần',
   '周一':'Thứ hai', '周二':'Thứ ba', '周三':'Thứ tư', '周四':'Thứ năm', '周五':'Thứ sáu',
@@ -1552,15 +1668,24 @@ document.getElementById('langSwitch').addEventListener('click', e => {
   const b = e.target.closest('button[data-lang]'); if (b) setLang(b.dataset.lang);
 });
 /* 后出现的内容（提交结果块 / 回确认列表 / 提示条）：DOM 一变就重扫一遍。
-   只观察新增节点（childList），我们改的是文字（characterData）→ 不会自触发死循环 */
+   ⚠️ 2026-10-30：原来只观察 childList。但 `el.textContent = 'x'` 改的是**已存在**的
+   文本节点时只触发 characterData，不触发 childList —— 页脚云同步状态就会漏翻。
+   加 characterData:true 后靠 busy 标志防重入；langWalk 内部只在 out !== raw 时才写回，
+   写出的是越南语（不含中文 key），再扫一次不会再变 → 自然收敛，不会死循环。 */
 (function(){
   if (typeof MutationObserver === 'undefined') return;
-  let busy = false;
+  let busy = false, again = false;
   new MutationObserver(() => {
-    if (busy || LANG !== 'vi') return;
+    if (LANG !== 'vi') return;
+    if (busy){ again = true; return; }
     busy = true;
-    Promise.resolve().then(() => { try { langWalk(document.body); } finally { busy = false; } });
-  }).observe(document.body, { childList:true, subtree:true });
+    Promise.resolve().then(() => {
+      try { langWalk(document.body); } finally {
+        busy = false;
+        if (again){ again = false; /* 只在真有后续变更时补一轮，最多一次 */ }
+      }
+    });
+  }).observe(document.body, { childList:true, subtree:true, characterData:true });
 })();
 
 /* ==================== 启动 ==================== */
@@ -1577,25 +1702,87 @@ $id('fTeacher').addEventListener('change', e => {
 });
 showTab('home');
 
-/* ★ 启动后拉云端（跟主端同一套）：只有云端比本地新才覆盖本地。
-   云端没有 / 拉失败 / 没网 → 静默，本地照常用。 */
-function cloudBootPull(){
+/* ==================== 启动拉云端（2026-10-30 · 多教师分片 · 第 3 步）====================
+   顺序：先拉 zhops/public（时段 + 课名 + 门槛）→ 再拉 zhops/<我的 id>（我这一份）。
+   —— 我的 id 从哪来：URL ?t=t3 优先，其次本机「我是谁」（zhops.teacher.self）。
+   —— 分片还不存在（主端没推过）→ 退回读 master 全量，页面照样能用。
+   —— 拉失败 / 没网 → 静默，本地照常用。 */
+function selfTid(){
+  try {
+    const q = new URLSearchParams(location.search).get('t');
+    if (q) return String(q);
+  } catch(e){}
+  try { return localStorage.getItem(SELF_KEY) || ''; } catch(e){ return ''; }
+}
+function pullPublic(cb){
+  fetch(fsUrlOf('zhops','public')).then(r => r.ok ? r.json() : null).then(raw => {
+    const p = raw && raw.fields ? fsDec(raw.fields.payload) : null;
+    if (!p){ if (cb) cb(false); return; }
+    let o = null; try { o = JSON.parse(p); } catch(e){ o = null; }
+    if (!o || typeof o !== 'object'){ if (cb) cb(false); return; }
+    PUB = {
+      slots: o.slots || [], catalog: o.catalog || [],
+      rooms: o.rooms || [], stages: o.stages || [], limits: o.limits || {},
+    };
+    if (PUB.slots.length) DB.slots = PUB.slots;
+    if (PUB.limits && PUB.limits.minOpen){
+      DB.set = Object.assign({}, DB.set, { minOpen: PUB.limits.minOpen, capMax: PUB.limits.capMax });
+    }
+    if (PUB.limits && PUB.limits.lessonMin) DB.lessonMin = PUB.limits.lessonMin;
+    if (cb) cb(true);
+  }).catch(() => { if (cb) cb(false); });
+}
+function pullSlice(tid, cb){
+  fetch(fsUrlOf('zhops', String(tid))).then(r => r.ok ? r.json() : null).then(raw => {
+    const p = raw && raw.fields ? fsDec(raw.fields.payload) : null;
+    const at = raw && raw.fields ? fsDec(raw.fields.at) : null;
+    if (!p){ if (cb) cb(false); return; }
+    /* ★ 云端没比本机新 → 不动本机。否则「离线点的名」会被一次切窗口的拉取抹掉 */
+    if (loadedFromStore && lastSavedAt && at && at <= lastSavedAt){ if (cb) cb(true); return; }
+    let o = null; try { o = JSON.parse(p); } catch(e){ o = null; }
+    if (!o || !o.teacher){ if (cb) cb(false); return; }
+    DB.teachers  = [Object.assign(blankTeacher(), o.teacher)];
+    DB.classes   = o.classes  || [];
+    DB.students  = o.students || [];
+    DB.lessons   = o.lessons  || [];
+    DB.absences  = o.absences || [];
+    DB.apps      = o.apps     || [];
+    if (cb) cb(true);
+  }).catch(() => { if (cb) cb(false); });
+}
+/* 兜底：分片还没生成时，读主端那份全量（试用期照常用） */
+function pullMaster(){
   fsPull((ok, payload, at) => {
     if (!ok || !payload) return;
-    if (loadedFromStore && lastSavedAt && at && at <= lastSavedAt) return;
     let o = null;
     try { o = JSON.parse(payload); } catch(e){ return; }
-    if (!o || typeof o !== 'object' || o.__app !== APP_TAG) return;
+    if (!o || typeof o !== 'object' || !appTagOk(o)) return;
     try {
       DB = normalizeDB(o);
       lastSavedAt = o.__at || at || new Date().toISOString();
       localStorage.setItem(KEY, payload);
       loadedFromStore = true;
       markSaved('loaded');
-      fillTeachers(); fillSlots(); syncRoom(); renderConfirm();
-      renderView(curTab); applyLang();
-      toast('☁︎ 已从云端载入');
+      afterPull('☁︎ 已从云端载入（全量 · 分片还没生成）');
     } catch(e){ /* 云端那份坏了 → 绝不动本地 */ }
+  });
+}
+function afterPull(msg){
+  fillTeachers(); fillSlots(); syncRoom(); renderConfirm();
+  renderView(curTab); applyLang();
+  if (msg) toast(msg);
+}
+function cloudBootPull(){
+  pullPublic(() => {
+    const tid = selfTid();
+    if (!tid){ pullMaster(); return; }
+    pullSlice(tid, ok => {
+      if (!ok){ pullMaster(); return; }
+      lastSavedAt = new Date().toISOString();
+      loadedFromStore = true;
+      markSaved('loaded');
+      afterPull('☁︎ 已载入我这一份');
+    });
   });
 }
 cloudBootPull();

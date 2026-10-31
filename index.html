@@ -278,6 +278,11 @@
             <div id="pCurri" class="m" style="font-size:11.5px;color:var(--hint);line-height:1.5;">课程体系：读取中…</div>
             <button class="mini" style="margin-top:5px;" onclick="syncCurri()">同步课程体系</button>
           </div></div>
+        <div class="row" style="align-items:flex-start;"><label class="m" style="width:80px;"></label>
+          <div style="flex:1;">
+            <button class="mini" onclick="cloudPreview()">云端只读预览</button>
+            <p class="hint2" style="margin:5px 0 0;">看教师端 / 管理端写进云端的数据，和本机逐项对比。<b>只读，不改云端也不改本机。</b></p>
+          </div></div>
         <div class="row"><label class="m" style="width:80px;">单次时长</label><input id="pMin2" type="number" min="5" onchange="setNum('minutes',this.value)"><span class="m">分钟</span></div>
         <div class="row"><label class="m" style="width:80px;">每周课次</label><input id="pWk" type="number" min="1" onchange="setNum('perWeek',this.value)"><span class="m">次</span></div>
         <div class="row"><label class="m" style="width:80px;">进度同步</label>
@@ -362,7 +367,7 @@ const BOARD_TABS = [
 /* ==================== 状态 ==================== */
 function blank(){
   return {
-    settings:{ minOpen:6, capMax:10, lessonsTotal:42, minutes:45, perWeek:2, sync:'level' },
+    settings:{ minOpen:4, capMax:13, lessonsTotal:42, minutes:45, perWeek:2, sync:'level' },
     members:[],                       /* 成员名单 —— 纯名单，只记 {id,name}（登录门已删）*/
     slots:[
       /* day / part 是 2026-10-01 新加的两个属性（Tony 定）——
@@ -376,6 +381,15 @@ function blank(){
     ],
     teachers:[], students:[], classes:[], applications:[],
     log:[],                           /* 推进课次的日志 {at,classId,lesson} —— 「今天 / 本月」结算靠它 */
+    /* ===== S1.2（2026-10-29 加）：事实表 =====
+       lessons  每条 = 一节课，带日期 / 状态 / 教师快照。能按月回看、能算缺勤。
+                字段形状对齐管理端 admin.html 的 DB.lessons（cid / no / date / status / ctch…），
+                这样 S1.3 推云时两边能直接对上，不用再翻译一次。
+       absences 每条 = 某班某课某人缺席 {sid,cid,no}。主端只做「接收 + 显示」，
+                登记入口在教师端 —— Tony 定的流程是「教师必须补上哪一位学生缺勤」。
+       ⚠️ 过渡期双写：log 和 lessons 同时写。log 留着让旧结算兜底，
+          lessons 是往后的唯一口径。S1.3 接云后推 lessons，log 才能退休。 */
+    lessons:[], absences:[],
     pickT:[], pickS:[],
     boardLevel:'L1',
     view:'board', selTeacher:'', selStudent:'',
@@ -390,6 +404,27 @@ function blank(){
    只有点教师板块右上角的「+ 添加教师」才会变 true。 */
 let leftOpen = false;
 let S = load();
+
+/* S1.2：一条 log 流水 → 一条 lesson 事实记录。
+   主端班级没有 mode / room 这两个字段（那是管理端的），这里就留空 —— 不编造。
+   at 保留毫秒时间戳：结算按时间窗筛，只有 date 字符串筛不了「本月」。 */
+function lessonFromLog(x, c, slots){
+  const d = new Date(x.at);
+  const p = n => (n < 10 ? '0' : '') + n;
+  const sl = (slots || []).filter(s => c && s.id === c.slotId)[0];
+  return {
+    id: (x.classId || '') + '#' + x.lesson,
+    cid: x.classId || '',
+    no: x.lesson,
+    at: x.at,
+    date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()),
+    time: sl ? sl.time : '',
+    status: 'done',
+    cname: c ? c.name : '',
+    clv: c ? c.level : '',
+    ctch: c ? c.teacherId : ''
+  };
+}
 
 function load(){
   try{
@@ -433,14 +468,30 @@ function load(){
       if(!s.day)  s.day  = 'weekday';
       if(!s.part) s.part = 'morning';
     });
+    /* 老数据迁移（2026-10-29 · S1.2）：把 log 流水展开成 lessons 事实表。
+       log 只记「哪天把哪个班推到第几课」，没有单节课的独立记录；
+       lessons 每条 = 一节课，带日期 / 状态，能按月回看、能挂缺勤。
+       ★ log 一条都不删 —— 旧结算逻辑还靠它兜底，删了就是把退路砍掉。 */
+    if(!Array.isArray(merged.lessons))  merged.lessons  = [];
+    if(!Array.isArray(merged.absences)) merged.absences = [];
+    if(!merged.lessons.length && Array.isArray(merged.log) && merged.log.length){
+      merged.log.forEach(x => {
+        const c = (merged.classes || []).filter(k => k.id === x.classId)[0];
+        merged.lessons.push(lessonFromLog(x, c, merged.slots));
+      });
+    }
     return merged;
   }catch(e){ return blank(); }
 }
 function save(){
   try{
+    const iso = new Date().toISOString();
+    S.__at = iso;                        /* S1.3：本机时间戳，防冲撞靠它比新旧 */
     const o = JSON.parse(JSON.stringify(S));
     delete o.pickT; delete o.pickS;
+    o.__at = iso;
     localStorage.setItem(KEY, JSON.stringify(o));
+    fsPushSoon();                        /* S1.3：写入开关没开时这里是空操作 */
   }catch(e){}
 }
 
@@ -733,6 +784,333 @@ function curriSync(){
     CURRI_SRC = 'cloud';
     return true;
   }).catch(() => { CURRI = CURRI_FALLBACK; CURRI_SRC = 'fallback'; return false; });
+}
+
+/* ==========================================================================
+   S1.1 · 云端只读预览（2026-10-29 加）
+   —— 目的：主端第一次能「看见」教师端 / 管理端写进 zhops/master 的真实数据，
+      为「两本账差多少」提供证据，再决定 S1.2 怎么改数据结构。
+   ★ 只读。本段没有任何 PATCH / POST / PUT —— 只能看，改不了云端一个字节。
+   ⚠️ 不要在这里加写入。主端接云是 S1.3，必须另配防冲撞机制（先读 at，比本机新就停）。
+   ========================================================================== */
+const CLOUD_DOC = 'zhops/master';
+
+/* 通用 GET：读一张 Firestore 文档，返回拆包后的 fields 对象。失败抛错。 */
+function fsGetDoc(path){
+  if(!FSCONF || !FSCONF.key) return Promise.reject(new Error('云端未配置'));
+  if(typeof fetch !== 'function') return Promise.reject(new Error('当前环境不支持 fetch'));
+  const url = 'https://firestore.googleapis.com/v1/projects/' + FSCONF.pid +
+    '/databases/(default)/documents/' + path + '?key=' + encodeURIComponent(FSCONF.key);
+  return fetch(url).then(r => {
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(raw => {
+    const o = {};
+    for(const [a,b] of Object.entries(raw.fields || {})) o[a] = fsDec(b);
+    return o;
+  });
+}
+/* 读 zhops/master 的 payload。
+   ⚠️ 教师端 / 管理端的 payload 是 **stringValue 里装 JSON**（fsPush 里 JSON.stringify），
+      不是 mapValue。所以先 fsDec 拿到字符串，再 JSON.parse。 */
+function fsGetMaster(){
+  return fsGetDoc(CLOUD_DOC).then(f => {
+    let p = f.payload;
+    if(typeof p === 'string') p = JSON.parse(p);
+    if(!p || typeof p !== 'object') throw new Error('payload 为空');
+    return { db:p, at:f.at || '', app:f.app || '', v:p.__v };
+  });
+}
+
+/* 条数：数组取长度，缺失返回 null（渲染成「—」，与 0 区分开 —— 0 是「有这个概念但没数据」，
+   null 是「主端根本没有这个概念」，两者含义完全不同，不能混成一个数）。 */
+function cvN(x){ return Array.isArray(x) ? x.length : (x == null ? null : 1); }
+function cvTxt(n){ return n === null ? '<span class="m">—</span>' : '<b>' + n + '</b>'; }
+function cvSlotTime(slots, name){
+  if(!Array.isArray(slots)) return '';
+  const s = slots.find(x => x && x.name === name);
+  return s ? (s.time || '') : '';
+}
+
+/* 面板本体 */
+function cloudPreview(){
+  openModal({
+    title:'云端只读预览 · zhops/master',
+    wide:true,
+    body:'<p class="hint2" id="cvWait">正在读取云端…</p><div id="cvBody"></div>',
+    foot:'<button class="mini" onclick="cloudPreview()">重读</button>' +
+         '<button class="mini ghost" onclick="closeModal()">关闭</button>'
+  });
+  fsGetMaster().then(r => {
+    const db = r.db;
+    /* 云端侧一律按数组算（云端载荷里缺这个键 = 一条都没有 = 0）；
+       主端侧缺失返回 null，渲染成「—」，表示「主端根本没有这个概念」。
+       这两者含义不同，不能混成一个数 —— 否则「主端记不了缺勤」这个事实会被 0 盖掉。 */
+    const cN = x => Array.isArray(x) ? x.length : 0;
+    const rows = [
+      ['教师',     cvN(S.teachers),     cN(db.teachers)],
+      ['学生',     cvN(S.students),     cN(db.students)],
+      ['班级',     cvN(S.classes),      cN(db.classes)],
+      ['开班申请', cvN(S.applications), cN(db.apps)],
+      ['课次记录', cvN(S.lessons),      cN(db.lessons)],
+      ['缺勤',     cvN(S.absences),     cN(db.absences)],
+      ['成员',     cvN(S.members),      cN(db.members)]
+    ];
+    let h = '<div class="m" style="font-size:11.5px;color:var(--hint);margin:0 0 10px;line-height:1.6;">' +
+      '云端推送时间 <b>' + (r.at || '—') + '</b> · 来源 <b>' + (r.app || '—') + '</b>' +
+      (r.v ? ' · 载荷版本 <b>v' + r.v + '</b>' : '') + '</div>';
+
+    h += '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr><th style="text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);color:var(--hint);font-weight:400;">项</th>' +
+      '<th style="text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);color:var(--hint);font-weight:400;">主端本机</th>' +
+      '<th style="text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);color:var(--hint);font-weight:400;">云端</th></tr>';
+    rows.forEach(x => {
+      h += '<tr><td style="padding:5px 6px;border-bottom:1px solid var(--line);">' + x[0] + '</td>' +
+           '<td style="padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;">' + cvTxt(x[1]) + '</td>' +
+           '<td style="padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;">' + cvTxt(x[2]) + '</td></tr>';
+    });
+    h += '</table>';
+
+    /* 口径差异 —— 这是 S1.2 真正要改的东西，光看条数不够 */
+    const myEvening = cvSlotTime(S.slots, '晚班');
+    const clEvening = cvSlotTime(db.slots, '晚班');
+    const mySet = S.settings || {}, clSet = db.set || {};
+    const diffs = [];
+    /* 两侧逐项对照：缺失也照实写「未设置」，不要因为一边没有就整条不显示 ——
+       一边缺本身就是最该看见的差异。 */
+    const pair = (label, a, b) => {
+      const A = (a === null || a === undefined || a === '') ? '<span class="m">未设置</span>' : '<b>' + a + '</b>';
+      const B = (b === null || b === undefined || b === '') ? '<span class="m">未设置</span>' : '<b>' + b + '</b>';
+      diffs.push(label + '：本机 ' + A + ' / 云端 ' + B);
+    };
+    pair('晚班时间', myEvening, clEvening);
+    pair('开班门槛', mySet.minOpen, clSet.minOpen);
+    pair('班额上限', mySet.capMax, clSet.capMax);
+    pair('单次时长', mySet.minutes, clSet.defaultLessonMin);
+    diffs.push('申请数据键名：本机 <b>applications</b> / 云端 <b>apps</b>');
+    diffs.push('记账模型：本机 <b>lessons 事实表</b>（S1.2 已升级，log 流水过渡期保留） / 云端 <b>lessons 事实表 + absences</b>');
+
+    h += '<div class="m" style="font-size:11.5px;color:var(--hint);margin:14px 0 5px;">口径差异（S1.2 要逐项对齐的清单）</div>' +
+      '<div style="font-size:12px;line-height:1.9;">';
+    diffs.forEach(d => { h += '<div>· ' + d + '</div>'; });
+    h += '</div>';
+
+    h += '<p class="hint2" style="margin-top:14px;">本面板<b>只读</b> —— 上面任何数字都不会写回云端，也不会改本机数据。</p>';
+
+    $('cvBody').innerHTML = h;
+    $('cvWait').style.display = 'none';
+  }).catch(e => {
+    $('cvWait').innerHTML = '<b>读取失败：</b>' + (e && e.message ? e.message : e) +
+      '<br><span class="m">常见原因：断网 / file:// 下浏览器拦跨域 / 该文档不存在。主端排课不受影响。</span>';
+  });
+}
+
+/* ==========================================================================
+   S1.3 · 主端接云同步（2026-10-30 加）—— 修断点 2
+   —— 目的：让排课系统和教师端 / 管理端读写同一份 zhops/master，不再靠手工搬。
+
+   ★ 三条硬规矩（缺一条就不许开写入）：
+     1) 白名单：只推 S13_PUSH_KEYS 里的键，绝不整份 PATCH。
+     2) 防冲撞：推之前先 GET 一次 at。云端 at 比本机 __at 新 → 停手，弹预览。
+     3) 空库不推：本机三类数据全空时一律不推 —— 防「误开一次就把云端清空」。
+   ⚠️ 写入开关 S13_WRITE_ENABLED 默认 false。
+      打开它之前必须先定一件事：这份 zhops/master 归谁写（见下方 __app 说明）。
+   ========================================================================== */
+
+/* 主端推云的白名单。不在这个名单里的键，一个字都不上传。
+   ⚠️ 2026-10-30 故意不含 'settings'：
+      主端本机默认还是 minOpen:6 / capMax:10，而决策台账 ⑨ 已定「统一 4–13」。
+      现在推上去 = 用旧数字覆盖云端已对齐的配置。等主端参数改成 4/13 再放开。 */
+const S13_PUSH_KEYS = ['slots','teachers','students','classes','lessons','absences','applications','members'];
+
+/* ⚠️ 写入总开关。2026-10-30 打开 —— 前提已完成：
+      教师端 / 管理端的 load() 已改成「多来源认领」（APP_TAGS_OK 认 zhops.admin /
+      zhops.teacher / zhops.sched），主端用自己的标记写，它们也认得。 */
+const S13_WRITE_ENABLED = true;
+
+/* 云端认领标记 —— 主端写自己的名字。
+   教师端 / 管理端已放宽为多来源（2026-10-30 同步改），所以不会再整份忽略。
+   云端「来源」一栏会显示 zhops.sched，能看出这次是谁写的。 */
+const S13_APP = 'zhops.sched';
+
+/* 字段映射：只改名，不改含义。没把握的一律不映射，宁可缺也不编。 */
+function mapStuToCloud(s){
+  return {
+    id: s.id, name: s.name, own: 'own', source: s.source || 'referral',
+    lv: s.level || 'HSK1',                 /* 主端 level  → 云端 lv   */
+    contact: s.contact || '本人', phone: '', job: s.job || '学生',
+    grade: s.grade || '', goal: s.goal || 'both',
+    slots: Array.isArray(s.slots) ? s.slots : [],
+    cls: s.classId || '',                  /* 主端 classId → 云端 cls  */
+    joinedAt: '', intent: '', exam: {},
+    room: '', city: '', teacherId: s.teacherId || ''
+  };
+}
+function mapStuFromCloud(s){
+  return Object.assign({}, s, {
+    level: s.lv || s.level || 'HSK1',      /* 云端 lv   → 主端 level  */
+    classId: s.cls || null                 /* 云端 cls  → 主端 classId */
+  });
+}
+function mapClsToCloud(c){
+  /* ⚠️ 主端 class.studentIds 不推：云端是「学生挂 cls」的反向关系，
+      推过去会变成两份真相。学生那边推 cls 就够了。 */
+  return {
+    id: c.id, name: c.name, code: '', lv: c.level || 'HSK1',
+    mode: 'offline', slot: c.slotId || '', teacher: c.teacherId || '',
+    room: '', cap: cap(), startedAt: '', plannedLessons: totalLessons()
+  };
+}
+function mapClsFromCloud(c){
+  return Object.assign({}, c, {
+    level: c.lv || c.level || 'HSK1',
+    slotId: c.slot || c.slotId || '',
+    teacherId: c.teacher || c.teacherId || ''
+  });
+}
+
+/* 本机 → 云端载荷（只取白名单键） */
+function buildCloudPayload(){
+  const o = {};
+  if(S13_PUSH_KEYS.indexOf('settings') !== -1) o.set = {
+    minOpen: S.settings.minOpen, capMax: S.settings.capMax,
+    defaultLessonMin: S.settings.minutes, perWeek: S.settings.perWeek
+  };
+  if(S13_PUSH_KEYS.indexOf('slots') !== -1)     o.slots     = S.slots;
+  if(S13_PUSH_KEYS.indexOf('teachers') !== -1)  o.teachers  = S.teachers;
+  if(S13_PUSH_KEYS.indexOf('students') !== -1)  o.students  = S.students.map(mapStuToCloud);
+  if(S13_PUSH_KEYS.indexOf('classes') !== -1)   o.classes   = S.classes.map(mapClsToCloud);
+  if(S13_PUSH_KEYS.indexOf('lessons') !== -1)   o.lessons   = S.lessons || [];
+  if(S13_PUSH_KEYS.indexOf('absences') !== -1)  o.absences  = S.absences || [];
+  if(S13_PUSH_KEYS.indexOf('applications') !== -1) o.apps    = S.applications || [];  /* applications → apps */
+  if(S13_PUSH_KEYS.indexOf('members') !== -1)   o.members   = S.members;
+  return o;
+}
+
+/* 云端 → 本机（拉下来合并，只补空、不覆盖本机已有内容） */
+function applyCloudToLocal(db){
+  const n = { stu:0, cls:0, les:0, abs:0, app:0 };
+  if(Array.isArray(db.students)){
+    (db.students || []).forEach(cs => {
+      if(!cs || !cs.id) return;
+      if(S.students.some(x => x.id === cs.id)) return;
+      S.students.push(mapStuFromCloud(cs)); n.stu++;
+    });
+  }
+  if(Array.isArray(db.classes)){
+    (db.classes || []).forEach(cc => {
+      if(!cc || !cc.id) return;
+      if(S.classes.some(x => x.id === cc.id)) return;
+      const c = mapClsFromCloud(cc);
+      c.studentIds = (db.students || []).filter(s => s.cls === cc.id).map(s => s.id);
+      c.lesson = 0; c.src = 'own'; c.link = '';
+      S.classes.push(c); n.cls++;
+    });
+  }
+  if(Array.isArray(db.lessons)){
+    (db.lessons || []).forEach(l => {
+      if(!l || !l.id) return;
+      if(S.lessons.some(x => x.id === l.id)) return;
+      S.lessons.push(l); n.les++;
+    });
+  }
+  if(Array.isArray(db.absences)){
+    (db.absences || []).forEach(a => {
+      const k = (a && a.cid) + '#' + (a && a.no) + '#' + (a && a.sid);
+      if(S.absences.some(x => (x.cid + '#' + x.no + '#' + x.sid) === k)) return;
+      S.absences.push(a); n.abs++;
+    });
+  }
+  if(Array.isArray(db.apps)){
+    (db.apps || []).forEach(a => {
+      if(!a || !a.id) return;
+      if(S.applications.some(x => x.id === a.id)) return;
+      /* 云端申请形状和主端不完全一样 —— 原样保留，只补主端渲染必需的两个键，
+         缺的字段不编：渲染层拿不到就显示空，比编一个假名字强。 */
+      S.applications.push(Object.assign({}, a, {
+        status: a.status || 'pending',
+        via: 'cloud'
+      }));
+      n.app++;
+    });
+  }
+  return n;
+}
+
+/* 拉：启动时读一次。云端比本机新才合并，旧的不动。失败静默。 */
+function fsPullMain(cb){
+  if(!FSCONF || !FSCONF.key || typeof fetch !== 'function'){ if(cb) cb(false); return; }
+  fsGetMaster().then(r => {
+    const cloudAt = r.at || '';
+    const localAt = S.__at || '';
+    if(cloudAt && localAt && cloudAt <= localAt){ if(cb) cb(false, '本机较新，不合并'); return; }
+    const n = applyCloudToLocal(r.db);
+    const total = n.stu + n.cls + n.les + n.abs + n.app;
+    if(total > 0){ save(); render(); }
+    if(cb) cb(true, '云端 ' + cloudAt + ' · 新增 学生' + n.stu + ' 班' + n.cls +
+      ' 课次' + n.les + ' 缺勤' + n.abs + ' 申请' + n.app);
+  }).catch(e => { if(cb) cb(false, e && e.message ? e.message : String(e)); });
+}
+
+/* 合并数组：云端有的先留着，本机同 id 的替换，本机多出来的追加。
+   ★ 这条是「不做整份 PATCH」的真正落实 —— 云端有、本机没有的行一律保留，
+     不会被主端一次推送抹掉。代价：主端删掉的东西同步不出去（删除靠人手工处理）。 */
+function mergeArr(cloudArr, localArr, keyFn){
+  const out = Array.isArray(cloudArr) ? cloudArr.slice() : [];
+  const idx = {};
+  out.forEach((x, i) => { const k = keyFn(x); if(k) idx[k] = i; });
+  (localArr || []).forEach(x => {
+    const k = keyFn(x);
+    if(k && idx[k] !== undefined) out[idx[k]] = x;
+    else out.push(x);
+  });
+  return out;
+}
+
+/* 推：受三重保护。 */
+let s13Timer = null;
+function fsPushMain(cb){
+  if(!S13_WRITE_ENABLED){ if(cb) cb(false, '写入未开启'); return; }
+  /* 空库不推 —— 防误开一次把云端清空 */
+  if(!S.teachers.length && !S.students.length && !S.classes.length){
+    if(cb) cb(false, '本机三类数据全空，拒绝推送'); return;
+  }
+  fsGetMaster().then(r => {
+    const cloudAt = r.at || '';
+    const localAt = S.__at || '';
+    if(cloudAt && localAt && cloudAt > localAt){
+      toast('云端比本机新，已停手 —— 先看「云端只读预览」');
+      if(cb) cb(false, '云端较新，停手');
+      return;
+    }
+    const iso = new Date().toISOString();
+    const cl = r.db || {};
+    const o = buildCloudPayload();
+    /* ★ 逐表合并，不整份覆盖：云端有、本机没有的行原样留着。 */
+    o.teachers = mergeArr(cl.teachers, o.teachers, x => x && x.id);
+    o.students = mergeArr(cl.students, o.students, x => x && x.id);
+    o.classes  = mergeArr(cl.classes,  o.classes,  x => x && x.id);
+    o.lessons  = mergeArr(cl.lessons,  o.lessons,  x => x && x.id);
+    o.absences = mergeArr(cl.absences, o.absences, x => (x && x.cid) + '#' + (x && x.no) + '#' + (x && x.sid));
+    o.apps     = mergeArr(cl.apps,     o.apps,     x => x && x.id);
+    o.__app = S13_APP; o.__v = 1; o.__at = iso;
+    const body = { fields: {
+      payload:{ stringValue: JSON.stringify(o) },
+      at:     { stringValue: iso },
+      app:    { stringValue: S13_APP }
+    }};
+    const url = 'https://firestore.googleapis.com/v1/projects/' + FSCONF.pid +
+      '/databases/(default)/documents/' + CLOUD_DOC + '?key=' + encodeURIComponent(FSCONF.key);
+    return fetch(url, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
+      .then(x => { if(!x.ok) throw new Error('HTTP ' + x.status); return x.json(); })
+      .then(() => { S.__at = iso; if(cb) cb(true, iso); })
+      .catch(e => { if(cb) cb(false, e.message); });
+  }).catch(e => { if(cb) cb(false, e.message); });
+}
+function fsPushSoon(){                       /* 本地存好后延迟推，避免连点刷爆 */
+  if(!S13_WRITE_ENABLED) return;
+  if(s13Timer) clearTimeout(s13Timer);
+  s13Timer = setTimeout(() => { s13Timer = null; fsPushMain(); }, 1500);
 }
 
 /* 按进度与每周课次估算结课周数 */
@@ -1661,10 +2039,14 @@ function settleRows(){
     return { c, t, n, rate, unit, total: unit * c.lesson };
   });
 }
-/* 把「推进课次」的日志按起始时间聚合成本期收入 / 成本 */
+/* 把「推进课次」的日志按起始时间聚合成本期收入 / 成本
+   S1.2（2026-10-29）：优先按 lessons 事实表算 —— 一条记录就是一节课，比流水精确。
+   没有 lessons 才退回 log（旧数据没迁移完时不能算不出钱）。两套算出来的口径完全一致。 */
 function settleWindow(since){
-  const hit = (S.log || []).filter(x => x.at >= since);
-  const cnt = {}; hit.forEach(x => { cnt[x.classId] = (cnt[x.classId] || 0) + 1; });
+  const cids = (S.lessons && S.lessons.length)
+    ? S.lessons.filter(x => x.at >= since).map(x => x.cid)
+    : (S.log || []).filter(x => x.at >= since).map(x => x.classId);
+  const cnt = {}; cids.forEach(cid => { cnt[cid] = (cnt[cid] || 0) + 1; });
   let inc = 0, cst = 0, n = 0;
   Object.keys(cnt).forEach(cid => {
     const c = cls(cid); if(!c) return;
@@ -2057,11 +2439,15 @@ function advance(id){
   render(); toast('已推进：' + scope.map(x => x.name).join('、'));
 }
 /* 推进课次时记一条日志 —— 「今天利润 / 总月季」两个区域靠它算。
-   只留最近 2000 条，避免 localStorage 无限膨胀。 */
+   只留最近 2000 条，避免 localStorage 无限膨胀。
+   S1.2（2026-10-29）：同一时刻再写一条 lesson 事实记录。过渡期双写，理由见 blank()。 */
 function logLesson(c, at){
   if(!S.log) S.log = [];
   S.log.push({ at: at, classId: c.id, lesson: c.lesson });
   if(S.log.length > 2000) S.log = S.log.slice(-2000);
+  if(!Array.isArray(S.lessons)) S.lessons = [];
+  S.lessons.push(lessonFromLog({at:at, classId:c.id, lesson:c.lesson}, c, S.slots));
+  if(S.lessons.length > 5000) S.lessons = S.lessons.slice(-5000);
 }
 /* 视讯链接已并入「改班级」表单，这里不再单独开 prompt 入口 */
 
@@ -2626,7 +3012,9 @@ function renderData(){
     ['班级', S.classes.length + ' 个'],
     ['申请', S.applications.length + ' 条（待审 ' + S.applications.filter(a => a.status === 'pending').length + '）'],
     ['成员', S.members.length + ' 位（名单）'],
-    ['课时日志', (S.log || []).length + ' 条'],
+    ['课次事实', (S.lessons || []).length + ' 条（每节课一条 · S1.2 事实表）'],
+    ['缺勤', (S.absences || []).length + ' 条（教师端登记）'],
+    ['课时日志', (S.log || []).length + ' 条（旧流水，过渡期保留）'],
     ['占用体积', (raw.length / 1024).toFixed(1) + ' KB']
   ];
   $('main').innerHTML =
@@ -2815,6 +3203,10 @@ render();
 curriSync().then(ok => {
   if(ok && $('mask').style.display !== 'flex') render();
 });
+
+/* S1.3：启动时拉一次 zhops/master。云端较新才合并，失败静默 ——
+   断网 / file:// 下排课照常，不许因为云的事卡住首屏。 */
+fsPullMain(msg => { if(msg) console.log('[S1.3 pull]', msg); });
 </script>
 </body>
 </html>
