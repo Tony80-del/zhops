@@ -254,7 +254,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <div class="day-panel" data-day="2026-10-31">
     <div class="card">
-      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 11 · 等验收 1 · 待打磨 1</span><span class="sp"></span>
+      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 12 · 等验收 1 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -421,10 +421,21 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-74</td>
               <td><b>人事加「预支 / 其他扣款 / 补发」模块</b><br><span style="color:#8899aa;font-size:12px">「预支薪水、社保、其他的都在人事部管；财务部只负责出钱，核对总数即可」</span></td>
               <td class="nw">人事</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">10-31</td>
-              <td class="mono nw">—</td>
-              <td>现在单据实发 = 应发 − 社保个人 − 个税，<b>没有预支、没有其他扣款</b>。<br>
+              <td class="mono nw">11-01</td>
+              <td><b>做法（11-01）</b>：新增「7 预支与调整」板块（原 7 培训及之后顺延一位），两种表：上面<b>登记</b>（人 / 类型 / 归属月份 / 金额 / 发生日 / 事由），下面<b>余额与勾选</b>（每人预支余额、本月自动扣多少、可勾的扣款补发）。<br>
+              <b>三种类型</b>：<span class="mono">advance</span> 预支 —— 生成汇总时<b>自动全额抵扣</b>；<span class="mono">deduct</span> 其他扣款 / <span class="mono">bonus</span> 补发 —— <b>要勾才生效</b>。<br>
+              <b>★ 为什么扣款和补发不自动</b>：「迟到罚款」和「8 月欠的课时补差」性质不同，自动带会把不属于这个月的账扣进来。是不是这个月的账，只有人知道。<br>
+              <b>★ 预支上限</b>：应发 500 万、欠 600 万 → <b>只扣 500 万</b>，剩余留到下月。扣成负数等于让人倒贴，绝不允许。<br>
+              <b>★ 防双扣</b>：社保和个税已经在实发里扣过一遍，加了任何调整项都<b>只算调整项本身</b>，不碰 <span class="mono">siEmp</span> / <span class="mono">pit</span>。探针专门验了「加 400 万扣款后社保、个税两栏纹丝不动」。<br>
+              <b>汇总表加三栏</b>：预支抵扣 / 其他扣款 / 补发（0 显示破折号，别让一屏 0 把真扣款埋掉），实发加粗，合计行同步。<br>
+              <b>勾选存在单据里</b>（<span class="mono">row.adjustIds</span>）→ 重新生成不用再勾一遍。<br>
+              <b>★ 探针抓出我自己写的两个 bug</b>：① <span class="mono">advRecovered</span> 读 <span class="mono">a.paid</span>，但<b>没有任何地方写这个字段</b> → 预支永远扣不完（10 月扣了 500 万，11 月还显示欠 600 万）；改成从已生成的单据里读 <span class="mono">row.adv</span>。② <span class="mono">advIssued</span> 只算「当月借的」，9 月借的到 10 月凭空消失；改成「该月及之前全部」。<br>
+              <b>探针</b> <span class="mono">check-p74-adjust.js</span> <b>28 条全绿</b>（run.sh ⑰）。反向控制：去掉预支上限 → 报红 3 条；sha256 确认逐字还原。<br>
+              <b>没做</b>：预支「分期还款计划」（现在一律当月扣完、扣不完留到下月，不能指定「分 3 个月还」）；财务侧单据<b>不显示</b>这三栏明细，只显示实发总数（按 Tony 定的「财务核对总数即可」）。<br>
+              <br><span style="color:#8899aa">— 以下为 10-31 立项时的原始说明 —</span><br>
+              现在单据实发 = 应发 − 社保个人 − 个税，<b>没有预支、没有其他扣款</b>。<br>
               要建：预支记录（谁 / 哪天 / 多少钱 / 理由）、其他扣款与补发记录、生成汇总时自动带上、单据多几栏让人看得清。<br>
               <b>为什么放人事</b>：财务只读单据、只批、只付，不改数字。人事把预支扣完得出实发，财务照着付 —— 以后加任何扣款项，都只动人事，财务一个字不用改。<br>
               <b>提醒</b>：社保和个税已经在实发里扣过，付款环节不能再扣一次（防双扣）。</td>

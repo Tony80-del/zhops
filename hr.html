@@ -454,12 +454,13 @@ table.fmt td.bad{color:var(--neg)}
       <button data-v="social"><span class="k">4</span>社保与个税</button>
       <button data-v="leave"><span class="k">5</span>考勤与假勤</button>
       <button data-v="payroll"><span class="k">6</span>薪酬发放</button>
-      <button data-v="train"><span class="k">7</span>培训与培养</button>
-      <button data-v="policy"><span class="k">8</span>制度库</button>
+      <button data-v="adjust"><span class="k">7</span>预支与调整</button>
+      <button data-v="train"><span class="k">8</span>培训与培养</button>
+      <button data-v="policy"><span class="k">9</span>制度库</button>
     </nav>
     <div class="grp">设置</div>
     <nav class="nav" id="nav2">
-      <button data-v="config"><span class="k">9</span>配置</button>
+      <button data-v="config"><span class="k">10</span>配置</button>
     </nav>
     <div class="sidefoot">
       左侧点板块，右侧内容直接换，不刷新。<br>
@@ -793,7 +794,9 @@ table.fmt td.bad{color:var(--neg)}
             <th style="width:96px">底薪</th>
             <th style="width:64px">课时</th><th style="width:100px">单价</th><th style="width:104px">课时费</th>
             <th style="width:112px">应发</th><th style="width:96px">社保个人</th>
-            <th style="width:88px">个税</th><th style="width:112px">实发</th>
+            <th style="width:88px">个税</th>
+            <th style="width:96px">预支抵扣</th><th style="width:92px">其他扣款</th><th style="width:88px">补发</th>
+            <th style="width:112px">实发</th>
             <th style="width:150px">备注</th>
           </tr></thead>
           <tbody id="tb-sum"></tbody>
@@ -802,6 +805,9 @@ table.fmt td.bad{color:var(--neg)}
             <td class="num" id="sumGross2">0</td>
             <td class="num" id="sumSi2">0</td>
             <td class="num" id="sumPit2">0</td>
+            <td class="num" id="sumAdv2">0</td>
+            <td class="num" id="sumDed2">0</td>
+            <td class="num" id="sumBon2">0</td>
             <td class="num" id="sumNet2">0</td>
             <td></td>
           </tr></tfoot>
@@ -849,7 +855,72 @@ table.fmt td.bad{color:var(--neg)}
       </div>
     </section>
 
-    <!-- ================= 7 培训与培养 ================= -->
+    <!-- ================= 7 预支与调整（P-74 · 2026-11-01） ================= -->
+    <section class="view" id="v-adjust">
+      <div class="phead">
+        <div class="pnum">7</div>
+        <div><div class="ptitle">预支 · 其他扣款 · 补发</div><div class="psub">人事管扣款口径，财务只出钱、核对总数</div></div>
+      </div>
+      <div class="pnote">
+        <b>为什么全在人事</b>：财务<b>只读单据、只批、只付，不改数字</b>。人事把预支扣完得出实发，财务照着付 ——
+        以后加任何扣款项，<b>都只动人事，财务一个字不用改</b>。<br>
+        <b>三种类型</b>：
+        <span class="tag partial">预支</span> 先发后扣，生成汇总时<b>自动全额抵扣当月</b>（借了就按月扣）；
+        <span class="tag partial">其他扣款</span> 迟到罚款 / 赔偿 / 分期还款，<b>要勾</b>才扣；
+        <span class="tag partial">补发</span> 欠薪补差 / 奖励，<b>要勾</b>才加。<br>
+        <b>为什么扣款和补发不自动</b>：「迟到罚款」和「8 月欠的课时补差」性质不同，自动带会把不属于这个月的账扣进来 ——
+        是不是这个月的账，只有人知道。<br>
+        ⚠️ <b>社保和个税已经在实发里扣过一遍</b>，付款环节不能再扣第二次（防双扣）。这一页只算调整项，不碰它们。
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>登记</h3><span class="sp"></span>
+          <span class="tag pending" id="adjCount">0 条</span>
+          <button class="mini" id="addAdj">+ 加一条</button>
+        </div>
+        <div class="tw">
+        <table class="grid">
+          <thead><tr>
+            <th style="width:120px">姓名</th><th style="width:96px">类型</th>
+            <th style="width:100px">归属月份</th><th style="width:120px">金额</th>
+            <th style="width:128px">发生日</th><th>事由</th>
+            <th style="width:112px">本月已扣</th><th style="width:40px"></th>
+          </tr></thead>
+          <tbody id="tb-adj"></tbody>
+        </table>
+        </div>
+        <p class="sm mu" style="margin:9px 0 0">
+          <b>归属月份</b> = 这笔钱算在哪个月的账上（不是发生的日子）。10 月 20 日预支 11 月的生活费，
+          归属月份填 <code>2026-11</code>，就在 11 月那张单子上扣。
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>余额与勾选 · <span id="adjMonthTx">2026-10</span></h3><span class="sp"></span>
+          <span class="sm mu">这个月生成汇总时，会自动带上的调整项</span>
+        </div>
+        <div class="tw">
+        <table class="grid">
+          <thead><tr>
+            <th style="width:120px">姓名</th>
+            <th style="width:132px">预支余额</th>
+            <th style="width:132px">本月自动扣预支</th>
+            <th>本月扣款 / 补发（勾选后才生效）</th>
+          </tr></thead>
+          <tbody id="tb-adjm"></tbody>
+        </table>
+        </div>
+        <p class="sm mu" style="margin:9px 0 0">
+          <b>预支余额</b> = 至今借的 − 之前各月已扣的。<b>本月自动扣预支</b> 受「应发不能扣成负数」限制 ——
+          应发 500 万、欠 600 万，这个月只扣 500 万，剩下留到下个月，不许让人倒贴。<br>
+          余额是预估值的（按合同 + 排课算），点「薪酬发放 › 生成」之后以单据上的数为准。
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= 8 培训与培养 ================= -->
     <section class="view" id="v-train">
       <div class="phead">
         <div class="pnum">7</div>
@@ -1001,9 +1072,9 @@ var KEY = 'zhops.hr.v1';
 var TKEY = 'zhops.hr.theme';
 var THEMES = ['ivory','mint','paper','slate','deep','jade','graphite','sand','violet'];
 var NAMES = {guide:'使用说明',emp:'员工花名册',contract:'合同',doc:'证件资质',social:'社保与个税',
-             leave:'考勤与假勤',payroll:'薪酬发放',train:'培训与培养',policy:'制度库',config:'配置',
+             leave:'考勤与假勤',payroll:'薪酬发放',adjust:'预支与调整',train:'培训与培养',policy:'制度库',config:'配置',
              file:'人事档案'};   /* file 不在侧栏里，只能从花名册点进去 */
-var ORDER = ['guide','emp','contract','doc','social','leave','payroll','train','policy','config'];
+var ORDER = ['guide','emp','contract','doc','social','leave','payroll','adjust','train','policy','config'];
 
 /* ================= 数据结构 ================= */
 function blank(){
@@ -1055,6 +1126,20 @@ function demo(){
       {name:'教师课时费与结算制度', ver:'v1.2', status:'已发布', owner:'陈氏香', eff:'2026-01-01', note:'按班结算，含社保分摊'},
       {name:'员工考勤与请假制度',   ver:'v1.0', status:'已发布', owner:'陈氏香', eff:'2025-01-01', note:''},
       {name:'助教培养与转正标准',   ver:'v0.3', status:'草稿',   owner:'阮氏兰', eff:'',           note:'待讨论'}
+    ],
+    /* ★ 2026-11-01（P-74）：预支 / 其他扣款 / 补发。
+       一条 = 一笔调整，三种 kind：
+         advance  预支（先发后扣）—— 生成汇总时**自动全额抵扣**当月的
+         deduct   其他扣款（迟到罚款 / 赔偿 / 借款分期…）—— 生成时**手工勾选**要不要扣
+         bonus    补发（欠薪补差 / 奖励）—— 生成时**手工勾选**
+       ⚠️ 为什么不自动扣 deduct / bonus：
+          「迟到罚款」和「8 月欠的课时补差」性质不同，自动扣会扣错月份。
+          是不是这个月的账，只有人知道 —— 所以由人勾。预支例外（借了就按月扣，天经地义）。
+       金额一律存成字符串（跟合同 salary / rate 一个习惯，避免浮点）。 */
+    adjust:[
+      {id:'ad1', eid:'e1', kind:'advance', month:'2026-10', amount:'3000000', date:'2026-10-03', reason:'家里急用，约定 10、11 月各扣一半', done:'', note:''},
+      {id:'ad2', eid:'e3', kind:'deduct',  month:'2026-10', amount:'200000',  date:'2026-10-15', reason:'迟到 2 次（10/8、10/14）',        done:'', note:''},
+      {id:'ad3', eid:'e2', kind:'deduct',  month:'2026-11', amount:'3000000', date:'2026-10-20', reason:'预支 11 月生活费',               done:'', note:''}
     ],
     summary:[]
   };
@@ -1242,6 +1327,90 @@ function lessonsOf(tid, month){
   return n;
 }
 
+/* ================= 预支 / 其他扣款 / 补发（2026-11-01 · P-74） =================
+   Tony 定的分工：**预支、社保、其他的都在人事部管；财务部只负责出钱，核对总数即可**。
+   所以这三个口子全在人事，财务只读单据 —— 以后加任何扣款项都只动人事，财务一个字不用改。
+
+   三种 kind：
+     advance  预支 —— 生成汇总时**自动全额**抵扣该月（借了就按月扣，天经地义）
+     deduct   其他扣款 —— 生成时**要人勾**才扣（迟到罚款 / 赔偿 / 分期还款）
+     bonus    补发 —— 生成时**要人勾**才加（欠薪补差 / 奖励）
+   ⚠️ 为什么 deduct / bonus 不自动：
+     「迟到罚款」和「8 月欠的课时补差」性质不同，自动带会把不属于这个月的账扣进来。
+     是不是这个月的账，只有人知道。
+
+   ★ 防双扣：社保个人 / 个税已经在实发里扣过一遍，付款环节不能再扣第二次。
+     这里只算「调整项」，绝不碰 siEmp / pit。 */
+var ADJ_KIND = {
+  advance: { name:'预支',   sign:-1, auto:true  },
+  deduct:  { name:'其他扣款', sign:-1, auto:false },
+  bonus:   { name:'补发',   sign:+1, auto:false }
+};
+
+/* 截至某月（含当月）借出去多少预支。
+   ★ 2026-11-01（P-74 修正）：第一版写的是 a.month === month（只算当月借的），
+     于是「9 月借 300 万、10 月借 200 万」到 10 月算出来是 200 万，9 月那笔凭空消失。
+     正确口径：**该月及之前所有预支都要算** —— 后面月份还在欠。 */
+function advIssued(eid, month){
+  var n = 0;
+  S.adjust.forEach(function(a){
+    if(a.eid !== eid || a.kind !== 'advance') return;
+    if(String(a.month) > String(month)) return;
+    n += val(a.amount);
+  });
+  return n;
+}
+/* 某人某月已回收的预支 = 之前各月单据里实际扣掉的预支之和。
+   ★ 2026-11-01（P-74 修正）：第一版读 a.paid，但**没有任何地方写这个字段** ——
+     结果预支永远扣不完（10 月扣了 500 万，11 月还显示欠 600 万）。
+     改成从已生成的单据里读：单据上 row.adv 就是那个月真扣掉的钱，这才是唯一可信来源。
+     没生成过单据的月份不计（说明那个月还没结算，钱还没真扣）。 */
+function advRecovered(eid, beforeMonth){
+  var n = 0;
+  (S.summary || []).forEach(function(d){
+    if(!d.month) return;
+    if(String(d.month) >= String(beforeMonth)) return;
+    (d.rows || []).forEach(function(r){
+      if(r.eid === eid) n += val(r.adv);
+    });
+  });
+  return n;
+}
+/* 某人某月欠着多少预支没还（截至这个月之前） */
+function advOutstanding(eid, month){
+  return Math.max(0, advIssued(eid, month) - advRecovered(eid, month));
+}
+
+/* 这个月要扣多少预支（受「应发不能扣成负数」限制）
+   —— 应发 500 万、欠 600 万，这个月最多只能扣 500 万，剩下留到下个月。
+      扣成负数等于让人倒贴钱，绝不允许。 */
+function advanceDeduction(eid, month, gross){
+  var owe = advOutstanding(eid, month);
+  if(owe <= 0) return 0;
+  return Math.min(owe, Math.max(0, gross));
+}
+
+/* 某人某月被勾选的 deduct / bonus（不是 advance —— advance 自动算） */
+function pickedAdjust(eid, month, picks){
+  var out = { deduct:0, bonus:0, ids:[] };
+  S.adjust.forEach(function(a){
+    if(a.eid !== eid || a.month !== month) return;
+    if(a.kind === 'advance') return;
+    if(!picks || picks.indexOf(a.id) === -1) return;
+    if(a.kind === 'deduct') out.deduct += val(a.amount);
+    if(a.kind === 'bonus')  out.bonus  += val(a.amount);
+    out.ids.push(a.id);
+  });
+  return out;
+}
+
+/* 本月自动勾上的：预支（必扣）+ 已勾的（存在单据里，重新生成时保留） */
+function defaultPicks(month, eid){
+  var d = sumDraft(month);
+  var row = d && (d.rows || []).filter(function(r){ return r.eid === eid; })[0];
+  return (row && Array.isArray(row.adjustIds)) ? row.adjustIds.slice() : [];
+}
+
 /* ================= 工资汇总（2026-10-31 · Phase 2） =================
    口径（Tony 定）：所有薪酬一律按合同价格。量来自排课，价来自合同。
    ★ 汇总表全只读 —— 个税归财务/代账，人事不在这里改数。
@@ -1276,10 +1445,13 @@ function sumRowsOf(month){
   return d && Array.isArray(d.rows) ? d.rows : [];
 }
 function sumTotals(rows){
-  var t = { gross:0, siEmp:0, pit:0, net:0 };
+  /* ★ 2026-11-01（P-74）：加三个调整项合计。老单据没有这些字段 → val() 给 0，不会 NaN。 */
+  var t = { gross:0, siEmp:0, pit:0, adv:0, deduct:0, bonus:0, net:0 };
   (rows || []).forEach(function(r){
     t.gross += val(r.gross); t.siEmp += val(r.siEmp);
-    t.pit += val(r.pit); t.net += val(r.net);
+    t.pit += val(r.pit);
+    t.adv += val(r.adv); t.deduct += val(r.deduct); t.bonus += val(r.bonus);
+    t.net += val(r.net);
   });
   return t;
 }
@@ -1327,6 +1499,15 @@ function genSum(month){
       ? Math.round(val(so.base) * val(S.cfg.siEmp) / 100)
       : 0;
     var pit = prev[e.id] ? val(prev[e.id].pit) : 0;
+
+    /* ★ 2026-11-01（P-74）：调整项 —— 预支（必扣） + 勾选的扣款 / 补发。
+       ⚠️ 顺序很重要：**先算应发，再扣预支** —— 预支上限受应发限制（不能扣成负数）。
+       ⚠️ 不碰 siEmp / pit：社保和个税已经在实发里扣过，这里再动就是双扣。 */
+    var picks = defaultPicks(month, e.id);
+    var pk = pickedAdjust(e.id, month, picks);
+    var adv = advanceDeduction(e.id, month, gross);
+    var net = gross - siEmp - pit - adv - pk.deduct + pk.bonus;
+
     rows.push({
       eid:e.id,
       tid:e.zhopsTid || '',      /* ★ 排课教师 ID —— 财务按这个对课时 */
@@ -1340,7 +1521,12 @@ function genSum(month){
       rate:rate,
       tch:tch,                   /* ★ 课时费小计 = lessons × rate */
       gross:gross,               /* 底薪 + 课时 */
-      siEmp:siEmp, pit:pit, net:gross - siEmp - pit,
+      siEmp:siEmp, pit:pit,
+      adv:adv,                   /* 本月扣的预支 */
+      deduct:pk.deduct,          /* 本月其他扣款 */
+      bonus:pk.bonus,            /* 本月补发 */
+      adjustIds:pk.ids,          /* 勾了哪几条 —— 重新生成时保留，不用再勾一遍 */
+      net:net,
       note: prev[e.id] ? (prev[e.id].note || '') : ''
     });
   });
@@ -1394,7 +1580,11 @@ function renderSum(){
         '<td class="num">'+money(r.gross)+'</td>'+
         '<td class="num">'+money(r.siEmp)+'</td>'+
         '<td class="num">'+money(r.pit)+'</td>'+
-        '<td class="num">'+money(r.net)+'</td>'+
+        /* ★ 2026-11-01（P-74）：三个调整项 —— 0 就显示破折号，别让一屏 0 把真扣款埋掉 */
+        '<td class="num">'+(val(r.adv) ? money(r.adv) : '—')+'</td>'+
+        '<td class="num">'+(val(r.deduct) ? money(r.deduct) : '—')+'</td>'+
+        '<td class="num">'+(val(r.bonus) ? money(r.bonus) : '—')+'</td>'+
+        '<td class="num"><b>'+money(r.net)+'</b></td>'+
         '<td class="sm mu">'+esc(r.note || (hasRate && !r.lessons ? '课时 0' : ''))+'</td>'+
       '</tr>';
     }).join('');
@@ -1402,7 +1592,9 @@ function renderSum(){
   var t = sumTotals(rows);
   var set = function(id, v){ var e = document.getElementById(id); if(e) e.textContent = money(v); };
   set('sumGross2', t.gross); set('sumSi2', t.siEmp);
-  set('sumPit2', t.pit);     set('sumNet2', t.net);
+  set('sumPit2', t.pit);
+  set('sumAdv2', t.adv || 0); set('sumDed2', t.deduct || 0); set('sumBon2', t.bonus || 0);
+  set('sumNet2', t.net);
 
   var d = sumDraft(SUM_MONTH);
   var st = document.getElementById('sumState');
@@ -1717,11 +1909,14 @@ function load(){
     var o = JSON.parse(raw);
     if(!o || typeof o !== 'object') return blank();
     var b = blank();
-    ['emp','contract','doc','social','leave','payroll','train','policy','summary'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    ['emp','contract','doc','social','leave','payroll','train','policy','summary','adjust'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
     b.cfg = Object.assign(b.cfg, o.cfg || {});
     b.emp = o.emp; b.contract = o.contract; b.doc = o.doc; b.social = o.social;
     b.leave = o.leave; b.payroll = o.payroll; b.train = o.train; b.policy = o.policy;
     b.summary = o.summary;
+    /* ★ 2026-11-01（P-74）：预支 / 其他扣款 / 补发。老数据没有这个键 → 空数组，
+       不会因为升级丢任何已有数据。 */
+    b.adjust = o.adjust;
     /* 迁移（2026-10-31 · Phase 2）：老合同没有计价方式 → 默认「月薪」。
        默认成课时费会让没有排课ID的人算出 0 元，比默认月薪更危险。 */
     b.contract.forEach(function(c){
@@ -2154,9 +2349,99 @@ function renderCfg(){
 
 function renderAll(){
   renderEmp(); renderCon(); renderDoc(); renderSoc();
-  renderLv(); renderPr(); renderTr(); renderPl(); renderCfg();
+  renderLv(); renderPr(); renderAdj(); renderTr(); renderPl(); renderCfg();
   renderSum();
   renderStatus();
+}
+
+/* ================= 渲染：预支与其他调整（P-74） ================= */
+function renderAdj(){
+  var tb = document.getElementById('tb-adj');
+  if(!tb) return;
+  /* ⚠️ 首次打开时页面先跑一轮 renderAll，那时 S 还是 blank() 的初始态；
+     老存盘里没有 adjust 键 —— 两种都可能让这里是 undefined。补一个空数组，
+     别让整个渲染链在第一次开机就抛。 */
+  if(!Array.isArray(S.adjust)) S.adjust = [];
+  if(!S.adjust.length){
+    tb.innerHTML = emptyRow(8, '还没有预支 / 扣款 / 补发记录 —— 点右上角「+ 加一条」');
+  } else {
+    tb.innerHTML = S.adjust.map(function(a, i){
+      var k = ADJ_KIND[a.kind] || ADJ_KIND.deduct;
+      /* 这个月实际扣了多少：预支看 advanceDeduction（受应发限制），其他看勾没勾 */
+      var paid = 0;
+      if(a.kind === 'advance'){
+        var d = sumDraft(a.month);
+        var row = d && (d.rows || []).filter(function(r){ return r.eid === a.eid; })[0];
+        paid = row ? val(row.adv) : '';
+      } else {
+        paid = '';
+      }
+      return '<tr data-i="'+i+'">'+
+        '<td><select data-k="adjust.'+i+'.eid">'+empOptions(a.eid)+'</select></td>'+
+        '<td><select data-k="adjust.'+i+'.kind">'+
+          Object.keys(ADJ_KIND).map(function(kk){
+            return '<option value="'+kk+'"'+(a.kind===kk?' selected':'')+'>'+ADJ_KIND[kk].name+'</option>';
+          }).join('')+
+        '</select></td>'+
+        '<td><input class="w-inv" data-k="adjust.'+i+'.month" value="'+esc(a.month)+'" placeholder="2026-10"></td>'+
+        '<td><input class="w-money num" data-k="adjust.'+i+'.amount" type="number" value="'+esc(a.amount)+'" placeholder="3000000"></td>'+
+        '<td><input class="w-date" data-k="adjust.'+i+'.date" type="date" value="'+esc(a.date)+'"></td>'+
+        '<td><input data-k="adjust.'+i+'.reason" value="'+esc(a.reason)+'" placeholder="家里急用 / 迟到 2 次"></td>'+
+        '<td class="num">'+(paid === '' ? '<span class="mu">—</span>' : money(paid))+'</td>'+
+        '<td><button class="mini" data-del="adjust" data-i="'+i+'" style="padding:2px 7px">×</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  document.getElementById('adjCount').textContent = S.adjust.length + ' 条';
+
+  /* 下半张表：每人本月的预支余额 + 可勾的扣款 / 补发 */
+  var m = SUM_MONTH;
+  var mt = document.getElementById('adjMonthTx');
+  if(mt) mt.textContent = m;
+  var tbm = document.getElementById('tb-adjm');
+  if(!tbm) return;
+  var live = S.emp.filter(function(e){ return e.status !== '离职'; });
+  if(!live.length){
+    tbm.innerHTML = emptyRow(4, '花名册里还没有在职员工');
+    return;
+  }
+  var picks0 = {};
+  var d0 = sumDraft(m);
+  (d0 && d0.rows || []).forEach(function(r){ picks0[r.eid] = r.adjustIds || []; });
+
+  tbm.innerHTML = live.map(function(e){
+    var gross = estimateGross(e, m);
+    var owe = advOutstanding(e.id, m);
+    var adv = advanceDeduction(e.id, m, gross);
+    /* 本月可勾的 deduct / bonus —— 只列这一位的、这个月的 */
+    var mine = S.adjust.filter(function(a){
+      return a.eid === e.id && a.month === m && a.kind !== 'advance';
+    });
+    var boxes = mine.length ? mine.map(function(a){
+      var on = (picks0[e.id] || []).indexOf(a.id) !== -1;
+      var k = ADJ_KIND[a.kind];
+      return '<label style="display:inline-flex;align-items:center;gap:5px;margin:2px 12px 2px 0;font-size:12.5px">'+
+        '<input type="checkbox" data-pick="'+e.id+'|'+a.id+'"'+(on?' checked':'')+'>'+
+        (k.sign < 0 ? '−' : '+') + money(val(a.amount)) +
+        ' <span class="mu">'+esc(a.reason || k.name)+'</span></label>';
+    }).join('') : '<span class="mu">本月没有可勾的扣款 / 补发</span>';
+    return '<tr>'+
+      '<td>'+esc(e.zh)+'</td>'+
+      '<td class="num">'+(owe > 0 ? money(owe) : '<span class="mu">—</span>')+'</td>'+
+      '<td class="num">'+(adv > 0 ? money(adv) : '<span class="mu">—</span>')+'</td>'+
+      '<td>'+boxes+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+/* 估算某人某月的应发（不生成单据，只看一眼）。
+   ★ 为什么不用 genSum 算：那会写数据。这里只读，算不出来的地方给 0，跟 genSum 口径一致。 */
+function estimateGross(e, month){
+  var c = contractOf(e.id, month);
+  if(!c) return 0;
+  var base = val(c.salary), rate = val(c.rate);
+  var les = lessonsOf(e.zhopsTid, month);
+  return base + les * rate;
 }
 
 /* ================= 状态条 / 导航提醒 ================= */
@@ -2273,6 +2558,9 @@ function delLabel(t, i){
   if(t === 'social')   return (empName(x.eid) || '—') + ' 的社保';
   if(t === 'leave')    return (x.year || '') + ' ' + (x.type || '假勤');
   if(t === 'payroll')  return (x.month || '') + ' 工资';
+  /* ★ 2026-11-01（P-74）：删除时把「是谁、哪种、多少钱」讲清楚 —— 光说「这条调整」认不出是哪个 */
+  if(t === 'adjust')   return (empName(x.eid) || '—') + ' ' + (x.month || '') + ' '
+                            + ((ADJ_KIND[x.kind] || {}).name || '调整') + ' ' + money(val(x.amount));
   if(t === 'train')    return x.title || '这条培训';
   if(t === 'policy')   return x.name || '这份制度';
   return '';
@@ -2701,6 +2989,11 @@ function refreshRow(tbl, i){
     if(cs[0]) cs[0].value = money(si);
     if(cs[2]) cs[2].value = money(gg-si-pit);
   }
+  /* ★ 2026-11-01（P-74）：改了调整项（谁 / 哪种 / 哪个月 / 多少钱）→ 下半张表
+     「预支余额 / 本月自动扣」要跟着变。这两格都是算出来的，不重算就一直是旧数。 */
+  if(tbl === 'adjust'){
+    renderAdj();
+  }
 }
 
 /* ================= 事件 ================= */
@@ -2854,6 +3147,42 @@ document.getElementById('addPr').addEventListener('click', function(){
   S.payroll.push({eid:S.emp.length?S.emp[0].id:'', month:today().slice(0,7), gross:'', pit:'0', paidOn:'', way:'银行转账', signed:'否', note:''});
   save(); renderPr();
 });
+/* ★ 2026-11-01（P-74）：预支 / 其他扣款 / 补发 —— 加一条 */
+document.getElementById('addAdj').addEventListener('click', function(){
+  var m = SUM_MONTH || today().slice(0, 7);
+  S.adjust.push({
+    id: 'ad' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    eid: S.emp.length ? S.emp[0].id : '',
+    kind: 'advance',
+    month: m,                 /* 默认就是正在看的月份 —— 十有八九是记当月的账 */
+    amount: '', date: today(), reason: '', paid: '', note: ''
+  });
+  save(); renderAdj();
+});
+/* 勾选扣款 / 补发 → 立刻写进当月单据草稿，生成汇总时带上。
+   ⚠️ 只动 adjustIds，不重算金额 —— 重算是「生成」按钮的事，
+      勾一下就重算会把用户手工改过的个税一起冲掉。 */
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if(!t || !t.getAttribute || !t.getAttribute('data-pick')) return;
+  var parts = String(t.getAttribute('data-pick')).split('|');
+  var eid = parts[0], aid = parts[1];
+  var m = SUM_MONTH;
+  var d = sumDraft(m);
+  if(!d){ toastish('先把 ' + m + ' 的工资汇总生成一次，再来勾选 —— 否则没有单据可挂。'); t.checked = !t.checked; return; }
+  var row = (d.rows || []).filter(function(r){ return r.eid === eid; })[0];
+  if(!row){ toastish('这个月没有 ' + eid + ' 的单据行（可能没合同或金额为 0）。'); t.checked = !t.checked; return; }
+  var ids = Array.isArray(row.adjustIds) ? row.adjustIds : (row.adjustIds = []);
+  var at = ids.indexOf(aid);
+  if(t.checked && at === -1) ids.push(aid);
+  if(!t.checked && at !== -1) ids.splice(at, 1);
+  /* 勾了就按新勾选重算这一行的调整项与实发（其余行不动） */
+  var pk = pickedAdjust(eid, m, ids);
+  row.deduct = pk.deduct;
+  row.bonus = pk.bonus;
+  row.net = val(row.gross) - val(row.siEmp) - val(row.pit) - val(row.adv) - pk.deduct + pk.bonus;
+  save(); renderSum(); renderAdj();
+});
 document.getElementById('addTr').addEventListener('click', function(){
   S.train.push({eid:S.emp.length?S.emp[0].id:'', title:'', kind:'助教培养', from:today(), to:'', result:'进行中', note:''});
   save(); renderTr();
@@ -2995,6 +3324,15 @@ if (typeof window !== 'undefined'){
     /* ★ 2026-11-01（P-73）：按「教师 × 市」拆课时 —— 探针要验分组口径 */
     lessonsByCity: lessonsByCity,
     cityBreakdown: cityBreakdown,
+    /* ★ 2026-11-01（P-74）：预支 / 扣款 / 补发的算法 —— 探针要验余额、上限、勾选口径 */
+    advanceDeduction: advanceDeduction,
+    advOutstanding: advOutstanding,
+    advIssued: advIssued,
+    advRecovered: advRecovered,
+    pickedAdjust: pickedAdjust,
+    defaultPicks: defaultPicks,
+    estimateGross: estimateGross,
+    ADJ_KIND: ADJ_KIND,
     contractOf: contractOf,
     genSum: genSum,
     sumDraft: sumDraft,
