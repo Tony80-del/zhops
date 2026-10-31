@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">4 行 · 已打磨 4</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">5 行 · 已打磨 5</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -245,6 +245,21 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               ④ <b>5 条历史探针（逻辑 / 事件 / 总览 / 课次 / 持久化）</b>：全部写死老 <span class="mono">seedDB</span> 的「8 师 / 18 生 / 5 班 / 8 申请」世界，而产品从 10-13 起空库起步，那个世界造不出来了。<b>退役</b>（文件保留、随时能单独跑），换成新建的 <span class="mono">check-admin-core.js</span> 59 条 —— 用产品自己的 <span class="mono">seedDemoClass()</span> 造世界，验现在真会发生的事：空库首次打开不崩不写盘 / 每个视图都能渲染且不漏注释 / 总览两个空态 / 一键演示班 / <b>跨月未结课 + 历史月进度不穿越</b> / <b>代课派生</b> / 存盘往返 / 不碰老系统 v2。<br>
               <b>反向控制</b>：改坏「代课派生」→ 报红 1；改坏「按月底算进度」→ 报红 2。每次都用 sha256 确认逐字还原。<br>
               <b>以后交付口径</b>：直接说「全套 15 通过 / 0 失败」，不用再分辨「这红是新的还是旧的」。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-80</td>
+              <td><b>交付验收压成一条命令 build/verify.sh</b><br><span style="color:#8899aa;font-size:12px">「以后每轮交付我手打的那七八条命令能压成一条」</span></td>
+              <td class="nw">工程 · 交付</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>为什么做</b>：以前每轮交付我手打七八条命令（跑探针 / 取 sha / 下载线上 / grep 复核），手工拼会漏项 —— 真漏过「只核了 admin，没核 hr」。<br>
+              <b>现在一条</b>：<span class="mono">sh build/verify.sh</span>（<b>104 秒全绿</b>）。四步：<br>
+              ① <b>探针</b> 全套 18 条，要求 0 失败；② <b>产物</b> <span class="mono">~/zhops/</span> 与 <span class="mono">docs/</span> 逐字比对（专抓「改了源文件没发布」）；③ <b>线上</b> 下载 8 个产物与本地逐字比对（Pages 有延迟，自动重试 6 次 × 12 秒）；④ <b>明细</b> 8 个产物的 sha 前缀。<br>
+              <b>三种跑法</b>：默认完整 · <span class="mono">--fast</span> 跳过线上（没网时）· <span class="mono">--no-probe</span> 只核 sha（改文案不跑探针）。<br>
+              <b>反向控制</b>：往 404.html 追加一行 → 报「源 ≠ 仓 ← 改了源文件没发布」；还原后 sha 逐字一致。<br>
+              <b>写脚本时踩的两个 sh 坑</b>：① <span class="mono">printf ... | while ... done</span> 里的 while 是子 shell，里面累加的计数出了循环就丢（第一次跑汇总说「0 项通过」，其实 8 个全对）；改成重定向吃列表。② <span class="mono">grep -c</span> 无匹配时退出码为 1，写 <span class="mono">|| echo 0</span> 会输出两行 → 计数变「0\n0」；统一包一个 <span class="mono">count()</span>。</td>
             </tr>
           </tbody>
         </table>
