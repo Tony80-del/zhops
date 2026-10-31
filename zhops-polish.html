@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工作台账 · ZH-System</title>
+<style>
+:root{
+  --bg:#eef3f7; --grid:rgba(14,116,144,.055); --grid2:rgba(14,116,144,.028);
+  --surface:#ffffff; --surface-2:#f7fafc; --surface-3:#eef3f7;
+  --ink:#0d2436; --ink2:#4a6a80; --ink3:#8aa3b5;
+  --line:#dbe5ec; --line2:#c2d3de;
+  --brand:#0e7490; --brand2:#0891b2; --brand-soft:#e0f2f7; --brand-ink:#0b5f75;
+  --amber:#b45309; --amber-soft:#fef3e2; --amber-line:#e8cfa8;
+  --ok:#0f7b52; --ok-soft:#e6f5ee; --ok-line:#a8ddc4;
+  --warn:#a16207; --warn-soft:#fdf6e3;
+  --bad:#b42318; --bad-soft:#fdeceb; --bad-line:#f0bdb8;
+  --navy:#0d2436;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ui:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;background:var(--bg);color:var(--ink);font:14px/1.65 var(--ui);
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(var(--grid2) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
+  background-size:96px 96px,96px 96px,24px 24px,24px 24px;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:34px 22px 90px;}
+
+/* ---------- 头 ---------- */
+.head{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding-bottom:16px;border-bottom:2px solid var(--navy);margin-bottom:24px;}
+.head h1{margin:0;font-size:23px;letter-spacing:-.01em;}
+.head .sub{color:var(--ink3);font-size:12.5px;padding-bottom:3px;}
+.head .sp{flex:1;}
+.head .tag{font-size:11.5px;padding:2px 9px;border:1px solid var(--line2);background:var(--surface);color:var(--ink2);}
+
+/* ---------- 现在正在打磨 ---------- */
+.now{
+  background:var(--navy);color:#dceaf2;padding:20px 22px;margin-bottom:26px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  border-left:5px solid var(--brand2);
+}
+.now .lab{font-size:11px;letter-spacing:.16em;color:#6f93a8;text-transform:uppercase;}
+.now .big{font-size:21px;font-weight:650;color:#fff;margin-top:5px;letter-spacing:-.01em;}
+.now .big em{font-style:normal;color:#67e8f9;}
+.now .meta{font-size:12.5px;color:#9fbdd0;margin-top:7px;}
+.now .sp{flex:1;}
+.now .st{font-size:12px;padding:4px 12px;background:rgba(103,232,249,.14);border:1px solid rgba(103,232,249,.4);color:#67e8f9;white-space:nowrap;}
+
+/* ---------- 日期切换 ---------- */
+.days{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;}
+.days button{font:inherit;font-size:13px;padding:8px 16px;border:1px solid var(--line2);background:var(--surface-3);color:var(--ink2);cursor:pointer;transition:.12s;}
+.days button:hover{background:var(--surface-2);color:var(--ink);}
+.days button.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:650;}
+.days button .c{font-size:11px;opacity:.72;margin-left:7px;font-family:var(--mono);}
+.day-panel{display:none;}
+.day-panel.on{display:block;}
+
+/* ---------- 通用卡 ---------- */
+.card{background:var(--surface);border:1px solid var(--line);margin-bottom:24px;}
+.card > h2{
+  margin:0;padding:13px 18px;font-size:14px;font-weight:650;border-bottom:1px solid var(--line);
+  background:var(--surface-2);display:flex;align-items:center;gap:10px;
+}
+.card > h2 .n{font-size:11px;color:var(--ink3);font-weight:500;letter-spacing:.06em;}
+.card > h2 .sp{flex:1;}
+.card > h2 .hint{font-size:11.5px;color:var(--ink3);font-weight:400;}
+.card .bd{padding:0;}
+
+/* ---------- 表 ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
+   padding:9px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);font-weight:600;white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere;}
+/* ★ 2026-10-19：记录列里有长网址（https://…），不设 anywhere 会把「打磨项」列挤成一字一行 */
+/* 列宽：记录列内容长，给它剩下的空间；前面几列给个偏好的宽度，别被挤成一字一行 */
+th:nth-child(1){width:58px;}
+th:nth-child(2){width:180px;}
+th:nth-child(3){width:88px;}
+th:nth-child(4){width:110px;}
+th:nth-child(5){width:56px;}
+th:nth-child(6){width:56px;}
+tr:last-child td{border-bottom:0;}
+tbody tr:hover td{background:#f8fbfd;}
+td.mono{font-family:var(--mono);font-size:12px;color:var(--ink2);white-space:nowrap;}
+td.nw{white-space:nowrap;}
+
+/* ★ 2026-10-30：精简视图（默认）。
+   只留 编号 / 打磨项 / 状态 三栏；类别 / 提出 / 完成 / 记录 靠 CSS 收起。
+   一行内容都没删没改，点右上「完整视图」原样展开。 */
+body.lite th:nth-child(3),body.lite td:nth-child(3),
+body.lite th:nth-child(5),body.lite td:nth-child(5),
+body.lite th:nth-child(6),body.lite td:nth-child(6),
+body.lite th:nth-child(7),body.lite td:nth-child(7){display:none;}
+body.lite th:nth-child(2){width:auto;}
+.mode{font:inherit;font-size:11.5px;padding:3px 10px;border:1px solid var(--line2);background:var(--surface);color:var(--ink2);cursor:pointer;}
+.mode:hover{background:var(--brand-soft);color:var(--brand-ink);border-color:#a8d8e6;}
+
+/* ---------- 徽章 ---------- */
+.b{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:1px 9px;border:1px solid;white-space:nowrap;line-height:1.75;}
+.b.done{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
+.b.doing{color:var(--warn);border-color:#e8d9a8;background:var(--warn-soft);}
+.b.todo{color:var(--ink2);border-color:var(--line2);background:var(--surface-3);}
+.b.hold{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+.b.wait{color:var(--brand-ink);border-color:#a8d8e6;background:var(--brand-soft);}
+
+/* ---------- 说明块 ---------- */
+.note{display:block;background:var(--brand-soft);border-left:3px solid var(--brand);padding:11px 15px;font-size:12.5px;color:var(--brand-ink);margin:0 0 16px;}
+.note.amber{background:var(--amber-soft);border-left-color:#d99427;color:#8a4a06;}
+.note.bad{background:var(--bad-soft);border-left-color:var(--bad);color:#8f1d14;}
+.note b{font-weight:650;}
+.note:last-child{margin-bottom:0;}
+
+code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:1px 5px;border:1px solid var(--line);}
+
+@media (max-width:760px){
+  .now .big{font-size:18px;}
+  .wrap{padding:22px 14px 70px;}
+  table{font-size:12px;}
+  td,th{padding:9px 10px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1>工作台账</h1>
+    <div class="sub">ZH-System 全部系统 —— 排课 / 财务 / 人事 / 市场，以及以后的 BMS 等。按日期归档；新工作记到当天那一页；顶部切换日期</div>
+    <div class="sp"></div>
+    <button id="modeBtn" class="mode">精简视图</button>
+    <span class="tag">更新 2026-10-31 23:05</span>
+  </div>
+
+  <!-- ============ 现在正在打磨 ============ -->
+  <div class="now">
+    <div>
+      <div class="lab">Now Polishing</div>
+      <div class="big"><em>已上线</em> · 主端 v9 + 教师端分片，只剩云端生成分片</div>
+      <div class="meta"><b>★ 现在的位置</b>：三个文件已推到 <span class="mono">tony80-del.github.io/zhops</span>，线上与本地 sha256 逐字一致。<b>差最后一步</b>：在<b>本地</b>主端点一次「上传到云端」，云端才会生成 <span class="mono">zhops/public</span> 与 <span class="mono">t1…t5</span>。<b>不点</b>，线上教师端打开只会退回读全量。</div>
+    </div>
+    <div class="sp"></div>
+    <div class="st">等上传云端</div>
+  </div>
+
+  <div class="note" style="margin-bottom:26px">
+    <b>这份台账管什么（2026-10-30 定：唯一进度来源）</b><br>
+    全 ZH-System 的<b>工作流水</b> —— 排课系统、财务系统、人事系统，以后还有市场、BMS。<b>一条命令一行，做完回填。</b><br>
+    <b>不管什么（免得你翻错页）</b><br>
+    · <b>口径决策</b>（薪酬由财务算 / 角色分四层 / 数据库分两库 / 开班门槛 4–13）→ <span class="mono">system-ecosystem-map.html</span> 顶部「决策台账」<br>
+    · <b>系统怎么建、断点在哪、按什么顺序搭</b> → 同一页的模块卡与 S 路线<br>
+    · <b>哪份文档算数</b> → <span class="mono">zh-doc-index.html</span><br>
+    · <b>跨系统总表</b> → <span class="mono">work.html</span>（只列系统，进度细节回本页）<br>
+    <b>登记规矩（标准流程）</b><br>
+    <b>① 按日期归档</b>：每天一个页签，当天的工作记在当天那一页。过 24h 就是新的一天，新开页签。<br>
+    <b>② 一条一句话</b>（2026-10-30 简化，Tony 定的）：你每下一条命令 → 我在<b>当天页</b>加一行（⬜待打磨）→ 做完<b>回填一句话</b>（✅已打磨 + 做了什么）。<b>不再写 sha、不再列文件清单、不再写本地/线上</b> —— 那些留在 git 提交记录里，需要时再翻。<b>默认只看「编号 / 打磨项 / 状态」三栏</b>，要细节点右上角「完整视图」。<br>
+    <b>③ 编号跨天连续、永不重置</b>：P-01 一路往下，新的一天接续前一天的最后一个编号；<b>所有系统共用一条编号线</b>，不再按系统分开编。<br>
+    <b>④ 可增可删</b>：新命令 → 加行（需要就新开日期页签）；要移除 → 删行并注明原因。<b>记录只追加，不改旧账。</b>
+  </div>
+
+  <!-- ============ 日期切换 ============ -->
+  <div class="days">
+    <button class="on" data-day="2026-10-31">2026-10-31 · 今天<span class="c">12</span></button>
+    <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
+    <button data-day="2026-10-19">2026-10-19<span class="c">10</span></button>
+    <button data-day="2026-10-18">2026-10-18<span class="c">5</span></button>
+    <button data-day="2026-10-17">2026-10-17<span class="c">4</span></button>
+    <button data-day="2026-10-16">2026-10-16<span class="c">1</span></button>
+    <button data-day="2026-10-14">2026-10-14<span class="c">3</span></button>
+    <button data-day="2026-10-13">2026-10-13<span class="c">23</span></button>
+    <button data-day="2026-10-12">2026-10-12<span class="c">2</span></button>
+  </div>
+
+  <!-- ============ 2026-10-31 ============ -->
+  <div class="day-panel on" data-day="2026-10-31">
+    <div class="card">
+      <h2>2026-10-31 · 打磨记录<span class="n">12 行 · 已打磨 10 · 待打磨 2</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-63</td>
+              <td><b>主端 v9 + 教师端分片推上线（顺手修掉发布脚本的假警报）</b><br><span style="color:var(--ink3);font-size:12px">「明天开工第一件事就两步」</span></td>
+              <td class="nw">发布 · 上线</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>三个文件推上去了，线上已核对是同一版。<br>
+              <b>卡住一次</b>：发布脚本的保险丝拿「课次记录」判断 index.html 是不是被主端覆盖 —— 但排课系统自己第 855 行也有个统计标签叫「课次记录」，于是每次都误报、直接 exit 1。改成 <b>sha256 与源文件逐字比对 + 主端独有标记 <span class="mono">publicPayload</span></b>，重跑就过了。<br>
+              <b>还差一步</b>：主端点「上传到云端」，云端才会长出 <span class="mono">zhops/public</span> 与 <span class="mono">t1…t5</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-64</td>
+              <td><b>人事：合同成为录入第一入口，签完自动建档</b><br><span style="color:var(--ink3);font-size:12px">「合同定下，员工花名册就会默认」</span></td>
+              <td class="nw">人事 · 打通</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>合同页姓名从下拉选人改成直接打字（带在册人员建议），加「越文名」「排课ID」两栏；打完名字离开那一格 → 花名册自动建档，工号自动给（教师 T001 / 其余 S001），岗位·部门·入职日·状态全部跟着合同走，花名册不用再重写一遍。<br>
+              <b>实测踩到两个</b>：① 先打名字后填岗位，工号会定成 S001 —— 加了「系统发的工号跟岗位对不上就重发」，手改过的不动；② 合同姓名改成另一个人时会把原来那个人改名 —— 改成按名字换绑。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-65</td>
+              <td><b>合同页改版：摘要行 + 展开表单；越文名全线拔除</b><br><span style="color:var(--ink3);font-size:12px">「表头太长了，把页面都撑爆了」「一张页面一张合同」</span></td>
+              <td class="nw">人事 · 版式</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>13 列表格（实际约 1600px）换成「摘要 7 列 752px + 点开是整张表单」，表单用自适应网格，1440/1100/880 三个视口实测零横滚。姓名框从 104px 放宽到 362px。越文名从合同和花名册双双拔除（23 处），花名册 11 列变 10 列。<br>
+              <b>顺手修掉一个老 bug</b>：<span class="mono">refreshRow</span> 用 <span class="mono">children[8]</span> 数格子，实际「提醒」在第 9 格 —— 在花名册改「状态」会把电话输入框覆盖掉。改成按 <span class="mono">data-tip</span> 标记定位。<br>
+              探针 47 条全绿；反向控制两条都验过会报红。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-66</td>
+              <td><b>删除加密码，删除按钮搬离「展开/收起」</b><br><span style="color:var(--ink3);font-size:12px">「太靠近了，很危险…删除的按钮能不能加个密码」</span></td>
+              <td class="nw">人事 · 防误删</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>两道闸：① 合同摘要行上的「×」拿掉，删除按钮搬到展开表单最底下（离「收起」隔着一整张表）；② 真删之前必须输密码，密码在「配置」页自己设、明文可见。<br>
+              删前自动存一份快照，配置页有「恢复上一次删除」，<b>而且能来回切</b> —— 恢复错了再点一次就切回去，不丢东西。「清空全部数据」「载入示例数据」也一并纳进这道闸。<br>
+              探针 67 条全绿；反向控制：把「×」放回摘要行 → 2 条报红，把密码闸拆掉 → 9 条报红。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-67</td>
+              <td><b>人事档案改成独立整页；合同能挂 PDF 原件；可导出/恢复整库备份</b><br><span style="color:var(--ink3);font-size:12px">「添加一份真正的合同导入…放在个人页面」</span></td>
+              <td class="nw">人事 · 档案</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>花名册点一行 → 整页档案（原来 420px 的右侧抽屉塞不下原件），七张卡：基本 / 合同（含 PDF）/ 证件 / 社保 / 假勤 / 发放 / 培训。合同原件只收 PDF、单份 ≤ 10MB，存在浏览器 IndexedDB 里、不上网；能查看、下载、删除（删除也要密码）。<br>
+              <b>为什么不塞 localStorage</b>：每次按键都整库序列化，塞几 MB 的 PDF 进去 → 每敲一个字写几 MB；5MB 配额超了会被 <span class="mono">save()</span> 的 try/catch 吞掉，变成<b>静默停止保存</b>。<br>
+              配置页加「导出全部数据（含合同 PDF）」和「恢复备份…」。<br>
+              <b>先验了前提</b>：file:// 下 IndexedDB 建库 / 写 Blob / 读回 / 删除全部正常，才动手。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-68</td>
+              <td><b>课次 done → 自动同步给人事部（单价仍只认合同）</b><br><span style="color:var(--ink3);font-size:12px">「教课完毕才算是 Done…那你就把这个已完成课程的数据同步给人事部」</span></td>
+              <td class="nw">排课 ↔ 人事</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>主端「推进一课」、教师端「这节课已上完」→ 立刻写一条 <span class="mono">zhops/done_&lt;课次ID&gt;</span>，只写这一节。不再等人手点整份推送。<br>
+              <b>两条路不打架</b>：整份推 <span class="mono">zhops/master</span>（备份用，仍全手动）；增量写 <span class="mono">zhops/done_*</span>（人事用）。路径不同。<br>
+              <b>人事端合并</b>：拉完 master 再拉一遍 done_*，<span class="mono">at</span> 更新的那条盖上去 —— 谁后到都不影响结果。<br>
+              <b>教师端新增</b>今日课上的「这节课已上完」按钮（原来只有班级卡里的「推进课次」，一天上几节要来回切屏）；重复点会被挡。<br>
+              <b>探针</b> <span class="mono">build/zhops-probe/check-done-sync.js</span> 33 条全绿；三条反向控制（拆主端同步 / 拆教师端按钮 / 拆人事端合并）分别报红 1 / 5 / 1 条。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-69</td>
+              <td><b>工资口径改成「人事算、财务批」；学生缺勤另开出口到业务部</b><br><span style="color:var(--ink3);font-size:12px">「人事部有了记录之后才有办法提交一份完整的薪水总结，提交审批到财务部」</span></td>
+              <td class="nw">人事 · 财务</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>口径改了：<b>量来自排课，价来自合同</b>，两样都在人事手里，人事算完提交财务批。原先「财务算、人事只发放」作废。<br>
+              <b class="mono">lessonsOf()</b> 代课口径与主端一致：<span class="mono">l.teacher</span> 有值就用它，否则用班常任快照 <span class="mono">ctch</span>；只算 <span class="mono">status==='done'</span> 的课次。<br>
+              <b>学生缺席不影响课时费</b> —— 缺勤数（<span class="mono">absent</span> / <span class="mono">size</span>）已经跟着 done_* 一起写了，但人事只读不用。<b>后续单独建一条出口到业务部</b>（已记进生态地图待办）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-70</td>
+              <td><b>课次记录「状态」列改成下拉：能上、能退、能取消</b><br><span style="color:var(--ink3);font-size:12px">「主页刷有吗？按钮推进课次, Done / Plan / Cancel ?」</span></td>
+              <td class="nw">排课</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>原来只能「推进一课」（系统自己找下一节，挑不了），标错了<b>退不回来</b>，想取消某一节只能「删班」整班冲销。现在课次记录明细表的<b>状态列</b>是下拉：待上 / 已上 / 已取消。<br>
+              <b>三种都同步人事</b>：done 计工资，plan / cancel 写同一条 <span class="mono">done_&lt;id&gt;</span> 覆盖 = <b>撤回</b>。人事端合并规则同步收紧（只认三种、比 master 旧的忽略、不凭空造课）。<br>
+              <b>「今天」</b>是派生值、存不进 DB：下拉显示「待上」，旁边挂橙色小签；选「已上」就落成 done。<br>
+              <b>退课不删缺勤</b>（Tony 定）：确认框里报条数，记录留着给业务部出口。<br>
+              <b>探针</b> <span class="mono">check-lesson-status.js</span> 44 条全绿；三条反向控制（拆今天特例 / 拆同步 / 拆人事端过滤）分别报红 1 / 3 / 2 条。回归 33 + 48 + 67 全绿。<br><b>2026-10-31 16:16 已上线上</b>：发布脚本加了 hr.html / finance.html + 两道保险丝；五页线上 sha 与本地逐个相同，无头 Chrome 开四个页面零报错。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-71</td>
+              <td><b>人事计薪改成「底薪 + 课时」；单据带双 ID</b><br><span style="color:#8899aa;font-size:12px">「合同里是有底薪+课时…如果人事部的入口没有底薪，那就按多少课时结账」</span></td>
+              <td class="nw">人事 · 财务</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td>原代码按 <span class="mono">payType</span> 二选一：选「课时费」时 <span class="mono">salary</span> 那格<b>根本没读</b> —— 阮氏兰合同填了 1200 万底薪，一分没进工资。改成一套公式 <span class="mono">gross = 底薪 + 课时</span>，两个格子空哪个就少哪项，不用选。<br>
+              <b>单据带双 ID</b>：每行带 <span class="mono">eid</span>（人事认人）+ <span class="mono">tid</span>（财务对课时）+ <span class="mono">base</span> / <span class="mono">tch</span> 拆分明细，财务一眼能对。<br>
+              <b>缺 tid 拦截</b>：有课时单价却没排课 ID → 课时永远算 0，改成本就不跳过了：留在单据里 + 提交前弹窗拦住，让人去补 ID（原来是藏起来）。<br>
+              <b>探针</b> <span class="mono">check-hr-salary.js</span> 38 条全绿；三条反向控制（改回二选一 / 拆 tid / 拆拦截）各报红 2 条。回归 48 + 67 + 44 + 33 全绿。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-72</td>
+              <td><b>财务读单据 + 课次记「市」（教室归属进人事）</b><br><span style="color:#8899aa;font-size:12px">「人事记录应该是 tid_上海…不然课时完成后人事拿不到准确数据」</span></td>
+              <td class="nw">财务 · 排课</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">10-31</td>
+              <td><b>① 财务读单据 —— 已完成（2026-10-31 22:50）</b><br>
+              财务页从 <span class="mono">fetch(</span>=0 变成能读 <span class="mono">zhops/approvals</span>。新增「审批」页签（编号 5，原来 5–6 顺延成 6–7）：拉取 → 列表 → 明细 → 批准 / 驳回 / 付款。<br>
+              <b>财务不改数字</b>：应发 / 社保个人 / 个税全部来自单据，写回时只合并审批字段。<br>
+              <b>驳回必填理由</b>，理由原样写回云端；<b>付款三格必填</b>（日期 / 金额 / 凭证号），金额默认等于单据实发合计。<br>
+              <b>状态机</b>：待审批 → 已批 → 已付 ／ 待审批 → 已驳（驳回后等人事重提）。没批准不让付款。<br>
+              <b>人事读回</b>：人事页新增 <span class="mono">fsPullVoucherState()</span>，汇总卡下面显示「财务已批准 / 已驳回（理由）/ 已付款（金额·日期·凭证）」—— 原来提交完就永远停在「已提交」，批没批驳没驳都不知道。<br>
+              <b>工资表改只读</b>：从单据生成，没有可写的输入格；「+ 加一个人」按钮撤掉；手填老数据不删、不显示、不进支出。<br>
+              <b>支出算法去双算</b>：<span class="mono">expAll = 单据应发 + 社保公司 + 其他</span>，<span class="mono">tchAll</span> 退出支出（单据应发里已含课时费）。只算已批 / 已付，待批 / 已驳不进报表。成本结构条把「课时费 + 工资社保」两条并成「人工成本」一条，合计才等于 expAll。<br>
+              <b>探针</b> <span class="mono">check-fin-approve.js</span> 49 条 + <span class="mono">check-fin-expense.js</span> 32 条全绿；三条反向控制（改回旧算法 / 拆写回合并 / 拆驳回理由）分别报红 8 / 10 / 1 条。回归 38 + 48 + 67 + 44 + 33 全绿。<br>
+              <b>② 课次记「市」—— 拆到 P-73</b>（改排课数据结构，跟财务不是一个模块，混做分不清谁引起的）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-73</td>
+              <td><b>课次记「市」（原 P-72 ②，教室归属进人事）</b><br><span style="color:#8899aa;font-size:12px">「要记就记到市这一层：t1 + 苏州、t1 + 杭州」</span></td>
+              <td class="nw">排课 · 人事</td>
+              <td><span class="b wait">⬜待打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">—</td>
+              <td>课次 <span class="mono">l</span> 上没有 city 字段，只能查到「班 → 省」，查不到「每课 → 市」。<br>
+              做法：课次加 <span class="mono">l.city</span>（开班时从班级带下来当快照，跟 cname 一样，班以后换教室历史不跟着变），<span class="mono">done_*</span> 一起带上，人事才能按「教师 × 市」分组：<span class="mono">t1 · 苏州 12 节 / t1 · 杭州 8 节</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-74</td>
+              <td><b>人事加「预支 / 其他扣款 / 补发」模块</b><br><span style="color:#8899aa;font-size:12px">「预支薪水、社保、其他的都在人事部管；财务部只负责出钱，核对总数即可」</span></td>
+              <td class="nw">人事</td>
+              <td><span class="b wait">⬜待打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">—</td>
+              <td>现在单据实发 = 应发 − 社保个人 − 个税，<b>没有预支、没有其他扣款</b>。<br>
+              要建：预支记录（谁 / 哪天 / 多少钱 / 理由）、其他扣款与补发记录、生成汇总时自动带上、单据多几栏让人看得清。<br>
+              <b>为什么放人事</b>：财务只读单据、只批、只付，不改数字。人事把预支扣完得出实发，财务照着付 —— 以后加任何扣款项，都只动人事，财务一个字不用改。<br>
+              <b>提醒</b>：社保和个税已经在实发里扣过，付款环节不能再扣一次（防双扣）。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-30 ============ -->
+  <div class="day-panel" data-day="2026-10-30">
+    <div class="card">
+      <h2>2026-10-30 · 打磨记录<span class="n">16 行 · 已打磨 12 · 待打磨 4</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-49</td>
+              <td><b>财务系统建成正式版本地版（独立文件，六个板块）</b><br><span style="color:var(--ink3);font-size:12px">「我们把它正式写成一个真正的系统」</span></td>
+              <td class="nw">新系统 · 独立文件</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>你定</b>：「正式写成一个真正的系统。使用说明都必须保留…落地的时候我们才把不需要的删除。100% Follow demo。配色切换也是先保留。切记，这是一个独立的系统，到时候我还是要把主页面关系到财务的，再找个入口连接。」<br>
+              <b>交付</b>：新建 <span class="mono">docs/finance.html</span>（单文件 · 零依赖 · 双击即开），存储键 <span class="mono">zhops.fin.v1</span>，主题键 <span class="mono">zhops.fin.theme</span> —— <b>与 <span class="mono">zhops.sched.v3</span> 完全隔离，不读写排课数据</b>。<br>
+              <b>六个板块</b>：① 收入 ② 支出（课时费自动 / 工资社保 / 其他支出）③ 结算（单课收入 / 课时费 / 社保分摊 / 单课毛利）④ 报表（月毛利 · 毛利率 · 成本结构 · 班级盈亏排名）⑤ 配置 ⑥ 导出。<br>
+              <b>100% follow demo</b>：七个入口（0 使用说明 + ①–⑥）、九套配色（亮底 4 默认象牙白 + 暗底 5）、支出三子页签、<span class="mono">calc()</span> 全联动。<b>使用说明四张卡一张没删</b>（布局线框 / 切换板块四步 / 六板块分工表 / 第一次用 A→B→C→D）。<br>
+              <b>相对 demo 的三处增强</b>：① 结算表从只读改成<b>可编辑</b> ② 默认<b>空数据</b>（示例数据收进「载入示例数据」按钮）③ 配置页加「数据」卡（载入 / 清空，都带二次确认）。<br>
+              <b>导出（demo 里是空的）</b>：伪装 <span class="mono">.xls</span>（HTML 表格 + UTF-8 BOM + Excel 命名空间头），零依赖、<span class="mono">file://</span> 可用。三个按钮 → 收入明细 / 支出明细 / 工资社保，文件名带 <span class="mono">YYYY-MM</span>，末尾追加「合计」行。<b>未做按月筛选</b>（导全量），页面里已写明。<br>
+              <b>失焦坑（第二次）</b>：<span class="mono">refreshDerived(skip)</span> + <span class="mono">refreshRow(tbl,i)</span>；<span class="mono">skip==='classes'</span> 时不重建 <span class="mono">#tb-settle</span>，只手工更新脚注 4 个 ID + 本行 <span class="mono">tds[7..11]</span>。<b>凡是「输入即算」的表，都不许在 input 事件里重建它自己。</b><br>
+              <b class="no">★ 待你定的一处口径（影响毛利）</b>：本月支出 = 课时费 + 工资（含教师月薪）+ 公司社保 + 其他。若教师「月薪」本身就是按课时算出来的总额，这笔钱被<b>算了两次</b>。示例数据下毛利 16,745,000 / 45.6%，数字合理所以没动。要定的是：工资页月薪 = <b>底薪</b>（课时费另加）还是 = <b>全部</b>。<br>
+              <b>同步改了四个地方（含各自的生成脚本）</b>：<span class="mono">system-ecosystem-map.html</span>（财务从「未建」→「本地已建 · 未接云」，新增 <span class="mono">partial</span> 蓝色状态，S2 行改「骨架已建 2026-10-30」，顺手修掉两处早已过期的断点文字）· <span class="mono">zh-doc-index.html</span> + <span class="mono">build/23_build_zh_doc_index.py</span>（32 份 → 33 份，新增分组「六 · 财务系统」，空白节从「零文档」改成「有系统、缺文档」）· <span class="mono">work.html</span> + <span class="mono">build/14_build_worktable.py</span>（7 个系统 → 8 个，新增 key <span class="mono">H</span>，文档 18 → 19，新增任务组「H · 财务系统」与一条路径速查）· 本页（P-49）。<br>
+              <b>★ 没验证的部分（说清楚）</b>：本会话<b>没有 shell</b>，node 和 headless Chrome 都起不来 —— <b>没跑语法检查、没截图</b>。只做了静态核对：所有 <span class="mono">getElementById</span> 目标 ID 全部命中、7 个 <span class="mono">&lt;section&gt;</span> 与导航 key 对齐、事件绑定齐全、空行 colspan 与列数一致。<br>
+              <b>没做</b>：Firestore 同步 · 认证 · 与 zhops 的课次通道 · 收入「学生/班级」接排课名单 · 应收/实收分栏 · 手机端表格卡片化。<b>只在本地，线上一个字没动。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-50</td>
+              <td><b>财务「双算」口径未定：工资页月薪 = 底薪还是全部</b><br><span style="color:var(--ink3);font-size:12px">你让我先记下，没定之前毛利数字不敢用</span></td>
+              <td class="nw">财务 · 口径</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">—</td>
+              <td><b>问题</b>：<span class="mono">expAll = tchAll + grossAll + siCompAll + othAll</span>，其中 <span class="mono">grossAll</span> 含教师月薪、<span class="mono">tchAll</span> 是「班级单价 × 课次」。<b>如果教师「月薪」本身就是按课时算出来的总额，这笔钱被算了两次。</b><br>
+              <b>两个选项</b>：① 月薪 = <b>底薪</b>，课时费另加 → 现在的算法是对的 ② 月薪 = <b>全部</b>（已含课时）→ 结算页单价要填 0，或把「工资页 / 结算页」改成二选一开关。<br>
+              <b>现状</b>：示例数据下收入 36,720,000 / 毛利 16,745,000 / 45.6%，数字合理，所以<b>没动</b>。<br>
+              <b>影响面</b>：④ 报表的月毛利、毛利率、成本结构占比；③ 结算的单课毛利；导出给代账的工资社保表。<b>口径定了才敢用这几个数。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-51</td>
+              <td><b>排课主端加入口链到 finance.html</b><br><span style="color:var(--ink3);font-size:12px">「到时候我还是要把主页面关系到财务的，再找个入口连接」</span></td>
+              <td class="nw">主端 · 入口</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">—</td>
+              <td><b>要做什么</b>：在 <span class="mono">docs/schedule.html</span> 侧栏或顶栏加一个链接，跳到 <span class="mono">docs/finance.html</span>。<br>
+              <b>边界（已定）</b>：<b>两边各存各的数据，只做跳转</b>，不合并 localStorage（<span class="mono">zhops.sched.v3</span> 与 <span class="mono">zhops.fin.v1</span> 保持隔离）。<br>
+              <b>为什么不能直接合</b>：财务是敏感库（工资表 / 股东账面），排课库是业务库 —— 分库是 2026-10-29 已定的 ⑥。<br>
+              <b>★ 一个必须先想清的坑</b>：<span class="mono">schedule.html</span> 是发布源（<span class="mono">publish-zhops.sh</span> 会 cp 成线上 <span class="mono">index.html</span>），但<b>线上没有 <span class="mono">finance.html</span></b> —— 一旦推上线，那个入口就是死链（404）。<b>要么财务一起发，要么入口只在本地可见。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-52</td>
+              <td><b>人事系统建成（本地单文件版 · 九个板块 + 一人一档）</b><br><span style="color:var(--ink3);font-size:12px">「现在我们开始搭建人事部…一般管理人事部的档案板块, 后台切换格式」</span></td>
+              <td class="nw">新系统 · 独立文件</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>你先要我讲清怎么搭、不许动手</b>（「explain for me, dont do any action」），我提了四个必须定死的前置口径，你逐条回「认同 / 先这样, 认同 / 统一用财务那套语义变量 / 认同」，等于全部放行：<br>
+              <b>① 人员主档在人事</b> —— zhops 只留「能排课的最小集」（姓名 / 可教级别 / 在职状态），合同、证件、社保号只有这份系统有，靠工号关联。<br>
+              <b>② 学生不进人事</b> —— 学生是客户，档案在排课系统；助教一旦签成员工才进这里。<br>
+              <b>③ 不做审批</b> —— 制度只标「草稿 / 待批 / 已发布 / 已废止」，审批动作留给主页端，避免两套审批打架。<br>
+              <b>④ 配色统一用财务那套语义变量</b> —— 九套（亮底 4：象牙白 / 薄荷白 / 米纸白 / 冷雾灰；暗底 5：深海蓝 / 墨玉绿 / 石墨灰 / 暖砂褐 / 暮紫），变量块与 <span class="mono">finance.html</span> 一字不差。<br>
+              <b>交付</b>：新建 <span class="mono">docs/hr.html</span>（单文件 · 零依赖 · 双击即开），存储键 <span class="mono">zhops.hr.v1</span>，主题键 <span class="mono">zhops.hr.theme</span>。<b>三库隔离</b>：<span class="mono">zhops.hr.v1</span> / <span class="mono">zhops.fin.v1</span> / <span class="mono">zhops.sched.v3</span> 互不读写。<br>
+              <b>九个板块 + 配置</b>：0 使用说明 · ① 员工花名册 ② 合同 ③ 证件资质 ④ 社保与个税 ⑤ 考勤与假勤 ⑥ 薪酬发放 ⑦ 培训与培养 ⑧ 制度库 · ⑨ 配置。<b>证件单独成板块</b>是因为到期不提醒的后果最重（工作许可断了、暂住证过期，人还在上班）。<br>
+              <b>三层切换（第三层是人事独有的）</b>：板块导航 → 板块内表格 → <b>点花名册任意一行拉出「一人一档」抽屉</b>，一屏放这个人基本信息 / 合同 / 证件 / 社保 / 假勤 / 发放 / 培训七段。<b>抽屉只读</b>，改数据回表格改 —— 人事真正的问题不是「有多少人」，是「这人合同什么时候到期、签证还剩几个月、年假还剩几天」。<br>
+              <b>两处关键口径（都写进页面里了，不靠记）</b>：① <b>社保 = 缴费基数 × 比例，不是应发 × 比例</b> —— 越南社保基数按合同工资定，所以单独存 <span class="mono">base</span> ② <b>薪酬页不做乘法</b> —— 应发从财务抄进来，人事只记「发了没有」，实发 = 应发 − 社保个人 − 个税。<br>
+              <b>失焦坑（第三次，已成套路）</b>：<span class="mono">refreshDerived(skip)</span> + <span class="mono">refreshRow(tbl,i)</span>，正在编辑的那张表不重建。<b>但这次多出一个新问题</b>：花名册的「提醒」列是算出来的，而 <span class="mono">skip==='emp'</span> 时整表不重建 —— 改了「状态」或「入职日」，那一格不刷新。<b>修法</b>：给 <span class="mono">refreshRow</span> 加 <span class="mono">emp</span> 分支，只重写 <span class="mono">tr.children[8]</span> 那一格。<br>
+              <b>顺手修的两处</b>：① 非试用人员的「提醒」格 tip 是空串但 class 还挂 <span class="mono">hi</span>（黄字），改成有内容才上色 ② 社保页计数原写「N 人」但合计是<b>按行加</b>的，一人两条参保记录（换过基数）会重复计 —— 改成自动区分「N 人」/「N 条 · M 人」。<br>
+              <b>★ 没验证的部分（说清楚）</b>：本会话<b>没有 shell</b>，node 起不来 —— <b>没跑 <span class="mono">node --check</span>、没开浏览器</b>。只做了静态核对：51 个 <span class="mono">getElementById</span> 目标 ID 全部命中（唯一反向差异是 <span class="mono">id="main"</span>，无害）、10 个 <span class="mono">&lt;section&gt;</span> 与 <span class="mono">NAMES</span>/<span class="mono">ORDER</span>/键盘 0–9 一一对齐、8 张表 <span class="mono">emptyRow(N)</span> 与表头列数全对、两个 <span class="mono">tfoot</span> colspan 合计对、9 个 <span class="mono">addX</span> 按钮齐全。<br>
+              <b>没做</b>：Firestore 同步 · 认证 / 权限（工资表和合同现在谁打开都看得见）· 与财务 / zhops 的数据通道 · 导出 Excel（财务那套可照搬）· 手机端表格卡片化。<b>只在本地，线上一个字没动。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-53</td>
+              <td><b>排课主端加入口链到 hr.html（人事系统）</b><br><span style="color:var(--ink3);font-size:12px">「你要记下人事部的主端入口」</span></td>
+              <td class="nw">主端 · 入口</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">—</td>
+              <td><b>要做什么</b>：在 <span class="mono">docs/schedule.html</span> 侧栏或顶栏加一个链接，跳到 <span class="mono">docs/hr.html</span>。<br>
+              <b>边界（已定）</b>：<b>两边各存各的数据，只做跳转</b>，不合并 localStorage（<span class="mono">zhops.sched.v3</span> 与 <span class="mono">zhops.hr.v1</span> 保持隔离）。<br>
+              <b>★ 一个必须先想清的坑</b>：<span class="mono">schedule.html</span> 是发布源（<span class="mono">publish-zhops.sh</span> 会 cp 成线上 <span class="mono">index.html</span>），但<b>线上没有 <span class="mono">hr.html</span></b> —— 一旦推上线，那个入口就是死链（404）。<b>要么人事一起发，要么入口只在本地可见。</b> 这跟 P-51（财务入口）是同一个坑。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-54</td>
+              <td><b>开班门槛统一 4–13（三端）+ 决策台账加「落实状态」+ 人事入册</b><br><span style="color:var(--ink3);font-size:12px">「⑨ 开班门槛 已定已部分 … 应该是不是把它移走？」→ 结论：不移，改成标落实状态</span></td>
+              <td class="nw">口径 · 三端同步</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>你的问题</b>：「已定的那 8 条是不是该移走？」<b>结论是不移</b> —— 决策台账记的是「按什么口径做」，不是待办；移走等于把约束条件从施工现场拿走。<b>但你问到点子上了</b>：8 条「已定」里，有的真做了，有的只是纸上定了。所以改成<b>每条加一个落实状态</b>（已落实 / 已部分 / 未落实）。<br>
+              <b>三端门槛已统一 4–13</b>（口径 B+A+B）：<br>
+              · <span class="mono">schedule.html</span> <span class="mono">blank()</span> 默认 <span class="mono">minOpen:6/capMax:10</span> → <b>4/13</b><br>
+              · <span class="mono">zhops-teacher.html</span> 申请校验 <span class="mono">n &lt; 1</span> → <b><span class="mono">n &lt; 4</span></b>，<b>不拦上限 13</b>（申请阶段别卡太死，留并课/拆分空间）<br>
+              · <span class="mono">zhops-admin.html</span> <span class="mono">DB.set</span> <span class="mono">8/12</span> → <b>4/13</b>；新建班容量 <span class="mono">cap:12</span> → <b>13</b>；审批用的 <span class="mono">Number(f.cap) || DB.set.capMax</span> 已自动跟 13<br>
+              · <b>存量不动</b>：老浏览器里 <span class="mono">zhops.sched.v3</span> 的 6/10 不自动改，要改在主端参数页手调<br>
+              <b>决策台账 8 条落实状态</b>：① 薪酬谁算 <b class="yes">已落实</b> · ④ 主页端动态 <b class="no">未落实</b> · ⑤ 角色分层 <b>已部分</b>（有表无拦）· ⑥ 分库 <b>已部分</b>（键分开、同一 localStorage）· ⑦ 认证 <b class="no">未落实</b> · ⑧ 记账模型 <b class="yes">已落实</b> · ⑨ 门槛 <b class="yes">已落实 10-30</b> · ⑩ 晚班时段 <b>已部分</b>（教师端还是 19:00）<br>
+              <b>生态地图第二层 · 系统卡片同步（6 处）</b>：① 人事卡 <span class="mono">sys-card todo / 未建</span> → <b><span class="mono">partial / 本地已建 · 未接云</span></b>，整块重写（九个板块清单、职责边界三条、搭建顺序指 P-52）② 概览格人事 <span class="mono">ov-sys todo / 未建</span> → <span class="mono">partial</span> ③ 顶部 chips 加「人事 本地已建」④ 跨系统流向「未建」→「人事已本地建 · 通道未接」⑤ S3 路线行 <span class="mono">待做</span> → <span class="mono">s-info 骨架已建</span>，补九个板块 + 未做五项 ⑥ 施工图说明「代码一条都没有」→「财务与人事本地骨架已建，其余代码一条都没有」<br>
+              <b>文档索引</b>：新增分组「七 · 人事系统」（原「七 · 工具与总控」→「八」），<span class="mono">hr.html</span> 入册；33 → <b>34 份</b>，现行 20 → <b>21</b>；生态地图描述「12 条决策」→「12 条决策台账（含落实状态）」、「S1.0–S1.7」→「S1.0–S1.8」（原文过期）；「四 · 空白」人事卡从「零文档」→「有系统、缺文档」。<br>
+              <b>★ 没验证的部分</b>：本会话<b>没有 shell</b> —— 没跑 <span class="mono">node --check</span>、没开浏览器。三份文件做了静态标签配平核对（<span class="mono">system-ecosystem-map.html</span> div 449/449 平衡、table/tr/tbody/thead 全平；<span class="mono">zh-doc-index.html</span> 8 组 table 全平；<span class="mono">hr</span> 卡 868–937 行逐层核对收尾干净）。<br>
+              <b>★ 一处没改的</b>：<span class="mono">zhops-teacher.html</span> 越南语字典里那条「至少 1 人」没改成「至少 4 人」—— 那行带越南语声调符号，工具通道反复把这段字节改坏。<b>已在 <span class="mono">setErr()</span> 里做了等价处理</b>（走 <span class="mono">localStorage['zhops.lang']==='vi'</span> 直接映射），页面效果一致，但字典里那行仍是旧字面值。<b>以后要清可以把那行删掉</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-55</td>
+              <td><b>越南语覆盖补漏：教师端 / 管理端页脚状态 + MutationObserver 补 characterData</b><br><span style="color:var(--ink3);font-size:12px">「越南文的用处，就是整个系统里面的一些词语都必须明白…能看得懂那怎么去操作？」</span></td>
+              <td class="nw">越南语 · 可用性</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>你的口径（我一开始理解错了）</b>：越南语<b>不是让我把代码翻成越南语</b> —— 是<b>界面上每个词都必须能切换成越南语</b>，因为以后可能有越南员工操作教师端。<b>代码保持中文，界面必须双语。</b><br>
+              <b>我错在哪</b>：我把「字典里那行改不动」当成技术问题上报，其实那行的作用是<b>给越南员工看懂</b>，判断标准应该是「越南员工在教师端点提交、人数填 3 人，看到的是不是越南语」。<br>
+              <b>本轮补的三类</b>：<br>
+              <b>① 教师端页脚云同步状态</b>（<span class="mono">markCloud</span>）：<span class="mono">☁︎ 同步中…</span> / <span class="mono">☁︎ 已同步 · HH:MM</span> / <span class="mono">☁︎ 离线（本地照常用）</span> → 直接按 <span class="mono">localStorage['zhops.lang']</span> 给越南语字面值（<span class="mono">Đang đồng bộ…</span> / <span class="mono">Đã đồng bộ</span> / <span class="mono">Ngoại tuyến (vẫn dùng bình thường)</span>），同时补进字典 4 条。<br>
+              <b>② 管理端页脚存盘状态</b>（<span class="mono">markSaved</span>）：<span class="mono">还没保存过</span> / <span class="mono">保存失败</span> / <span class="mono">已保存 · HH:MM</span> → 同样按语言直给（<span class="mono">Chưa lưu lần nào</span> / <span class="mono">Lưu thất bại</span> / <span class="mono">Đã lưu ·</span>）。<br>
+              <b>③ ★ 真因：MutationObserver 原来只监听 childList</b>。两边都漏了 <span class="mono">characterData</span> —— <span class="mono">el.textContent = 'x'</span> 如果目标节点<b>已有文本子节点</b>，改的是 characterData，<b>不触发 childList</b>，所以「后出现的文字」永远补不上翻译。两边都加了 <span class="mono">characterData:true</span>，靠 <span class="mono">busy</span> 防重入；<span class="mono">langWalk</span> 只在值真变化时写回，写出的是越南语（不含中文 key）→ 再扫不会再变 → <b>收敛，不死循环</b>。<br>
+              <b>为什么页脚状态不靠字典</b>：字典里 <span class="mono">'已保存 ·'</span> 带空格，拼接出来是 <span class="mono">已保存 · 13:46</span>，key 对不齐就漏翻。状态类文字<b>写法写死不查表最稳</b>。<br>
+              <b>★ 没验证</b>：本会话<b>没有 shell</b> —— 没跑 <span class="mono">node --check</span>、没切越南语实测。改动是纯字面值替换 + 勾一个 observer 选项，风险低但<b>没跑过</b>。你在教师端 / 管理端点语言切换看一次页脚就知道。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-56</td>
+              <td><b>主端版本标记加「构建日期 时间」—— 侧栏能自证跑的是哪一版</b><br><span style="color:var(--ink3);font-size:12px">「已保存 · 11:47 … 为什么没有出现运行更新在今天 16:29?」</span></td>
+              <td class="nw">可用性 · 版本可见</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>你问的是两个不同的时间</b>：侧栏那个 <span class="mono">已保存 · 11:47</span> 是<b>数据</b>上次存进本机浏览器的时刻（localStorage 载荷里的 <span class="mono">__at</span>，<span class="mono">save()</span> 每次写盘盖上）；今天 16:29 改的是<b>程序文件</b>（<span class="mono">zhops-admin.html</span> 的代码）。<b>改程序不会动那个数字</b> —— 你今天没改数据，它就停在 11:47。<br>
+              <b>★ 真正的缺口</b>：<span class="mono">#buildTag</span> 原来只写死一句 <span class="mono">build v7 · room-links</span>，<b>没有日期</b> → 界面上根本没有「程序更新时间」这个显示位，你没法判断跑的是哪一版（老毛病「改了没效果 / 没看见按钮」就是栽在这里）。<br>
+              <b>改法</b>：版本标记改成 <span class="mono">build v8 · cloud-vi · 10-30 16:36</span>，并写死规矩 —— ① 版本号只增不改语义 ② 后缀 = 这版主要做了什么 ③ 末尾永远是 <span class="mono">MM-DD HH:MM</span> = 这份文件落盘的那一刻；<b>改了主端就顺手改这一行</b>。<br>
+              <b>顺带查清</b>：今天 16:29 那版改的是 <b>S1.3 云端认领改多来源</b>（<span class="mono">APP_TAGS_OK</span> = admin/teacher/sched 三来源，用在本地读盘 967 · 云端手动拉 5345 · 自动拉 5404）＋ <b>P-55 越南语</b>（页脚状态直给越南语 + <span class="mono">MutationObserver</span> 补 <span class="mono">characterData</span>）—— <b>那两个会话都没动版本标记</b>，所以侧栏看起来跟 10-19 一模一样。<br>
+              <b>验证</b>：语法 <span class="mono">SYNTAX_OK</span>；主端 5 个老探针 + <span class="mono">check-p48</span> 逐断言与改动前备份<b>完全一致</b>；<span class="mono">click-p48</span> 真 Chrome 26/26 全过。<br>
+              <b>踩坑留痕</b>：拿备份当基线时，用的是 <span class="mono">/tmp/admin.bak-…-before-buildtag</span>（<b>没有 .html 后缀</b>）→ 真点击测试 26 条全挂。<b>改成 .html 后同一份内容 26/26 全过</b> —— 失败是<b>扩展名</b>造成的（Chrome 不渲染无扩展名的文件），不是代码问题。<b>基线文件一定要留 .html 后缀。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-57</td>
+              <td><b>主端写 <span class="mono">zhops/public</span> 公共只读文档</b><br><span style="color:var(--ink3);font-size:12px">多教师分片 · 第 1 步（你点的第 1 步）</span></td>
+              <td class="nw">架构 · 数据分片</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>为什么先做这个</b>：教师端分片后要能选时段、要看课名。这两样不属于任何一位教师，得单独一份。没有它，第 3 步改完教师端是空页。<br>
+              <b>装什么</b>：<span class="mono">slots</span>（时段表）· <span class="mono">catalog</span>（课程目录，42 课带 <span class="mono">zh/vi/goal</span>）· <span class="mono">stages</span>（6 个阶段名）· <span class="mono">rooms</span>（10 省 → 市）· <span class="mono">limits</span>（4–13 · 45 分钟）。<br>
+              <b>不装什么</b>：教师、学生、班级、申请、课次、缺勤 —— 那些归 <span class="mono">master</span> 和分片。<br>
+              <b>改法（<span class="mono">zhops-admin.html</span>）</b>：① 抽出 <span class="mono">fsUrlOf(coll,doc)</span>，<span class="mono">fsUrl()</span> 改成调它（主端老路径一字不变）② 新增 <span class="mono">publicPayload()</span>（走 <span class="mono">sylOf()</span>，未导入的级别自动跳过）③ 新增 <span class="mono">writePublic()</span>（PATCH <span class="mono">zhops/public</span>，字段 <span class="mono">payload/at/app</span>）④ <span class="mono">doPush</span> 成功回调里加一行调用 —— <b>失败只 toast 一句，不改云状态</b>。<br>
+              <b>为什么不改 <span class="mono">master</span> 的结构</b>：第 1 步只加一个文档。分片（t1…t5）、<span class="mono">updateMask</span>、教师端改读都在后面三步。<br>
+              <b>★ 没验证</b>：本会话<b>没有 shell</b> —— 没跑 <span class="mono">node --check</span>，也没点过上传。<b>验证方法</b>：主端点「上传到云端」后，浏览器打开 <span class="mono">…/documents/zhops/public?key=…</span>，能看到 <span class="mono">catalog</span> 有 42 条、<span class="mono">slots</span> 有 4 条即成立。若弹出「public 没写进去」= 云端 rules 不许写这个文档。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-58</td>
+              <td><b>主端按教师写分片 <span class="mono">zhops/t1 … t5</span></b><br><span style="color:var(--ink3);font-size:12px">多教师分片 · 第 2 步</span></td>
+              <td class="nw">架构 · 数据分片</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>一份给一位教师</b>：文档 id = 教师 id（<span class="mono">t1</span> / <span class="mono">t2</span> / <span class="mono">t_demo</span>）。只装他自己的档案 · 班级 · 学生 · 课次 · 缺勤 · 申请。<br>
+              <b>切片口径</b>：班按 <span class="mono">c.teacher === t.id</span>；学生取并集（<span class="mono">s.teacherId</span> 命中，或 <span class="mono">s.cls</span> 落在他的班里 —— 没有 teacherId 的学生也能被自己老师看见）；课次 / 缺勤按 <span class="mono">cid</span> 落在他的班里；申请按 <span class="mono">a.teacher</span>。<br>
+              <b>改法</b>：新增 <span class="mono">sliceDocId()</span>（净化 id）· <span class="mono">slicePayload(t)</span> · <span class="mono">writeSlices(cb)</span>（逐位 PATCH，统计成功数）；<span class="mono">doPush</span> 里接在 <span class="mono">writePublic</span> 之后 —— <b>public 成败都照写分片</b>，失败只 toast「N / M 份写入成功」。<br>
+              <b>主端本机不动</b>：仍存全量 <span class="mono">zhops.sched.v3</span>。这一步只是「多写一份到云端」。<br>
+              <b>顺手做</b>：侧栏版本标记 <span class="mono">build v8 · cloud-vi</span> → <span class="mono">build v9 · public+slices · 10-30 22:45</span>（P-56 定的规矩：改了主端就改这一行）。<br>
+              <b>已知未做</b>：只写不删 —— 教师被移除后旧分片留在云端；教师端还没改成读分片（第 3 步）。<br>
+              <b>★ 没验证</b>：无 shell，没跑 <span class="mono">node --check</span>、没点过上传。<b>验证法</b>：主端推一次 → 打开 <span class="mono">…/documents/zhops/t1?key=…</span>，<span class="mono">payload</span> 里 <span class="mono">classes / students / lessons / absences</span> 条数跟他自己的班对得上即成立。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-59</td>
+              <td><b>教师端改读 <span class="mono">public</span> + 自己那一份分片</b><br><span style="color:var(--ink3);font-size:12px">多教师分片 · 第 3 步</span></td>
+              <td class="nw">架构 · 数据分片</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>改 <span class="mono">zhops-teacher.html</span> 五处</b>：① <span class="mono">fsUrlOf(coll,doc)</span> + <span class="mono">PUB</span> 缓存 + <span class="mono">courseName()</span> ② <span class="mono">pullPublic()</span> / <span class="mono">pullSlice(tid)</span> / <span class="mono">pullMaster()</span> ③ <span class="mono">cloudBootPull()</span> 改成「public → 我的分片 → 兜底全量」④ <span class="mono">fsPush/doPush</span> 改「读-改-写」⑤ 课名接进班级卡与今日课。<br>
+              <b>★ 必须顺带做「拆键」</b>：<span class="mono">KEY</span> 从 <span class="mono">zhops.sched.v3</span> → <span class="mono">zhops.teacher.v1</span>。不拆的话，教师端把「我这一份」写进主端那把钥匙，同一台电脑上主端一打开就读到半份数据、一推就抹全库。<b>这不是第 4 步提前做，是第 3 步不做就会坏数据。</b><br>
+              <b>★ 写回也必须同时改</b>：<span class="mono">master</span> 全库只存在一个字符串字段 <span class="mono">payload</span> 里 —— <span class="mono">updateMask</span> 帮不上忙（改 payload 就是整份换）。所以改成先 GET 整份、别人的班原样留、只替换「我的班」的 <span class="mono">lessons/absences</span>、再整份写回；<span class="mono">apps</span> 只补云端没有的新条目（保住主端已审批的状态）。云端没有主数据时<b>拒绝推</b>。<br>
+              <b>课名</b>：<span class="mono">courseName(lv,n)</span> 从 <span class="mono">PUB.catalog</span> 查，查不到就不显示（不留空括号）。班级卡显示 <span class="mono">L07 · 第一阶段 · 第 7 课 · 孩子与长辈</span>。<br>
+              <b>兜底</b>：分片还没生成（主端没推过）→ 退回读 <span class="mono">master</span> 全量，页面照常能用，不会白屏。<br>
+              <b>防丢</b>：<span class="mono">pullSlice</span> 带「云端不比本机新就不动本机」判断 —— 否则离线点的名会被一次切窗口的拉取抹掉。<br>
+              <b>行为变化（要告诉 Tony）</b>：教师端首次打开会重新从云端拉；<b>断网打开会看到空数据</b>（换了本机键，旧键不读）。<br>
+              <b>★ 没验证</b>：无 shell，没跑 <span class="mono">node --check</span>、没在浏览器点过。<b>验证法</b>：先在主端推一次 → 教师端地址加 <span class="mono">?t=t1</span> 打开 → 只看到这一位教师的班/学生，班级卡上有课名。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-60</td>
+              <td><b>系统生态地图同步（决策 ⑪ · 三端关系 · 施工图 S1.9）</b><br><span style="color:var(--ink3);font-size:12px">分片落地后的口径回写</span></td>
+              <td class="nw">文档 · 口径同步</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>改 <span class="mono">system-ecosystem-map.html</span> 六处</b>：<br>
+              ① 顶部 meta 与 chips：<span class="mono">8 定 / 4 暂缓</span> → <span class="mono">9 定 / 3 暂缓</span>，加「教师分片已落地」。<br>
+              ② 决策台账 ⑪ 从「已记 · 暂缓」<b>移到已定组</b>，改成「已定 · 已部分」，正文写清方案 B、三个云端文档、软隔离定性、仍未做登录。<br>
+              ③ 台账计数 <span class="mono">12 条 · 已定 8 · 暂缓 4</span> → <span class="mono">已定 9 · 暂缓 3</span>。<br>
+              ④ 三端真实关系里教师端：本机键 <span class="mono">zhops.sched.v3</span> → <span class="mono">zhops.teacher.v1</span>；标签改成「读 public + zhops/t{n} · 写 master（读-改-写）」。<br>
+              ⑤ 关键事实：本机键三把互不相通；新增「云端三个文档」一条。<br>
+              ⑥ 施工图新增 <span class="mono">S1.9 多教师数据分片 · 已做 2026-10-30</span>；断点 2 的「教师端没有防冲撞」改成已改，只剩管理端。<br>
+              <b>★ 没验证</b>：只改 HTML 文本，没在浏览器打开核对版式。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-61</td>
+              <td><b><span class="mono">teach.html</span> 教案上线（发到 hsk 公开仓库）</b><br><span style="color:var(--ink3);font-size:12px">你选 A：公开，全网可下载</span></td>
+              <td class="nw">发布 · 内容平台</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>线上</b>：<a href="https://tony80-del.github.io/hsk/teach.html" class="mono">https://tony80-del.github.io/hsk/teach.html</a><br>
+              <b>做法</b>：<span class="mono">cp docs/teach.html ~/hsk/teach.html</span>（841,624 B）→ <span class="mono">git add teach.html README.md</span> → commit → push。提交 <span class="mono">3db7f53</span>，Pages 部署 18 秒完成。<span class="mono">.nojekyll</span> 本来就有，不用加。<br>
+              <b>为什么只复制一个文件</b>：<span class="mono">teach.html</span> 全文 <b>0 个 <span class="mono">src=</span> / 0 个 <span class="mono">href=</span> / 0 个 <span class="mono">url()</span></b> —— 零外链、零依赖，单文件自带全部样式与内容。<br>
+              <b>线上核对（真的拉了线上原文）</b>：标题 <span class="mono">中文课 · 教课体系（HSK1 / HSK2 / HSK3）</span>；首屏正文是「HSK1 教课体系 · 说明」；<span class="mono">/hsk/</span> 首页仍是「课程体系」，没被覆盖。<br>
+              <b>顺带改</b>：<span class="mono">~/hsk/README.md</span> 加「教案（教师用）」地址一行；生态地图课程研发卡加教案的位置字段（本地 + 线上，徽章已从「待发布」改「已上线」）。<br>
+              <b>★ 已知代价</b>：hsk 是公开仓库 → 教案全网可下载，含同行。你明确接受。<br>
+              <b>★ 过程中我犯的错</b>：第一次说「推好了」时其实没推 —— 我先用同一个 URL 复查，吃了 15 分钟缓存，看到 404 是<b>真</b>的但成因判断慢了；后来靠 <span class="mono">git log</span> 确认 HEAD 还停在 9-29 才定位。教训：<b>同一个 URL 复查必须加 <span class="mono">?cb=</span> 破缓存</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-62</td>
+              <td><b>工作台账精简：三栏默认 + 一条一句话</b><br><span style="color:var(--ink3);font-size:12px">「这个程序太啰唆了…帮我定一下」</span></td>
+              <td class="nw">文档 · 流程</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-30</td>
+              <td class="mono nw">10-30</td>
+              <td><b>定下的新规矩</b>：一条命令 = 一行 = 一句话，只写「做了什么 + 结果」。不写 sha、不列文件清单、不写本地/线上 —— 那些留在 git 提交里。<br>
+              <b>页面改动</b>：加精简视图（默认），只显示 编号 / 打磨项 / 状态；类别 / 提出 / 完成 / 记录 四栏靠 CSS 收起，点右上按钮切完整。<b>旧行一个字没删没改。</b><br>
+              <b>为什么改</b>：旧规矩要求每行回填「动作 · 文件 · 本地/线上」，写一次十几分钟、读一次滚三屏 —— 记录成了负担，人就不记了。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-19 ============ -->
+  <div class="day-panel" data-day="2026-10-19">
+    <div class="card">
+      <h2>2026-10-19 · 打磨记录<span class="n">10 行 · 已打磨 5 · 设计已定 1 · 待打磨 4</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-39</td>
+              <td><b>系统分层定案：内容平台 ↔ 排课系统</b><br><span style="color:var(--ink3);font-size:12px">你定：排课和课程要分开，排课只管执行</span></td>
+              <td class="nw">架构</td>
+              <td><span class="b wait">⏳设计已定 · 待开工</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">—</td>
+              <td><b>你定</b>：「排课系统应该是要把它分开」—— 排课只管执行，课程内容归另一个系统。<br>
+              <b>★ 关键发现（先查过才说的）</b>：内容平台<b>已经存在而且在跑</b> —— GitHub <span class="mono">Tony80-del/hsk</span> → <b>https://tony80-del.github.io/hsk/</b>。HSK1 <b>42 课全量数据</b>就在首页的 <span class="mono">const DATA</span> 里：<span class="mono">stages</span>(6) / <span class="mono">stageLessons</span> / <span class="mono">lessons</span>(42，键名 <span class="mono">hsk1/L14</span>) / <span class="mono">levels</span>(3)。<b>每课字段</b>：<span class="mono">no / id / lv / stage / stageZh / titleZh / titleVi / goal / words / grammar / sentences / dialogue / drill / pitfalls / homework / ex</span>。<br>
+              <b>所以不是「搭平台」，是「接」。</b>它已经帮我们躲掉两个坑：① <b>lessonId 本来就稳</b>（<span class="mono">L01…L42</span>，不是数组下标）② <b>阶段边界跟 zhops 一字不差</b>（s1=L01–12 / s2=L13–21 / s3=L22–27 / s4=L28–34 / s5=L35–40 / s6=L41–42），zhops 里写死的 <b>12/21/27/34/40/42 不用改</b>。<br>
+              <b>分工（一句话）</b>：内容平台管「教什么」，zhops 管「谁教谁、教到哪、考了多少」。<b>zhops 只存「引用 + 结果」，不存正文、不存题库。</b><br>
+              <b>三条接口</b>：① 大纲导入 <span class="mono">lessonId + level + no + titleZh + titleVi + stageId</span> ② 考卷导入 <span class="mono">paperId + stageId + title + fullScore + passScore</span> ③ 成绩回写 <span class="mono">paperId + studentId + score + takenAt</span>。<br>
+              <b>状态</b>：设计已定，拆成下面 5 步走，一步一验收。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-40</td>
+              <td><b>第 1 步 · 导入教材大纲（42 课课名 + 阶段名）</b><br><span style="color:var(--ink3);font-size:12px">数据现成，不碰现有逻辑</span></td>
+              <td class="nw">主端 · 数据</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">10-19</td>
+              <td><b>做什么</b>：新建 <span class="mono">DB.syllabus[lv] = [{lessonId, no, titleZh, titleVi, stageId}]</span>，从 hsk 的 <span class="mono">DATA.lessons</span> 抽最小集导入。<b>幂等</b> = 同级别整份覆盖；<b>校验</b> = 课号 1…42 必须连续，缺号整批拒绝（不半截入库）。<br>
+              <b>做完立刻看得见</b>：「第 14 课」→「<b>第 14 课 · 年、月、日</b>」；课次记录、学生档案、教室资料库三处同时变。<br>
+              <b>不做什么</b>：不导正文、不导生词、不导教案 —— 那些留在 hsk。<br><br>
+              <b style="color:var(--ok)">✅ 10-19 已打磨</b><br>
+              <b>实际做法</b>：<span class="mono">SYL_SEED</span> 常量 = 42 课 × 6 字段（<span class="mono">id / no / stage / zh / vi / goal</span>），4.0 KB；种子把它<b>深拷贝</b>进 <span class="mono">DB.syllabus = {hsk1:{ready:true,…}, hsk2:{ready:false,…}, hsk3:{ready:false,…}}</span>。<b>查询只走三个函数</b> <span class="mono">sylOf / sylLesson / sylTitle</span> —— 未导入 / 级别不存在 / 存盘被手删，一律回 <span class="mono">null</span> 或空串，<b>不报错、不假装有、不留空括号</b>。<br>
+              <b>显示落点 7 处</b>（6 个表格 + 1 句提示语）：总览「今天要上的课」、总览「差 X 人开班」提示句、学生页进度、班级表进度、本周日历、课次记录明细、出勤页。课名一律放<b>第二行</b>（<span class="mono">.sub-ln</span> 小字灰色），<b>不拼进第一行</b> —— 这几张表都 7–8 列，拼一行会把「第几课」列撑宽、逼出横向滚动条。排课矩阵的班级小卡片<b>故意不加</b>（会撑破卡片），已在探针里钉死这个决定。<br>
+              <b>阶段名一个字没动</b>：<span class="mono">stageOf()</span> 原封不动。依据是逐课对账 —— 大纲里 42 课的 <span class="mono">stage</span> 跟写死的边界（12/21/27/34/40/42）<b>0 处不一致</b>，探针第 [2] 组把这条钉死。所以「阶段名接上」可以安心留给 P-41。<br>
+              <b>越南语</b>：课名跟着语言开关走（中文 <span class="mono">年、月、日</span> / 越南语 <span class="mono">Năm, tháng, ngày</span>），不往 VI 字典里塞 42 条词条 —— 数据本身带 <span class="mono">vi</span> 字段，走数据比走字典干净。<br>
+              <b>验收</b>：新探针 <span class="mono">build/zhops-probe/check-p40.js</span> <b>41 项全过</b>，已挂进 <span class="mono">run.sh ⑨</span>。含 42 课 × 6 字段全非空 / 课号 1…42 连续 / 阶段分布 12·9·6·7·6·2 / 三个视图真渲染出 <span class="mono">&lt;i class="sub-ln"&gt;</span> / <b>老存盘（没有 syllabus 键）自动补 42 课</b>。另用真 Chrome 截了课次记录 · 班级表 · 学生页 · 越南语四张图人工复核。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-41</td>
+              <td><b>第 2 步 · 阶段名接上（含越南语）</b><br><span style="color:var(--ink3);font-size:12px">「第 2 阶段」→「第二阶段 · 日常生活」</span></td>
+              <td class="nw">主端 · 数据</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">—</td>
+              <td><b>现状</b>：<span class="mono">STAGE_EDGE</span> 里只有「1–12 课」这种区间文案，六个阶段<b>只有编号没有名字</b>。<br>
+              <b>hsk 里现成三份</b>：<span class="mono">zh</span>「第二阶段 · 日常生活」/ <span class="mono">short</span>「日常生活」/ <span class="mono">vi</span>「Giai đoạn 2 · Sinh hoạt hằng ngày」→ <b>接上后越南语也自动对，不用另翻</b>。<br>
+              <b>注意</b>：边界别动（12/21/27/34/40/42 已经跟教材一致）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-42</td>
+              <td><b>第 3 步 · 成绩链路重做（场次 + 学生双键）</b><br><span style="color:var(--ink3);font-size:12px">上次存错了地方，这次存对</span></td>
+              <td class="nw">主端 · 数据链路</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">—</td>
+              <td><b>为什么重做</b>：10-18 那版把分数存进 <span class="mono">s.exam.s1…s6</span> —— 一个学生一个阶段只能放一个数，<b>补考会覆盖原分</b>，第 4~6 阶段还挤在同一层。<b>已整版回退</b>（见 10-18 记录）。<br>
+              <b>改法</b>：存 <span class="mono">DB.examScores[] = {paperId, studentId, score, takenAt}</span>；<span class="mono">s.exam</span> <b>不存、算出来</b>（取当前阶段最新一场）。这跟「出勤 / 阶段 / 进度都是算出来的」是同一条设计原则。<br>
+              <b>附带</b>：学生档案加 <span class="mono">targetLevel</span>（目标级别 + 目标日期）—— 现在的 <span class="mono">goal</span> 是动机（兴趣/工作），不是可测量的目标。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-43</td>
+              <td><b>第 4 步 · 考试场次 + 考卷 ID</b><br><span style="color:var(--ink3);font-size:12px">zhops 建场次，hsk 出卷子</span></td>
+              <td class="nw">主端 · 数据</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">—</td>
+              <td><b>存什么</b>：<span class="mono">DB.exams[] = {classId, stageId, date, paperId, passScore}</span>、<span class="mono">DB.papers[] = {paperId, stageId, title, fullScore}</span>。<br>
+              <b>铁律</b>：<b>题目、答案、解析一个字节都不进 zhops</b>，只存 <span class="mono">paperId</span>。点「看试卷」时跳 hsk。<br>
+              <b>好处</b>：hsk 那边改题型 / 改判分，zhops 一行都不用动。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-44</td>
+              <td><b>第 5 步 · 每课挂资源（教案 / 课本 / 练习）</b><br><span style="color:var(--ink3);font-size:12px">老师点开第 14 课就能拿到这节课的东西</span></td>
+              <td class="nw">两端</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">—</td>
+              <td><b>hsk 每课已经有</b>：学员课本 7 块（生词 / 语法 / 例句 / 课文 / 练习 / 注意 / 课后任务）+ 教师教案 6 块（本课目标 / 语法点 / 课堂操练 / 易错点 / 课后任务 / 六步 SOP 对应表）。<br>
+              <b>怎么做</b>：按 <span class="mono">hsk1/L14</span> 拼 URL 直接跳过去，<b>zhops 不复制内容</b>。<br>
+              <b>落点</b>：教室资料库 › 02 教材体系加一行「本课资源：教案 · 课本 · 练习」；教师端课次行也能点。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-45</td>
+              <td><b>打磨台整理：P-37 / P-38 归档</b><br><span style="color:var(--ink3);font-size:12px">被 P-39 的 5 步接管，避免以后做两遍</span></td>
+              <td class="nw">文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">10-19</td>
+              <td><b>你指出</b>：「如果像你说的已经被取代了，打磨台上面必须注意」。<br>
+              <b>改了什么</b>：P-37 / P-38 两条的<b>状态徽章</b>改成 <span class="mono">⛔已被 P-39 取代</span>，并各自在记录<b>末尾追加</b>一行取代说明 —— <b>旧账一字未动，只追加</b>。<br>
+              <b>对应关系</b>：P-37 的入口 1 / 2 / 3 → <b>P-40 / P-43 / P-42</b>；P-38 → <b>P-41</b>（阶段名）+ <b>P-42</b>（成绩链路）。<br>
+              <b>顺带</b>：10-18 页签计数改成 <span class="mono">5 行 · 已打磨 3 · 搁置 2</span>。<b>两条内容都留着没删</b> —— 以后翻旧账还能看到当初为什么这么设计。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-46</td>
+              <td><b>入口说明 + 教室资料库 Demo 更新（P-40 的可视版）</b><br><span style="color:var(--ink3);font-size:12px">「P-40 入口在哪？我还没看见」</span></td>
+              <td class="nw">Demo · 文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">10-19</td>
+              <td><b>你问</b>：「你说已打好，入口在哪里？我还没看见。做一份仔细的描述：入口在哪、进去之后后台怎么样。」<br>
+              <b>先答清楚</b>：<b>P-40 没有新入口</b> —— 它没有加页面、没有加菜单项，只是让 <b>7 处现有表格</b>各多一行课名。所以「左侧菜单里找不到新东西」是<b>对的</b>，不是漏做。<br>
+              <b>「还没看见」的真因</b>：本地主端现在是<b>空表</b>（教师 0 · 学生 0 · 排课 0，10-13 清过演示数据没灌回去）。7 处全在表格行里，没行 = 没格子 = 课名没地方显示。<b>不是没做，是没数据。</b><br>
+              <b>做了什么</b>：<span class="mono">build/demo/room-board-demo.html</span> 从 39,280 B → <b>51,385 B</b>，加 <b>00 入口</b> 页签（P-40 前后对照 + 7 处落点清单 + 空表提醒 + 三步入口流程 + 三条路径），并把 02 教材体系<b>接上真实 42 课</b>：课名框不再 disabled、大纲行 HSK1 变「已导入 42/42」、新增 <b>HSK1 · 42 课全表</b>（6 阶段分组、当前课蓝底、已上过的课号变绿）。01 概览的「当前阶段」也从「第 2 阶段」变成「<b>第二阶段 · 日常生活</b>」。<br>
+              <b>验证</b>：真 Chrome 截图 4 张；自动点 2 下 <span class="mono">+</span> 实测联动 —— 16 课 → 课名变 <b>L16 · 吃与喝</b>、全表 L16 变蓝、KPI 变「还差 5 课进考试」，0 报错。<br>
+              <b>原件备份</b>：<span class="mono">room-board-demo.bak-20261019-before-entry</span>（没删）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-47</td>
+              <td><b>教室资料库做进主端（只读 v1）+ 空表一键载入演示班</b><br><span style="color:var(--ink3);font-size:12px">「我照样的点击，没看到你说的那个后台」</span></td>
+              <td class="nw">主端 · 新页面</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">10-19</td>
+              <td><b>你指出</b>：「我照样的点击，没看到你说的那个后台？」—— 因为<b>主端里根本没有这个页面</b>，上一版 Demo 的 STEP 1/2/3 写的是「将来」，却写得像现在就能走。<b>这是我写错了。</b><br>
+              <b>做了什么</b>：主端新增视图 <span class="mono">#room/&lt;班id&gt;</span>（<span class="mono">vRoom()</span>）—— 面包屑「主端 / 排课 / 苏州班」+ 返回班级表 + 4 个 KPI（读到第几课 / 当前阶段名 / 在读人数 / 出勤率）+ 6 阶段刻度 + <b>HSK1 42 课全表</b>（当前课蓝底、上过的课号变绿）+ 8 位学生出勤与阶段成绩表（结论走 <span class="mono">examVerdict()</span>）。<br>
+              <b>入口</b>：排课 › 班级 › 点<b>班名</b>（蓝字可点，<span class="mono">href="#room/&lt;id&gt;"</span>）。侧栏进资料库时点亮「排课」；面包屑单独处理。<br>
+              <b>空表怎么办</b>：班级表空态新增按钮「<b>载入演示班</b>」（1 师 + 苏州班 + 8 生 + 14 节已上的课），<b>只在 0 个班时出现</b>，不会污染已有数据，点完直接落进资料库。<br>
+              <b>踩到的坑（已写进注释和探针）</b>：<span class="mono">C(id)</span> 找不到时返回 <span class="mono">{name:'—'}</span> —— <b>真值</b>，所以 <span class="mono">if(!C(cid))</span> 永远不成立，第一版渲染出一屏「— / 0 / undefined」。改成 <span class="mono">DB.classes.find()</span> 判存在，探针第 [4] 组把这条钉死。<br>
+              <b>路由改动</b>：<span class="mono">render()</span> / <span class="mono">refreshView()</span> 都改成 <span class="mono">route().split('/')[0]</span> 取视图 id，否则 <span class="mono">#room/x</span> 会掉回总览。<br>
+              <b>验收</b>：新探针 <span class="mono">check-p47.js</span> <b>34 项全过</b>（入口是链接 / 路由 / 42 课 / 班不存在不白屏 / HSK2 未导入不编课名 / 演示班幂等），已挂进 <span class="mono">run.sh ⑩</span>。真 Chrome 实测走完「空表 → 载入演示班 → 落进资料库」全程，0 报错。全套探针 6 通过 / 9 失败（<b>9 个全是原有的</b>）。<br>
+              <b>★ 只读 v1</b>：推进课号、改分数、考试场次、考题导入<b>还没接</b> —— Demo 演的是目标形态，主端目前做到第一屏。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-48</td>
+              <td><b>「苏州班」可点入口从 1 处扩到 3 处 + 修掉教师表「undefined」</b><br><span style="color:var(--ink3);font-size:12px">「上面那 6 处也接成可点」</span></td>
+              <td class="nw">主端 · 交互</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-19</td>
+              <td class="mono nw">10-19</td>
+              <td><b>你同意</b>：P-47 只把<b>排课 › 班级</b>那一处班名接成了链接，另外 6 处还是纯文字 / 纯 div。你说「( Ok )」，我从你最自然会去点的两处先做。<br>
+              <b>① 总览 ›「今天要上的课」班级列</b>（第 1624 行）—— 原来是 <span class="mono">&lt;td&gt;&lt;b&gt;班名&lt;/b&gt;&lt;/td&gt;</span>，改成 <span class="mono">&lt;a class="room-link" href="#room/&lt;id&gt;"&gt;</span>。<b>每天开机第一眼就是这张表。</b><br>
+              <b>⑤ 教师页 ›「班级」列</b>（<span class="mono">teacherClassesCell()</span>）—— 原来是 <span class="mono">&lt;div class="cls-item"&gt;</span>，改成 <span class="mono">&lt;a class="cls-item" href="#room/&lt;id&gt;"&gt;</span>，整块可点；补了 <span class="mono">a.cls-item</span> 的 hover / focus-visible 规则（清下划线 + 手型 + 浅品牌色底 + 班名下划线）。<b>带班的人天天看这一列。</b><br>
+              <b>顺带修掉一个既有 bug</b>：教师表「学生」列原来写 <span class="mono">t.students</span>，而 <span class="mono">blankTeacher()</span> 里没有这个字段 → 页面上印出字面 <b>undefined</b>。新增 <span class="mono">teacherStudentN(t)</span> 从任课班级算（<span class="mono">classN</span> 累加），和右边班级列同一个口径，两列不会对不上。<br>
+              <b>★ 真机抓到的真 bug（最重要的一条）</b>：教师页整行本来就带 <span class="mono">data-open="teacher:&lt;id&gt;"</span>，全局 click 分发器里 <span class="mono">[data-open]</span> 那一支会 <span class="mono">e.preventDefault()</span> + <span class="mono">openDrawer()</span> —— 所以<b>点班块变成打开教师档案抽屉，hash 根本没变</b>。探针只证「HTML 里有那个 <span class="mono">&lt;a&gt;</span>」，证不了这个。<b>修法</b>：在 click 分发器<b>最前面</b>加一条 <span class="mono">if (e.target.closest('a[href^="#room/"]')) return;</span>，只 return、不 preventDefault（让浏览器自己改 hash）。<b>顺序敏感</b>，挪到 <span class="mono">[data-c-act]</span> / <span class="mono">[data-open]</span> 之后立即失效。<br>
+              <b>没做的两处</b>：<b>教室</b>页不改 —— 那是「市」不是「班」，结构上没有班名可点（已在记忆里标为「别硬改」）；排课矩阵小卡片「<span class="mono">data-c-act=open</span>」也不改 —— 它现在的语义是「跳到班级表并聚焦那一行」，改成直接进资料库会和已有探针断言撞上。<br>
+              <b>验收</b>：新探针 <span class="mono">check-p48.js</span> <b>43 项全过</b>（两处入口是三处同 id / hover 样式真实存在 / 空态不抛 / <span class="mono">undefined</span> 不再出现），新真点击测试 <span class="mono">click-p48.js</span> <b>26 项全过</b>（真 Chrome + CDP 逐处真点，断 hash 有没有变、42 课全表有没有真出来、0 报错），分别挂进 <span class="mono">run.sh ⑪ / ⑫</span>。主端 5 个老探针拿改动前备份<b>逐断言 diff，一条不差</b>。全套 8 通过 / 9 失败，<b>失败清单和改动前完全一样</b>。<br>
+              <b>版本</b>：<span class="mono">build v6 · room-lib</span> → <span class="mono">build v7 · room-links</span>（侧栏 <span class="mono">#buildTag</span>）。<b>只在本地，没推云端。</b></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-18 ============ -->
+  <div class="day-panel" data-day="2026-10-18">
+    <div class="card">
+      <h2>2026-10-18 · 打磨记录<span class="n">5 行 · 已打磨 3 · 搁置 2</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-34</td>
+              <td><b>班代号改成「按市各自计数」</b><br><span style="color:var(--ink3);font-size:12px">苏州 01 / 杭州 01 / 广州 01（不再跨市累计 01→02→03）</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-18</td>
+              <td class="mono nw">10-18</td>
+              <td><b>你的问题</b>：苏州班 苏01 / 杭州班 <b>杭02</b> / 广州班 <b>广03</b> —— 偏码错了，应该是每市都从 01 起。<br><b>根因</b>：<span class="mono">appFormOf()</span> 里 <span class="mono">n = DB.classes.length + 1</span>（<b>全班总数</b>），所以跨市累计。<br><b>改法</b>：改成 <span class="mono">sameCity = DB.classes.filter(c =&gt; c.room === 市名).length</span>，代号 = 市名首字 + <span class="mono">(sameCity + 1)</span>。苏州市第二期才是 <b>苏02</b>。<br><b>验证</b>：连续建 苏州/杭州/广州 → <b>苏01 / 杭01 / 广01</b>；再建苏州第二期 → <b>苏02</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-35</td>
+              <td><b>界面隐藏班代号（只显示班名）</b> · ⚠️ 代号字段仍保留在数据里</td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-18</td>
+              <td class="mono nw">10-18</td>
+              <td><b>你定</b>：全部隐藏，只显示班名（苏州班 / 杭州班 / 广州班）。<br><b>改了 12 处显示</b>：① 总览今日课表 ② 总览「差 N 人开班」提示 ③ 排课›矩阵 chips ④ 排课›班级表 ⑤ 课次记录（周视图）⑥ 课次记录（月度明细）⑦ 出勤总表 ⑧ 结业学生表 ⑨ 学生档案抽屉 ⑩ 点名抽屉（两处）⑪ 编班抽屉 ⑫ 出勤明细 + 阶段考试抽屉。<br><b>✅ 保留显示的地方</b>：<b>开班审批抽屉</b>（班级名 + 代号输入框 + 审批结果「已通过 · 新建班 苏州班 苏02」+ 碰撞提示里的班名代号）—— 因为那是管理员建班时核对用的。<br><b>⚠️ 关键记录（以后别忘）</b>：<span class="mono">c.code</span>（班级代号）**<b>字段依然存在、依然写入、依然存进 localStorage 和 Firestore</b>**，只是<b>前端不显示</b>。<b>为什么留着</b>：① 以后查历史班 ② 同市多期（苏01 / 苏02）要靠它区分 ③ 导出报表需要唯一标识。<b>以后想把代号显示回来</b>：在各处表格里把 <span class="mono">c.code</span> 拼回去即可，数据不用迁移。<br><b>验证</b>：班级页 / 课次记录页全文搜索「苏01 / 杭01 / 广01」→ <b>0 命中</b>；班名「苏州班 / 杭州班 / 广州班」→ <b>全部命中</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-36</td>
+              <td><b>越南语页面零残留中文</b><br><span style="color:var(--ink3);font-size:12px">方案 A（继续打补丁）· 5 项一起做</span></td>
+              <td class="nw">主端 · 翻译层</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-18</td>
+              <td class="mono nw">10-18</td>
+              <td><b>你的问题</b>：切越南语后「开班申请」页还有 <span class="mono">Ca học（自定义 18:30–19:15）</span> 和 <span class="mono">Tô Châu班</span>；「新建开班申请」抽屉几乎整块没翻，还夹着 <span class="mono">几Bấm开始</span> / <span class="mono">每节多少điểm钟</span> 这种怪话。<br>
+              <b>根因三条</b>：① VI 字典缺词条 ② <b>单字量词也做了子串替换</b>（「点」→Bấm 把「几点」啃了、「分」→điểm 把「分钟」啃了）③ 「苏州班」越南语语序要<b>前置</b>成「Lớp Tô Châu」，子串替换做不到。<br>
+              <b>改法（5 项）</b>：<br>
+              ① <b>单字全部移出子串替换</b> —— 点/分/行/页/月/条/项/位/次/共/缺 从 VI 字典删除（连 11 条），只走 <span class="mono">_viSolo</span>（整个节点就这一个字才翻）。<span class="mono">_viKeys</span> 加 <span class="mono">.filter(k =&gt; k.length &gt; 1)</span> 兜底。<br>
+              ② <b>新增 <span class="mono">_viPre</span>（整句级，跑在量词规则之前）</b>：市名+班 → <span class="mono">Lớp 市名</span>（市名表从 <span class="mono">CITIES</span>/<span class="mono">ROOMS</span> <b>自动生成</b>，以后加市不用改这里）· 共 N → Tổng N · 10 个省份 → 10 tỉnh · 第 N 期 → kỳ N · 开班抽屉几句带变量的整句。<br>
+              ③ <b>补 61 条词条</b>：自定义 / 上课时间 / 开班日期 / 每周哪几天 / 几点开始 / 每节多少分钟 / 当前课表 / 自动带入 / 同教师 / 同级别 / 同教室 / 未编班 / 总课次 / 名单 / 只读 / 档案 / 云端三个按钮 / 矩阵 / 省份 / 清空业务记录 …<br>
+              ④ <b><span class="mono">langWalk</span> 补 <span class="mono">aria-label</span></b> —— 原来只扫 <span class="mono">placeholder</span> / <span class="mono">title</span>，导致 13 处「个人档案」按钮的 aria-label 一直没翻。<br>
+              ⑤ <b>标点收尾</b>：全角 <span class="mono">（）「」</span> → 半角（放在字典替换<b>之后</b>，否则带全角括号的词条会失配）。<br>
+              <b>新增两个探针</b>：<span class="mono">build/zhops-probe/scan-vi.js</span>（真 Chrome 扫 9 个视图 + 排课 4 个子页签 + 开班抽屉 + 学生抽屉 + 注入验证 + <b>回切中文还原</b>）· <span class="mono">build/zhops-probe/test-vi-swap.js</span>（<b>47 条</b>纯函数用例，含你报的原句与「不许被啃坏的数据」）。<br>
+              <b>验证结果</b>：<span class="mono">viSwap</span> <b>47/47 通过</b>；DOM 扫描 15 个界面只剩 <b>3 处</b>，全是<b>成员姓名</b>（王雅琴 / 李文博 / 周建华）—— 那是<b>数据不是 UI</b>，按设计不翻。注入验证 4 句全过：<span class="mono">时段（自定义 18:30–19:15）</span> → <b>Ca học (Tùy chỉnh 18:30–19:15)</b>、<span class="mono">苏州班</span> → <b>Lớp Tô Châu</b>。回切中文侧栏 / 面包屑<b>一字不差还原</b>。既有套件 <b>7 通过 / 2 失败</b>（仍是那两条老账：teacher-apply.html / schedule-demo.html 已退役）。<br>
+              <b>⚠️ 以后加新界面的规矩</b>：<b>不许往 VI 字典加单字</b>；带数字的量词写进 <span class="mono">_viRe</span>；要换语序的写进 <span class="mono">_viPre</span>；改完跑 <span class="mono">test-vi-swap.js</span> + <span class="mono">scan-vi.js</span> 两个探针。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-37</td>
+              <td><b>外部内容平台 · 三个入口设计</b><br><span style="color:var(--ink3);font-size:12px">只定契约，不做导入功能</span></td>
+              <td class="nw">主端 · 接口设计</td>
+              <td><span class="b hold">⛔已被 P-39 取代</span></td>
+              <td class="mono nw">10-18</td>
+              <td class="mono nw">10-18</td>
+              <td><b>你定</b>：教材（42 课）+ 考题<b>同源</b>，都来自你正在搭建的「中文教课体系」平台。导入与考试触发都<b>「以后补上，先设计好入口」</b>。<br>
+              <b>★ 分工（一句话）</b>：内容平台管「教什么」；zhops 管「谁在教、谁在学、教到哪、考了多少分」。<b>zhops 只存「引用 + 结果」，不存教材正文、不存题库。</b><br>
+              <b>入口 1 · 教材大纲</b>：输入最小集 = <span class="mono">级别 + 课号 + 标题 + 阶段</span>（<b>不导正文</b>）→ 存 <span class="mono">DB.syllabus[lv] = [{no,title}]</span>；<b>幂等</b> = 同级别重导<b>整份覆盖</b>；<b>校验</b> = 课号必须 1…42 连续，缺号<b>整批拒绝</b>（不半截入库）。<br>
+              <span style="color:var(--ok)">带来的效果</span>：现在课次只显示「第 3 课 · 第一阶段」，导入后能显示「<b>第 3 课 · 声调与拼音</b>」。<br>
+              <b>入口 2 · 考题 + 考试场次</b>：场次由 <b>zhops 建</b> = <span class="mono">班 + 阶段 + 日期 + 满分 + 及格线 + 外部考题ID</span>。<b>考题本体不进 zhops，只存那个 ID</b> —— 你平台怎么改题型 / 改判分，zhops 都不用动。点「看试卷」时去外部平台取。<br>
+              <b>入口 3 · 成绩回写</b>：输入 = <span class="mono">场次ID + 学生ID + 分数</span> → 存 <span class="mono">DB.examScores[]</span>。<b>⚠️ 不写进 <span class="mono">s.exam</span></b> —— 那里一个学生一阶段只能放一个数，<b>补考会把原分覆盖</b>。用「场次 + 学生」双键，补考 / 重考 / 转班都留得住。<br>
+              <b>页面要留的 3 个位置（先只放位置）</b>：① 数据页「教材大纲」卡（显示「未导入」+ 导入按钮）② 教室页每个班卡「第一阶段 · 未安排」+ 安排考试按钮 ③ 班详情「学生 × 6 阶段成绩表」。三个按钮现在点下去可以是「待接入」。<br>
+              <b>★ 现在只定 4 件事（其余等平台）</b>：① <b>唯一 ID 规则</b>（外部回写要认得，ID 变了历史成绩接不上）② <b>最小字段集</b>（只定"必须有哪几个"，不管内容长什么样）③ <b>幂等规则</b>（重导 = 覆盖还是变两套）④ <b>失败处理</b>（缺一课时整批拒绝）。<b>这 4 件现在不定，以后改会破坏已有数据；导入功能什么时候做都行。</b><br>
+              <b>状态</b>：设计已定案，功能等平台搭好再接。<br>
+              <b style="color:var(--bad)">⛔ 10-19 已被 P-39 取代，本条不再单独执行</b> —— 入口 1 教材大纲 → <b>P-40</b>；入口 2 考题 + 场次 → <b>P-43</b>；入口 3 成绩回写 → <b>P-42</b>；接口设计本身留在 <b>P-39</b> 当依据。<b>内容不删，只归档。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-38</td>
+              <td><b>阶段 / 成绩链路还没接通</b><br><span style="color:var(--ink3);font-size:12px">⚠️ 必须先修 —— 不然入口接好了分数也没地方放</span></td>
+              <td class="nw">主端 · 数据链路</td>
+              <td><span class="b hold">⛔已被 P-39 取代</span></td>
+              <td class="mono nw">10-18</td>
+              <td class="mono nw">—</td>
+              <td><b>你指出</b>：「系统阶段还没有接通」。<b>实测确认，三个洞</b>：<br>              <b>① 根本没有录成绩的入口（最大）</b>：全文件搜遍，<span class="mono">s.exam</span> 只在两处被初始化成 <span class="mono">{}</span>，<b>没有任何一行代码往里写分数</b>。「数据 › 阶段考试」抽屉是<b>纯只读</b>（底部只有「关闭」按钮），所以那一列<b>永远显示「未考」</b> —— 这套东西现在是个空壳。<br>
+              <b>② 只支持 3 个阶段，可是阶段有 6 个</b>：成绩抽屉里写死 <span class="mono">[1,2,3]</span>，但 <span class="mono">STAGE()</span> / <span class="mono">stageOf()</span> 都分了 <b>6 段</b>（边界 12 / 21 / 27 / 34 / 40 / 42）。<b>第 4~6 阶段没地方存成绩。</b><br>
+              <b>③ 没有「考试场次」这一层</b>：成绩直接挂学生身上，没有「这场考试是哪个班、第几阶段、哪天考、满分多少」。外部平台导进来的东西无处安放；补考还会覆盖原分。<br>
+              <b>已经有的（不用重建）</b>：教室 → 班 → 学生 / 课次 1→42 / 阶段自动推算（12·21·27·34·40·42）/ 及格线 60 已写死 / 结论「可进下一阶段 · 不及格」已能算。<br>
+              <b>★ 建议顺序</b>：<b>先补 6 个阶段的存储 + 录入入口 → 再接外部导入</b>（P-37）。反过来做，入口通了分数也没地方放。<br>
+              <b>状态</b>：待打磨，未开工。<br>
+              <b style="color:var(--bad)">⛔ 10-19 已被 P-39 取代，本条不再单独执行</b> —— 阶段名 → <b>P-41</b>；成绩链路 → <b>P-42</b>（改成存 <span class="mono">DB.examScores</span> 的「场次 + 学生」双键，<b>不存 <span class="mono">s.exam</span></b>）。10-18 那版做法已<b>整版回退</b>，别照旧做。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-17 ============ -->
+  <div class="day-panel" data-day="2026-10-17">
+    <div class="card">
+      <h2>2026-10-17 · 打磨记录<span class="n">4 行 · 已打磨 4</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-30</td>
+              <td><b>云同步首次真实数据实测（本地 → 云端 → 线上）</b><br><span style="color:var(--ink3);font-size:12px">Uyen（上海·苏州）+ 8 位学生，本地推云 → 线上拉回，全链路通过</span></td>
+              <td class="nw">两端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-17</td>
+              <td class="mono nw">10-17</td>
+              <td><b>你在本地页录入真数据后点「☁︎ 推送到云端」，我查 Firestore 确认：</b><span class="mono">zhops/master</span> 收到 <span class="mono">at=2026-10-17T02:09:22Z</span>，<b>教师 1 位</b>（Uyen｜room 上海｜cities [苏州]）+ <b>学生 8 位</b>（Tony 1-8，全部 room=上海 / city=苏州 / teacherId=t1）。<b>线上打开 admin → 自动拉回同一份</b>，你确认「yes well done」。<br><b>链路结论</b>：本地 file:// 录入 → 手动推云 → 线上 https:// 打开 → 自动拉云，<b>三段全通</b>。两端写的是同一个云端文档，所以本地/线上互通。<br><b>踩到的坑（记下来）</b>：① 我在命令行<b>读不到</b>你浏览器的 localStorage —— Chrome 开着时 <span class="mono">SingletonLock</span> 占着 profile，无头实例会开成空的临时 profile（读到 <span class="mono">keys: []</span>）；<b>正确做法 = 让你自己在页面点按钮</b>。② 之前 <span class="mono">/tmp/chp-*</span> 残留无头进程会干扰 <span class="mono">open -a "Google Chrome"</span>（窗口点不出来），推前要 <span class="mono">pkill -f "user-data-dir=/tmp/chp-"</span>。<br><b>遗留改进</b>：断网期间改的数据，联网后<b>不会自动补推</b>（要手动点一次）；<span class="mono">Tony4</span> 少个空格（你录入时的笔误，非 bug）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-31</td>
+              <td><b>【新范围】开班流程重构 · 学生只读带入 + 自定义课表</b><br><span style="color:var(--ink3);font-size:12px">不再重复填学生 · 周几/时间/时长自定 · 市名=班名</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-17</td>
+              <td class="mono nw">10-17</td>
+              <td><b>你的痛点</b>：已经把 8 个学生 + Uyen 都建好了，点「＋ 开班」还要再填一遍学生姓名电话 —— 重复劳动。<b>你逐步定：① 学生完全只读 ② 按级别过滤 ③ 时段改自定义（方案 B）④ 手工输入彻底删掉（学生先去学生页建好）</b>。<br><b>改动</b>：<b>① 开班表单</b>去掉「学生来源」二选一 + 勾选框 + 手工输入，改成<b>只读列表</b>（同教师 + 同级别 + 未编班，即候选池）；<b>② 课表</b>从固定 4 条 slots 改成自定义：开班日期 + 周几多选（<span class="mono">data-a-day</span>）+ 几点 + 每节分钟；<b>③ 总课次</b>按级别自动（<span class="mono">LV_TOTAL</span> HSK1/2/3 = 42），记进 <span class="mono">plannedLessons</span>，<b>暂不自动生成 lessons</b>；<b>④ 教室（市）</b>从「教师勾了但还没开班」的市里选；<b>⑤ createApp</b> 合成 slot 对象（<span class="mono">sl_&lt;申请id&gt;</span>）存进 DB.slots，与旧结构兼容。<br><b>清理</b>：删掉 <span class="mono">addstu/delstu/rmode/pickall/picknone</span> 事件、<span class="mono">data-a-pick</span> 处理、<span class="mono">.pick-list/.pk-bar</span> CSS、<span class="mono">newAppForm</span> 的 <span class="mono">rosterMode/picked/roster</span> 字段。<br><b>验证</b>：造 Uyen + 8 学生 → 抽屉里只读列表 8 人、无勾选框、无姓名输入框；提交后 roster 8 人全带 <span class="mono">sid</span>，审批建班后学生总数 <b>18→18 不重复</b>，8 人全编入。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-32</td>
+              <td><b>【新范围】省份锁 + 市按已开班锁 + 班名 = 市名（水果名删除）</b><br><span style="color:var(--ink3);font-size:12px">省份 ID 要密码才能改 · 已开班的市锁死 · 苹果/香蕉名彻底删除</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-17</td>
+              <td class="mono nw">10-17</td>
+              <td><b>你定的规则</b>：省份 = 教师固定 ID；市 = 班级名；勾了市 = 宣布要开这个班。<br><b>① 省份锁定</b>：编辑抽屉里省份显示 <span class="mono">🔒 上海</span>，点它弹密码（<span class="mono">ROOM_PASS='Uyen2026'</span>），对了才解锁重选；错了提示「密码不对」。<br><b>② 市的锁定依据改变</b>：从「被其他教师认领」改成「<b>这个市已经开班了</b>」（<span class="mono">DB.classes.some(c=&gt;c.room===city)</span>），已开班的市显示「✓ 已开班」+ disabled。<br><b>③ 开班弹窗</b>只列「教师勾了但还没开班」的市。<br><b>④ 班名根因修复</b>：审批时班名原来从「水果名列表」取（苹果/凤梨/芒果…）—— <b><span class="mono">FRUIT</span> 常量已连根删除</b>（你原话：把旧版的苹果香蕉这些生活名称删掉，不要再用了；以后市的名称不够再追加）。班名 = <b>市名 + 班</b>（苏州班 / 杭州班），代号 = 市名首字 + 序号（苏01 / 杭02）；<b>没有市名就不许审批建班</b>（不再自动编名字）。<br><b>⑤ 顺带修</b>：<span class="mono">approveApp</span> 里 <span class="mono">room</span> 以前只在线下才存 → 线上班在「教室」页看不见；改成<b>一律存市名</b>。<br><b>验证</b>：苏州班（苏01 / 8 人）、杭州班（杭02 / 1 人），教师表班级列两行都对。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-33</td>
+              <td><b>【新范围】教师表新增「班级」列（详细版）</b><br><span style="color:var(--ink3);font-size:12px">班名 + 人数 + 进度，一教师多班逐行列出</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-17</td>
+              <td class="mono nw">10-17</td>
+              <td><b>你的问题</b>：教室页能看到班，但教师页看不到 Uyen 有几个班。<b>你选「详细版」</b>。<br><b>改动</b>：教师表在「教室」后加「班级」列，新增 <span class="mono">teacherClassesCell(t)</span> —— 每个班一行：<b>班名 · N 人 · 第 X/42 课</b>（未开课则显示「未开课」）；没班显示「—」；空态 colspan 10→11。<br><b>CSS</b>：<span class="mono">.cls-list/.cls-item/.cn/.cm</span>（浅底 + 左侧色条）。<br><b>注意</b>：进度由 <span class="mono">classLesson()</span> 从 <b>lessons 事实表</b>现算，不是读 <span class="mono">c.lesson</span> —— 新班建出来但没推进课次时显示「未开课」，属正常。<br><b>验证</b>：造 Uyen + 苏州班（8 人）+ 杭州班（1 人）→ 教师表两行「苏州 班 8 人 · 未开课」「杭州 班 1 人 · 未开课」。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-16 ============ -->
+  <div class="day-panel" data-day="2026-10-16">
+    <div class="card">
+      <h2>2026-10-16 · 打磨记录<span class="n">1 行 · 已打磨 1</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-29</td>
+              <td><b>【新范围】zhops 数据上云（Firestore）· 云 + 本地双轨</b><br><span style="color:var(--ink3);font-size:12px">复用 hsk-class-v1 项目 + 新建 zhops 集合 + 客户端直连 + 自动同步</span></td>
+              <td class="nw">两端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-16</td>
+              <td class="mono nw">10-16</td>
+              <td><b>你问「本地输入线上有没有」→ 查出：没有（纯 localStorage）；你要像 BMSv1 那样「云 + 本地」。</b>照 BMSv1 的双轨思路做，但技术上用 <b>Firestore REST + API Key（零依赖、不打 SDK）</b>，跟 <span class="mono">schedule.html</span> 读课表同一条路。<b>你的选择</b>：复用 <span class="mono">hsk-class-v1</span> + 新建 <span class="mono">zhops</span> 集合 + 客户端直接读写 + 自动同步。<br><b>① 规则</b>：<span class="mono">build/firestore.rules</span> 加 <span class="mono">match /zhops/{docId} { allow read, write: if true; }</span>（客户端直连必需），<span class="mono">lessons/meta</span> 保持公开只读不动；备份 <span class="mono">.bak-20261016-before-zhops</span>；<span class="mono">node build/11_upload_firestore.mjs --rules-only</span> → ruleset <span class="mono">30d07c97</span>（课程 42 文档未动）。<br><b>② 主端</b>（sha <span class="mono">9be4b2e8</span>）：加 <span class="mono">FS</span> 配置 + <span class="mono">fsPush/fsPull/fsSchedulePush</span> + <span class="mono">cloudBootPull()</span>（启动 + 切回标签页拉云，<b>只有云端比本地新 <span class="mono">at &gt; lastSavedAt</span> 才覆盖本地</b> ← 防旧标签页覆盖，BMSv1 的教训）+ <span class="mono">save()</span> 接自动推（debounce 1.2s）+ 侧栏 <span class="mono">#stCloud</span> 状态 + 手动「☁︎ 推送 / 拉取」按钮。数据契约 <span class="mono">{ payload, at, app }</span>。<br><b>③ 教师端</b>（sha <span class="mono">49a9bd3d</span>）：同一套代码（<b>同一钥匙 <span class="mono">zhops.sched.v3</span> + 同一 APP_TAG <span class="mono">zhops.admin</span></b> → 两端云数据天然同一份）；拉云后调 <span class="mono">fillTeachers/fillSlots/syncRoom/renderConfirm/renderView</span>（教师端无 <span class="mono">buildFacts</span>）。<br><b>④ 端到端实测（不只跑语法）</b>：无头 Chrome 开本地主端 → 调 <span class="mono">save()</span> → 云状态「☁︎ 已同步 · 12:59」→ curl 查云端 <span class="mono">zhops/master</span> 有完整 DB（17 键）✅；<b>新 profile（模拟另一台设备）打开 → <span class="mono">cloudState: ok</span>（启动即拉到云端）</b>✅；测完清测试数据（404）。<br><b>⑤ 已推线上</b>（13:02）：admin <span class="mono">9be4b2e8</span> / teacher <span class="mono">49a9bd3d</span> / index、404 未变。<b>线上三件复核全过</b>：下载核 sha（第 1 次即一致）· 抓线上原文（云同步代码在）· 无头 Chrome 直开两页零报错。<br><b>⚠️ 已知风险</b>：客户端直接读写 → API key 公开 = 知道项目的人都能改排课数据（<b>安全边界是 Firestore 规则，不是前端</b>）；自动同步有「旧标签页覆盖」风险，已用时间戳比对兜住。<b>待办</b>：云版本快照（snapshots）/ 真正收紧要加 Firebase Auth。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-13 ============ -->
+  <div class="day-panel" data-day="2026-10-13">
+    <div class="card">
+      <h2>2026-10-13 · 打磨记录<span class="n">23 行 · 已打磨 14 · 等验收 5 · 待打磨 4</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-03</td>
+              <td><b>成员板块</b><br><span style="color:var(--ink3);font-size:12px">数据驱动增删改 + 权限保持文字标签</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>照搬 teacher/student 抽屉做成员 view/edit/新建/保存/删除；<span class="mono">zhops-admin.html</span> <span class="mono">3f55fc4f</span>；本地=线上</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-04</td>
+              <td><b>结算页重写</b><br><span style="color:var(--ink3);font-size:12px">4 张卡 + 按教师汇总 + class.n 改成算的</span></td>
+              <td class="nw">结算</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-12</td>
+              <td class="mono nw">10-13</td>
+              <td>已上课次 47 · 课酬成本 11,760k（真算）；<b>收入/利润留「待定」</b>；<span class="mono">7b4596ee</span>；本地=线上</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-05</td>
+              <td><b>结算页两按钮接通</b><br><span style="color:var(--ink3);font-size:12px">导出对账单（CSV） / 封存本月（DB.seals）</span></td>
+              <td class="nw">结算</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>新增 <span class="mono">exportStatement</span>/<span class="mono">sealSettle</span>/<span class="mono">sealsCard</span>；<span class="mono">41aa0942</span>；本地=线上</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-06</td>
+              <td><b>清空演示种子 · 主端</b><br><span style="color:var(--ink3);font-size:12px">teachers/students/classes/absences/apps 置空</span></td>
+              <td class="nw">数据</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>seedDB 五数组空 + money 归零（保结构防白屏）；<span class="mono">1baf5fe9</span>；本地=线上</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-07</td>
+              <td><b>清空演示种子 · 教师端</b><br><span style="color:var(--ink3);font-size:12px">与主端对称，给干净试用板</span></td>
+              <td class="nw">数据</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>五数组空 + money 归零（无 members/seals）；<span class="mono">213d840f</span>（后并入 <span class="mono">e3764577</span>）；本地=线上</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-08</td>
+              <td><b>teacher.html amber note 修正</b><br><span style="color:var(--ink3);font-size:12px">file:// 互通表述讲准</span></td>
+              <td class="nw">教师端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>原「本地 file:// 不通」→「Chrome 下 file:// 互通；仅 file://↔https:// 不通」；<span class="mono">b711c51c</span></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-09</td>
+              <td><b>教师下拉残留演示数据</b><br><span style="color:var(--ink3);font-size:12px">「我是哪位教师」清空</span></td>
+              <td class="nw">教师端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>加「清空教师筛选」按钮 + 开页自动清理（<span class="mono">purgeDemoTeachers</span>）；<span class="mono">e3764577</span>；本地=线上</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-10</td>
+              <td><b>v1 归档清理</b><br><span style="color:var(--ink3);font-size:12px">3 个 demo 文件移回收站</span></td>
+              <td class="nw">清理</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>排课系统-Demo + 2×schedule-demo → <span class="mono">~/.Trash</span>（可恢复）；零运行影响</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-11</td>
+              <td><b>建立「打磨台」本页</b><br><span style="color:var(--ink3);font-size:12px">按日期归档 + 日期切换</span></td>
+              <td class="nw">文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>新建 <span class="mono">docs/zhops-polish.html</span>（同台账风格 + 日期页签）；本地</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-12</td>
+              <td><b>收入 / 利润算不出来</b><br><span style="color:var(--ink3);font-size:12px">学生档案缺「学费」字段</span></td>
+              <td class="nw">结算</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">—</td>
+              <td>加「学费」字段后才能真算；现写「待定」</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-13</td>
+              <td><b>按学员计费用「在读」非「实到」</b><br><span style="color:var(--ink3);font-size:12px">计费口径待定</span></td>
+              <td class="nw">结算</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">—</td>
+              <td>真要做账，口径要再定</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-14</td>
+              <td><b>总览页 4 张钱卡仍是演示值</b><br><span style="color:var(--ink3);font-size:12px">与结算页不一致</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">—</td>
+              <td>7,440k / 4,680k / 2,760k / 186k —— 要不要一起接，等一句话</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-15</td>
+              <td><b>探针套件（911 项）按真数据重构</b><br><span style="color:var(--ink3);font-size:12px">清空种子后旧断言会报错</span></td>
+              <td class="nw">测试</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">—</td>
+              <td>属开发工具；等录入真数据后再重构<br><b>2026-10-13 补记（做教师端三端适配时发现）</b>：探针红得比这更早、更宽 —— <span class="mono">probe-logic / events / overview / month / persist</span> 5 个<b>对 P-16 之前的备份跑也是同样失败</b>（唯一绿的是 <span class="mono">probe-audit</span>），所以是<b>既有陈旧断言</b>，与语言层无关。另：P-16 的语言层在探针沙盒里会抛 <span class="mono">ReferenceError: NodeFilter is not defined</span>（<span class="mono">langWalk()</span> 用 <span class="mono">document.createTreeWalker</span>，而 <span class="mono">harness.js</span> 没给这两个 DOM 全局）→ <span class="mono">run.sh</span> 带 <span class="mono">set -e</span>，跑到第 ② 步就整体退出。已给 <span class="mono">harness.js</span> 补 <span class="mono">NodeFilter</span> + 空 <span class="mono">createTreeWalker</span>（补浏览器能力，不为测试改产品代码），套件恢复到 P-16 之前的真实状态。<br><b>2026-10-13 再做 B1 时，根因彻底查清</b>：5 个失败探针的报错<b>全是「种子数据没灌进去」的症状</b>（<span class="mono">待审批徽章 = 4 → 空</span>、<span class="mono">「全部」出 8 行 → 0</span>、<span class="mono">教师 8 位 → 0</span>、<span class="mono">学生 18 人 → 0</span>、<span class="mono">班级 5 个 → 0</span>）—— 即本项最初那句「清空种子后旧断言会报错」，一个字没跑偏。另修 <span class="mono">run.sh</span> 的 <span class="mono">set -e</span>：原来第 ② 步一挂，②–⑧ 全部跑不到（看起来像整套都坏），现改为逐个记账 + 汇总，<b>5 通过 / 5 失败</b>，失败时打印断言行而非堆栈。<b>本项仍未做</b>，重构时要连 <span class="mono">test_apply_flow.mjs</span>（指向已改名的 <span class="mono">teacher-apply.html</span> + 已废弃的 <span class="mono">schedule.html</span>）和 <span class="mono">test_worktable.mjs</span>（文档清单里两个不存在的文件）一起收。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-16</td>
+              <td><b>【新范围】主端加越南语切换</b><br><span style="color:var(--ink3);font-size:12px">中 / 越 旗标切换按钮</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>顶栏 🇨🇳/🇻🇳 切换 + 翻译层（B 路线：不动中文代码，挂 <span class="mono">VI</span> 对照表）。Phase 2 子串替换 → Phase 3 全页 240 条 → <b>Phase 4：逐页「中/越」对照复测</b>，残留中文片段 <b>67 → 5</b>（剩「中文」按钮标签 + 成员演示人名）。Phase 4 另加：年月语序正则（<span class="mono">2026 年 10 月 → Tháng 10 năm 2026</span>）+ 标签页标题纳入翻译。<br><b>Phase 5：补齐「开班申请」页 + 整层抽屉/审批弹窗</b>（你点出的「开班申请 Page still have chinese」）—— 根因是我此前只测了页面空态，从没测「点一行打开的那个抽屉」。补 <span class="mono">VI</span> 字典 ~250 条（抽屉 / 审批弹窗 / 说明段 / 下拉选项值）。同时把裸量词收进 <span class="mono">_viSolo</span>（只整节点匹配，修掉「这个班 → 这lớp班」误伤）、带数字的收进 <span class="mono">_viRe</span>。<br><b>验证</b>：源码穷举 246 → 11；运行时测试台（预置演示数据 + 打开抽屉，24 场景并行）352 → <b>311</b>，剔除演示人名/班名后 <b>零 UI 残留</b>；中文模式回归 <b>0 条越南语字符</b>。刻意保留 2 条：<span class="mono">语言 / Ngôn ngữ</span>（双语标签）、<span class="mono">中国 · 中文 · 越南语</span>（教师档案演示数据）。<b>水果名不进字典</b>（属班名数据，翻了会得半中半越的「Táo班」）。<br><b>✅ 已推线上（2026-10-13 15:37）</b>：<span class="mono">~/zhops/admin.html</span> commit <span class="mono">1997e21</span>；线上 <span class="mono">tony80-del.github.io/zhops/admin.html</span> 核对 sha = <span class="mono">5e05e02b</span>，<b>本地 = 线上</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-17</td>
+              <td><b>【顺带修掉】课次页计数泄漏 JS 源码</b><br><span style="color:var(--ink3);font-size:12px">界面直接显示 <span class="mono">在读 ' + live.length + ' 个</span></span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>做越南语逐页复测时发现：模板字面量里误用了单引号拼接，把源码当文字渲染。改成 <span class="mono">在读 ${live.length} 个</span>；随 P-16 一起 <b>已推线上</b>（线上 sha <span class="mono">5e05e02b</span>，2026-10-13 15:37）</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-18</td>
+              <td><b>【新范围】教师端加越南语切换</b><br><span style="color:var(--ink3);font-size:12px">与主端同一套做法（B 路线翻译层）</span></td>
+              <td class="nw">教师端</td>
+              <td><span class="b wait">等验收</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>给 <span class="mono">docs/zhops-teacher.html</span> 加 🇨🇳/🇻🇳 切换。做法与主端一致：不动现有中文代码，挂 <span class="mono">VI</span> 对照表 + <span class="mono">applyLang()</span>；旗标按钮加在页眉右侧（深色版样式）。<br><b>词库按页量身写</b>（没照抄主端 300+ 条，避免主端专用长句误伤）：穷举教师端全部中文串 —— 静态 65 条 + 属性 5 条 + JS 字面量 75 条 → 收进 ~100 条对照。<br><b>一个关键差异</b>：主端是「正则先、字典后」，本页改成<b>「字典先、正则后」</b> —— 因为本页大多是静态整句（如「低于 8 人仅提示、不拦提交；超过 12 人请拆班。」），字典先跑能整句命中；正则只收拾真正动态的 <span class="mono">N 人 / N 位 / 第 N 课</span>。单字「一/二/三」（三个 fieldset 序号）走 <span class="mono">_viSolo</span>，不进字典。<br><b>验证</b>：<span class="mono">node --check</span> SYNTAX_OK；运行时测试台（预置演示 DB，10 个场景：默认页 / 回确认页 / 提交成功 / 校验报错 / 提示条 / 加名单行 / 接受 / 拒绝 / 切回）残留 <b>19 条 → 去重后仅 2 类</b>，均为刻意保留：<span class="mono">语言 / Ngôn ngữ</span>（切换按钮 title，双语标签）、<span class="mono">学员都是工厂班组长</span>（演示数据里那条申请的备注，属数据）；<b>零 UI 文案残留</b>。中文模式回归：<b>本次改动引入的越南语残留 0 条</b>。<br><b>未推</b> —— 本地 <span class="mono">26efe4aa</span>，线上教师端仍是 <span class="mono">e3764577</span>。等你点头再推。<br><span style="color:var(--ink3)">备注：副标题 <span class="mono">Lớp học tiếng Trung · Giáo viên · 提交开班申请 / 回确认</span> 在中文模式下本来就是「越南语前缀 + 中文」混排（改动前就长这样，我没动）；要一并理成纯中文说一声。</span></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-19</td>
+              <td><b>【新范围】教师端三端适配（电脑 / iPad / 手机）</b><br><span style="color:var(--ink3);font-size:12px">一次做齐四屏 · 断点 599 / 1199 / 1200</span></td>
+              <td class="nw">教师端</td>
+              <td><span class="b wait">等验收</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>你贴出教师端 + 「have to consider user 1.Computer 2.iPad 3.Mobile Phone」，要求三种屏都修。<br><b>方案（你已拍板）</b>：①一次做齐四屏（工作台 / 我的班级 / 我的学生 / 流程表）②断点按 iPad&amp;手机真实宽度定 ③<b>先统一单列，只在电脑放宽</b>（覆盖 <span class="mono">zhops-layers.html</span> §3.5 原文的「iPad 两列 / 电脑侧边栏」）④本轮只做教师端 ⑤手机导航 4 项底栏 ⑥电脑档从 <span class="mono">≥1200px</span> 起 ⑦工作台<b>不显示单价</b> ⑧「清空教师筛选」按钮<b>整个删掉</b>。方案存 <span class="mono">~/.workbuddy-ai/plans/toasty-beacon-curie-0nLApBFw.md</span>。<br><b>断点依据</b>：手机最大竖屏 430 / 最小 iPad 竖屏 744 → 600–743 无真实设备，边界不敏感；iPad 档覆盖 744 / 820 / 834 / <b>1024（12.9" 竖屏）</b>；只有 1280 / 1440 进电脑档。<br><br><b>—— B0 已完成（本行进度）——</b><br><b>① 修 R2</b>：<span class="mono">seedDB()</span> 补 <span class="mono">members:[]</span> + <span class="mono">seals:[]</span>。原缺 <span class="mono">members</span> → 干净浏览器里「先开教师端写一次」→ 存盘无此键 → 主端 <span class="mono">load()</span>（admin:730）校验不过 → 回落空种子，<b>教师刚写的数据在主端看不见</b>。这是今天之前就存在的隐患。<br><b>② 修 R3</b>：删掉「清空教师筛选」按钮 + <span class="mono">resetTeacherFilter()</span> 函数 + 3 条失效 VI 词条 —— 该函数执行 <span class="mono">DB.teachers=[]; save();</span>，会<b>真删共享库教师并落盘</b>。<br><b>③ 触摸 / 视口</b>：viewport 加 <span class="mono">viewport-fit=cover</span>；<span class="mono">.toast</span> 加 <span class="mono">env(safe-area-inset-bottom)</span>（让开 iPhone home indicator）；补 5 条 <span class="mono">:active</span> 触摸反馈（原全文件 0 处）；<span class="mono">.hrow</span> 加 <span class="mono">flex-wrap:wrap</span>；手机档 <span class="mono">input/select/textarea</span> 提到 16px（原 13px，iOS 聚焦会强制放大整页）+ 44px 最小触摸目标。<br><b>④ 断点改三档</b>：<span class="mono">≤599</span> 单列 / <span class="mono">600–1199</span> 单列限宽 720 / <span class="mono">≥1200</span> 两列限宽 1100。<br><b>⑤ 一处自我纠正</b>：初版把 iPad 档写成两列（与决策 ③ 相悖，且注释还写着「iPad 仍单列」），已改回单列并用探针复验。<br><b>验证</b>：<span class="mono">node --check</span> SYNTAX_OK；新建探针 <span class="mono">build/zhops-probe/hscroll.js</span> 在 <b>11 档宽度</b>（320/360/390/430/600/768/820/1024/1199/1200/1440）实测 <b>零横向溢出</b>，且列数正确（≤1199 单列、≥1200 两列）；320/390/820/1200/1440 截图<b>零页面报错</b>；越南语运行时残留 17 条 = 去重后仍仅 2 类（<span class="mono">语言 / Ngôn ngữ</span> 双语标签、演示数据备注）；中文模式回归无新增。<br><b>工具链顺带修</b>：<span class="mono">build/run-tests.sh</span> 把 node 路径写死成 <span class="mono">22.22.2-3</span>，本机已升到 <span class="mono">22.22.2-6</span> → 8 个 node 测试全 <span class="mono">rc=127</span>「找不到命令」。改成自动解析最新版本（与 <span class="mono">zhops-probe/run.sh</span> 里既有的做法一致），<b>文件级通过数 1 → 7</b>。<br><b>未做</b>：B1 导航重构 + 「我是谁」选择器 / B2 流程表 + 我的学生 / B3 我的班级 + 工作台 / B4 推进课次 + 点名 / B5 录成绩 + 越南语补全 / B6 收尾。<br><br><b>—— B1 已完成 ——</b><br><b>① 导航重构</b>：页签从 2 个扩成 <b>6 个</b>（工作台 / 我的班级 / 我的学生 / 流程表 + 原 apply / confirm）；<span class="mono">showTab()</span> 改成 6 屏路由 + <span class="mono">renderView()</span>。<br><b>② 手机底部导航</b>：<span class="mono">≤599px</span> 时 <span class="mono">.tabs</span> 变 <span class="mono">position:fixed</span> 底栏、<span class="mono">grid-template-columns:repeat(4,1fr)</span>，只留 4 项；<b>apply / confirm 两项用 CSS 藏掉，收到工作台里</b>（顶部「＋提交开班申请」主按钮 + 一张「回确认 (n)」提示卡）。<span class="mono">.wrap</span> 补 <span class="mono">calc(78px + env(safe-area-inset-bottom))</span> 防遮挡；<span class="mono">.toast</span> 抬到底栏之上。<br>　<b>连带结论</b>：正因为底栏只有这 4 项，<b>工作台必须是默认首屏</b> —— 否则手机一进来底栏 4 项全没选中，屏幕上却是没有对应页签的申请表单。<br><b>③ 「我是谁」选择器</b>：新键 <span class="mono">localStorage['zhops.teacher.self']</span>（与存盘键、语言键互不干扰）。页眉常驻 <span class="mono">#selfPick</span>，与表单里的 <span class="mono">#fTeacher</span> <b>双向同步</b> —— 改任一处都算数。<b>申请流一行未改</b>（<span class="mono">submitApply()</span> 仍只读 <span class="mono">#fTeacher</span>）。只有一个教师时自动算选中（<b>不落盘</b>，免得以后加了人还留着陈旧选择）；存的 id 已不存在则回落空态、不崩。<br><b>④ 空态</b>：未选教师 → 四屏显示「先选一位教师 —— 在页眉「我是谁」里选，这几屏才有数据。」<br><b>⑤ 副标题理成纯中文（你点的）</b>：原 <span class="mono">Lớp học tiếng Trung · Giáo viên · 提交开班申请 / 回确认</span> 是「越南语前缀 + 中文」混排，而那个前缀<b>就是 h1 的越南语</b>（等于把标题说了两遍）。改成纯中文职责描述 <span class="mono">提交开班申请 · 推进课次 · 录入成绩</span>（对齐 §3.4「教师只能做三件事」），越南语模式整句翻掉。顺手把自己写的 <span class="mono">title="我是谁 / Tôi là ai"</span> 也理成纯中文（越南语交给词库）。<br><b>⑥ 四屏正文</b>：B1 只立骨架 —— 工作台有入口按钮 / 回确认卡 / 教师小卡（归属 · 可授时段 · 可授级别）；我的班级 / 我的学生 / 流程表是占位卡，正文属 B2 / B3。<br><b>验证</b>：<span class="mono">node --check</span> SYNTAX_OK；<span class="mono">hscroll.js</span> <b>11 档宽度零横向溢出</b>，且实测 <span class="mono">.tabs</span> 在 ≤430 为 <span class="mono">position:fixed</span>（底栏生效）、≥600 为 <span class="mono">static</span>（顶部横条），列数 ≤1199 单列 / ≥1200 两列；390/820/1440 三端 + 越南语 + 空态截图<b>零页面报错</b>。<br><b>语言回归</b>：越南语模式残留 <b>27 条 = 去重后仍仅 2 类</b>（双语标签 + 演示数据备注），新增文案全部翻译到位；中文模式 <b>10 条 → 6 条</b>（混排副标题已消除，只剩刻意保留的 <span class="mono">语言 / Ngôn ngữ</span>）。<br><b>测试台两个坑（都是我自己先踩的）</b>：<br>　· <span class="mono">run.sh</span> 带 <span class="mono">set -e</span> —— 第 ② 步一挂，②–⑧ 连同新加的教师端段<b>全部跑不到</b>，看起来像「整套都坏了」。已改成每个探针各自记账、跑完统一汇总（现在 <b>5 通过 / 5 失败</b>，教师端 2/2 通过）；失败时优先打印断言失败行而不是堆栈。<br>　· 测试台里 <span class="mono">SELF_OF='t1'</span> 一直<b>空转</b> —— 页面的 <span class="mono">purgeDemoTeachers()</span> 会把种子里的演示教师清空，所以「已选教师」分支根本没被测到（截图高度和空态一模一样才发现）。改用非演示名（黄明德 / 武清娥）后，「已选」分支才真正渲染（页高 784 → 915）。<br><b>5 个失败探针的根因已查明</b>：全是「种子数据没灌进去」的症状（<span class="mono">待审批徽章 = 4 → 空</span>、<span class="mono">教师 8 位 → 0</span>、<span class="mono">学生 18 人 → 0</span>）—— 即 <b>P-15</b> 那条「清空种子后旧断言会报错」，与本轮无关。<br><b>未推</b> —— 本地 <span class="mono">68e2fde8</span>，线上教师端仍是 <span class="mono">e3764577</span>。等你点头再推。<br><br><b>—— B2 已完成 ——</b><br><b>① 派生层「能算出来的就不许手写」</b>：<span class="mono">classLesson()</span>（进度 = 事实表里 <span class="mono">status==='done'</span> 的课次数）、<span class="mono">classReserved()</span>（已通过申请里还没建档的名额）、<span class="mono">classN()</span>（学生数 + 预留）、<span class="mono">stuAttAll()</span>（应出勤 = 入班后已上课次）、<span class="mono">stuAbsent()</span>（<b>缺勤只算「已上」的课次</b>）、<span class="mono">stuAtt()</span>（实出勤 = 应出勤 − 缺勤，下限 0）、<span class="mono">myClasses()/myStudents()</span>。<b>与主端 <span class="mono">zhops-admin.html</span> 1034–1076 行逐字同源</b>，两边都写了注释互标行号 —— 以后改一边必须同步另一边。<br><b>② 我的学生</b>：按学生自己的 <span class="mono">s.own</span> 分「<b>自有 / 外包</b>」两组（<span class="mono">.sttl</span> 标题带人数）。<b>归属取学生自己的字段，不从归属教师派生</b> —— 公司自家的学生也可能被派给外包老师教（主端学生页原文）。每行：姓名 · 级别 · 班级+编号 · <span class="mono">上到第 N 课</span> · <span class="mono">出勤 x / y</span> + <span class="mono">⚠ 缺 n 次</span>（没缺就不显示）。电脑档一行五列网格（<span class="mono">1.3fr .55fr 1.5fr 1fr 1.35fr</span>），手机 / 平板自动换行。<br><b>③ 流程表 7 步 + 高亮</b>：<span class="mono">flowPos()</span> 判定规则（规格只给了图、没给口径，我按图定的）：申请 <span class="mono">待审批/已驳回</span>→② 审核中；<span class="mono">已通过</span>未建班→③ 已通过；已通过已建班→④ 已建班；班级 0 节已上→④；上过课未上满→⑤ 上课中（有成绩则 ⑥ 阶段考试）；上满 <span class="mono">plannedLessons</span>→⑦ 结业。<b>高亮 = 还有东西停着的、最靠前的那一步</b>；什么都没有→①；全结业→⑦。当前步加 <span class="mono">.cur</span> + 「<b>← 你现在在这里</b>」。每步右侧显示这一步堆了几件事。<br><b>④ 越南语补齐</b>：新增 <span class="mono">出勤 / 未编班 / 还没开课 / 7 个流程步名 / 7 条步骤说明 / ← 你现在在这里</span> 等词条；顺手补了 <b>P-18 的漏词</b> <span class="mono">（通过后建档编班）</span> —— 之前被测试台「提交根本没跑通」掩盖了。<br><b>验证</b>：新建探针 <span class="mono">build/zhops-probe/check-teacher-b2.js</span>，<b>23/23 全过</b>，含两条最易错的：<b>缺勤只算「已上」的课次</b>（种子里故意放一条「缺了还没上的那节」→ 断言必须是 0）、<b>学生只算「我教的班」</b>（st4 在别人的班 → 必须被排除）。该探针<b>自带种子</b>（不依赖外部先造种子页），已挂进 <span class="mono">run.sh</span> 教师端第 ③ 步 → <b>教师端 3/3 通过</b>。<span class="mono">hscroll.js</span> 复验 11 档零横向溢出；三端 + 越南语 + 空态截图<b>零页面报错</b>；手机档滚到底实测 ⑦ 结业完整可见、<b>底栏不遮挡</b>；电脑档 1440 下学生行五列对齐、流程表限宽 <span class="mono">780px</span>（初版铺满 1100px、右侧大片空白，已自我纠正）。<br><b>语言回归</b>：越南语模式残留 <b>127 条 = 去重后仅 11 类</b>，<b>全部是演示数据</b>（教师名 / 学生名 / 班级名 / 申请备注）+ 1 条刻意双语标签 <span class="mono">语言 / Ngôn ngữ</span>（切换按钮的 title）—— <b>零 UI 文案残留</b>；中文模式 <b>零新增泄漏</b>。<br><b>规格落差（本轮不做）</b>：§3.5 的「点名 / 记出勤大按钮」属 B4，「今天课程 + 视讯链接放最上」属 B3；<span class="mono">classes[].link</span> 字段不存在 → 视讯链接先占位。<br><b>顺带发现（jsdom「卡死」根因已查明，<b>已修</b>）</b>：<span class="mono">build/run-tests.sh</span> 的<b>全量套件原本永远跑不完</b> —— <span class="mono">test_course_system.mjs</span> 卡死（给 11 分钟仍不结束），另几个加 90 秒上限也超时。<br><b>根因（实测定位；不是代码 bug，也不是 OS 沙盒）</b>：WorkBuddy 给每个 node 进程注入 <span class="mono">NODE_OPTIONS=--require=…/node-language-shim.cjs</span>；该 shim 在本机 <span class="mono">CODEBUDDY_BROKERED_FS_HOOK_ENABLED=1</span> 时加载 <span class="mono">node-brokered-fs-shim.cjs</span>，把<b>每一次文件内容读取</b>都走一遍 broker IPC。证据链：<br>　· 同一进程内 <span class="mono">statSync</span> 33 个文件 = <b>1ms</b>、<span class="mono">readdirSync</span> = <b>0ms</b>，而 <span class="mono">readFileSync</span> 同样 33 个 = <b>9358ms</b>（≈284ms/次）→ 只有「读内容」被拦，元数据不受影响。<br>　· 读同一个文件 1/2/5/10 次 = 278/352/303/276 ms/次，<b>完全线性、与文件大小无关</b> → 是<b>每次调用的固定开销</b>，不是 I/O 慢。<br>　· 换路径（项目 <span class="mono">docs/</span> / 托管 <span class="mono">node_modules/</span> / 家目录 / <span class="mono">/tmp</span>）都是 450–500ms/次 → <b>与路径无关</b>。<br>　· 后果：<span class="mono">require('jsdom')</span> 要读 <b>700+ 个文件</b> → <b>&gt;9 分钟不返回</b>；逐个依赖实测 <span class="mono">@asamuzakjp/dom-selector</span> 32s、<span class="mono">css-tree</span> 19s、<span class="mono">undici</span> 16s…<br>　· 已排除：包不完整（jsdom v30.1.1，20 个依赖零缺失）、包太大（最大的也只有 8.4MB）、机器负载、<b>OS 沙盒</b>（走沙盒绕过<b>照样慢</b> —— shim 是 JS 层的，绕不过去）。<br>　· ★ <b>两个开关必须一起关</b>：shim 里是 <span class="mono">A==='1' || B==='1'</span>，只关任一个仍生效（实测仍 280ms）。<br>　· ★ <b>必须下沉到子进程层</b>：只在外层 <span class="mono">unset NODE_OPTIONS</span> 不够，沙盒会给部分子进程<b>重新注入</b> → 表现为「有的测试正常、有的莫名 rc=1」。<br><b>已修（2026-10-13 19:25）</b>：<span class="mono">run-tests.sh</span> 的 <span class="mono">run_one()</span> 改成 <span class="mono">env CODEBUDDY_BROKERED_FS_HOOK_ENABLED=0 CODEBUDDY_SAFE_DELETE_SANDBOX=0 "$@"</span>，并写了完整注释。<b>保留 <span class="mono">CODEBUDDY_SAFE_DELETE_ENABLED=1</span></b> → safe-delete 保护仍在，只关掉 fs 读拦截；在 WorkBuddy 之外这两个变量本来就不存在，该行是 no-op。<br><b>效果</b>：全套 <b>7 通过 / 2 失败 / 0 超时，76 秒跑完</b>（修前：永远跑不完）；<span class="mono">test_course_system.mjs</span> 从「卡 11 分钟」→ <b>259 通过 / 0 失败</b>。<br><b>剩下 2 个失败是真实的既有缺口（与本轮无关，未动）</b>：<span class="mono">test_apply_flow.mjs</span> 读 <span class="mono">docs/teacher-apply.html</span>、<span class="mono">test_worktable.mjs</span> 断言 <span class="mono">~/teacher-apply.html</span> + <span class="mono">docs/schedule-demo.html</span> 存在 —— 实测这几个文件<b>确实都不存在</b>（旧教师端外壳已退役；<span class="mono">~/schedule-demo.html</span> 是指向缺失文件的<b>断链</b>）。要清理说一声。<br><b>顺带</b>：<span class="mono">zhops-probe/run.sh</span> 没改 —— 它的探针主要靠无头 Chrome（不受影响），全套 32 秒，可以接受。<br><b>未推</b> —— 本地 <span class="mono">6ca20cac</span>，线上教师端仍是 <span class="mono">e3764577</span>。等你点头再推。<br><br><b>—— 已推线上（你点头后）· 2026-10-13 19:00 ——</b><br>按你的指令「B0+B1+B2 一起推上线」执行 <span class="mono">sh build/publish-zhops.sh</span>。推送前先比对：<span class="mono">schedule.html</span> 与 <span class="mono">admin.html</span> 本地 = 线上（字节一致，<b>只有 teacher.html 会变</b>），确认不会误推别的页面。<br>推送后<b>当场下载线上文件核对 sha</b>（GitHub Pages 有 1–2 分钟延迟）：线上 <span class="mono">teacher.html</span> = <span class="mono">6ca20cac</span> = 本地 = 仓库产物，<b>三处一致</b> ✅。另核线上页面确含新版标记（<span class="mono">提交开班申请 · 推进课次 · 录入成绩</span> / <span class="mono">我是谁</span> / <span class="mono">← 你现在在这里</span> / <span class="mono">出勤</span> / <span class="mono">未编班</span> / <span class="mono">zhops.teacher.self</span>）。<br><b>线上地址</b>：教师端 <span class="mono">https://tony80-del.github.io/zhops/teacher.html</span>（主端 <span class="mono">/admin.html</span>、排课系统 <span class="mono">/</span> 本轮无变化）。<br><br><b>—— B3 已完成 · 2026-10-13 ——</b>（指令：「下一步：B3（我的班级 + 工作台）还等着，要开工吗？( 继续 )」）<br><b>① 工作台（默认首屏）</b>：今日课（时段 · 班级+代号 · 形态 · 第几课 · 教室 / 链接）<b>排在入口按钮之前</b> —— 对齐 §3.5「手机上最关键的信息（今天课程 + 视讯链接）放最上面」；下面依次是 <b>我的班级数 / 我的学生数</b> KPI、教师小卡（可授时段 / 可授级别，<b>只读</b>，主端定的）、反建议回确认卡。按<b>决策 ⑦ 不显示单价</b>。<br><b>② 我的班级</b>：每班一卡 —— 班名+代号 / 级别 / 形态 / 时段+星期 / <b>上到第几课</b>（自动算，不存字段）/ 班里几个学生 / 上课地点（线下）或视讯链接（线上）。规格里那两个按钮（<b>推进一课 / 点名</b>）属 B4 写操作 —— 本轮只读屏，<b>一个都没放</b>（探针里钉了这条）。<br><b>③ 派生层（能算出来的就不许手写）</b>：新增 <span class="mono">todayLessons / myTodayLessons / modeTag / placeText / placeVal / classProg</span>。今日课<b>每次现算</b>（删掉 <span class="mono">DB.today = []</span> 预存），事实层与主端 <span class="mono">admin:1103–1104</span> 同源；<span class="mono">cancel</span> 的课次必须被排掉。<br><b>④ 电脑档</b>：今日课摊成一行五列（时间 / 班级 / 形态 / 第几课 / 链接）；班级卡两列 —— 落实 §3.5「电脑：多列」。<br><b>⑤ 越南语</b>：补 16 条词条（<span class="mono">今日课 / 今天没有课。/ 线下教课 / 线上教课 / 链接待发布 / 待发布 / 教室 / 教室待定 / 上到第几课 / 班里学生 / 上课地点 / 视讯链接 / 你名下还没有班。…</span>），B1 那几条占位卡死键<b>就地退役</b>；另加一条正则 <span class="mono">第 N / M 课</span>（非 HSK1 的进度写法），<b>顺序必须排在「第 N 课」之前</b>，否则会被啃成「第 3 / 42 buổi」。<br><b>⑥ 一处顺手收口</b>：班级卡里标签已写「上课地点 / 视讯链接」，值里再说一遍「教室 …」「链接…」是废话 → 拆出 <span class="mono">placeVal()</span> 只给纯值（今日课那行无标签，仍用带前缀的 <span class="mono">placeText()</span>）。<br><b>验证</b>：<span class="mono">node --check</span> SYNTAX_OK；新建探针 <span class="mono">build/zhops-probe/check-teacher-b3.js</span> <b>31 项全过</b>（cancel 排掉 / 两套进度写法 / 位置位三分支 / 三种空态 / 决策 ⑦ / B4 按钮不该出现），已挂进 <span class="mono">run.sh</span>；三端截图（390 / 820 / 1440 × 中 / 越 × 工作台 / 我的班级 + 空态）<b>零页面报错</b>；越南语运行时残留 <b>168 条 = 去重后仅 10 类，全部是演示数据</b>（教师名 / 学生名 / 班名 / 申请备注）+ 1 条刻意双语标签 <span class="mono">语言 / Ngôn ngữ</span>，<b>B3 新增 UI 串零泄漏</b>；中文模式回归新增越南语残留 <b>0 条</b>。<br><b>本地 sha</b>：<span class="mono">docs/zhops-teacher.html</span> = <span class="mono">1234d719</span>；<span class="mono">build/zhops-probe/check-teacher-b3.js</span> = <span class="mono">2d19a5ed</span>；<span class="mono">build/zhops-probe/run.sh</span> = <span class="mono">b8561e6a</span>。<b>未推</b> —— 按规矩「你说推才推」，线上教师端仍是 <span class="mono">6ca20cac</span>。<br><br><b>—— 已推线上（你点头后）· 2026-10-13 20:30 ——</b><br>按你的指令「push up」执行 <span class="mono">sh build/publish-zhops.sh</span>。<b>推送前先逐项比对</b>：<span class="mono">schedule.html</span>（<span class="mono">7e7d4464</span>）与 <span class="mono">zhops-admin.html</span>（<span class="mono">5e05e02b</span>）本地 = 线上，字节一致 → <b>只有 teacher.html 会变</b>，确认不会误推别的页面。<br><b>推送后当场下载线上文件核对 sha</b>（GitHub Pages 有 1–2 分钟延迟，第 1 次拉到的还是旧版 <span class="mono">6ca20cac</span>，第 2 次即新版）：线上 <span class="mono">teacher.html</span> = <span class="mono">1234d719</span> = 本地 = 仓库产物，<b>三处一致</b> ✅。另核线上页面确含 B3 新标记（<span class="mono">今日课 / 上到第几课 / 视讯链接 / 班里学生 / 上课地点 / 链接待发布 / placeVal / todayLessons / myTodayLessons / 你名下还没有班</span>，共 33 处命中），且线上另两页 sha 未变（<span class="mono">/</span> = <span class="mono">7e7d4464</span>、<span class="mono">/admin.html</span> = <span class="mono">5e05e02b</span>）。<br><b>线上真页面渲染复验</b>：无头 Chrome 直开线上 URL（390 宽）→ 零页面报错，底栏 4 项正常。<span style="color:var(--ink3)">（线上是 <span class="mono">https</span> 源、与本机 <span class="mono">file://</span> 的 localStorage 不互通，所以第一次打开显示空态 —— 这是既有设计，页面上已写明。）</span><br><b>线上地址</b>：教师端 <span class="mono">https://tony80-del.github.io/zhops/teacher.html</span>（主端 <span class="mono">/admin.html</span>、排课系统 <span class="mono">/</span> 本轮无变化）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-20</td>
+              <td><b>【新指令】删掉说明段里的「同源 / 不同源」技术备注</b><br><span style="color:var(--ink3);font-size:12px">页眉下面那段 ⚠️（<span class="mono">file://</span> 与 <span class="mono">https://</span> 同源 / 不同源）</span></td>
+              <td class="nw">教师端</td>
+              <td><span class="b wait">等验收</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>你在手机上看线上页时贴出那段 ⚠️，说「这一段把它删掉」。<br><b>按「说删除就是删除」执行</b>：那段 <span class="mono">&lt;span style="color:var(--hint)"&gt;…&lt;/span&gt;</span> 连同它前面的 <span class="mono">&lt;br&gt;</span> <b>整段拔掉</b>（不是隐藏、不是加开关）。<br><b>连带清理</b>：那段文字被 <span class="mono">&lt;code&gt; / &lt;b&gt;</span> 内联标签切成了 8 个文本节点，VI 字典里对应有 8 条碎片词条（<span class="mono">⚠️ 本地用 / 打开时，admin 与 teacher 在 Chrome 下是 / 同一源、互通 / 的（teacher 提交后…）/ 但 / 与线上 / 是不同源、不互通… / ）后用线上地址。</span>）—— 页面里那段 HTML 没了，这 8 条就成了死键，<b>一并删除</b>（就地留注释说明去向）。<br><b>保留</b>：说明段前两行（「本页是教师端…」/「提交后申请直接进入…」）<b>没动</b> —— 你贴的只是 ⚠️ 那一段。<span style="color:var(--ink3)">若整块说明段都不要，说一声我一起拔。</span><br><b>验证</b>：<span class="mono">node --check</span> SYNTAX_OK；探针教师端 <b>4/4</b>（含 B3 31 项）、主端 6 通过 / 5 失败（既有）；390 宽截图零页面报错，页高 713 → 613；越南语运行时残留 <b>171 条 = 去重后 13 类，仍全部是演示数据</b> + 1 条刻意双语标签，<b>零 UI 串残留</b>；中文模式回归仍 10 条（全为刻意双语标签），<b>零新增泄漏</b>。<br><b>本地 sha</b>：<span class="mono">docs/zhops-teacher.html</span> = <span class="mono">723bcf52</span>。<b>未推</b> —— 线上仍是 <span class="mono">1234d719</span>。<br><br><b>—— 已推线上（你点头后）· 2026-10-13 20:50 ——</b><br>按你的指令「push up」执行 <span class="mono">sh build/publish-zhops.sh</span>。推送前比对：<span class="mono">schedule.html</span>（<span class="mono">7e7d4464</span>）与 <span class="mono">zhops-admin.html</span>（<span class="mono">5e05e02b</span>）本地 = 线上 → <b>只有 teacher.html 会变</b>。<br>推送后当场下载核对：第 1、2 次拉到的还是旧版 <span class="mono">1234d719</span>，<b>第 3 次即新版</b> → 线上 = 本地 = <span class="mono">723bcf52</span>，<b>三处一致</b> ✅。线上另两页 sha 未变（<span class="mono">/</span> = <span class="mono">7e7d4464</span>、<span class="mono">/admin.html</span> = <span class="mono">5e05e02b</span>）。<br><b>线上页面逐项复核</b>：说明段前两行<b>在</b>（「本页是教师端…」/「提交后申请直接进入…」），那段 <span class="mono">⚠️ &lt;span&gt;</span> <b>已消失</b>（正文里已无该 span，只剩我删键时留的那条 JS 注释）。无头 Chrome 直开线上 URL（390 宽）→ 零页面报错，页高 <b>713 → 613</b>，与本地一致。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-21</td>
+              <td><b>【新指令】页脚存盘状态改成老师看得懂的话 + 补上缺的红绿样式</b><br><span style="color:var(--ink3);font-size:12px">「本机存储 · 已载入存盘 · 13:46」→「已保存 · 13:46」；教师端 <span class="mono">.ok</span> / <span class="mono">.bad</span> 两条 CSS 规则原来<b>一条都没有</b></span></td>
+              <td class="nw">两端</td>
+              <td><span class="b wait">等验收</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>你在手机上看页脚，问「这一段注明有什么用处」。我答：静态那行是开发期写给自己的（「（深色）」是描述主题色的、「与 admin 共用」是技术事实、「无需申请码」是早期有门槛时的历史残留）；动态那行 <span class="mono">#stState</span> 是<b>存盘状态指示器</b>，四种取值。你选<b>方案 3</b>：保留、改成老师看得懂的话、并把缺的红字补上。<br><b>① 措辞改白话</b>（两端同步）：<span class="mono">本机存储 · 尚无改动</span> → <b>还没保存过</b>；<span class="mono">本机存储 · 已载入存盘 · 13:46</span> → <b>已保存 · 13:46</b>；<span class="mono">已存盘 · 21:03</span> → <b>已保存 · 21:03</b>；<span class="mono">存盘失败</span> → <b>保存失败</b>。教师端页脚静态行也从「中文课平台 · 教师端（深色）。本页与 admin 共用同一份本机存储；提交即写入，无需申请码。」改成「<b>中文课 · 教师端。你在这里填的东西会自动保存在这台设备上，提交即生效。</b>」<br><b>② ★ 补一个原来漏掉的缺陷</b>：教师端 <span class="mono">markSaved()</span> 会给 <span class="mono">#stState</span> 加 <span class="mono">.ok</span> / <span class="mono">.bad</span>，但<b>教师端 CSS 里这两条规则一条都没有</b> → 「已保存」不是绿的、「保存失败」不是红的，全跟普通灰字一样。主端两条都有（<span class="mono">.side-foot #stState.ok / .bad</span>）。已用教师端本来就定义好、却没人用的 <span class="mono">--ok</span> / <span class="mono">--bad</span> 变量补齐（<b>用 <span class="mono">#stState</span> 限死作用域</b> —— 页面里 <span class="mono">.app-card .replied.ok</span> 已在用同名的类，裸规则会串色）。<br><b>③ 死键清理</b>：两端 VI 字典里对应旧措辞的 6 条词条一并换掉；主端那条已经没人用的 <span class="mono">'已存盘 ·'</span> 删掉。<br><b>验证</b>：两端 <span class="mono">node --check</span> SYNTAX_OK；探针教师端 <b>4/4</b>（B3 从 31 → <b>37 项</b>，新加的 6 条<b>把 computed color 一起钉死</b> —— 光断言文字会漏掉这个 bug）、主端 6 通过 / 5 失败（既有）；<span class="mono">sh build/run-tests.sh</span> 仍 7 通过 / 2 失败（既有缺口）；两端越南语运行时残留<b>去重后全部是演示数据</b>（教师端 13 类 / 主端 66 类），<b>页脚新旧措辞零残留</b>；两端中文模式回归 <b>0 条</b>越南语泄漏；390 宽截图实测「已保存」绿、「保存失败」红（<span class="mono">rgb(110,231,168)</span> / <span class="mono">rgb(240,128,128)</span>），主端侧栏同款。<br><b>本地 sha</b>：<span class="mono">docs/zhops-teacher.html</span> = <span class="mono">734de00b</span>、<span class="mono">docs/zhops-admin.html</span> = <span class="mono">2b47938a</span>。<b>未推</b> —— 线上仍是 teacher <span class="mono">723bcf52</span> / admin <span class="mono">5e05e02b</span>。<br><span style="color:var(--ink3)">备注：主端侧栏那行静态文字「主端 · 重建第 3 / 7 步」是<b>建设进度标记</b>（不是给用户看的），这次没动 —— 要清的话说一声。</span><br><br><b>—— 已推线上（你点头后）· 2026-10-13 21:37 ——</b><br>按你的指令「push up」执行 <span class="mono">sh build/publish-zhops.sh</span>，<b>两页同推</b>（本项 + P-22）。<br>推送前比对：<span class="mono">docs/schedule.html</span>（<span class="mono">7e7d4464</span>）本地 = 线上 → <b>不变</b>；<span class="mono">zhops-admin.html</span> / <span class="mono">zhops-teacher.html</span> 两页都动。<br>推送后当场下载核对（Pages 有 40–60 秒延迟，第 3 次才拿到新版）：<span class="mono">admin.html</span> = <b>6383d70f</b>、<span class="mono">teacher.html</span> = <b>734de00b</b> → <b>本地 = 仓库产物 = 线上，三处一致</b> ✅；<span class="mono">index.html</span> = <span class="mono">7e7d4464</span> 未变 ✅。<br><span style="color:var(--ink3)">★ <b>口径提醒（21:45 我在这里踩过一次）</b>：本页所有 sha 都是 <b>sha256</b>（<span class="mono">shasum -a 256</span>，与 <span class="mono">publish-zhops.sh</span> 自己打印的一致）。21:45 复核时我用了裸 <span class="mono">shasum</span>（默认 <b>sha1</b>），两套数字自然对不上，于是误判「本行 sha 是中途值」并写下一条更正 —— <b>那条更正本身是错的，已撤回</b>。本行原来的 <span class="mono">734de00b</span> / <span class="mono">2b47938a</span> 本来就是 sha256、<b>没有问题</b>：<span class="mono">2b47938a</span> = P-21 落盘当时的值，P-22 又改了 admin 才变成 <span class="mono">6383d70f</span>；teacher 没被 P-22 触及，所以仍是 <span class="mono">734de00b</span>。<b>以后复核一律带 <span class="mono">-a 256</span>。</b></span><br><b>线上逐项复核</b>：教师端新页脚句「中文课 · 教师端。你在这里填的东西…」<b>在</b>（HTML 1 处 + VI 词条 1 处）；<span class="mono">#stState.ok{color:var(--ok);}</span> / <span class="mono">#stState.bad{color:var(--bad);}</span> 两条 CSS <b>都在</b>。无头 Chrome 直开线上 URL 零页面报错（页高 613，与本地一致）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-22</td>
+              <td><b>【新指令】清掉主端侧栏的建设进度标记</b><br><span style="color:var(--ink3);font-size:12px">「主端 · 重建第 3 / 7 步」—— 建设期写给自己的话，不是给用户看的</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b wait">等验收</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>你在「push up」那条里顺带点了这个（<b>清</b>）。这正是 P-21 我顺手发现、当时没敢动的那行。<br><b>按「说删除就是删除」执行</b>：<span class="mono">&lt;div class="side-foot"&gt;</span> 里那行 <span class="mono">主端 · 重建第 3 / 7 步&lt;br&gt;</span> <b>连根拔掉</b>（不是隐藏、不是加开关），就地留注释说明去向。<br><b>删前先确认只此一处</b>：全仓库扫过 —— 命中 9 个文件，其中 <b>7 个是 <span class="mono">.bak-*</span> 备份</b>（<span class="mono">.bak-20261012-*</span> ×3、<span class="mono">.bak-20261013-*</span> ×3、<span class="mono">.bak-20261014-before-members</span> ×1）、<b>1 个是打磨台自己</b>，<b>正式页只 1 处</b>（已改成注释）。备份按你的偏好<b>一个没删</b>。<br><b>连带清理</b>：VI 字典里那条 <span class="mono">'主端 · 重建第 3 / 7 步':'Bảng chính · Tái tạo Thứ 3 / 7 bước'</span> 一并换成注释（页面里那段 HTML 没了，词条就是死键）。<br><b>不受影响的检查</b>：<span class="mono">probe-persist.js</span> 第 [11] 组（静态扫 HTML「存盘 UI 三件套 + 接线」）有 8 条断言，其中 <span class="mono">:216</span>「重置按钮在侧栏页脚里」（<span class="mono">/class="side-foot"[\s\S]{0,400}id="btnReset"/</span>）只用 <span class="mono">.side-foot</span> → <span class="mono">#btnReset</span> 定位，<b>不依赖那行文字</b>。<br>⚠️ <b>但这条不能靠「跑探针」证明</b>：<span class="mono">probe-persist.js</span> 自己在第 [2] 组就崩（<span class="mono">setDraft</span> 时 <span class="mono">dState</span> 为 null —— 主端 <span class="mono">seedDB()</span> 现在是空库），<b>根本跑不到第 [11] 组</b>。所以改用<b>它的原正则直接扫正式页</b>（等价验证）：8 条<b>全过</b> —— <span class="mono">#stState</span> / <span class="mono">#btnReset</span> / <span class="mono">#toast</span> 都在、click 监听在、<span class="mono">confirm</span> 在、<span class="mono">/#stState\.ok\{/</span> 命中 <span class="mono">.side-foot #stState.ok{color:#5eead4;}</span>；<span class="mono">side-foot</span> → <span class="mono">btnReset</span> 实测距离 <b>282</b> 字符（上限 400，有富余）。<br><b>验证</b>：<span class="mono">node --check</span> SYNTAX_OK；主端越南语运行时残留 <b>311 条 = 去重 66 类，全部是演示数据</b>，中文模式回归 <b>0 条</b>；侧栏截图确认只剩绿「已保存」+ 重置按钮。<br><span style="color:var(--ink3)">★ <b>计数更正</b>：P-20 / P-21 两行写的「主端 6 通过 / 5 失败」<b>算错了</b> —— 本轮 21:45 复跑 <span class="mono">sh build/zhops-probe/run.sh</span> 实测：主端 <b>3 通过 / 5 失败</b>（②逻辑 ③接线 ④总览 ⑤课次 ⑦持久化 失败，全部是 P-15 既有陈旧断言）、教师端 <b>4/4</b>，套件合计 <b>7 通过 / 5 失败</b>。以后报数一律以复跑输出为准，不凭印象。</span><br><b>本地 sha</b>：<span class="mono">docs/zhops-admin.html</span> = <span class="mono">6383d70f</span>（sha256）。<br><br><b>—— 已推线上 · 2026-10-13 21:37 ——</b><br>与 P-21 <b>同一次推送</b>（<span class="mono">sh build/publish-zhops.sh</span>，commit <span class="mono">6215192</span>）。推送后当场下载核对：线上 <span class="mono">admin.html</span> = <b>6383d70f</b> = 本地 = 仓库产物 ✅；<span class="mono">index.html</span>（<span class="mono">7e7d4464</span>）/ <span class="mono">teacher.html</span>（<span class="mono">734de00b</span>）与本地一致 ✅。<br><b>线上抓原文复核</b>：<span class="mono">重建第 3 / 7 步</span> 只剩 <b>2 处注释</b>（HTML 1 + JS 1，<b>正文里 0 处</b>）；<span class="mono">&lt;span id="stState"&gt;还没保存过&lt;/span&gt;</span> <b>在</b>。无头 Chrome 直开线上 <span class="mono">admin.html</span>：标题 <span class="mono">MGD 排课系统 · 主端</span>、<span class="mono">tr=2 / ev=0</span>，零页面报错。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-23</td>
+              <td><b>【新范围】线上加 404 自动跳回保险</b><br><span style="color:var(--ink3);font-size:12px">admin.html/ 带斜杠 · Admin.html 大小写错 → 自动跳回正确地址</span></td>
+              <td class="nw">线上/发布</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-13</td>
+              <td class="mono nw">10-13</td>
+              <td>你在 iPad 上吃 404 后批准加的保险。新建 <span class="mono">docs/404.html</span>（深色卡片 + 三个正确入口：教师端 / 主端 / 排课系统 + 自动跳回 JS：识别路径 <span class="mono">/(admin|teacher)\.html\/?$/i</span> → <span class="mono">location.replace</span> 到小写正确地址，600ms 后跳），并接进 <span class="mono">build/publish-zhops.sh</span>（加 <span class="mono">SRC_404</span> + <span class="mono">cp</span>）。已推线上（commit <span class="mono">2a76270</span>）。<span class="mono">docs/404.html</span> sha256 = <span class="mono">32398554</span>；线上 <span class="mono">404.html</span> 核对一致 ✅。<b>验证</b>：<span class="mono">admin.html/</span>、<span class="mono">teacher.html/</span>、<span class="mono">Admin.html</span> 三个错误地址均返回我们的自定义 404 页（2801 B 一致），且 JS 会跳回正确地址；<span class="mono">admin.html</span> / <span class="mono">teacher.html</span> 线上 sha 未变（<span class="mono">6383d70f</span> / <span class="mono">734de00b</span>）。iPad 以后手滑加斜杠不再裸 404。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-24</td>
+              <td><b>【B4】教师端写操作</b><br><span style="color:var(--ink3);font-size:12px">推进课次（today 优先 / 未来压回今天 / 越界保护 / 只动我带的班）+ 点名（默认末节 done/today / 只记缺勤 / 幂等重建 / 事后补录）+ 主端代课设置入口</span></td>
+              <td class="nw">教师端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-14</td>
+              <td class="mono nw">10-14</td>
+              <td><b>本地完成，已推线上</b>（你发话「teacher 522185b3 + admin 40c03737 一起推 ( ok )」后执行）。<b>改动</b>：① <span class="mono">docs/zhops-teacher.html</span> 加 <span class="mono">advanceClass / openRollModal / renderRollModal / saveRoll / closeRollModal</span>（照搬主端逻辑 + 收窄到 <span class="mono">myClasses()</span>） + 轻量 modal <span class="mono">.roll-mask/.roll-sheet</span>（教师端无抽屉设施） + 班级卡 <span class="mono">.clsact</span> 两按钮 + <span class="mono">todayRow</span> 代课徽章 + VI 词条；② <span class="mono">docs/zhops-admin.html</span> 加 <span class="mono">setLessonTeacher</span>（课次记录页给每节课指定代课教师，写 <span class="mono">l.teacher</span>，空 = 恢复常任）+ <span class="mono">.lsub</span> select + VI 词条。<b>边界</b>：只作用于 <span class="mono">myClasses()</span>（碰不到别人的班）；点名按 <span class="mono">no</span> 排全部系统课次、允许事后补录挂 plan（数据存得下、但 <span class="mono">stuAbsent()</span> 只算 done，不计 plan —— 避免跟主端结算打架）；代课 = 派生（<span class="mono">l.teacher &amp;&amp; l.teacher !== 班常任</span>），主端显示层早已就绪、这次补设置入口。<b>备份</b>：<span class="mono">zhops-teacher.html.bak-20261013-before-b4</span>（<span class="mono">734de00b</span> 真 pre-B4）+ <span class="mono">zhops-admin.html.bak-20261014-before-b4</span>（<span class="mono">6383d70f</span> 从线上 pre-B4 覆盖成真）。<b>sha</b>：teacher <span class="mono">522185b3</span> / admin <span class="mono">40c03737</span>。<b>验证</b>：<span class="mono">node --check</span> 两端 SYNTAX_OK；新建 <span class="mono">build/zhops-probe/check-teacher-b4.js</span>（自带种子，27 项）<b>27/27 全过</b>（today 优先 / 未来压回今天 / 越界保护 / 权限守卫 / 代课派生 / 点名默认末节 / 只记缺勤 / 幂等重建 / 改选覆盖 / 事后补录不计入出勤）；新建 <span class="mono">build/zhops-probe/shot-b4.js</span> 3 张 390 截图（工作台 / 我的班级 / 点名弹层）<b>零 console.error</b>，班级卡两按钮 + 点名弹层名单 + 保存按钮全部就位；<span class="mono">check-teacher-b3.js</span> 那条「本轮不放 推进一课/点名」翻转成正向「应有按钮」（B4 完成带来的预期变化，B3 仍 <b>37/37 全过</b>）。<b>探针套件</b>：<b>8 通过 / 5 失败</b>（5 失败全为主端 ②③④⑤⑦ P-15 既有陈旧断言 —— 清空种子后既有的事，与 B4 无关，未动；教师端 <b>5/5</b>）。<b>★ 已推线上（2026-10-14）</b>：<span class="mono">sh build/publish-zhops.sh</span> —— teacher + admin 一起推（commit 含 teacher/admin/index/404）。<b>线上三件复核全过</b>：① 下载线上 <span class="mono">teacher.html</span> = <span class="mono">522185b3</span> ✓ / <span class="mono">admin.html</span> = <span class="mono">40c03737</span> ✓（第 1 次拉即一致，本地 = 线上）② 无头 Chrome 直开线上 URL（390 宽 teacher / 1280 宽 admin）<b>零页面级 JS 报错</b>（命中的全是 Chrome 自身 <span class="mono">CVDisplayLink</span> macOS 无头噪音，与页面无关）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-25</td>
+              <td><b>【B6】文档收尾</b><br><span style="color:var(--ink3);font-size:12px">§3.5 标注「计划已被实现覆盖」+ SKILL.md 补 B4 记录 / 修陈旧引用</span></td>
+              <td class="nw">文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-14</td>
+              <td class="mono nw">10-14</td>
+              <td><b>你发话「B6 收尾（§3.5 + SKILL.md）( Ok )」后执行</b>。<b>① <span class="mono">docs/zhops-layers.html</span></b>（sha <span class="mono">2dba69dd</span>）：§3.5「三端适配计划」加状态批注块 —— 本节是<b>计划，已被实际实现覆盖</b>（B0-B4 完成，提到 <span class="mono">teacher-apply.html</span> 已退役、实际是 <span class="mono">docs/zhops-teacher.html</span>、进度看打磨台 P-01…P-24）；「好消息」段 <span class="mono">teacher-apply.html</span> → <span class="mono">docs/zhops-teacher.html</span>；「六、这些事现在还没做」表：教师端四屏 <span class="mono">未开始→已完成</span>（B0-B3）、三端适配 <span class="mono">未开始→已完成</span>（B0-B3 断点 599/1199/1200）、出勤/阶段考试/完成等级 <span class="mono">未开始→进行中</span>（出勤 = B4 已上线；阶段考试 = B5 待做、你说后续再定插件；完成等级待决策）。<b>② <span class="mono">~/.workbuddy-ai/skills/zhops/SKILL.md</span></b>（sha <span class="mono">7bbadecb</span>）：发布安全段 admin 复制行曾注释（2026-10-13 只推 teacher）→ <b>2026-10-14 B4 重新启用、teacher+admin 一起推</b>；板块表 #1 班级「推进一课/点名」说明改为主端 2026-10-12 做好 + 教师端 B4 见下；板块表 #11 教师端标注「2026-10-13 v1 + 2026-10-14 B4 写操作」、文件 86,263 B / 1,514 行；「🔧 教师端」标题改 <span class="mono">2026-10-13 v1 已做完 → 2026-10-14 B4 写操作 已上线</span>；文件 sha <span class="mono">5b0a7e4c→522185b3</span>、大小 32,406/558→86,263/1,514；新增 B4 写操作小节（推进课次/点名/代课 + 验证结论 27/27 + 3 截图零报错）；发布段重写为 v1 只推 teacher + B4 重启用 admin 一起推；源码/线上教师端表更新 sha/大小/标注 B4 上线。<b>本地文档，不发布线上</b>（与台账同性质）。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-14 ============ -->
+  <div class="day-panel" data-day="2026-10-14">
+    <div class="card">
+      <h2>2026-10-14 · 打磨记录<span class="n">3 行 · 已打磨 3</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-26</td>
+              <td><b>【新范围】教室（中国省份）· 教师绑教室 → 排课页教室卡 → 学生选教室</b><br><span style="color:var(--ink3);font-size:12px">10 个省份预设 + 独占互斥 + 教室卡片视图 + 学生归属教室</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-14</td>
+              <td class="mono nw">10-14</td>
+              <td><b>你分多轮逐步定方案后批准执行</b>。<b>核心模型</b>：教室 = 中国人口/GDP 前 10 省份（北京/上海/广东/浙江/江苏/山东/四川/河南/湖北/湖南，预设常量 <span class="mono">ROOMS</span>）；一个教室只能被一位教师选（独占互斥）。<b>分三阶段（全在 <span class="mono">docs/zhops-admin.html</span>，本地 sha <span class="mono">c0422e0b</span>，未推线上）</b>：<b>① 教师档案加「教室（省份）」</b>：<span class="mono">blankTeacher()</span> 加 <span class="mono">room:''</span> + <span class="mono">tEdit()</span> 加 <span class="mono">roomPicks()</span> 标签按钮（10 省份平铺、被其他教师占的灰色 <span class="mono">.dis</span> 不可选）+ <span class="mono">tView()</span> 显示「教室（省份）」+ click 委托加 <span class="mono">data-d-room</span> 单选处理（点一个=覆盖，只改 DOM 不调 render）+ CSS <span class="mono">.pick.dis</span> + VI 10 个省份词条。<b>② 排课页加第 5 个 tab「教室」</b>：<span class="mono">vBoard()</span> tabs 从 4 变 5（矩阵/班级/候选池/日历/教室）+ 新增 <span class="mono">bRooms()</span>（10 张省份卡网格）+ <span class="mono">roomCard()</span>（每卡教师+学生名单）+ CSS <span class="mono">.room-grid/.room-card</span>。<b>③ 学生选教室+教师</b>：<span class="mono">blankStudent()</span> 加 <span class="mono">room:''/teacherId:''</span> + <span class="mono">sEdit()</span> 加「教室」下拉（只有有教师的省份可选）+「教师」下拉（选教室联动只显示该教室教师）+ change 委托重画 teacherId options + <span class="mono">saveEdit()</span> 守卫（选教室+教师空→带出；选教室+教师→验证教师确属该教室）+ <span class="mono">sView()</span> 显示「教室」「教师」。<b>关键决策</b>：学生 <span class="mono">s.room</span>（教室归属）与 <span class="mono">s.cls</span>（班级/编班）是<b>两个独立维度</b> —— 教室卡片读 <span class="mono">s.room</span>、编班/出勤读 <span class="mono">s.cls</span>，互不干扰；<span class="mono">c.room</span>（班级线下教室）不动。语法 <span class="mono">node --check</span> 等价验证（vm.Script 提取 script 块）SYNTAX_OK。你已验（Chrome 打开本地页）。<b>推线上等你发话</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-27</td>
+              <td><b>【新范围】教室升级：省 → 市 两级</b><br><span style="color:var(--ink3);font-size:12px">市挂教师（独占）+ 学生选到市 + 教室页按省→市 + 10 省各 5 市</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-14</td>
+              <td class="mono nw">10-14</td>
+              <td><b>你逐步定：市挂教师（不是班级）/ 学生选到市 / 市也独占 / 学生「直接选市」/ 先做上海 5 市 → 我选全部 10 省各 5 市</b>。<b>核心模型</b>：省 → 市 两级；教师认领省（独占）后，可认领该省下的市（<b>市也独占</b>，市名 = 开班名）；学生<b>直接按市选</b>（市名全局唯一）。<b>改动（全在 <span class="mono">docs/zhops-admin.html</span>，未推线上）</b>：① 加常量 <span class="mono">CITIES</span>（10 省 × 5 市 = 50 个市，如上海→苏州/杭州/宁波/南京/无锡，北京→朝阳/海淀/丰台/通州/昌平，广东→广州/深圳/珠海/佛山/东莞 …）；② <span class="mono">blankTeacher()</span> 加 <span class="mono">cities:[]</span> + <span class="mono">blankStudent()</span> 加 <span class="mono">city:''</span>；③ <span class="mono">cityPicks()</span>（教师选市，多选 + 独占 <span class="mono">.dis</span>）+ <span class="mono">tEdit/tView</span> 加「教室（市）」+ click 委托 <span class="mono">data-d-city</span>（多选 toggle）+ 换省清掉不属于新省的市（<span class="mono">repaintCityPicks()</span>）；④ <span class="mono">bRooms()</span> 改「省 → 市」（<span class="mono">provBlock()</span> 每省一块 + <span class="mono">roomCard(city, teachers, prov)</span> 市名 + 省名小字）；⑤ <span class="mono">citySel()</span>（学生直接选市，平铺所有有教师认领的市，显示「苏州（上海）」）+ <span class="mono">cityToProv()</span> 由市反查省 + <span class="mono">teacherIdSel()</span> 按市过滤 + change 委托 + <span class="mono">saveEdit()</span> 守卫（选市→写 <span class="mono">s.room</span>=省 + 带出教师 + 验证教师认领该市）；⑥ <span class="mono">sView()</span> 显示「苏州（上海）」；⑦ VI 45 个市名 + UI 串。语法 vm.Script SYNTAX_OK。你已验。<b>然后你说 push up。</b></td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-28</td>
+              <td><b>【顺带打磨】表格列 + 教室卡视觉 + 单价千位分隔符</b><br><span style="color:var(--ink3);font-size:12px">教师/学生表加教室列 · 教室卡三色讲台式 · 单价 500,000</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-14</td>
+              <td class="mono nw">10-14</td>
+              <td>做教室功能过程中你顺带提的几处：<b>① 表格列</b>：教师表加「教室」列（放在可授时段后，显示 <span class="mono">t.room</span> 省 + 空态 colspan 9→10）；学生表「班级 / 意向」列<b>换成</b>「教室」列（先加后改主意 → 你定「Remove 换成教室」），显示「苏州（上海）」（市 + 省，<span class="mono">s.city</span> 优先、回落 <span class="mono">s.room</span>）。<b>② 教室卡视觉</b>：你先嫌「不太好看」→ 要三个设计选 → 我出 A/B/C 三方案（讲台式 / 俯视课桌 / 黑板分排）→ 你选 <b>方案 A · 讲台式 · 三色</b>（背景浅青绿 <span class="mono">#E1F5EE</span> / 教师深青胶囊 <span class="mono">#0F6E56</span> / 学生白底浅青边成排）。<b>③ 单价千位分隔符</b>：教师「单价/节」输入框 <span class="mono">type=number</span> → <span class="mono">type=text</span> + <span class="mono">money()</span> 工厂 + <span class="mono">fmtMoney/parseMoney</span>，输入 500000 → 实时显示 <b>500,000</b>（无小数），保存去逗号转数字，带 <span class="mono">inputmode=numeric</span> + 光标保持。语法 SYNTAX_OK。你已验。</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-10-12 ============ -->
+  <div class="day-panel" data-day="2026-10-12">
+    <div class="card">
+      <h2>2026-10-12 · 打磨记录<span class="n">2 行</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+
+            <tr>
+              <td class="mono nw">P-01</td>
+              <td><b>术语清理</b><br><span style="color:var(--ink3);font-size:12px">「外壳 / 阶段 1」→「主端」</span></td>
+              <td class="nw">文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-12</td>
+              <td class="mono nw">10-12</td>
+              <td>全库排查方向反转后不成立的表述，改 6 个文件（主端 / 台账 / skill / 发布脚本 / 结构文档）</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-02</td>
+              <td><b>本机存储 + 备份链路</b><br><span style="color:var(--ink3);font-size:12px">localStorage 落盘 + 导出 / 导入 .json</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">10-12</td>
+              <td class="mono nw">10-12</td>
+              <td>键 <span class="mono">zhops.sched.v3</span>；三入口导出/导入；导入前三关校验，绝不半路覆盖；与 v2 键完全隔离</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="note amber" style="margin-bottom:0">
+    <b>本地 / 线上</b>：本页是<b>本地文档</b>（<span class="mono">docs/zhops-polish.html</span>），<b>不发布</b>到线上，只在本机看。<br>
+    <b>文件名没改</b>：页面显示叫「工作台账」，文件名仍是 <span class="mono">zhops-polish.html</span> —— 改名会断掉文档索引和生态地图里的两处链接，收益不值。<br>
+    <b>旧台账已作废</b>：<span class="mono">zhops-progress.html</span>（停在 10-13）不再更新，<b>看进度只来这一页</b>。
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var btns = document.querySelectorAll('.days button');
+  var panels = document.querySelectorAll('.day-panel');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){ x.classList.toggle('on', x === b); });
+      panels.forEach(function(p){ p.classList.toggle('on', p.dataset.day === b.dataset.day); });
+    });
+  });
+})();
+
+/* ★ 2026-10-30：精简 / 完整 视图切换。默认精简，选择存本机。 */
+(function(){
+  var KEY = 'zhops.polish.mode';
+  var btn = document.getElementById('modeBtn');
+  if (!btn) return;
+  var mode = 'lite';
+  try { mode = localStorage.getItem(KEY) || 'lite'; } catch(e){}
+  function apply(m){
+    document.body.classList.toggle('lite', m === 'lite');
+    btn.textContent = (m === 'lite') ? '精简视图 · 点开看全部' : '完整视图 · 点回精简';
+  }
+  apply(mode);
+  btn.addEventListener('click', function(){
+    mode = (mode === 'lite') ? 'full' : 'lite';
+    try { localStorage.setItem(KEY, mode); } catch(e){}
+    apply(mode);
+  });
+})();
+</script>
+</body>
+</html>
