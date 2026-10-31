@@ -4705,13 +4705,16 @@ function renderNav(){
     /* ★ 2026-10-31（P-51 / P-53）：部门系统入口 —— 只做跳转，不打通数据。
        ⚠️ 绝不能带 data-v：侧栏点击是靠 data-v 接管路由的（见 5504 行附近），
           带了就会被当成「切视图」跳去一个不存在的视图 → 白屏回总览。
-          所以改带 data-ext，点击处理器只负责把窄屏抽屉收起来。
+          所以改带 data-ext，点击处理器负责两件事：记下当前视图 + 收窄屏抽屉。
        ⚠️ 用相对路径：本地 docs/zhops-admin.html、线上 /zhops/admin.html
-          都在同目录，两边都指向 hr.html / finance.html，不写死域名。 */
+          都在同目录，两边都指向 hr.html / finance.html，不写死域名。
+       ★ 2026-11-01 改（P-78）：去掉 target="_blank" —— Tony 要的是「同一个窗口里换页面」，
+          不是每点一次多开一个标签。现在点下去是**当前标签内跳转**，配合人事 / 财务页
+          顶栏的「← 主端」回来，全程只有一个标签。 */
     '<div class="grp">其他系统</div>' +
-    '<a href="hr.html" data-ext target="_blank" rel="noopener">'+
+    '<a href="hr.html" data-ext>'+
       ic('members')+'<span>人事部</span><span class="ext">↗</span></a>' +
-    '<a href="finance.html" data-ext target="_blank" rel="noopener">'+
+    '<a href="finance.html" data-ext>'+
       ic('settle')+'<span>财务部</span><span class="ext">↗</span></a>';
 }
 function route(){ return (location.hash||'#overview').slice(1); }
@@ -5537,12 +5540,15 @@ document.addEventListener('click', e => {
     }
     return;
   }
-  /* ★ 2026-10-31（P-51 / P-53）：人事部 / 财务部是外跳链接（新标签页），不走路由。
-     窄屏（≤920px）侧栏是抽屉：点完新标签页开走了，但这个页面没刷新，抽屉会一直盖着，
-     回来一看满屏被遮住 —— 所以先把抽屉收掉再放行。
-     ⚠️ 只 return、不 preventDefault：浏览器要照常执行 <a target="_blank"> 的默认动作。 */
+  /* ★ 2026-11-01（P-78）：人事部 / 财务部改成**同窗口跳转**（不是新标签页）。
+     点下去之前做两件事，然后放行让浏览器自己跳：
+       ① 把主端当前停在哪一页记进 sessionStorage（只在本标签内有效）——
+          人事 / 财务页的「← 主端」会把它拼回地址，回来直接落回原视图，不是总览。
+       ② 窄屏（≤920px）侧栏是抽屉，跳走前先收起，避免回来时还盖着。
+     ⚠️ 只 return、不 preventDefault：默认动作必须放行，否则页面根本不会跳。 */
   const dlk = e.target.closest('#nav a[data-ext]');
   if (dlk){
+    try { sessionStorage.setItem('zhops.backTo', location.hash || '#overview'); } catch(e){}
     $('#side').classList.remove('open');
     $('#scrim').classList.remove('on');
     return;

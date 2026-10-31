@@ -1929,7 +1929,13 @@ function backMainFix(){
   if (!a) return;
   var h = (location.hostname || '');
   var local = location.protocol === 'file:' || h === '' || h === 'localhost' || h === '127.0.0.1';
-  a.href = local ? 'zhops-admin.html' : 'admin.html';
+  /* ★ 2026-11-01（P-78）：主端切过来之前把「停在哪一页」写进 sessionStorage（本标签内有效），
+     这里拼回地址 → 回来直接落回原视图（比如课次记录），不是总览。
+     只认安全 hash（# 字母数字 / _ / - / 斜杠），别的一律丢掉，防止脏值拼进地址。 */
+  var back = '';
+  try { back = sessionStorage.getItem('zhops.backTo') || ''; } catch(e){}
+  if (!/^#[A-Za-z0-9_\/-]*$/.test(back)) back = '';
+  a.href = (local ? 'zhops-admin.html' : 'admin.html') + back;
 }
 (function(){
   var el = document.getElementById('cldBadge');
