@@ -27,7 +27,7 @@
 <main>
   <h1>404</h1>
   <p>这个地址打不开。</p>
-  <p class="hint">常见原因：地址<b>末尾多了一个 <code>/</code></b>（例如 <code>admin.html/</code>），或<b>大小写不对</b>（例如 <code>Admin.html</code>）。</p>
+  <p class="hint">常见原因：地址<b>末尾多了一个 <code>/</code></b>（例如 <code>admin.html/</code>）、<b>漏了最后一个 <code>l</code></b>（例如 <code>admin.htm</code>），或<b>大小写不对</b>（例如 <code>Admin.html</code>）。</p>
   <p class="status" id="st"></p>
   <nav>
     <a href="/zhops/teacher.html">教师端</a>
@@ -40,8 +40,10 @@
   (function(){
     var p = location.pathname;
     var st = document.getElementById('st');
-    // 已知页面：去掉末尾斜杠 + 纠正大小写 → 自动跳回正确地址
-    var m = p.match(/\/(admin|teacher)\.html\/?$/i);
+    // 已知页面：去掉末尾斜杠 + 纠正大小写 + 补上漏掉的 l → 自动跳回正确地址
+    // ★ 2026-11-01：原来只认 .html，漏了最常见的「少打一个 l」（admin.htm）。
+    //   html? = htm 后面那个 l 可有可无，两种写法都接。
+    var m = p.match(/\/(admin|teacher)\.html?\/?$/i);
     if (m) {
       var target = '/zhops/' + m[1].toLowerCase() + '.html';
       st.textContent = '正在跳回正确地址：' + target;
