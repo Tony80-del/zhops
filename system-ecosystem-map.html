@@ -330,17 +330,17 @@
 <div class="header">
   <div>
     <h1>系统生态地图</h1>
-    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-10-31 傍晚</b>（按源码核对，不按计划）· 决策 <b>10 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b></div>
+    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-10-31 深夜</b>（按源码核对，不按计划）· 决策 <b>11 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b></div>
   </div>
   <div class="meter">
     <div class="row"><span>系统建成</span><span>2 / 5 · 财务 + 人事骨架已建</span></div>
     <div class="progress-bar"><div class="progress-fill"></div></div>
   </div>
   <div class="chips">
-    <span class="chip ok">已定 9</span>
+    <span class="chip ok">已定 10</span>
     <span class="chip info">暂缓 3</span>
-    <span class="chip info">财务 本地已建</span>
-    <span class="chip info">人事 本地已建</span>
+    <span class="chip ok">财务 审批已通</span>
+    <span class="chip ok">人事 排课已接云</span>
     <span class="chip ok">教师分片已落地</span>
     <span class="chip bad">断点 3</span>
   </div>
@@ -567,15 +567,15 @@
     <div class="ov-sys partial">
       <div class="ov-s-name">人事系统</div>
       <div class="ov-s-file">docs/hr.html</div>
-      <div class="ov-s-status"><span class="badge b-info">本地已建 · 未接云</span></div>
-      <div class="ov-s-note">档案 / 合同证件 / 社保个税 · 单文件本机存储</div>
+      <div class="ov-s-status"><span class="badge b-ok">档案本机 · 排课已接云</span></div>
+      <div class="ov-s-note">档案 / 合同证件 / 社保个税 · 读 master + done_*，写 approvals</div>
     </div>
 
     <div class="ov-sys partial">
       <div class="ov-s-name">财务系统</div>
       <div class="ov-s-file">docs/finance.html</div>
-      <div class="ov-s-status"><span class="badge b-info">本地已建 · 未接云</span></div>
-      <div class="ov-s-note">学费 / 成本 / 报表 · 单文件本机存储</div>
+      <div class="ov-s-status"><span class="badge b-ok">审批通道已通</span></div>
+      <div class="ov-s-note">学费 / 成本 / 报表 · 读 approvals 审批，工资表只读</div>
     </div>
 
     <div class="ov-sys todo">
@@ -905,19 +905,27 @@
     <div class="left">
       <span class="sys-tag">人事</span>
       <span class="sys-name">人事系统</span>
-      <span class="sys-sub">人员档案 · 合同证件 · 社保个税 · 制度库</span>
+      <span class="sys-sub">人员档案 · 合同证件 · 社保个税 · 算工资</span>
     </div>
-    <div class="right"><span class="status-badge s-info">本地已建 · 未接云</span><span class="toggle">▶</span></div>
+    <div class="right"><span class="status-badge s-ok">档案本机 · 排课已接云</span><span class="toggle">▶</span></div>
   </div>
   <div class="sys-body">
     <div class="field">
       <div class="field-label">位置（现状）</div>
       <div class="field-value multi">
         <div><b>本地</b>　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/hr.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/hr.html</span></a></div>
-        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span> <span style="color:var(--hint);">刻意没发 —— 里面有工资表和合同，认证没做之前不上公网</span></div>
+        <div><b>线上</b>　<a href="https://tony80-del.github.io/zhops/hr.html"><span class="loc">https://tony80-del.github.io/zhops/hr.html</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="margin-top:6px;color:var(--hint);">
+          ⚠️ <b class="no">认证还没做</b> —— 线上这个地址任何人都能打开。原来「认证没做之前不上公网」那条判断，2026-10-31 16:16 按 Tony 指令推翻了（四个系统一起上）。
+        </div>
         <div style="margin-top:6px;">
           <b class="yes">已建（2026-10-30）</b>：单文件、零依赖、<b>双击即开</b>，
-          数据存本机浏览器（<span class="key">zhops.hr.v1</span>），<b class="no">没接 Firestore</b>。
+          <b>员工档案 / 合同 / 证件 / 社保</b>存本机浏览器（<span class="key">zhops.hr.v1</span>），合同 PDF 存本机 IndexedDB，<b class="no">档案库仍不上云</b>。
+        </div>
+        <div style="margin-top:6px;">
+          <b class="yes">云端三条通道已通（2026-10-31）</b>：
+          读 <span class="key">zhops/master</span>（教师档案）· 读 <span class="key">zhops/done_*</span>（课时）· 写 <span class="key">zhops/approvals</span>（工资单）· 读回同一份看审批结果。
         </div>
         <div><b>目标形态</b>：单文件 HTML + Firestore（<b class="yes">敏感库，与财务同库</b>，已定 2026-10-29）+ 九套配色（与财务同一套语义变量）。</div>
       </div>
@@ -936,7 +944,7 @@
         <div><span class="yes">✓</span> <b>合同挂 PDF 原件</b>（2026-10-31）：浏览器本机 IndexedDB 存二进制，页内可看 / 可下载，<b>不上网</b></div>
         <div><span class="yes">✓</span> <b>删除要密码 + 删除前自动快照</b>（2026-10-31）：防手滑，可在配置页恢复上一次删除</div>
         <div><span class="yes">✓</span> <b>导出全部数据（含合同 PDF）/ 恢复备份</b>（2026-10-31）：换电脑时 PDF 不丢</div>
-        <div style="margin-top:6px;"><b class="plan">缺</b>：Firestore 同步 · 认证与权限 · 手机端表格卡片化。</div>
+        <div style="margin-top:6px;"><b class="plan">缺</b>：档案库上云 · 认证与权限 · 手机端表格卡片化 · 预支 / 其他扣款模块（P-74）。</div>
       </div>
     </div>
     <div class="field">
@@ -964,8 +972,10 @@
       <div class="field-value multi">
         <div><b class="yes">已通</b>　入：zhops 课次 <code>done</code> → 人事算课时费。主端「推进一课」、教师端「这节课已上完」<b>都会立刻写一条 <code>zhops/done_&lt;课次ID&gt;</code></b>，不用等整份推送。</div>
         <div><b class="yes">已通</b>　出：人事月度工资汇总单 → <code>zhops/approvals</code> → 财务审批</div>
+        <div><b class="yes">已通（2026-10-31）</b>　入：<b>审批结果读回</b> —— 人事页显示「财务已批准 / 已驳回（理由原样显示）/ 已付款（金额·日期·凭证）」。原来提交完就永远停在「已提交」，批没批驳没驳都不知道。</div>
         <div><b class="yes">已通</b>　入：zhops 教师档案（人员信息，不含课时）→ 建员工档案</div>
         <div class="plan">待做：出 —— 制度文件（审批后）→ 主页端</div>
+        <div class="plan">待做：预支 / 其他扣款 / 补发（P-74）—— 扣完才得出实发，财务照着付</div>
         <div><span class="no">已作废：</span>财务算好金额推给人事</div>
       </div>
     </div>
@@ -978,7 +988,8 @@
       <div class="field-value">
         <b class="yes">骨架已建（2026-10-30）</b> —— 见 <a href="zhops-polish.html" class="loc">工作台账 P-52</a>。<br>
         <b class="yes">本地功能已收口（2026-10-31）</b>：合同 → 自动建档 → 按合同算汇总 → 提交财务；档案整页 + 合同 PDF + 备份恢复 + 防误删。<br>
-        S3 剩下的<b>全是上云与打通</b>：Firestore 同步 · 认证与权限 · 主端入口 · 财务审批工作台。
+        <b class="yes">财务审批已闭环（2026-10-31）</b>：人事提交 → 财务批 / 驳 / 付 → 人事读回结果（<a href="zhops-polish.html" class="loc">P-72</a>）。<br>
+        S3 剩下：<b>档案库上云</b> · 认证与权限 · 主端入口 · 预支扣款模块（<a href="zhops-polish.html" class="loc">P-74</a>）· 课次记「市」（<a href="zhops-polish.html" class="loc">P-73</a>）。
       </div>
     </div>
     <div class="field">
@@ -998,53 +1009,62 @@
     <div class="left">
       <span class="sys-tag">财务</span>
       <span class="sys-name">财务系统</span>
-      <span class="sys-sub">核算 · 管账 · 预算 · 发薪</span>
+      <span class="sys-sub">核算 · 管账 · 审批 · 付款</span>
     </div>
-    <div class="right"><span class="status-badge s-info">本地已建 · 未接云</span><span class="toggle">▶</span></div>
+    <div class="right"><span class="status-badge s-ok">审批通道已通</span><span class="toggle">▶</span></div>
   </div>
   <div class="sys-body">
     <div class="field">
       <div class="field-label">位置（现状）</div>
       <div class="field-value multi">
         <div><b>本地</b>　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/finance.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/finance.html</span></a></div>
-        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span> <span style="color:var(--hint);">刻意没发 —— 里面有工资表和股东账面，认证没做之前不上公网</span></div>
+        <div><b>线上</b>　<a href="https://tony80-del.github.io/zhops/finance.html"><span class="loc">https://tony80-del.github.io/zhops/finance.html</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="margin-top:6px;color:var(--hint);">
+          ⚠️ <b class="no">认证还没做</b> —— 线上这个地址任何人都能打开，也能点「批准 / 付款」。
+          原来「认证没做之前不上公网」那条判断，2026-10-31 16:16 按 Tony 指令推翻了（四个系统一起上）。这条风险记着。
+        </div>
         <div style="margin-top:6px;">
-          <b class="yes">已建（2026-10-30）</b>：单文件、零依赖、<b>双击即开</b>，
-          数据存本机浏览器（<span class="key">zhops.fin.v1</span>），<b class="no">没接 Firestore</b>。
+          <b class="yes">已接审批云（2026-10-31）</b>：本机仍存 <span class="key">zhops.fin.v1</span>，
+          另<b class="yes">只读</b>云端 <span class="key">zhops/approvals</span>（人事提交的工资单）。
+          <b class="no">绝不写 master</b> —— 排课数据是主端 / 教师端的，财务没有写的理由。
         </div>
         <div><b>目标形态</b>：单文件 HTML + Firestore（<b class="yes">敏感库，独立于排课库</b>，已定 2026-10-29）+ 5 皮肤。</div>
       </div>
     </div>
     <div class="field">
-      <div class="field-label">已建的范围（六个板块）</div>
+      <div class="field-label">已建的范围（七个板块）</div>
       <div class="field-value multi">
         <div><span class="yes">✓</span> ① 收入（学费 / 材料费 / 补课费，含税率与发票号）</div>
-        <div><span class="yes">✓</span> ② 支出（课时费自动 / 工资社保 / 其他支出）</div>
+        <div><span class="yes">✓</span> ② 支出（工资社保<b>来自单据、只读</b> / 课时费只作参考 / 其他支出手填）</div>
         <div><span class="yes">✓</span> ③ 结算（按班算单课收入、课时费、社保分摊、单课毛利）</div>
         <div><span class="yes">✓</span> ④ 报表（月毛利、毛利率、成本结构、班级盈亏排名）</div>
-        <div><span class="yes">✓</span> ⑤ 配置（社保 / 企税 / 分红个税 / 默认税率，改一次长期用）</div>
-        <div><span class="yes">✓</span> ⑥ 导出（收入明细 / 支出明细 / 工资社保，三张 <span class="loc">.xls</span> 给代账）</div>
-        <div style="margin-top:6px;"><b class="plan">缺</b>：Firestore 同步 · 认证 · 与 zhops 的课次通道 · 应收/实收分栏 · 手机端表格卡片化。</div>
+        <div><span class="yes">✓</span> ⑤ <b>审批</b>（2026-10-31 新增：拉单据 → 核对 → 批准 / 驳回 / 付款）</div>
+        <div><span class="yes">✓</span> ⑥ 配置（社保 / 企税 / 分红个税 / 默认税率，改一次长期用）</div>
+        <div><span class="yes">✓</span> ⑦ 导出（收入明细 / 支出明细 / 工资社保，三张 <span class="loc">.xls</span> 给代账）</div>
+        <div style="margin-top:6px;"><b class="plan">缺</b>：认证 · 应收/实收分栏 · 手机端表格卡片化 · 股东账面。</div>
       </div>
     </div>
     <div class="field">
       <div class="field-label">角色</div>
-      <div class="field-value">核算 · 管账 · 预算 · 发薪。收入（学费 / B2B 收款）、支出（教师课时费 / 助教补贴 / 教室租金 / 宣传费）、毛利、缴税、月底股东账面。</div>
+      <div class="field-value">核算 · 管账 · 审批 · 付款。收入（学费 / B2B 收款）、支出（工资社保 / 教室租金 / 宣传费）、毛利、缴税、月底股东账面。<b>不自己算工资</b> —— 数字全部来自人事单据，只核对、只批、只付。</div>
     </div>
     <div class="field">
-      <div class="field-label">数据流向（规划 · 通道未接）</div>
+      <div class="field-label">数据流向（现状）</div>
       <div class="field-value multi">
-        <div class="plan">入：zhops 课次数据 → 算收入 <span style="color:var(--hint);">（现在班级课次手填）</span></div>
-        <div class="plan">入：zhops 课次 × 课时单价 → <b class="yes">算薪酬（已定：财务算）</b></div>
-        <div class="plan">出：薪酬金额 → 人事（人事只管发放归档）</div>
-        <div class="plan">出：月度汇总摘要（审批后）→ 主页端</div>
+        <div><b class="yes">入：人事工资单</b> ← <span class="key">zhops/approvals</span>（2026-10-31 已通）。批准 / 驳回 / 付款都写回同一张单据。</div>
+        <div><b class="yes">出：审批结果</b> → 人事那边读回「已批准 / 已驳回（理由）/ 已付款（金额·日期·凭证）」。</div>
+        <div class="plan">入：zhops 课次数据 → 算收入 <span style="color:var(--hint);">（现在班级课次手填，未接）</span></div>
+        <div class="plan">出：月度汇总摘要 → 主页端 <span style="color:var(--hint);">（未做）</span></div>
       </div>
     </div>
     <div class="field">
-      <div class="field-label">职责边界（已定 2026-10-29）</div>
+      <div class="field-label">职责边界（2026-10-31 翻案）</div>
       <div class="field-value">
-        <b class="yes">财务是薪酬的唯一计算方。</b>课时单价、补贴规则、扣款口径全部落在财务。<br>
-        人事拿到的已经是金额，不再做乘法。<b>教室租金也归财务</b>（支出科目），不挂人事。
+        <b class="yes">人事算，财务批。</b>合同定价、课时数、社保、个税全部在人事算完，写成单据；财务<b class="no">不改数字</b> ——
+        数字不对就驳回，写清理由，让人事改完重提。<br>
+        原来的口径「财务是薪酬的唯一计算方、人事只管发放」<b class="no">已作废</b>（2026-10-31 Tony 定）。<br>
+        <b>教室租金仍归财务</b>（支出科目），不挂人事。
       </div>
     </div>
     <div class="field">
@@ -1052,18 +1072,21 @@
       <div class="field-value">明细账 / 工资表 / 税务 / 股东账面<b class="no">不进主页端</b>。主页端只放「公开预算摘要」。</div>
     </div>
     <div class="field">
-      <div class="field-label">待定的一处口径（影响毛利）</div>
+      <div class="field-label">双算口径（2026-10-31 已定 C）</div>
       <div class="field-value">
-        <b class="no">会双算</b>：本月支出 = 课时费 + 工资（含教师月薪）+ 公司社保 + 其他。
-        若教师的「月薪」本身就是按课时算出来的总额，这笔钱被算了两次。<br>
-        <b>要定</b>：工资页月薪 = <b>底薪</b>（课时费另加）还是 = <b>全部</b>？
+        原来 <span class="key">expAll = tchAll + grossAll + siCompAll + othAll</span> —— 教师既有课时费又在工资表填月薪时，钱算两遍。<br>
+        <b class="yes">已修</b>：<span class="key">expAll = 单据应发 + 社保公司 + 其他</span>，<span class="key">tchAll</span> 退出支出（单据应发里已含课时费）。
+        只算「已批 / 已付」，待批 / 已驳不进报表。成本结构条把「课时费 + 工资社保」两条并成「人工成本」一条。<br>
+        计薪三档（纯课时 / 纯月薪 / 底薪+课时）由人事按合同两个格子自动判断，财务不重复判断。
       </div>
     </div>
     <div class="field">
       <div class="field-label">搭建顺序</div>
       <div class="field-value">
         <b class="yes">骨架已建（2026-10-30）</b> —— 见 <a href="zhops-polish.html" class="loc">工作台账 P-49</a>。<br>
-        S2 剩下的部分是<b>上云 + 接 zhops 课次</b>。跟 zhops 数据往来最紧，也是人事的前置。下一步 = 在主端加一个入口链到 <span class="loc">finance.html</span>（两边各存各的，只做跳转）。
+        <b class="yes">审批通道已通（2026-10-31）</b> —— 见 <a href="zhops-polish.html" class="loc">P-72</a>。<br>
+        S2 剩下：<b>认证</b>（现在线上无登录，谁能开谁能批）· 应收/实收分栏 · 手机端表格卡片化。<br>
+        下一步 = 在主端加一个入口链到 <span class="loc">finance.html</span>（两边各存各的，只做跳转）。
       </div>
     </div>
   </div>
