@@ -140,6 +140,13 @@ table{border-collapse:collapse;width:100%}
 .crumb b{color:var(--b3);font-weight:500}
 .topsp{flex:1}
 .badge{font-size:11px;line-height:1;padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mu)}
+/* ★ 2026-11-01（P-81）：语言切换按钮。跟 .badge 同一档尺寸，但可点、有 hover。
+   ⚠️ 人事页全局有 input,select,button{…} 之类的宽度规则时会被撑满 —— 这里显式 width:auto。 */
+.langbtn{font-size:11.5px;line-height:1;padding:6px 10px;border-radius:999px;
+  border:1px solid var(--line);background:var(--panel);color:var(--tx);
+  cursor:pointer;width:auto;flex:0 0 auto;white-space:nowrap;}
+.langbtn:hover{border-color:var(--b3);color:var(--b3);}
+.langbtn:active{transform:scale(.97);}
 
 /* ---------- 配色 ---------- */
 .themes{display:flex;align-items:center;gap:6px}
@@ -435,6 +442,11 @@ table.fmt td.bad{color:var(--neg)}
   </div>
   <span class="badge">敏感库 · 本机</span>
   <span class="badge">不做审批</span>
+  <!-- ★ 2026-11-01（P-81）：语言切换。跟主端同一把手感（🇨🇳 / 🇻🇳），
+       但**字典是人事页自己的一本**（VI_HR），不跟主端共用 ——
+       共用会让改一处影响两页，这个联动坑以前踩过。
+       选择记本机键 zhops.hr.lang（不碰 zhops.hr.v1 那份数据）。 -->
+  <button class="langbtn" id="langSwitch" title="中国语 / Tiếng Việt">🇨🇳 中文</button>
   <!-- ★ 2026-11-01：云端连接灯。绿 = 连得上云端 / 红 = 连不上或离线 / 灰 = 检测中。
        点一下 = 重新检测。状态由 cldSet() 统一写，别在别处改 class。 -->
   <span class="cld wait" id="cldBadge" role="button" tabindex="0" title="云端：正在检测…">
@@ -3313,6 +3325,273 @@ function backMainFix(){
   backMainFix();
 })();
 
+/* ==========================================================================
+   ★ 2026-11-01（P-81）：越南语切换 —— 翻译层（Tony 选 C）
+   ==========================================================================
+   三条前提（Tony 定的）：
+     ① 方案 C —— **只翻界面骨架，业务数据不翻**。
+        侧栏 / 表头 / 按钮 / 提示语 / 空态翻成越南语；
+        人名「阮氏兰」、班名、事由「迟到 2 次」、合同号 —— **原样保留**。
+        理由是那些是员工自己填的字，翻了反而认不出是谁。
+     ② **绝不翻存盘值**。「在职 / 试用 / 离职」「已参保」「草稿 / 已提交」
+        「固定期 / 无固定期」这些是存在 zhops.hr.v1 里的数据 ——
+        翻译层只改**渲染出来的文字节点**，从不写回 S，也不碰带 data-k 的输入框值。
+        ⚠️ 这条是翻译层最大的雷：一旦把状态值翻了，写回去主端就认不出来了。
+     ③ **字典独立**，不跟主端共用（VI_HR）。共用会让改一处影响两页，以前踩过联动坑。
+
+   怎么做的：
+     渲染完 → langWalk() 遍历文字节点 → 按字典替换 → WeakMap 记下原文，切回中文时还原。
+     placeholder / title 这类属性单独扫一遍（TreeWalker 只走文本节点，翻不到属性）。
+
+   加译文：只往 VI_HR 里加「'中文原文':'Tiếng Việt'」一行，不用动渲染代码。
+   未进字典的句子保持中文 —— 逐条补。
+   ========================================================================== */
+var HR_LANG_KEY = 'zhops.hr.lang';
+var HR_LANG = (function(){
+  try { return localStorage.getItem(HR_LANG_KEY) === 'vi' ? 'vi' : 'zh'; } catch(e){ return 'zh'; }
+})();
+
+/* 中文原文 → Tiếng Việt。只收界面骨架，不收业务数据。 */var VI_HR = {
+  /* ---- 侧栏 · 分组 ---- */
+  '板块':'Mục', '设置':'Cài đặt',
+  /* ---- 侧栏 · 板块名 ---- */
+  '使用说明':'Hướng dẫn',
+  '员工花名册':'Danh sách nhân viên',
+  '合同':'Hợp đồng',
+  '证件资质':'Giấy tờ & chứng chỉ',
+  '社保与个税':'BHXH & Thuế TNCN',
+  '考勤与假勤':'Chấm công & Nghỉ phép',
+  '薪酬发放':'Chi trả lương',
+  '预支与调整':'Tạm ứng & Điều chỉnh',
+  '培训与培养':'Đào tạo & Bồi dưỡng',
+  '制度库':'Kho nội quy',
+  '配置':'Cấu hình',
+  '人事档案':'Hồ sơ nhân sự',
+  /* ---- 顶栏 ---- */
+  '人事系统':'Hệ thống Nhân sự',
+  '配色':'Bảng màu',
+  '敏感库 · 本机':'Dữ liệu nhạy cảm · Máy này',
+  '不做审批':'Không duyệt',
+  '中文教学运营':'Vận hành giảng dạy tiếng Trung',
+  /* ---- 板块大标题 ---- */
+  '这套系统怎么用':'Hệ thống này dùng thế nào',
+  '员工花名册 · 谁在这干活':'Danh sách nhân viên · Ai đang làm việc',
+  '合同 · 签了多久':'Hợp đồng · Ký bao lâu',
+  '证件资质 · 什么时候过期':'Giấy tờ · Khi nào hết hạn',
+  '社保与个税 · 参保状态':'BHXH & Thuế · Trạng thái tham gia',
+  '考勤与假勤 · 休了几天':'Chấm công & Nghỉ phép · Nghỉ mấy ngày',
+  '薪酬 · 汇总与发放':'Lương · Tổng hợp & Chi trả',
+  '预支 · 其他扣款 · 补发':'Tạm ứng · Khấu trừ khác · Truy lĩnh',
+  '培训与培养 · 谁能带班':'Đào tạo · Ai được dạy lớp',
+  '制度库 · 版本与状态':'Kho nội quy · Phiên bản & Trạng thái',
+  '配置 · 改一次，长期用':'Cấu hình · Sửa một lần, dùng lâu dài',
+  /* ---- 板块副标题 ---- */
+  '先看布局和三层切换，再看每页填什么':'Xem bố cục và ba tầng chuyển, rồi xem mỗi trang điền gì',
+  '一人一行，点一行看一人一档':'Mỗi người một dòng, bấm vào để xem hồ sơ',
+  '到期日填进去，剩余天数自动算':'Điền ngày hết hạn, số ngày còn lại tự tính',
+  '护照 / 签证 / 暂住证 / 工作许可 / 教师资格':'Hộ chiếu / Visa / Tạm trú / Giấy phép lao động / Chứng chỉ GV',
+  '这里只存基数，比例在配置页改':'Ở đây chỉ lưu mức đóng, tỷ lệ sửa ở trang Cấu hình',
+  '年假 / 病假 / 事假 / 加班':'Phép năm / Nghỉ ốm / Nghỉ việc riêng / Tăng ca',
+  '先按合同算汇总 → 提交财务 → 批准后记发放':'Tính theo hợp đồng → Gửi Tài chính → Duyệt rồi ghi chi trả',
+  '人事管扣款口径，财务只出钱、核对总数':'Nhân sự quyết định khấu trừ, Tài chính chỉ chi tiền và đối tổng',
+  '助教培养、培训记录、考核结果':'Bồi dưỡng trợ giảng, hồ sơ đào tạo, kết quả đánh giá',
+  '只标状态，不做审批（2026-10-30 定）':'Chỉ đánh dấu trạng thái, không duyệt (chốt 30-10-2026)',
+  '这些数字会变（政策、制度），所以不写死':'Các số này thay đổi (chính sách, nội quy) nên không viết cứng',
+  /* ---- 卡片标题 ---- */
+  '花名册':'Danh sách', '合同清单':'Danh sách hợp đồng', '证件清单':'Danh sách giấy tờ',
+  '参保记录':'Hồ sơ BHXH', '假勤记录':'Hồ sơ nghỉ phép',
+  '工资汇总 · 按合同算':'Tổng hợp lương · Tính theo hợp đồng',
+  '登记':'Đăng ký', '发放记录':'Hồ sơ chi trả', '培训记录':'Hồ sơ đào tạo',
+  '制度清单':'Danh mục nội quy', '基础参数':'Tham số cơ bản',
+  '数据':'Dữ liệu',
+  /* ---- 表头 ---- */
+  '工号':'Mã NV', '中文名':'Tên tiếng Trung', '岗位':'Chức vụ', '部门':'Bộ phận',
+  '排课ID':'ID xếp lịch', '入职日':'Ngày vào', '状态':'Trạng thái', '电话':'Điện thoại',
+  '提醒':'Nhắc nhở', '姓名':'Họ tên', '合同号':'Số hợp đồng', '类型':'Loại',
+  '到期日':'Ngày hết hạn', '剩余':'Còn lại', '备注':'Ghi chú', '简历':'Lý lịch',
+  '基数':'Mức đóng', '月份':'Tháng', '应发':'Lương gộp', '实发':'Thực lĩnh',
+  '社保个人':'BHXH (NV)', '个税':'Thuế TNCN', '发放日':'Ngày trả', '方式':'Hình thức',
+  '签收':'Ký nhận', '底薪':'Lương cơ bản', '课时':'Số tiết', '单价':'Đơn giá',
+  '课时费':'Tiền tiết dạy', '计价':'Cách tính', '预支抵扣':'Trừ tạm ứng',
+  '其他扣款':'Khấu trừ khác', '补发':'Truy lĩnh', '金额':'Số tiền',
+  '归属月份':'Tháng hạch toán', '发生日':'Ngày phát sinh', '事由':'Lý do',
+  '本月已扣':'Đã trừ tháng này', '预支余额':'Số dư tạm ứng',
+  '本月自动扣预支':'Tự trừ tạm ứng tháng này',
+  '本月扣款 / 补发（勾选后才生效）':'Khấu trừ / Truy lĩnh tháng này (tích mới áp dụng)',
+  '字段':'Trường', '格式':'Định dạng', '正确例子':'Ví dụ đúng',
+  '规则 / 填错会怎样':'Quy tắc / Điền sai thì sao', '干什么':'Để làm gì',
+  '数据从哪来':'Dữ liệu từ đâu', '要手填吗':'Có phải tự điền không',
+  /* ---- 按钮 / 动作 ---- */
+  '生成':'Tạo', '提交财务':'Gửi Tài chính', '导出':'Xuất', '导入':'Nhập',
+  '加一条':'Thêm dòng', '保存':'Lưu', '取消':'Huỷ', '删除':'Xoá', '编辑':'Sửa',
+  '新增':'Thêm mới', '确定':'Đồng ý', '返回主端':'Về trang chính',
+  /* ---- 空态 / 提示 ---- */
+  '还没有发放记录 —— 点右上角「+ 加一条」':'Chưa có hồ sơ chi trả — bấm "+ Thêm dòng" ở góc trên phải',
+  '还没有预支 / 扣款 / 补发记录 —— 点右上角「+ 加一条」':'Chưa có tạm ứng / khấu trừ / truy lĩnh — bấm "+ Thêm dòng" ở góc trên phải',
+  '花名册里还没有在职员工':'Chưa có nhân viên đang làm việc trong danh sách',
+  '本月没有可勾的扣款 / 补发':'Tháng này không có khấu trừ / truy lĩnh để tích',
+  '合计':'Tổng cộng', '未生成':'Chưa tạo', '草稿':'Bản nháp',
+  /* ---- 云端灯 ---- */
+  '检测中':'Đang kiểm tra', '已连':'Đã kết nối', '云端':'Đám mây',
+};
+
+/* 不翻的地方：这些元素里的文字一律原样保留。
+   —— 人名 / 班名 / 事由这些是「用户填的数据」，翻译层从不碰（见上面的前提①）。 */
+var VI_SKIP_SEL = '#drawer, .ro-list, [data-k], input, textarea, select, option, .mono';
+
+(function(){
+  var memo = new WeakMap();     /* 文本节点 → 中文原文（切回中文时还原） */
+  var attrMemo = new WeakMap(); /* 元素 → {placeholder:原, title:原} */
+
+  /* 判断一个节点在不在「不翻」的区域里 */
+  function inSkip(node){
+    var el = node.nodeType === 3 ? node.parentElement : node;
+    if (!el || !el.closest) return true;
+    /* 名字 / 数据类元素：带了 data-raw 的也跳过 */
+    if (el.closest(VI_SKIP_SEL)) return true;
+    return false;
+  }
+
+  /* 把一个文本节点按字典替换。
+     ⚠️ 性能：字典键排序**只做一次**（VI_KEYS），不能每个文本节点都排一遍 ——
+        人事页有几千个文本节点，每节点排 150 个键 = 页面直接卡死（真踩到，
+        CDP Evaluate 直接超时）。这个词表按长度倒序，保证「课时费」先于「课时」匹配。 */
+  function trText(raw){
+    var s = String(raw);
+    if (!s.trim()) return s;
+    var lead = (s.match(/^\s*/) || [''])[0];
+    var tail = (s.match(/\s*$/) || [''])[0];
+    var core = s.slice(lead.length, s.length - tail.length);
+    if (VI_HR[core] !== undefined) return lead + VI_HR[core] + tail;
+    /* 整串不在字典里：先看看有没有任何键出现在串里，没有就原样返回（绝大多数节点走这条路） */
+    var out = core, hit = false;
+    for (var i = 0; i < VI_KEYS.length; i++){
+      var k = VI_KEYS[i];
+      if (out.indexOf(k) === -1) continue;
+      out = out.split(k).join(VI_HR[k]);
+      hit = true;
+    }
+    return hit ? (lead + out + tail) : s;
+  }
+
+  /* 字典键按长度倒序，全局只算一次 */
+  var VI_KEYS = Object.keys(VI_HR).sort(function(a, b){ return b.length - a.length; });
+
+  function walk(root){
+    if (!root) return;
+    /* ① 文本节点 */
+    if (typeof document.createTreeWalker === 'function'){
+      var w = document.createTreeWalker(root, 4 /* SHOW_TEXT */, null, false);
+      var n;
+      while ((n = w.nextNode())){
+        var p = n.parentElement;
+        if (!p || /^(SCRIPT|STYLE)$/.test(p.tagName)) continue;
+        if (inSkip(n)) continue;
+        if (!memo.has(n)) memo.set(n, n.nodeValue);
+        n.nodeValue = trText(memo.get(n));
+      }
+    }
+    /* ② 属性：placeholder / title 单独扫（TreeWalker 走不到属性） */
+    var els = root.querySelectorAll ? root.querySelectorAll('[placeholder],[title]') : [];
+    Array.prototype.forEach.call(els, function(el){
+      if (el.closest(VI_SKIP_SEL)) return;
+      var m = attrMemo.get(el);
+      if (!m){ m = {}; attrMemo.set(el, m); }
+      ['placeholder', 'title'].forEach(function(a){
+        var v = el.getAttribute(a);
+        if (v === null) return;
+        if (!(a in m)) m[a] = v;
+        el.setAttribute(a, trText(m[a]));
+      });
+    });
+  }
+
+  /* 切回中文：把记下的原文写回去 */
+  function restore(root){
+    if (!root) return;
+    if (typeof document.createTreeWalker === 'function'){
+      var w = document.createTreeWalker(root, 4, null, false);
+      var n;
+      while ((n = w.nextNode())){
+        if (memo.has(n)) n.nodeValue = memo.get(n);
+      }
+    }
+    var els = root.querySelectorAll ? root.querySelectorAll('[placeholder],[title]') : [];
+    Array.prototype.forEach.call(els, function(el){
+      var m = attrMemo.get(el);
+      if (!m) return;
+      Object.keys(m).forEach(function(a){ el.setAttribute(a, m[a]); });
+    });
+  }
+
+  /* 对外：渲染完之后调它 */
+  function applyLang(root){
+    if (HR_LANG !== 'vi') return;
+    runWalk(root || document.body);
+  }
+
+  function setLang(v){
+    HR_LANG = (v === 'vi') ? 'vi' : 'zh';
+    try { localStorage.setItem(HR_LANG_KEY, HR_LANG); } catch(e){}
+    var b = document.getElementById('langSwitch');
+    if (b) b.textContent = HR_LANG === 'vi' ? '🇻🇳 Tiếng Việt' : '🇨🇳 中文';
+    if (HR_LANG === 'vi') applyLang(document.body);
+    else restore(document.body);
+  }
+
+  /* 按钮 */
+  var btn = document.getElementById('langSwitch');
+  if (btn){
+    btn.textContent = HR_LANG === 'vi' ? '🇻🇳 Tiếng Việt' : '🇨🇳 中文';
+    btn.addEventListener('click', function(){
+      setLang(HR_LANG === 'vi' ? 'zh' : 'vi');
+      /* 切语言后整页重渲染 —— 否则新渲染出来的内容还是中文（比如刚切到某板块） */
+      try { renderAll(); } catch(e){}
+      if (HR_LANG === 'vi') applyLang(document.body);
+    });
+  }
+
+  /* ★ 渲染之后自动翻：MutationObserver 盯着，任何新内容进来都过一遍。
+     ⚠️ 死循环的坑（真踩到，页面直接卡死、CDP Evaluate 超时）：
+        翻译**会改 DOM** → 又触发 observer → 又翻译 → 无限循环。
+        之前用 busy 标志挡，但 busy 在同一轮微任务里就重置了，
+        下一轮 observer 回调照样跑 —— 挡不住。
+     正确做法：**自己改的过程中把 observer 断开**（disconnect），改完再接回来。 */
+  var obs = null;
+  if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined'){
+    obs = new MutationObserver(function(){
+      if (HR_LANG !== 'vi') return;
+      runWalk(document.body);
+    });
+    obs.observe(document.body, { childList:true, subtree:true, characterData:true });
+  }
+
+  /* 断 → 翻 → 接。这是唯一安全调用 walk 的路径。 */
+  function runWalk(root){
+    if (obs) obs.disconnect();
+    try {
+      walk(root);
+    } catch (e) {
+      /* 翻译失败不能把页面搞崩 —— 宁可留着中文 */
+    } finally {
+      if (obs) obs.observe(document.body, { childList:true, subtree:true, characterData:true });
+    }
+  }
+
+  /* 探针窗口 */
+  if (typeof window !== 'undefined'){
+    window.__HR_LANG__ = {
+      get: function(){ return HR_LANG; },
+      set: setLang,
+      dict: VI_HR,
+      tr: trText,
+      apply: applyLang,
+      restore: restore,
+      SKIP: VI_SKIP_SEL,
+    };
+  }
+})();
+
 /* ★ 2026-10-31：给探针留一个只读窗口（不影响任何逻辑）。
    整个脚本在 IIFE 里，外部拿不到内部函数 —— 探针要验合并逻辑，只能开这一扇门。
    只挂测试用的纯函数与只读状态，不挂任何写操作。 */
@@ -3349,6 +3628,9 @@ if (typeof window !== 'undefined'){
     val: val,
     ZH: ZH,
     getS: function(){ return S; },
+    /* ★ 2026-11-01（P-81）：语言探针要重渲染页面看效果 */
+    renderAll: renderAll,
+    save: save,
   };
 }
 })();

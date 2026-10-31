@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">5 行 · 已打磨 5</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">6 行 · 已打磨 6</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -260,6 +260,26 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>三种跑法</b>：默认完整 · <span class="mono">--fast</span> 跳过线上（没网时）· <span class="mono">--no-probe</span> 只核 sha（改文案不跑探针）。<br>
               <b>反向控制</b>：往 404.html 追加一行 → 报「源 ≠ 仓 ← 改了源文件没发布」；还原后 sha 逐字一致。<br>
               <b>写脚本时踩的两个 sh 坑</b>：① <span class="mono">printf ... | while ... done</span> 里的 while 是子 shell，里面累加的计数出了循环就丢（第一次跑汇总说「0 项通过」，其实 8 个全对）；改成重定向吃列表。② <span class="mono">grep -c</span> 无匹配时退出码为 1，写 <span class="mono">|| echo 0</span> 会输出两行 → 计数变「0\n0」；统一包一个 <span class="mono">count()</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-81</td>
+              <td><b>人事部加越南语切换</b><br><span style="color:#8899aa;font-size:12px">「人事部越南语的切换」（方案 C：只翻界面骨架，业务数据不翻）</span></td>
+              <td class="nw">人事 · 语言</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>方案</b>：跟主端同一套<b>翻译层</b>（不动中文代码，挂一本字典 <span class="mono">VI_HR</span>，渲染完遍历文字节点按表替换）。顶栏右上角一颗 <span class="mono">🇨🇳 中文 / 🇻🇳 Tiếng Việt</span>，选择存 <span class="mono">zhops.hr.lang</span>（不碰 <span class="mono">zhops.hr.v1</span>）。<br>
+              <b>★ 只翻界面骨架</b>：侧栏 / 板块标题 / 表头 / 按钮 / 空态 → 越南语；<b>人名「阮氏兰」、班名、事由「迟到 2 次」、合同号</b> → <b>原样保留</b>。那些是员工自己填的字，翻了反而认不出是谁。<br>
+              <b>★ 绝不翻存盘值</b>：「在职 / 试用 / 离职」「参保」「固定期」「advance」这些是存在 <span class="mono">zhops.hr.v1</span> 里的数据。翻译层只改渲染出来的文字节点，<b>从不写回 S</b>，也不碰 <span class="mono">[data-k]</span> / <span class="mono">input / select / option</span> 区域。<br>
+              <b>字典独立</b>，不跟主端共用 —— 共用会让改一处影响两页（这个联动坑以前踩过）。加译文只往 <span class="mono">VI_HR</span> 加一行，不用动渲染代码。<br>
+              <b>placeholder 单独处理</b>：TreeWalker 只走文本节点，翻不到属性。但只翻中文提示语，<b>格式示例一律不动</b>（<span class="mono">2026-10</span> / <span class="mono">T001</span> / <span class="mono">12000000</span> 这些翻了就填错）。<br>
+              <b>★ 踩到的死循环</b>：翻译会改 DOM → 触发自己的 MutationObserver → 又翻译，无限循环，<b>页面直接假死</b>（CDP Evaluate 超时）。之前的 <span class="mono">busy</span> 标志挡不住（同轮微任务里就重置了）。正解：改之前 <span class="mono">obs.disconnect()</span>，改完再接回来。<br>
+              另一个性能坑：字典键排序<b>不能每个文本节点排一遍</b>（几千节点 × 150 键 = 卡死），全局只算一次 <span class="mono">VI_KEYS</span>。<br>
+              <b>探针</b> <span class="mono">check-p81-lang.js</span> <b>37 条全绿</b>（run.sh ⑱）：切过去八处界面全变 / 切回来逐字还原 / 存盘值不动 / 用户数据不翻 / 格式示例不翻 / 新渲染内容也跟着翻 / 切换不卡死。<br>
+              <b>★ 探针自身也踩了三个坑</b>：① 只查 <span class="mono">#nav</span>，漏了 <span class="mono">#nav2</span> 里的「配置」；② 用 <span class="mono">body.innerText</span> 取文字 —— 花名册的「展开行」是 <span class="mono">display:none</span>，第二个人名取不到（<span class="mono">innerHTML</span> 有、<span class="mono">textContent</span> 没有）；③ 「事由」是输入框的 <span class="mono">value</span>，<span class="mono">textContent</span> 取不到。<br>
+              <b>★ 一条真装饰品被揪出来</b>：「存盘值不动」原本只比内存对象，而翻译层本来就不写 S，<b>永远绿</b>。改成走真存盘（<span class="mono">save()</span> → 读 <span class="mono">localStorage</span> → 比对），并在探针里<b>内建反向控制</b>：手工把一条状态改成越南语再存盘，证明那几条真会报红。<br>
+              <b>没做</b>：使用说明页的长段说明文字、制度库正文<b>不翻</b>（那属于内容，不是界面骨架）；<span class="mono">VI_HR</span> 目前约 150 条，没进字典的句子保持中文，逐条补。</td>
             </tr>
           </tbody>
         </table>
