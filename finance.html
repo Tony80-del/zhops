@@ -306,12 +306,38 @@ table.fmt td.bad{color:var(--neg)}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .main{padding:16px 14px 80px}
 }
+
+/* ===== 云端连接灯（2026-11-01）=====
+   绿 = 连得上云端 · 红 = 连不上 / 设备离线 · 灰 = 正在检测
+   用半透明底 + currentColor，深色底和浅色底都看得清。
+   点击灯 = 重新检测；切回标签页、网络恢复都会自动重测。 */
+.cld{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;
+  border:1px solid currentColor;background:rgba(148,163,184,.12);color:#94a3b8;
+  font-size:12px;line-height:1;cursor:pointer;user-select:none;white-space:nowrap;
+  transition:color .18s,background .18s;vertical-align:middle;}
+.cld svg{flex:0 0 auto;}
+.cld.ok{color:#22c55e;background:rgba(34,197,94,.14);}
+.cld.bad{color:#ef4444;background:rgba(239,68,68,.14);}
+.cld.wait{color:#94a3b8;background:rgba(148,163,184,.12);}
+.cld:focus-visible{outline:2px solid currentColor;outline-offset:2px;}
+@media (max-width:700px){ .cld .cld-tx{display:none;} .cld{padding:0 8px;} }
+
+/* 返回主端（2026-11-01）：跟主端「财务部 ↗」出口对称的回头路 */
+.backmain{display:inline-flex;align-items:center;gap:5px;margin-left:12px;padding:4px 10px;
+  border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--mu);
+  font-size:12.5px;text-decoration:none;white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s;}
+.backmain:hover{background:var(--surf2);color:var(--tx);border-color:var(--line2);}
+.backmain:focus-visible{outline:2px solid var(--b1);outline-offset:1px;}
 </style>
 </head>
 <body data-theme="ivory">
 
 <div class="topbar">
   <div class="brand"><span class="dot"></span><b>财务系统</b></div>
+  <!-- ★ 2026-11-01：回主端的路。href 由脚本按「线上 / 本地」自动改对
+       （线上主端叫 admin.html，本地源文件叫 zhops-admin.html）。 -->
+  <a class="backmain" id="backMain" href="admin.html" title="返回主端">← 主端</a>
   <div class="crumb">中文教学运营 · <b id="crumbName">使用说明</b></div>
   <div class="topsp"></div>
   <div class="themes" id="themes">
@@ -329,6 +355,12 @@ table.fmt td.bad{color:var(--neg)}
   </div>
   <span class="badge">内资有限公司</span>
   <span class="badge">本机存储</span>
+  <!-- ★ 2026-11-01：云端连接灯。绿 = 连得上云端 / 红 = 连不上或离线 / 灰 = 检测中。
+       点一下 = 重新检测。状态由 cldSet() 统一写，别在别处改 class。 -->
+  <span class="cld wait" id="cldBadge" role="button" tabindex="0" title="云端：正在检测…">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H7a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 10.2 4.4 4.4 0 0 1 17.5 19z"/></svg>
+    <span class="cld-tx">检测中</span>
+  </span>
 </div>
 
 <div class="shell">
@@ -1847,6 +1879,74 @@ setTheme(savedTheme);
 renderAll();
 show('guide');
 
+/* ==========================================================================
+   云端连接灯 + 返回主端（2026-11-01）
+   --------------------------------------------------------------------------
+   灯：绿 = 连得上云端 / 红 = 连不上或设备离线 / 灰 = 正在检测。
+   探测：列一条 zhops 集合（pageSize=1）。**收到任何 HTTP 响应都算连得上**
+        —— 403 也说明云是活的，只是规则不许读，不该判成离线。
+   自动重测：切回标签页、网络恢复、点一下灯。
+   返回主端：线上主端叫 admin.html，本地源文件叫 zhops-admin.html —— 先探再定。
+   ========================================================================== */
+function cldHHMM(d){ var p = function(n){ return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()); }
+var CLD = { st:'wait', why:'正在检测…', at:null };
+function cldRender(){
+  var el = document.getElementById('cldBadge');
+  if (!el) return;
+  el.className = 'cld ' + CLD.st;
+  el.setAttribute('aria-label', '云端：' + CLD.why);
+  el.title = '云端：' + CLD.why + (CLD.at ? ' · ' + cldHHMM(new Date(CLD.at)) : '') + '（点一下重测）';
+  var tx = el.querySelector('.cld-tx');
+  if (tx) tx.textContent = CLD.st === 'ok' ? '已连' : (CLD.st === 'bad' ? '未连' : '检测中');
+}
+function cldSet(st, why, at){
+  CLD.st = st; CLD.why = why || '';
+  if (at !== undefined) CLD.at = at;
+  cldRender();
+}
+function cldProbe(){
+  if (typeof navigator !== 'undefined' && navigator.onLine === false){ cldSet('bad', '设备离线'); return; }
+  if (typeof fetch !== 'function'){ cldSet('bad', '这个浏览器不支持联网'); return; }
+  cldSet('wait', '正在检测…');
+  var u = 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+          '/databases/(default)/documents/' + FS.coll + '?pageSize=1&key=' + encodeURIComponent(FS.key);
+  var done = false;
+  var to = setTimeout(function(){ if (done) return; done = true; cldSet('bad', '连接超时（8 秒）'); }, 8000);
+  fetch(u, { cache: 'no-store' }).then(function(r){
+    if (done) return; done = true; clearTimeout(to);
+    cldSet('ok', r.ok ? '已连上云端' : '云在线（读被拒 ' + r.status + '）', new Date().toISOString());
+  }).catch(function(){
+    if (done) return; done = true; clearTimeout(to);
+    cldSet('bad', '连不上云端（断网或被拦）');
+  });
+}
+/* 返回主端的 href：线上 = admin.html，本地源文件 = zhops-admin.html。
+   ★ 不用 fetch 探存在性 —— 本地没有 admin.html，探一下会在控制台打一条 404，
+     页面就多一条红字报错（探针的「无页面报错」当场变红）。直接看地址更干净：
+     file:// 或本机 http（localhost / 127.0.0.1）= 本地，其余 = 线上。 */
+function backMainFix(){
+  var a = document.getElementById('backMain');
+  if (!a) return;
+  var h = (location.hostname || '');
+  var local = location.protocol === 'file:' || h === '' || h === 'localhost' || h === '127.0.0.1';
+  a.href = local ? 'zhops-admin.html' : 'admin.html';
+}
+(function(){
+  var el = document.getElementById('cldBadge');
+  if (el){
+    el.addEventListener('click', cldProbe);
+    el.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); cldProbe(); }
+    });
+  }
+  window.addEventListener('online', cldProbe);
+  window.addEventListener('offline', function(){ cldSet('bad', '设备离线'); });
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) cldProbe(); });
+  cldRender();
+  cldProbe();
+  backMainFix();
+})();
+
 /* ★ 2026-10-31：给探针留一个窗口（不影响任何逻辑）。
    整段脚本在 IIFE 里，外部拿不到内部函数 —— 要验审批状态机只能开这一扇门。
    只挂只读状态与业务函数，不额外放权限。 */
@@ -1874,6 +1974,10 @@ if (typeof window !== 'undefined'){
     ST: { WAIT: ST_WAIT, OK: ST_OK, NO: ST_NO, PAID: ST_PAID },
     FS: FS,
     save: save,
+    /* 2026-11-01：云灯与回主端 */
+    cldSet: cldSet, cldProbe: cldProbe, cldRender: cldRender,
+    backMainFix: backMainFix,
+    getCLD: function(){ return CLD; },
   };
 }
 })();

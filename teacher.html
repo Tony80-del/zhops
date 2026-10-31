@@ -356,6 +356,21 @@
     /* KPI 只有两格，铺满 1100px 会显得空 */
     .kpis{max-width:560px;}
   }
+
+/* ===== 云端连接灯（2026-11-01）=====
+   绿 = 连得上云端 · 红 = 连不上 / 设备离线 · 灰 = 正在检测
+   用半透明底 + currentColor，深色底和浅色底都看得清。
+   点击灯 = 重新检测；切回标签页、网络恢复都会自动重测。 */
+.cld{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;
+  border:1px solid currentColor;background:rgba(148,163,184,.12);color:#94a3b8;
+  font-size:12px;line-height:1;cursor:pointer;user-select:none;white-space:nowrap;
+  transition:color .18s,background .18s;vertical-align:middle;}
+.cld svg{flex:0 0 auto;}
+.cld.ok{color:#22c55e;background:rgba(34,197,94,.14);}
+.cld.bad{color:#ef4444;background:rgba(239,68,68,.14);}
+.cld.wait{color:#94a3b8;background:rgba(148,163,184,.12);}
+.cld:focus-visible{outline:2px solid currentColor;outline-offset:2px;}
+@media (max-width:700px){ .cld .cld-tx{display:none;} .cld{padding:0 8px;} }
 </style>
 </head>
 <body>
@@ -380,6 +395,12 @@
         <button type="button" data-lang="zh" class="on"><span class="fl">🇨🇳</span><span class="lb">中文</span></button>
         <button type="button" data-lang="vi"><span class="fl">🇻🇳</span><span class="lb">Tiếng Việt</span></button>
       </div>
+      <!-- ★ 2026-11-01：云端连接灯。绿 = 连得上云端 / 红 = 连不上或离线 / 灰 = 检测中。
+           点一下 = 重新检测。状态由 cldSet() 统一写，别在别处改 class。 -->
+      <span class="cld wait" id="cldBadge" role="button" tabindex="0" title="云端：正在检测…">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H7a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 10.2 4.4 4.4 0 0 1 17.5 19z"/></svg>
+        <span class="cld-tx">检测中</span>
+      </span>
     </div>
   </header>
 
@@ -817,6 +838,7 @@ function courseName(lv, n){
 function markCloud(state, at){
   if (state) cloudState = state;
   if (at !== undefined) cloudAt = at;
+  cldSync();   /* ★ 2026-11-01：顶栏那颗云灯跟着真实同步结果走 */
   const el = document.getElementById('stCloud');
   if (!el) return;
   /* 2026-10-30：越南语不走字典查表，直接按语言给字面值 ——
@@ -1862,6 +1884,70 @@ function cloudBootPull(){
     });
   });
 }
+/* ==========================================================================
+   云端连接灯（2026-11-01）
+   --------------------------------------------------------------------------
+   一个灯，三个状态：绿 = 连得上云端 / 红 = 连不上或设备离线 / 灰 = 正在检测。
+   数据来源两处：
+     ① 开机探测：列一条 zhops 集合（pageSize=1）。**收到任何 HTTP 响应都算「连得上」**
+        —— 403 也说明云是活的，只是规则不许读，不该判成离线。
+     ② 真实同步结果：markCloud() 里调 cldSync()，拉取 / 推送成功就绿、失败就红。
+   自动重测：切回标签页、网络恢复、点一下灯。
+   ⚠️ 必须放在 cloudBootPull() 之前 —— CLD 是 var，初始化前 markCloud 会读到 undefined。
+   ========================================================================== */
+function cldHHMM(d){ var p = function(n){ return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()); }
+var CLD = { st:'wait', why:'正在检测…', at:null };
+function cldRender(){
+  var el = document.getElementById('cldBadge');
+  if (!el) return;
+  el.className = 'cld ' + CLD.st;
+  el.setAttribute('aria-label', '云端：' + CLD.why);
+  el.title = '云端：' + CLD.why + (CLD.at ? ' · ' + cldHHMM(new Date(CLD.at)) : '') + '（点一下重测）';
+  var tx = el.querySelector('.cld-tx');
+  if (tx) tx.textContent = CLD.st === 'ok' ? '已连' : (CLD.st === 'bad' ? '未连' : '检测中');
+}
+function cldSet(st, why, at){
+  CLD.st = st; CLD.why = why || '';
+  if (at !== undefined) CLD.at = at;
+  cldRender();
+}
+/* 真实同步结果覆盖探测结果；idle（还没同步过）不覆盖，留给开机探测 */
+function cldSync(){
+  if (cloudState === 'syncing'){ cldSet('wait', '正在同步…'); return; }
+  if (cloudState === 'ok')     { cldSet('ok', '已连上云端', cloudAt); return; }
+  if (cloudState === 'fail')   { cldSet('bad', '连不上云端'); return; }
+}
+function cldProbe(){
+  if (typeof navigator !== 'undefined' && navigator.onLine === false){ cldSet('bad', '设备离线'); return; }
+  if (typeof fetch !== 'function'){ cldSet('bad', '这个浏览器不支持联网'); return; }
+  cldSet('wait', '正在检测…');
+  var u = 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+          '/databases/(default)/documents/' + FS.coll + '?pageSize=1&key=' + encodeURIComponent(FS.key);
+  var done = false;
+  var to = setTimeout(function(){ if (done) return; done = true; cldSet('bad', '连接超时（8 秒）'); }, 8000);
+  fetch(u, { cache: 'no-store' }).then(function(r){
+    if (done) return; done = true; clearTimeout(to);
+    cldSet('ok', r.ok ? '已连上云端' : '云在线（读被拒 ' + r.status + '）', new Date().toISOString());
+  }).catch(function(){
+    if (done) return; done = true; clearTimeout(to);
+    cldSet('bad', '连不上云端（断网或被拦）');
+  });
+}
+(function(){
+  var el = document.getElementById('cldBadge');
+  if (el){
+    el.addEventListener('click', cldProbe);
+    el.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); cldProbe(); }
+    });
+  }
+  window.addEventListener('online', cldProbe);
+  window.addEventListener('offline', function(){ cldSet('bad', '设备离线'); });
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) cldProbe(); });
+  cldRender();
+  cldProbe();
+})();
+
 cloudBootPull();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') cloudBootPull();

@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-10-31">2026-10-31 · 今天<span class="c">13</span></button>
+    <button class="on" data-day="2026-11-01">2026-11-01 · 今天<span class="c">2</span></button>
+    <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
     <button data-day="2026-10-19">2026-10-19<span class="c">10</span></button>
     <button data-day="2026-10-18">2026-10-18<span class="c">5</span></button>
@@ -177,7 +178,49 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   </div>
 
   <!-- ============ 2026-10-31 ============ -->
-  <div class="day-panel on" data-day="2026-10-31">
+  <div class="day-panel on" data-day="2026-11-01">
+    <div class="card">
+      <h2>2026-11-01 · 打磨记录<span class="n">2 行 · 已打磨 2</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-76</td>
+              <td><b>人事 / 财务加「← 主端」回头路</b><br><span style="color:#8899aa;font-size:12px">「我切入了人事部的窗口，就不能返回主页端，财务部也是一样」</span></td>
+              <td class="nw">主端 · 入口</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>问题</b>：主端加了「人事部 ↗ / 财务部 ↗」两个出口，但<b>两页一个对外链接都没有</b>（<span class="mono">href="*.html"</span> 数量 = 0），进去以后页面上没有任何回主端的路 —— 只能靠浏览器标签栏。<br>
+              <b>做法</b>：两页顶栏品牌后面各加一个「← 主端」。<b>只做跳转，不碰任何数据逻辑</b>（切页面不影响保存：三页都是「改一格即时写盘」，不是「离开时存」）。<br>
+              <b>href 怎么定</b>：线上主端叫 <span class="mono">admin.html</span>，本地源文件叫 <span class="mono">zhops-admin.html</span>。按地址判断 —— <span class="mono">file://</span> 或本机 http（localhost / 127.0.0.1）= 本地，其余 = 线上。<b>不用 fetch 探存在性</b>：本地没有 <span class="mono">admin.html</span>，探一下会在控制台打一条 404 红字（这轮真踩到了，合同 / 档案两个探针当场变红）。<br>
+              <b>为什么不做 A+（三页互跳）</b>：Tony 选 A —— 人事和财务之间不互跳，都先回主端。以后要补就是加两行。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-77</td>
+              <td><b>四个页面各挂一颗「云端连接灯」</b><br><span style="color:#8899aa;font-size:12px">「每层的页面要挂着一个云的 Logo，已经上就绿色，还没上或者没连接到云端就显示红色」</span></td>
+              <td class="nw">云端 · 状态</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>做法</b>：主端 / 教师端 / 人事 / 财务 顶栏各一颗云灯 —— <b>绿 = 连得上云端 · 红 = 连不上或设备离线 · 灰 = 正在检测</b>。点一下重测；切回标签页、网络恢复都会自动重测。<br>
+              <b>怎么判「连得上」</b>：打一条 Firestore 列表请求（<span class="mono">pageSize=1</span>）。<b>收到任何 HTTP 响应都算连得上</b> —— 403 也说明云是活的，只是规则不许读，不该判成离线。<br>
+              <b>主端 / 教师端多一层</b>：真实推送 / 拉取的结果也驱动这颗灯（成功变绿、失败变红），不只是开机探一次。<br>
+              <b>为什么不是「已同步」灯</b>：人事 / 财务没有「脏数据」概念（本地即时存、单据手动推），做「连不连得上」才不会误报。<br>
+              <b>探针</b> <span class="mono">check-cloud-badge.js</span> 102 条全绿；三条反向控制（灯不写 class / 探测一律判绿 / 回主端不判地址）分别报红 10 / 2 / 1 条。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="day-panel" data-day="2026-10-31">
     <div class="card">
       <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 10 · 待打磨 3</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
