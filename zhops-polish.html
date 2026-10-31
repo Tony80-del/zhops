@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-10-31">2026-10-31 · 今天<span class="c">12</span></button>
+    <button class="on" data-day="2026-10-31">2026-10-31 · 今天<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
     <button data-day="2026-10-19">2026-10-19<span class="c">10</span></button>
     <button data-day="2026-10-18">2026-10-18<span class="c">5</span></button>
@@ -179,7 +179,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-10-31">
     <div class="card">
-      <h2>2026-10-31 · 打磨记录<span class="n">12 行 · 已打磨 10 · 待打磨 2</span><span class="sp"></span>
+      <h2>2026-10-31 · 打磨记录<span class="n">13 行 · 已打磨 10 · 待打磨 3</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -324,7 +324,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-73</td>
               <td><b>课次记「市」（原 P-72 ②，教室归属进人事）</b><br><span style="color:#8899aa;font-size:12px">「要记就记到市这一层：t1 + 苏州、t1 + 杭州」</span></td>
               <td class="nw">排课 · 人事</td>
-              <td><span class="b wait">⬜待打磨</span></td>
+              <td><span class="b todo">⬜待打磨</span></td>
               <td class="mono nw">10-31</td>
               <td class="mono nw">—</td>
               <td>课次 <span class="mono">l</span> 上没有 city 字段，只能查到「班 → 省」，查不到「每课 → 市」。<br>
@@ -335,13 +335,25 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-74</td>
               <td><b>人事加「预支 / 其他扣款 / 补发」模块</b><br><span style="color:#8899aa;font-size:12px">「预支薪水、社保、其他的都在人事部管；财务部只负责出钱，核对总数即可」</span></td>
               <td class="nw">人事</td>
-              <td><span class="b wait">⬜待打磨</span></td>
+              <td><span class="b todo">⬜待打磨</span></td>
               <td class="mono nw">10-31</td>
               <td class="mono nw">—</td>
               <td>现在单据实发 = 应发 − 社保个人 − 个税，<b>没有预支、没有其他扣款</b>。<br>
               要建：预支记录（谁 / 哪天 / 多少钱 / 理由）、其他扣款与补发记录、生成汇总时自动带上、单据多几栏让人看得清。<br>
               <b>为什么放人事</b>：财务只读单据、只批、只付，不改数字。人事把预支扣完得出实发，财务照着付 —— 以后加任何扣款项，都只动人事，财务一个字不用改。<br>
               <b>提醒</b>：社保和个税已经在实发里扣过，付款环节不能再扣一次（防双扣）。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-75</td>
+              <td><b>主端平板适配（iPad 竖屏 / 横屏）</b><br><span style="color:#8899aa;font-size:12px">「之前我们搭建平板电脑是给教师端（教师端是独立的），主端从来没搭建过」</span></td>
+              <td class="nw">主端 · 适配</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">10-31</td>
+              <td class="mono nw">—</td>
+              <td>主端 <span class="mono">zhops-admin.html</span> 里有一套 920px 断点（侧栏变抽屉 + 汉堡按钮），<b>代码在、没在真机校过</b> —— 平板那套当初是给教师端做的，教师端独立，两边不共用样式。<br>
+              <b>要做什么</b>：① 侧栏抽屉在 iPad 竖屏的手感（滑出 / 遮罩 / 点完是否收）② <b>表格横向滚动</b>（排课矩阵 / 学生表 / 课次记录列多，768px 会挤爆；教师端做过 <span class="mono">hscroll</span> 探针，主端没做过）③ 卡片区三档列数实测（1240 / 920 / 560）④ 触控目标放大到 ≥44px（侧栏项现在行高约 35px）⑤ iPad 弹键盘会不会遮住保存按钮 ⑥ 真机验证。<br>
+              <b>边界</b>：跟 P-51 / P-53 的入口不是一回事 —— 入口已经加好，且点了会顺手收抽屉；这一项是把主端<b>真正能用</b>在平板上。</td>
             </tr>
 
           </tbody>
@@ -353,7 +365,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-30 ============ -->
   <div class="day-panel" data-day="2026-10-30">
     <div class="card">
-      <h2>2026-10-30 · 打磨记录<span class="n">16 行 · 已打磨 12 · 待打磨 4</span><span class="sp"></span>
+      <h2>2026-10-30 · 打磨记录<span class="n">14 行 · 已打磨 14 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -386,26 +398,28 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-50</td>
               <td><b>财务「双算」口径未定：工资页月薪 = 底薪还是全部</b><br><span style="color:var(--ink3);font-size:12px">你让我先记下，没定之前毛利数字不敢用</span></td>
               <td class="nw">财务 · 口径</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">10-30</td>
-              <td class="mono nw">—</td>
+              <td class="mono nw">10-31</td>
               <td><b>问题</b>：<span class="mono">expAll = tchAll + grossAll + siCompAll + othAll</span>，其中 <span class="mono">grossAll</span> 含教师月薪、<span class="mono">tchAll</span> 是「班级单价 × 课次」。<b>如果教师「月薪」本身就是按课时算出来的总额，这笔钱被算了两次。</b><br>
               <b>两个选项</b>：① 月薪 = <b>底薪</b>，课时费另加 → 现在的算法是对的 ② 月薪 = <b>全部</b>（已含课时）→ 结算页单价要填 0，或把「工资页 / 结算页」改成二选一开关。<br>
               <b>现状</b>：示例数据下收入 36,720,000 / 毛利 16,745,000 / 45.6%，数字合理，所以<b>没动</b>。<br>
-              <b>影响面</b>：④ 报表的月毛利、毛利率、成本结构占比；③ 结算的单课毛利；导出给代账的工资社保表。<b>口径定了才敢用这几个数。</b></td>
+              <b>影响面</b>：④ 报表的月毛利、毛利率、成本结构占比；③ 结算的单课毛利；导出给代账的工资社保表。<b>口径定了才敢用这几个数。</b><br>
+              <b>已打磨（2026-10-31）</b>：支出不再双算 —— <span class="mono">expAll = 单据应发 + 社保公司 + 其他</span>，<span class="mono">tchAll</span> 退出支出（单据应发里已含课时费）；只算已批 / 已付的单据。月薪口径不用再选：人事按合同两个格子自动判断（有底薪 + 单价 = 底薪 + 课时费；只有单价 = 纯课时费）。</td>
             </tr>
 
             <tr>
               <td class="mono nw">P-51</td>
               <td><b>排课主端加入口链到 finance.html</b><br><span style="color:var(--ink3);font-size:12px">「到时候我还是要把主页面关系到财务的，再找个入口连接」</span></td>
               <td class="nw">主端 · 入口</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">10-30</td>
-              <td class="mono nw">—</td>
+              <td class="mono nw">10-31</td>
               <td><b>要做什么</b>：在 <span class="mono">docs/schedule.html</span> 侧栏或顶栏加一个链接，跳到 <span class="mono">docs/finance.html</span>。<br>
               <b>边界（已定）</b>：<b>两边各存各的数据，只做跳转</b>，不合并 localStorage（<span class="mono">zhops.sched.v3</span> 与 <span class="mono">zhops.fin.v1</span> 保持隔离）。<br>
               <b>为什么不能直接合</b>：财务是敏感库（工资表 / 股东账面），排课库是业务库 —— 分库是 2026-10-29 已定的 ⑥。<br>
-              <b>★ 一个必须先想清的坑</b>：<span class="mono">schedule.html</span> 是发布源（<span class="mono">publish-zhops.sh</span> 会 cp 成线上 <span class="mono">index.html</span>），但<b>线上没有 <span class="mono">finance.html</span></b> —— 一旦推上线，那个入口就是死链（404）。<b>要么财务一起发，要么入口只在本地可见。</b></td>
+              <b>★ 一个必须先想清的坑</b>：<span class="mono">schedule.html</span> 是发布源（<span class="mono">publish-zhops.sh</span> 会 cp 成线上 <span class="mono">index.html</span>），但<b>线上没有 <span class="mono">finance.html</span></b> —— 一旦推上线，那个入口就是死链（404）。<b>要么财务一起发，要么入口只在本地可见。</b><br>
+              <b>已打磨（2026-10-31）</b>：入口没加在 <span class="mono">schedule.html</span>，加在<b>主端 <span class="mono">zhops-admin.html</span></b> 侧栏末尾新的一组「其他系统」里；<span class="mono">finance.html</span> 10-31 16:16 已上线，<b>死链的坑不成立了</b>。只做跳转、不打通：主端不读财务的库，财务不读排课库。</td>
             </tr>
 
             <tr>
@@ -434,12 +448,13 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-53</td>
               <td><b>排课主端加入口链到 hr.html（人事系统）</b><br><span style="color:var(--ink3);font-size:12px">「你要记下人事部的主端入口」</span></td>
               <td class="nw">主端 · 入口</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">10-30</td>
-              <td class="mono nw">—</td>
+              <td class="mono nw">10-31</td>
               <td><b>要做什么</b>：在 <span class="mono">docs/schedule.html</span> 侧栏或顶栏加一个链接，跳到 <span class="mono">docs/hr.html</span>。<br>
               <b>边界（已定）</b>：<b>两边各存各的数据，只做跳转</b>，不合并 localStorage（<span class="mono">zhops.sched.v3</span> 与 <span class="mono">zhops.hr.v1</span> 保持隔离）。<br>
-              <b>★ 一个必须先想清的坑</b>：<span class="mono">schedule.html</span> 是发布源（<span class="mono">publish-zhops.sh</span> 会 cp 成线上 <span class="mono">index.html</span>），但<b>线上没有 <span class="mono">hr.html</span></b> —— 一旦推上线，那个入口就是死链（404）。<b>要么人事一起发，要么入口只在本地可见。</b> 这跟 P-51（财务入口）是同一个坑。</td>
+              <b>★ 一个必须先想清的坑</b>：<span class="mono">schedule.html</span> 是发布源（<span class="mono">publish-zhops.sh</span> 会 cp 成线上 <span class="mono">index.html</span>），但<b>线上没有 <span class="mono">hr.html</span></b> —— 一旦推上线，那个入口就是死链（404）。<b>要么人事一起发，要么入口只在本地可见。</b> 这跟 P-51（财务入口）是同一个坑。<br>
+              <b>已打磨（2026-10-31）</b>：跟 P-51 同一处改动 —— 主端侧栏「其他系统」组里的「人事部 ↗」。<span class="mono">hr.html</span> 10-31 16:16 已上线，死链的坑不成立了。两个入口都是新标签页打开、不带走主端，窄屏点完顺手把抽屉收起。</td>
             </tr>
 
             <tr>

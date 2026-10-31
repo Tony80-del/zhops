@@ -87,6 +87,9 @@ a{color:var(--brand);text-decoration:none;}
 .nav a svg{flex:0 0 auto;opacity:.9;}
 .nav a .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--navy-tx2);}
 .nav a.on .cnt{color:#67e8f9;}
+/* ★ 2026-10-31：外跳项（人事部 / 财务部）—— 靠右一个小箭头，跟上面的内部视图区分。
+   不是「当前页」概念，所以永不点亮（不带 .on）。 */
+.nav a .ext{margin-left:auto;font-family:var(--mono);font-size:11px;opacity:.45;}
 .side-foot{padding:11px 18px;border-top:1px solid var(--navy-line);
   font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);line-height:1.7;}
 .side-foot b{color:#ffd166;font-weight:600;}
@@ -641,7 +644,7 @@ tr[data-open]:hover td{background:var(--brand-soft);}
            规矩（2026-10-30 立）：① 版本号只增不改语义 · ② 后缀是这版主要做了什么 ·
            ③ 末尾永远是「MM-DD HH:MM」= 这份文件落盘的那一刻。
            改了主端就顺手改这一行 —— 别让侧栏停在旧日期上骗人。 -->
-      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v9 · public+slices · 10-30 22:45</div>
+      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v10 · dept-links · 10-31 23:50</div>
     </div>
   </aside>
 
@@ -4676,7 +4679,18 @@ function renderNav(){
     '<div class="grp">运营</div>' + main.map(item).join('') +
     '<div class="grp">待审批</div>' +
     '<a data-v="apply" class="'+(cur==='apply'?'on':'')+'">'+ic('apply')+'<span>开班申请</span>'+
-      '<span class="cnt">'+pend+'</span></a>';
+      '<span class="cnt">'+pend+'</span></a>' +
+    /* ★ 2026-10-31（P-51 / P-53）：部门系统入口 —— 只做跳转，不打通数据。
+       ⚠️ 绝不能带 data-v：侧栏点击是靠 data-v 接管路由的（见 5504 行附近），
+          带了就会被当成「切视图」跳去一个不存在的视图 → 白屏回总览。
+          所以改带 data-ext，点击处理器只负责把窄屏抽屉收起来。
+       ⚠️ 用相对路径：本地 docs/zhops-admin.html、线上 /zhops/admin.html
+          都在同目录，两边都指向 hr.html / finance.html，不写死域名。 */
+    '<div class="grp">其他系统</div>' +
+    '<a href="hr.html" data-ext target="_blank" rel="noopener">'+
+      ic('members')+'<span>人事部</span><span class="ext">↗</span></a>' +
+    '<a href="finance.html" data-ext target="_blank" rel="noopener">'+
+      ic('settle')+'<span>财务部</span><span class="ext">↗</span></a>';
 }
 function route(){ return (location.hash||'#overview').slice(1); }
 function render(){
@@ -4715,6 +4729,8 @@ let LANG = (function(){ try { return localStorage.getItem('zhops.lang') || 'zh';
 const VI = {
   /* 侧栏 · 分组 / 导航 */
   '总览':'Tổng quan', '运营':'Vận hành', '待审批':'Chờ duyệt',
+  /* 2026-10-31：部门系统外跳入口 */
+  '其他系统':'Hệ thống khác', '人事部':'Phòng Nhân sự', '财务部':'Phòng Tài chính',
   '教师':'Giáo viên', '学生':'Học viên', '排课':'Xếp lớp', '课次记录':'Lịch sử buổi học',
   '数据':'Dữ liệu', '结算':'Quyết toán', '成员':'Thành viên', '开班申请':'Đơn mở lớp',
   /* 品牌 / 页脚 / 顶栏 */
@@ -5497,6 +5513,16 @@ document.addEventListener('click', e => {
         break;
       }
     }
+    return;
+  }
+  /* ★ 2026-10-31（P-51 / P-53）：人事部 / 财务部是外跳链接（新标签页），不走路由。
+     窄屏（≤920px）侧栏是抽屉：点完新标签页开走了，但这个页面没刷新，抽屉会一直盖着，
+     回来一看满屏被遮住 —— 所以先把抽屉收掉再放行。
+     ⚠️ 只 return、不 preventDefault：浏览器要照常执行 <a target="_blank"> 的默认动作。 */
+  const dlk = e.target.closest('#nav a[data-ext]');
+  if (dlk){
+    $('#side').classList.remove('open');
+    $('#scrim').classList.remove('on');
     return;
   }
   /* 只有侧栏的导航项用 data-v 跳转；
