@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>系统生态地图 · 中文教学运营系统</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#12151a; --card:#171b21; --line:rgba(255,255,255,.13);
+    --text:#e6e9ed; --muted:#9aa2ad; --hint:#6e7681;
+    --acc:#4fd1c5; --accb:#0f3f3c; --onacc:#08110f;
+    --ok:#6ee7a8; --okb:#0f3d28;
+    --warn:#f5c86a; --warnb:#46330d;
+    --bad:#f08080; --badb:#46191c;
+    --info:#5B9BF5; --infob:#1a3a6e;
+    --tag1:#85B7EB; --tag2:#AFA9EC; --tag3:#5DCAA5; --tag4:#F0997B; --tag5:#F0C07B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:13px; line-height:1.6;
+  }
+  /* ===== 顶部状态栏 ===== */
+  .header{
+    position:sticky; top:0; z-index:100;
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:13px 24px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;
+  }
+  .header h1{font-size:17px; font-weight:600; letter-spacing:-.2px;}
+  .header .meta{font-size:11px; color:var(--muted); margin-top:2px;}
+  .header .meta b{color:var(--text);}
+  .meter{flex:1; max-width:300px;}
+  .meter .row{display:flex; justify-content:space-between; font-size:10px; color:var(--hint); margin-bottom:4px;}
+  .progress-bar{height:6px; background:var(--panel); border-radius:3px; overflow:hidden;}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--ok),var(--info)); border-radius:3px; width:40%; transition:width .4s;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .chip{font-size:10px; padding:3px 8px; border-radius:9px; white-space:nowrap;}
+  .chip.ok{background:rgba(110,231,168,.14); color:var(--ok);}
+  .chip.bad{background:rgba(240,128,128,.14); color:var(--bad);}
+  .chip.wait{background:rgba(245,200,106,.14); color:var(--warn);}
+  .chip.info{background:rgba(91,155,245,.14); color:var(--info);}
+
+  /* ===== 主容器 ===== */
+  .wrap{max-width:980px; margin:0 auto; padding:28px 24px 80px;}
+
+  /* ===== 区块标题 ===== */
+  .section-title{
+    font-size:11px; font-weight:600; letter-spacing:1.5px; color:var(--hint);
+    text-transform:uppercase; margin:38px 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+  .section-title:first-of-type{margin-top:0;}
+  .section-note{font-size:11.5px; color:var(--hint); margin:0 0 14px; line-height:1.7;}
+  .section-note b{color:var(--muted); font-weight:500;}
+
+  /* ===== 第一层：总览 ===== */
+  .ov-canvas{
+    padding:20px 16px; background:var(--panel); border-radius:12px;
+    border:1px solid var(--line); margin-bottom:24px;
+  }
+  .ov-hub{
+    max-width:560px; margin:0 auto;
+    border:2px solid var(--acc); border-radius:12px; padding:15px 20px;
+    background:var(--accb); text-align:center;
+  }
+  .ov-hub .ov-h-name{font-size:15px; font-weight:600; color:var(--acc); margin-bottom:2px;}
+  .ov-hub .ov-h-file{font-size:11px; color:var(--muted); font-family:"SF Mono",monospace; margin-bottom:5px;}
+  .ov-hub .ov-h-role{font-size:12px; color:var(--muted); margin-bottom:7px;}
+  .ov-arrow{text-align:center; font-size:18px; color:var(--hint); line-height:1; margin:10px 0;}
+  .ov-label{font-size:10px; color:var(--hint); letter-spacing:1px; text-align:center; margin:16px 0 8px;}
+
+  .ov-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px;}
+  .ov-sys.zhops{grid-column:span 2;}
+  @media(max-width:820px){.ov-grid{grid-template-columns:repeat(2,1fr);} .ov-sys.zhops{grid-column:span 2;}}
+  @media(max-width:480px){.ov-grid{grid-template-columns:1fr;} .ov-sys.zhops{grid-column:span 1;}}
+
+  .ov-sys{
+    border:1px solid var(--line); border-radius:10px; padding:13px 11px;
+    background:var(--card); text-align:center; display:flex; flex-direction:column; gap:3px;
+  }
+  .ov-sys.built{border-color:var(--ok);}
+  .ov-sys.todo{border-color:var(--warn); border-style:dashed;}
+  .ov-sys.course{border-color:var(--tag3);}
+  .ov-sys.partial{border-color:var(--info);}
+  .ov-sys .ov-s-name{font-size:13px; font-weight:600;}
+  .ov-sys.built .ov-s-name{color:var(--ok);}
+  .ov-sys.todo .ov-s-name{color:var(--warn);}
+  .ov-sys.course .ov-s-name{color:var(--tag3);}
+  .ov-sys.partial .ov-s-name{color:var(--info);}
+  .ov-sys .ov-s-file{font-size:10px; color:var(--hint); font-family:"SF Mono",monospace;}
+  .ov-sys .ov-s-status{font-size:10px; margin-top:2px;}
+  .ov-sys .ov-s-status .badge{display:inline-block; padding:1px 7px; border-radius:8px; font-weight:500;}
+  .b-ok{background:rgba(110,231,168,.15); color:var(--ok);}
+  .b-wait{background:rgba(245,200,106,.15); color:var(--warn);}
+  .b-bad{background:rgba(240,128,128,.15); color:var(--bad);}
+  .b-info{background:rgba(91,155,245,.15); color:var(--info);}
+  .ov-sys .ov-s-note{font-size:10px; color:var(--hint); margin-top:4px; line-height:1.4;}
+
+  .ov-triple{display:flex; gap:4px; margin-top:7px; justify-content:center; flex-wrap:wrap;}
+  .ov-tri{
+    font-size:9.5px; padding:3px 6px; border-radius:5px;
+    border:1px solid var(--line); background:var(--panel); color:var(--muted);
+    text-align:center; line-height:1.45;
+  }
+  .ov-tri.synced{border-color:var(--ok); color:var(--ok);}
+  .ov-tri.isolated{border-color:var(--bad); color:var(--bad);}
+  .ov-tri em{font-size:8.5px; font-style:normal; display:block;}
+
+  /* 云端路径 chip */
+  .ov-row3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  @media(max-width:760px){.ov-row3{grid-template-columns:1fr;}}
+  .cloud-chip{border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--card);}
+  .cloud-chip .c-n{font-size:11px; font-weight:600; color:var(--tag3); font-family:"SF Mono",monospace; word-break:break-all;}
+  .cloud-chip .c-d{font-size:10.5px; color:var(--muted); margin-top:3px; line-height:1.55;}
+
+  /* ===== 第二层：系统卡片 ===== */
+  .sys-card{
+    border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden;
+    background:var(--panel);
+  }
+  .sys-card.built{border-left:3px solid var(--ok);}
+  .sys-card.todo{border-left:3px solid var(--warn);}
+  .sys-card.hub{border-left:3px solid var(--acc);}
+  .sys-card.course{border-left:3px solid var(--tag3);}
+  .sys-card.partial{border-left:3px solid var(--info);}
+
+  .sys-head{
+    padding:14px 18px; cursor:pointer; user-select:none;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .sys-head:hover{background:rgba(255,255,255,.03);}
+  .sys-head .left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .sys-head .sys-tag{
+    font-size:10px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:4px;
+    background:var(--card); border:1px solid var(--line);
+  }
+  .hub .sys-tag{color:var(--acc); border-color:var(--acc);}
+  .built .sys-tag{color:var(--ok); border-color:var(--ok);}
+  .todo .sys-tag{color:var(--warn); border-color:var(--warn);}
+  .course .sys-tag{color:var(--tag3); border-color:var(--tag3);}
+  .partial .sys-tag{color:var(--info); border-color:var(--info);}
+  .sys-head .sys-name{font-size:15px; font-weight:500;}
+  .sys-head .sys-sub{font-size:11px; color:var(--muted);}
+  .sys-head .right{display:flex; align-items:center; gap:8px;}
+  .status-badge{font-size:10px; font-weight:500; padding:2px 8px; border-radius:10px; white-space:nowrap;}
+  .s-ok{background:rgba(110,231,168,.15); color:var(--ok);}
+  .s-wait{background:rgba(245,200,106,.15); color:var(--warn);}
+  .s-info{background:rgba(91,155,245,.15); color:var(--info);}
+  .s-bad{background:rgba(240,128,128,.15); color:var(--bad);}
+  .toggle{font-size:12px; color:var(--hint); transition:transform .2s;}
+  .sys-card.open .toggle{transform:rotate(90deg);}
+  .sys-body{display:none; padding:0 18px 16px;}
+  .sys-card.open .sys-body{display:block;}
+
+  /* ===== 字段 ===== */
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .field-label{
+    font-size:10px; font-weight:600; letter-spacing:.5px; color:var(--hint);
+    text-transform:uppercase; margin-bottom:5px;
+  }
+  .field-value{font-size:12.5px; color:var(--text); line-height:1.75;}
+  .loc{font-family:"SF Mono",monospace; font-size:11.5px; color:var(--tag1);}
+  .key{font-family:"SF Mono",monospace; font-size:11.5px; color:var(--tag2);}
+  .field-value a{color:var(--tag1); text-decoration:none; border-bottom:1px dotted var(--hint);}
+  .field-value a:hover{border-bottom-style:solid;}
+  .multi > div{margin-bottom:3px;}
+  .multi > div:last-child{margin-bottom:0;}
+  .no{color:var(--bad);}
+  .yes{color:var(--ok);}
+  .plan{color:var(--warn);}
+
+  /* 三端子表 */
+  .triple-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:8px;}
+  @media(max-width:680px){.triple-grid{grid-template-columns:1fr;}}
+  .triple-item{background:var(--card); border:1px solid var(--line); border-radius:9px; padding:10px 12px;}
+  .triple-item .ti-label{font-size:10px; font-weight:600; color:var(--hint); margin-bottom:4px; letter-spacing:.5px;}
+  .triple-item .ti-name{font-size:13px; font-weight:500; margin-bottom:2px;}
+  .triple-item .ti-path{font-size:11px; color:var(--muted); font-family:"SF Mono",monospace; word-break:break-all;}
+  .triple-item .ti-tag{font-size:10px; margin-top:4px; font-style:italic;}
+  .ti-tag.synced{color:var(--ok);}
+  .ti-tag.isolated{color:var(--bad);}
+
+  /* 待补 / 断点 */
+  .pending-box{background:var(--badb); border:1px solid rgba(240,128,128,.25); border-radius:10px; padding:13px 15px; margin-top:14px;}
+  .pending-title{font-size:11px; font-weight:600; color:var(--bad); letter-spacing:.5px; margin-bottom:9px;}
+  .pending-item{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:8px;}
+  .pending-item:last-child{margin-bottom:0;}
+  .pi-head{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .pi-num{font-size:10px; font-weight:700; color:var(--bad); background:var(--badb); border-radius:4px; padding:1px 6px;}
+  .pi-name{font-size:12.5px; font-weight:500;}
+  .pi-row{font-size:11.5px; color:var(--muted); margin-bottom:3px; line-height:1.65;}
+  .pi-row b{color:var(--text); font-weight:500;}
+  .pi-row .v{color:var(--warn);}
+  .pi-row .ok{color:var(--ok);}
+  .pi-row .no{color:var(--bad);}
+
+  /* ===== 第三层：数据流向（分块 ASCII） ===== */
+  .flow-box{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px;}
+  .flow-block{margin-bottom:22px;}
+  .flow-block:last-child{margin-bottom:0;}
+  .flow-h{
+    font-size:10.5px; font-weight:600; letter-spacing:.8px; color:var(--hint);
+    margin-bottom:4px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .flow-h .fh-tag{font-size:9px; padding:1px 6px; border-radius:8px; letter-spacing:0;}
+  .fh-ok{background:rgba(110,231,168,.15); color:var(--ok);}
+  .fh-bad{background:rgba(240,128,128,.15); color:var(--bad);}
+  .fh-warn{background:rgba(245,200,106,.15); color:var(--warn);}
+  .fh-info{background:rgba(91,155,245,.15); color:var(--info);}
+  .flow-why{font-size:11px; color:var(--hint); margin-bottom:9px; line-height:1.65;}
+  .flow-why b{color:var(--muted); font-weight:500;}
+  .flow-line{
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11.5px; color:var(--muted); line-height:2; white-space:pre; overflow-x:auto;
+    padding:2px 0;
+  }
+  .flow-line .src{color:var(--tag1);}
+  .flow-line .dst{color:var(--tag3);}
+  .flow-line .act{color:var(--warn);}
+  .flow-line .gate{color:var(--tag4);}
+  .flow-line .note{color:var(--hint);}
+  .flow-line .new{color:var(--info); font-weight:600;}
+  .flow-line .dead{color:var(--bad); font-weight:600;}
+  .flow-line .lbl{color:var(--tag2);}
+
+  /* 断点清单 */
+  .brk-box{background:var(--badb); border:1px solid rgba(240,128,128,.25); border-radius:10px; padding:14px 16px; margin-top:18px;}
+  .brk-title{font-size:11px; font-weight:600; color:var(--bad); letter-spacing:.5px; margin-bottom:10px;}
+  .brk-item{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:7px;}
+  .brk-item:last-child{margin-bottom:0;}
+  .brk-h{display:flex; align-items:center; gap:8px; margin-bottom:5px;}
+  .brk-n{font-size:10px; font-weight:700; color:var(--bad); background:var(--badb); border-radius:4px; padding:1px 6px;}
+  .brk-t{font-size:12.5px; font-weight:500;}
+  .brk-r{font-size:11.5px; color:var(--muted); line-height:1.7;}
+  .brk-r b{color:var(--text); font-weight:500;}
+
+  /* ===== 第四层：路线 ===== */
+  table.rt{width:100%; border-collapse:collapse; font-size:12px;}
+  table.rt th{
+    text-align:left; padding:9px 11px; border-bottom:1px solid var(--line);
+    color:var(--hint); font-weight:600; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase;
+  }
+  table.rt td{padding:10px 11px; border-bottom:1px solid var(--line); vertical-align:top;}
+  table.rt .step{font-family:"SF Mono",monospace; color:var(--acc); font-weight:600; white-space:nowrap;}
+  table.rt .sm{font-size:11px; color:var(--muted);}
+  table.rt tr.done .step{color:var(--ok);}
+  table.rt tr.hl{background:rgba(91,155,245,.06);}
+  table.rt tr.hl .step{color:var(--info);}
+
+  /* ===== 图例 ===== */
+  .legend{
+    position:fixed; bottom:16px; right:16px;
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; font-size:11px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,.3);
+  }
+  .legend-title{font-size:9px; font-weight:600; color:var(--hint); margin-bottom:6px; letter-spacing:.5px;}
+  .legend-row{display:flex; align-items:center; gap:6px; margin-bottom:3px; color:var(--muted);}
+  .legend-dot{width:8px; height:8px; border-radius:50%;}
+  .legend-sep{height:1px; background:var(--line); margin:6px 0;}
+
+  .foot{margin-top:36px; padding:18px 20px; background:var(--panel); border-radius:12px; font-size:12px; color:var(--muted); line-height:1.9;}
+  .foot b{color:var(--text); font-weight:500;}
+
+  /* ===== 决策台账 ===== */
+  .dec-box{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; margin-bottom:6px;
+  }
+  .dec-head{display:flex; align-items:baseline; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .dec-head .dh-t{font-size:13px; font-weight:600;}
+  .dec-head .dh-s{font-size:11px; color:var(--hint);}
+  .dec-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  @media(max-width:720px){.dec-grid{grid-template-columns:1fr;}}
+  .dec-sub{
+    font-size:10px; font-weight:600; letter-spacing:1px; color:var(--hint);
+    margin:14px 0 8px; padding-bottom:5px; border-bottom:1px dashed var(--line);
+  }
+  .dec-sub:first-of-type{margin-top:0;}
+  .dec-warn{
+    background:var(--badb); border:1px solid rgba(240,128,128,.28); border-radius:9px;
+    padding:11px 13px; margin-top:10px; font-size:11.5px; color:var(--muted); line-height:1.75;
+  }
+  .dec-warn b{color:var(--bad);}
+  .dec-warn .w-t{font-size:10.5px; font-weight:600; color:var(--bad); letter-spacing:.5px; display:block; margin-bottom:5px;}
+  /* 角色矩阵 */
+  .role-tbl{width:100%; border-collapse:collapse; font-size:11px; margin-top:7px;}
+  .role-tbl th{
+    text-align:left; padding:5px 7px; border-bottom:1px solid var(--line);
+    color:var(--hint); font-weight:600; font-size:10px; white-space:nowrap;
+  }
+  .role-tbl td{padding:5px 7px; border-bottom:1px solid var(--line); color:var(--muted);}
+  .role-tbl td:first-child{color:var(--text); font-weight:500; white-space:nowrap;}
+  .role-tbl .r-y{color:var(--ok);}
+  .role-tbl .r-n{color:var(--bad);}
+  .role-tbl .r-p{color:var(--warn);}
+  .dec{
+    background:var(--card); border:1px solid var(--line); border-radius:9px;
+    padding:11px 13px; border-left:3px solid var(--hint);
+  }
+  .dec.settled{border-left-color:var(--ok);}
+  .dec.open{border-left-color:var(--warn);}
+  .dec.later{border-left-color:var(--info);}
+  .dec-q{font-size:10px; color:var(--hint); letter-spacing:.4px; margin-bottom:4px;}
+  .dec-a{font-size:12.5px; font-weight:500; line-height:1.6;}
+  .dec.settled .dec-a{color:var(--ok);}
+  .dec.open .dec-a{color:var(--warn);}
+  .dec.later .dec-a{color:var(--info);}
+  .dec-why{font-size:11px; color:var(--muted); margin-top:4px; line-height:1.6;}
+  .dec-why b{color:var(--text); font-weight:500;}
+  .dec-flag{font-size:9px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle;}
+  .df-ok{background:rgba(110,231,168,.15); color:var(--ok);}
+  .df-wait{background:rgba(245,200,106,.15); color:var(--warn);}
+  .df-later{background:rgba(91,155,245,.15); color:var(--info);}
+  /* 落实状态（2026-10-30 加）：代码层面是否真做 */
+  .df-done{background:rgba(110,231,168,.22); color:var(--ok); border:1px solid rgba(110,231,168,.35);}
+  .df-part{background:rgba(245,200,106,.18); color:var(--warn); border:1px solid rgba(245,200,106,.30);}
+  .df-none{background:rgba(154,162,173,.12); color:var(--hint); border:1px solid rgba(154,162,173,.22);}
+
+  @media(max-width:640px){
+    .header{flex-wrap:wrap;}
+    .meter{order:3; width:100%; max-width:100%;}
+    .legend{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部状态栏 ===== -->
+<div class="header">
+  <div>
+    <h1>系统生态地图</h1>
+    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-10-31 傍晚</b>（按源码核对，不按计划）· 决策 <b>10 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b></div>
+  </div>
+  <div class="meter">
+    <div class="row"><span>系统建成</span><span>2 / 5 · 财务 + 人事骨架已建</span></div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+  <div class="chips">
+    <span class="chip ok">已定 9</span>
+    <span class="chip info">暂缓 3</span>
+    <span class="chip info">财务 本地已建</span>
+    <span class="chip info">人事 本地已建</span>
+    <span class="chip ok">教师分片已落地</span>
+    <span class="chip bad">断点 3</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ===== 决策台账 ===== -->
+<div class="dec-box">
+  <div class="dec-head">
+    <span class="dh-t">决策台账</span>
+    <span class="dh-s">12 条 · 已定 9 · 暂缓 3 · 待定 0 · 更新 2026-10-30</span>
+    <span class="dh-s" style="margin-left:auto; color:var(--hint);">落实状态：<span class="dec-flag df-done">已落实</span> <span class="dec-flag df-part">已部分</span> <span class="dec-flag df-none">未落实</span></span>
+  </div>
+  <div class="dec-sub">A · 业务口径</div>
+  <div class="dec-grid">
+
+    <div class="dec settled">
+      <div class="dec-q">① 薪酬谁算 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">人事算，提交财务批<br><span style="color:var(--hint); font-weight:400;">（2026-10-31 改；原先「财务算、人事只发放」已作废）</span></div>
+      <div class="dec-why">
+        <b>分工</b>：人事拿「<code>done</code> 课次 × 合同课时单价」算出月度汇总 → 提交 <code>zhops/approvals</code> → 财务核对批准 / 驳回 → 人事记发放。<br>
+        <b>为什么改</b>：合同是唯一的定价出口，合同就在人事手里。让财务去人事的合同表里取单价，等于把人事的工作拆成两半。<b>量来自排课，价来自合同</b>，两头都在人事这边拿得到，算完交财务批一次就够了。<br>
+        <b>没变的</b>：「钱只在一处算」这条没变 —— 现在那一处是人事，不是财务。财务的职责从「算」变成「核对与批准」，审计口径仍然单一。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑩ 课次完成怎么同步给人事 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">每标一节 done 就写一条</div>
+      <div class="dec-why">
+        <b>做法</b>：主端「推进一课」、教师端「这节课已上完」→ 立刻 <code>PATCH zhops/done_&lt;课次ID&gt;</code>，只写这一节。<br>
+        <b>为什么不沿用整份推送</b>：整份推送是<b>全手动</b>的（2026-10-17 定，系统还在搭建），一天 done 十节课也不会自动推。人事那边看到的是几天前的数据。<br>
+        <b>两条路不打架</b>：整份推 <code>zhops/master</code>（备份用）；增量写 <code>zhops/done_*</code>（人事用）。路径不同，互不覆盖。<br>
+        <b>人事端合并规则</b>：拉 master 之后再拉一遍 <code>done_*</code>，取那条为准。<b>只认 done / plan / cancel 三种</b>，别的值一律忽略；<b>不凭空造课</b>（云端有、master 没有的课次直接跳过）。<br>
+        <b>能退</b>（2026-10-31 补）：主端课次记录可以逐节改状态。<b>done → plan 就是撤回</b> —— 写同一条 <code>done_*</code> 覆盖成 plan，人事重算时那节就扣掉。cancel 同理。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">④ 主页端要不要变成动态应用 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-none">未落实</span></div>
+      <div class="dec-a">要 · 加后端</div>
+      <div class="dec-why">
+        <b>含义</b>：主页端从「纯静态文档站」升级为「动态应用」，具备接收、审批状态机、按人可见。<br>
+        <b>连带</b>：S5 不是加三个链接，是加后端。这是整个架构的分水岭。
+      </div>
+    </div>
+
+    <div class="dec later">
+      <div class="dec-q">② 视讯平台 <span class="dec-flag df-later">已记 · 暂缓</span></div>
+      <div class="dec-a">Meet / Teams / Zoom —— 未选，不急</div>
+      <div class="dec-why">已定 2026-10-29：<b>等排课全都顺利了再定</b>。现在选型没意义，排课主干没通之前，视讯链接没有数据可读。</div>
+    </div>
+
+    <div class="dec later">
+      <div class="dec-q">③ Zalo 通知方式 <span class="dec-flag df-later">已记 · 暂缓</span></div>
+      <div class="dec-a">手动复制 / OA API —— 未选，不急</div>
+      <div class="dec-why">已定 2026-10-29：<b>现在不急</b>。排课数据先跑通，通知才有内容可发。</div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑨ 开班门槛 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">统一 4 – 13 人</div>
+      <div class="dec-why">
+        <b>已定 2026-10-29</b>：<span class="key">minOpen:4</span> / <span class="key">capMax:13</span>，三端统一。<br>
+        原主端 6–10、教师/管理端 8–12 <b class="no">全部作废</b>。<br>
+        <b class="yes">已落实 2026-10-30</b>（三端改完）：
+        <span class="loc">schedule.html</span> <span class="key">blank()</span> 默认值 6/10 → 4/13 ·
+        <span class="loc">zhops-teacher.html</span> 申请校验 <span class="key">n &lt; 1</span> → <span class="key">n &lt; 4</span> ·
+        <span class="loc">zhops-admin.html</span> <span class="key">DB.set</span> 8/12 → 4/13，新建班容量回退 <span class="key">DB.set.capMax</span> 自动跟 13。<br>
+        <b>边界（Tony 定的口径）</b>：教师端<b>只拦下限 4、不拦上限 13</b> —— 申请阶段卡太死反而堵住并课/拆分的判断；
+        管理端 <span class="key">set</span> 仍<b>只作参考显示，审批不硬拦人数</b>。<br>
+        <b>存量数据不动</b>：老浏览器里 <span class="key">zhops.sched.v3</span> 的 6/10 不会自动改 —— 要改在主端参数页手调。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑩ 晚班时段 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-part">已部分</span></div>
+      <div class="dec-a">以主端为准 · 18:30–19:15</div>
+      <div class="dec-why">
+        <b>已定 2026-10-29</b>：以<b>主页端</b>的时段配置为标准，教师端跟上同步。<br>
+        教师端的 <span class="key">19:00–19:45</span> <b class="no">作废</b>。<br>
+        <span style="color:var(--hint);">原因：之前搭建时两边没统一同步，不是设计如此。</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="dec-sub">B · 技术架构</div>
+  <div class="dec-grid">
+
+    <div class="dec settled">
+      <div class="dec-q">⑤ 角色分层 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-part">已部分</span></div>
+      <div class="dec-a">四层 · 按下表执行</div>
+      <div class="dec-why">
+        <b>已定 2026-10-29</b>：不同角色看到的东西必须不同，不共用一套页面。<br>
+        <b>已确认前提</b>：工资表、股东账面<b>只有老板一人可看</b>。所以下表成立。
+        <table class="role-tbl">
+          <tr><th>角色</th><th>业务库</th><th>财务库</th><th>人事库</th></tr>
+          <tr><td>老板（你）</td><td class="r-y">全部</td><td class="r-y">全部</td><td class="r-y">全部</td></tr>
+          <tr><td>管理员</td><td class="r-y">全部</td><td class="r-p">只读汇总</td><td class="r-p">只读制度</td></tr>
+          <tr><td>教师</td><td class="r-p">只看自己</td><td class="r-n">无</td><td class="r-p">只读制度</td></tr>
+          <tr><td>普通员工</td><td class="r-n">无</td><td class="r-n">无</td><td class="r-p">只读制度</td></tr>
+        </table>
+        <span style="color:var(--hint);">「只读汇总」= 能看毛利和月度合计，看不到逐笔明细和工资表。<b>这条界线是财务库唯一的关键界线。</b></span>
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑥ 数据库分不分 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-part">已部分</span></div>
+      <div class="dec-a">分 2 库 · 业务库 / 敏感库</div>
+      <div class="dec-why">
+        <b>已定</b>：<b>业务库</b>（排课 + 市场）与 <b>敏感库</b>（财务 + 人事）分开。<br>
+        <b>为什么市场进业务库</b>：见市场卡片。核心逻辑 —— 渠道密码根本不该进数据库，投放花费本来就属财务。把这两块拿走后，市场剩下的都是业务级数据，不需要单独一个库。<br>
+        <b>命名</b>：原「排课库」改叫「业务库」，因为它现在装两个系统。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑦ 认证方式 <span class="dec-flag df-ok">已定 · 暂缓</span><span class="dec-flag df-none">未落实</span></div>
+      <div class="dec-a">暂不加登录，落地后再设</div>
+      <div class="dec-why">
+        <b>已定</b>：现在不加认证，等系统落地后再补。<br>
+        <b>已记录为待办</b>：加认证时要定 —— ① 加给谁（只财务人事 or 全套）② 哪种方式（邮箱密码 / 手机验证码 / 微信）。<br>
+        <span style="color:var(--bad);"><b>前提条件</b>：加认证之前，敏感库里不要放真数据。</span>
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑧ 记账模型用哪一套 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">事实表 · 主端升级 · 两头都记</div>
+      <div class="dec-why">
+        <b>已定 2026-10-29</b>：以事实表为准。<b>主端</b>的 <span class="key">log[]</span> 流水账升级成 <span class="key">lessons[]</span> 逐节课记录 + <span class="key">absences[]</span> 缺勤表。<br>
+        <b>为什么必须这样</b>：开班在主端审批定人数 → 上课当天有学生缺席 → <b>教师必须登记谁缺勤、后面补课</b>。流水账记不了缺勤，这条业务就断。<br>
+        <b>连带</b>：财务算收入（学费）和支出（课时费）要精确到「每节课、每个人」，只有事实表给得了这个精度。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑪ 教师身份验证与数据隔离 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-part">已部分</span></div>
+      <div class="dec-a">方案 B（门禁 + 账号）· 试用版先按 ID 分片</div>
+      <div class="dec-why">
+        <b>你的要求</b>：一位教师一个账号，登录后只看自己的页面，别人的排班和学生完全看不到。<br>
+        <b>已定 2026-10-30</b>：最终走 <b>方案 B</b> —— Cloudflare Pages + Access 门禁，配 Firebase Auth 邮箱密码。<b>试用版先不做登录</b>，先按教师 ID 把数据分开。<br>
+        <b class="yes">已落地（10-30 夜 · 本地 · 未推线上）</b>：主端现在写<b>三个</b>云端文档 —— <span class="key">zhops/master</span>（全量）· <span class="key">zhops/public</span>（时段 · 课名 · 教室 · 门槛，公共只读）· <span class="key">zhops/t1…t5</span>（每位教师一份：档案 / 班级 / 学生 / 课次 / 缺勤 / 申请）。教师端只读 <span class="key">public</span> + 自己那份；写回走「读-改-写」，只替换自己班的 <span class="loc">lessons / absences</span>；本机键拆成 <span class="key">zhops.teacher.v1</span>，不再碰主端那把 <span class="key">zhops.sched.v3</span>。<br>
+        <b>仍未做</b>：登录密码（方案 B 的门禁与账号）；<span class="key">master</span> 仍是全量一份（现在是「分片给教师端读」，不是「主端也只存分片」）。<br>
+        <b>现状定性</b>：<b class="plan">软隔离</b> —— 教师端页面里根本没有别人的数据，但 API key 在页面里、「我是谁」还能改。挡君子，不挡技术人。试用期给 2–3 位可信老师可以。<br>
+        <span style="color:var(--hint);">细节见 <a href="zhops-polish.html" class="loc">工作台账</a> P-57 / P-58 / P-59。这条原来在「已记暂缓」，2026-10-30 转「已定」并开始落地。</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="dec-warn">
+    <span class="w-t">⚠ 一个必须点破的逻辑</span>
+    <b>⑥ 分库 + ⑦ 不加认证 = 只分了两个房间，没装门。</b><br>
+    两个库都用同一套「无认证可读」的规则，那分不分库，对安全性来说没有区别 —— 谁拿到 URL 谁都能进。<br>
+    <b>所以分库现在的价值不是「更安全」</b>，而是<b>「以后能分别上锁」的结构准备</b>。这个价值是真的，但要认清它是什么。<br>
+    <b>推论</b>：在 ⑦ 补上之前，财务库和人事库只能放测试数据。一旦放进真实工资表，等于把它挂在公网上。<br>
+    <span style="color:var(--hint);">如果你打算近期就把真实财务数据放进去，那 ⑦ 的优先级要提到 ⑥ 之前 —— 先有门，再分房间。</span>
+  </div>
+
+  <div class="dec-sub">C · 已记暂缓（都不卡主干）</div>
+  <div class="dec-grid">
+
+    <div class="dec later">
+      <div class="dec-q">⑫ 班级要能设「哪几天上课」 <span class="dec-flag df-later">已记 · 暂缓</span></div>
+      <div class="dec-a">记下，一步一步来</div>
+      <div class="dec-why">
+        <b>为什么需要</b>：一位教师带 5 个班，靠「哪几天」错开，才不会撞时间。现在 <span class="key">days</span> 挂在<b>时段</b>上，不挂在<b>班级</b>上 —— 所以同一时段挂两个班时，分不出谁周几。<br>
+        <b>已定 2026-10-29</b>：<b class="plan">先记下，暂不做</b>。现在要设置的东西太多，等主干通了再补。
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ===== 第一层 ===== -->
+<div class="section-title">第一层 · 系统生态总览</div>
+<div class="section-note">
+  读法：<b>实线边框 = 代码里已经能跑</b>；<b>虚线边框 = 只有计划、没有代码</b>。这一层只画现状，不画愿景。
+</div>
+
+<div class="ov-canvas">
+  <div class="ov-hub">
+    <div class="ov-h-name">主页端 · 运营手册文档站</div>
+    <div class="ov-h-file">ops-index.html · 62 KB · 纯静态单文件</div>
+    <div class="ov-h-role">组织架构 / 管理系统 / 运营体系 / 部门手册 / 教务排课 五章文档</div>
+    <div class="ov-s-status">
+      <span class="badge b-ok">文档已建</span>
+      <span class="badge b-wait">已定转动态 · 待建</span>
+    </div>
+    <div class="ov-s-note" style="margin-top:7px; color:var(--bad);">
+      注意：它现在<b>不是</b>「审批成品仓库」。全文没有 fetch、没有 Firestore、没有写入逻辑 —— 只把内容写在 JS 的 NAV 数组里，靠 localStorage 记住上次看的那页。
+    </div>
+    <div class="ov-s-note" style="margin-top:6px; color:var(--warn);">
+      <b>已定</b>（2026-10-29）：升级成动态应用、加后端。不是加链接，是加后端。
+    </div>
+  </div>
+
+  <div class="ov-arrow">▼</div>
+  <div class="ov-label">5 个系统 · 括号里是真实文件状态</div>
+
+  <div class="ov-grid">
+    <div class="ov-sys course">
+      <div class="ov-s-name">课程研发</div>
+      <div class="ov-s-file">hsk.html · 465 KB</div>
+      <div class="ov-s-status"><span class="badge b-ok">已建</span></div>
+      <div class="ov-s-note">HSK1 完成 · HSK2/3 在做</div>
+    </div>
+
+    <div class="ov-sys zhops built">
+      <div class="ov-s-name">排课系统（三端）</div>
+      <div class="ov-s-file">zhops/ · 3 个 html</div>
+      <div class="ov-s-status"><span class="badge b-ok">已建</span> <span class="badge b-bad">1 端孤立</span></div>
+      <div class="ov-triple">
+        <span class="ov-tri isolated">主端 index<br><em>不连云 · 孤立</em></span>
+        <span class="ov-tri synced">教师端 teacher<br><em>连云</em></span>
+        <span class="ov-tri synced">管理端 admin<br><em>连云</em></span>
+      </div>
+    </div>
+
+    <div class="ov-sys partial">
+      <div class="ov-s-name">人事系统</div>
+      <div class="ov-s-file">docs/hr.html</div>
+      <div class="ov-s-status"><span class="badge b-info">本地已建 · 未接云</span></div>
+      <div class="ov-s-note">档案 / 合同证件 / 社保个税 · 单文件本机存储</div>
+    </div>
+
+    <div class="ov-sys partial">
+      <div class="ov-s-name">财务系统</div>
+      <div class="ov-s-file">docs/finance.html</div>
+      <div class="ov-s-status"><span class="badge b-info">本地已建 · 未接云</span></div>
+      <div class="ov-s-note">学费 / 成本 / 报表 · 单文件本机存储</div>
+    </div>
+
+    <div class="ov-sys todo">
+      <div class="ov-s-name">市场系统</div>
+      <div class="ov-s-file">待建</div>
+      <div class="ov-s-status"><span class="badge b-bad">未建</span></div>
+      <div class="ov-s-note">宣传 / 渠道 / 活动</div>
+    </div>
+  </div>
+
+  <div class="ov-label">云端 · 已实测存在（HTTP 200）的 2 条路径 · Firestore 项目 hsk-class-v1</div>
+  <div class="ov-row3">
+    <div class="cloud-chip">
+      <div class="c-n">meta/curriculum</div>
+      <div class="c-d">课次目录（级别 / 阶段 / 课次）<br>主端<b>只读</b> · 仓库里<b>没有写入方</b></div>
+    </div>
+    <div class="cloud-chip">
+      <div class="c-n">zhops/master</div>
+      <div class="c-d">教师端 + 管理端共用一份<br>双向读写 · 主端<b>完全不碰</b></div>
+    </div>
+    <div class="cloud-chip" style="border-style:dashed; border-color:var(--warn);">
+      <div class="c-n" style="color:var(--warn);">敏感库（待建）</div>
+      <div class="c-d">财务 + 人事 · 与业务库分开<br><b>还不存在</b> · 财务已本地建但<b>未上云</b> · 认证补上前只放测试数据</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 第二层 ===== -->
+<div class="section-title">第二层 · 系统卡片（点标题展开）</div>
+<div class="section-note">
+  每张卡片 7 个字段。其中<b>「数据流向」只写代码里真实存在的</b>，计划中的会明确标「规划」。
+</div>
+
+<!-- ① 总站 -->
+<div class="sys-card hub" id="hub">
+  <div class="sys-head" onclick="toggleCard('hub')">
+    <div class="left">
+      <span class="sys-tag">文档站</span>
+      <span class="sys-name">主页端 · 运营手册文档站</span>
+      <span class="sys-sub">不是系统枢纽 · 是文档</span>
+    </div>
+    <div class="right">
+      <span class="status-badge s-ok">文档已建</span>
+      <span class="status-badge s-wait">已定转动态 · 待建</span>
+      <span class="toggle">▶</span>
+    </div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">位置</div>
+      <div class="field-value multi">
+        <div><b>本地</b>　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/ops-index.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/ops-index.html</span></a></div>
+        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span> <span style="color:var(--hint);">ops-index.html 从未发布到 GitHub Pages</span></div>
+        <div style="color:var(--hint); margin-top:4px;">62,175 字节 · 866 行</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">真实角色</div>
+      <div class="field-value">
+        一份<b>可浏览的运营手册</b>：左侧三级树导航 + 右侧内容区 + 搜索过滤 + 打印。六章内容全部写死在 <span class="loc">const NAV = [...]</span>（第 182–800 行）。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">技术事实</div>
+      <div class="field-value multi">
+        <div>· 无 <span class="loc">fetch()</span> · 无 Firestore · 无任何后端调用</div>
+        <div>· 唯一的持久化：<span class="loc">localStorage['zhops.last']</span> —— 只记住「上次看的是哪一页」</div>
+        <div>· 内容改动必须改 JS 源码，界面不能编辑</div>
+        <div>· 内置 5 套皮肤（midnight / light / paper / forest / night），当前用 <span class="loc">data-skin="midnight"</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（现状）</div>
+      <div class="field-value multi">
+        <div>入：<span class="no">无</span> —— 没有任何系统往里推数据</div>
+        <div>出：<span class="no">无</span> —— 不向外提供任何数据</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（规划）</div>
+      <div class="field-value">
+        <span class="plan">规划：人事制度 / 市场素材 / 财务公告，审批后推送到这里，员工来提取。</span><br>
+        要做这条，得先给它加后端 —— 现在它连「接收」这个动作都做不了。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">架构决策（已定 2026-10-29）</div>
+      <div class="field-value">
+        <b class="yes">主页端要从「纯静态文档站」升级成「动态应用」，加后端。</b><br>
+        <b>含义</b>：具备接收能力、审批状态机、按人可见（谁能看哪份制度 / 哪份公告）。<br>
+        <b>不是</b>加三个链接。<b>是</b>加后端 —— 这一条决定了整个架构的分水岭。<br>
+        <b>连带影响</b>：S5 的工作量从「改 HTML」变成「建一套应用」，工期和 S2/S3/S4 一个量级。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">搭建顺序</div>
+      <div class="field-value">
+        文档已建（S0）。<b>动态化改造 = S5</b>，排在 S2 + S3 + S4 之后 —— 因为要先有东西可推，才谈得上接收。<br>
+        <span style="color:var(--hint);">唯一可以先做的：定后端形态（Firestore 直连 or 云函数），别等 S5 才想。</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ② 课程研发 -->
+<div class="sys-card course" id="course">
+  <div class="sys-head" onclick="toggleCard('course')">
+    <div class="left">
+      <span class="sys-tag">内容</span>
+      <span class="sys-name">课程研发系统</span>
+      <span class="sys-sub">HSK1/2/3 · 唯一有跨系统输出的系统</span>
+    </div>
+    <div class="right">
+      <span class="status-badge s-ok">HSK1 已交付</span>
+      <span class="status-badge s-warn">同步脚本缺失</span>
+      <span class="toggle">▶</span>
+    </div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">位置</div>
+      <div class="field-value multi">
+        <div><b>本地</b>　<a href="file:///Users/tonycheong/hsk.html"><span class="loc">file:///Users/tonycheong/hsk.html</span></a>
+          <span style="color:var(--hint);">（软链 → Desktop/ZH-System/docs/hsk.html）</span></div>
+        <div><b>线上</b>　<a href="https://tony80-del.github.io/hsk/"><span class="loc">https://tony80-del.github.io/hsk/</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已上线</span></div>
+        <div style="color:var(--hint); margin-top:4px;">465 KB · 学员课本</div>
+        <div style="margin-top:8px;"><b>教案</b>　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/teach.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/teach.html</span></a></div>
+        <div style="padding-left:36px;">线上　<a href="https://tony80-del.github.io/hsk/teach.html"><span class="loc">https://tony80-del.github.io/hsk/teach.html</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已上线 10-30 23:08</span></div>
+        <div style="color:var(--hint); padding-left:36px;">822 KB · 教课体系（HSK1/2/3）· 手机平板走 860px 自适应 · 与课本同仓库 · 提交 <span class="key">3db7f53</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">真实角色</div>
+      <div class="field-value">内容供给侧。核心数据是 <span class="loc">const DATA</span>（第 241 行）：<span class="key">stages[]</span> 阶段 · <span class="key">stageLessons{}</span> 阶段→课次映射 · 课文与词表。HSK1 = 6 阶段 / 42 课次。</div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（现状）</div>
+      <div class="field-value multi">
+        <div>出：<span class="yes">→ 排课主端 index.html</span> —— 课次目录以 <span class="loc">CURRI_FALLBACK</span> 常量形式<b>内嵌复制</b>进排课系统</div>
+        <div>出：<span class="yes">→ Firestore meta/curriculum</span> —— 排课主端启动时从这里拉目录</div>
+        <div>入：<span class="no">无</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">这条流的断点</div>
+      <div class="field-value">
+        排课系统第 513 行写着「由 <span class="loc">build/sync-curriculum.mjs</span> 生成，请勿手改」。<br>
+        <b class="no">但 ~/zhops 里没有 build/ 目录，也没有任何 .mjs 文件</b> —— 脚本不存在。<br>
+        结果：hsk.html 改了课程 → 排课系统里的课次目录<b>不会自动更新</b>，云端的 <span class="key">meta/curriculum</span> 也没人写。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">入口</div>
+      <div class="field-value"><a href="file:///Users/tonycheong/hsk.html">file:///Users/tonycheong/hsk.html</a> · 线上：<a href="https://tony80-del.github.io/hsk/">tony80-del.github.io/hsk/</a></div>
+    </div>
+    <div class="field">
+      <div class="field-label">搭建顺序</div>
+      <div class="field-value">已建。HSK2/3 继续写。建议顺手把 <span class="loc">sync-curriculum.mjs</span> 补上，否则课程一改排课就错位。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ 排课系统 -->
+<div class="sys-card built" id="zhops">
+  <div class="sys-head" onclick="toggleCard('zhops')">
+    <div class="left">
+      <span class="sys-tag">执行层</span>
+      <span class="sys-name">排课系统（zhops · 含教师端 / 主端 / 管理端）</span>
+      <span class="sys-sub">三端共用 zhops/master · 2026-10-31 三端已上线上</span>
+    </div>
+    <div class="right">
+      <span class="status-badge s-ok">已建</span>
+      <span class="status-badge s-ok">记账已统一 · 主端已上云</span>
+      <span class="status-badge s-warn">剩 2 个断点</span>
+      <span class="toggle">▶</span>
+    </div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">位置（三端 · 本地与线上是两份不同的文件）</div>
+      <div class="field-value multi" style="line-height:1.9;">
+        <div><b>主端</b>（排课引擎，线上文件名是 index.html）</div>
+        <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/schedule.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/schedule.html</span></a></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/"><span class="loc">https://tony80-del.github.io/zhops/</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="padding-left:14px; color:var(--hint);">⚠️ 本地叫 <span class="loc">schedule.html</span>，线上叫 <span class="loc">index.html</span> —— 发布脚本改成后者。</div>
+        <div style="margin-top:8px;"><b>教师端</b>（老师手机上开的就是这个）</div>
+        <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html</span></a></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/teacher.html"><span class="loc">https://tony80-del.github.io/zhops/teacher.html</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="margin-top:8px;"><b>管理端</b>（主控 · 审批 / 配置 / 结算）</div>
+        <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html</span></a></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="margin-top:8px; color:var(--hint);">
+          <b>「已同步」怎么核的</b>：2026-10-31 16:16 跑 <span class="loc">sh build/publish-zhops.sh</span>，再把线上五个页面下载回来逐个比对 sha256 —— 五份与本地<b>完全一致</b>（不是看 push 成功）。<br>
+          <b>⚠️ 2026-10-30 那一轮曾在线上留旧版</b>（门槛 4–13、越南语补漏、推送防冲撞只改了本地），到 10-31 16:16 一并补齐。
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">三端真实关系</div>
+      <div class="triple-grid">
+        <div class="triple-item">
+          <div class="ti-label">主端 · 已连云</div>
+          <div class="ti-name">index.html</div>
+          <div class="ti-path">本机 zhops.sched.v2</div>
+          <div class="ti-tag synced">fsPullMain / fsPushMain ⇄ zhops/master</div>
+          <div class="ti-path" style="margin-top:4px; color:var(--hint);">171 KB · 排课 / 数据 / 结算 / 成员</div>
+        </div>
+        <div class="triple-item">
+          <div class="ti-label">教师端 · 分片读</div>
+          <div class="ti-name">teacher.html</div>
+          <div class="ti-path">本机 zhops.teacher.v1</div>
+          <div class="ti-tag synced">读 public + zhops/t{n} · 写 master（读-改-写）</div>
+          <div class="ti-path" style="margin-top:4px; color:var(--hint);">提交申请 / 推进课次 / 点名 —— 只装自己那一份</div>
+        </div>
+        <div class="triple-item">
+          <div class="ti-label">管理端 · 连云</div>
+          <div class="ti-name">admin.html</div>
+          <div class="ti-path">本机 zhops.sched.v3</div>
+          <div class="ti-tag synced">fsPush / fsPull ⇄ zhops/master</div>
+          <div class="ti-path" style="margin-top:4px; color:var(--hint);">332 KB · 审批 / 全局配置 / 课次状态下拉</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">关键事实（源码核对）</div>
+      <div class="field-value multi">
+        <div>· 教师端与管理端共用云端文档 <span class="key">zhops/master</span>（<span class="loc">teacher.html:730</span> / <span class="loc">admin.html:904</span>，coll 都是 <span class="loc">'zhops'</span>、doc 都是 <span class="loc">'master'</span>）</div>
+        <div>· 教师端提交开班申请后<b>直接进管理端「待审批」队列</b>（<span class="loc">teacher.html:378</span> 页面自述 + 共用同一份存储）</div>
+        <div>· 主端 <span class="loc">index.html</span> <b class="yes">已接云（2026-10-30 · S1.3）</b>：启动 <span class="loc">fsPullMain()</span> 拉一次（云端 <span class="key">at</span> 较新才合并，只补空），存盘后 <span class="loc">fsPushMain()</span> 延迟 1.5s 推（白名单 + at 防冲撞 + 空库不推）。原先唯一的 <span class="loc">fetch()</span> 只读 <span class="key">meta/curriculum</span></div>
+        <div>· 云端认领标记已放宽为<b>多来源</b>：<span class="loc">APP_TAGS_OK</span> 认 <span class="key">zhops.admin</span> / <span class="key">zhops.teacher</span> / <span class="key">zhops.sched</span>。改之前只认 admin，主端一推就被整份忽略，三端互相覆盖</div>
+        <div>· 本机键<b>三把互不相通</b>：主端 <span class="key">zhops.sched.v2</span>（<span class="loc">:327</span>）· 管理端 <span class="key">zhops.sched.v3</span>（<span class="loc">admin:751</span>）· 教师端 <span class="key">zhops.teacher.v1</span>（<span class="loc">teacher:517</span>，2026-10-30 拆开 —— 不拆教师端会把分片写进主端那把钥匙）</div>
+        <div>· 云端<b>三个文档</b>（2026-10-30 新增后两个）：<span class="key">zhops/master</span> 全量 · <span class="key">zhops/public</span> 公共只读（时段 / 课名 / 教室 / 门槛）· <span class="key">zhops/t1…t5</span> 每位教师一份分片。<b>主端写全部；教师端只读 public + 自己那份，写回只动自己班的 lessons / absences</b></div>
+        <div>· 时段表是<b>全局</b>的（早班 / 午间 / 晚班 / 周末），班级挂一个时段，教师能授多个 —— <b>没有按教师独立配时段的机制</b></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">「省 → 市」两级模型 · 只在管理端</div>
+      <div class="field-value multi">
+        <div>模型：<b>省 = 教师 ID（教室）</b>，<b>市 = 开班名</b>，学生按「教师 + 市」归属。</div>
+        <div>· <span class="key">ROOMS</span> = 中国人口/GDP 前 10 省份（<span class="loc">admin.html:1370</span>，2026-10-14 定）</div>
+        <div>· <span class="key">t.room</span> = 教师所属省 · <span class="key">t.cities</span> = 教师认领的市 · <span class="key">s.city</span> = 学生归属市</div>
+        <div>· <span class="key">CITIES[prov]</span> = 省→市列表，市名全局唯一（<span class="loc">:1372–1374</span>）</div>
+        <div>· 管理端有「教室」页：省 → 市 两级分组，每市一张卡片（<span class="loc">:1846–1864</span>）</div>
+        <div style="margin-top:6px;"><b class="no">但主端和教师端完全没有这一层</b> —— 我逐个查过：<span class="key">ROOMS</span> / <span class="key">CITIES</span> / <span class="key">t.room</span> / <span class="key">t.cities</span> / <span class="key">s.city</span> 在两个文件里<b>出现次数全是 0</b>。</div>
+        <div style="margin-top:6px;"><b>结论</b>：模型已经设计好并落地在管理端，<b>缺的是主端和教师端跟上</b>。这就是「教师端跟上同步」的具体内容。</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">教师端已有能力（源码核对）</div>
+      <div class="field-value multi">
+        <div><span class="yes">✓</span> 教室信息 —— <span class="loc">c.room</span>，线下班显示「教室 XXX」，未定显示「教室待定」（<span class="loc">:860/:866</span>）</div>
+        <div><span class="yes">✓</span> 学生名称 —— 班级学生名单</div>
+        <div><span class="yes">✓</span> 读到第几课 —— <span class="loc">lesson</span> / 推进课次</div>
+        <div><span class="yes">✓</span> 考试 —— <span class="loc">exam:{}</span> 字段 + 「阶段考试」状态（<span class="loc">:550/:1105</span>）</div>
+        <div><span class="yes">✓</span> 成绩 —— 学生 <span class="loc">exam</span> 记录，<span class="loc">hasExam</span> 判断（<span class="loc">:1128</span>）</div>
+        <div><span class="yes">✓</span> 缺勤登记 —— 点名写入 <span class="key">DB.absences</span> <span class="loc">{sid, cid, no}</span>（<span class="loc">:1052</span>）</div>
+        <div style="margin-top:6px;"><b class="plan">缺</b>：教师身份隔离只有「下拉选我是谁」，无验证。见台账 ⑪。</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">数据流向（现状）</div>
+      <div class="field-value multi">
+        <div>教师端 ⇄ 管理端：<span class="yes">已通</span>（Firestore zhops/master，双向）</div>
+        <div>主端 ⇄ 教师端 / 管理端：<span class="yes">已通（2026-10-30 · S1.3）</span>（同一份 zhops/master，主端 fsPullMain / fsPushMain）</div>
+        <div>三端 → 人事部：<span class="yes">已通（2026-10-31）</span> 课次标 done 就写 <span class="key">zhops/done_&lt;课次ID&gt;</span>；改回待上 / 取消 = 同一条覆盖（撤回）</div>
+        <div style="color:var(--hint);">旧的申请码通道（<span class="loc">ZHA1.</span>）现在彻底作废 —— 见断点 3，S1.4 顺手删。</div>
+        <div style="margin-top:6px;"><b class="yes">记账模型已统一（2026-10-29 · S1.2）</b>：主端也有 <span class="key">lessons[]</span> + <span class="key">absences[]</span>，字段形状对齐管理端。推进课次时 log 与 lessons <b>双写</b>；<span class="loc">load()</span> 里做了旧数据迁移（有 log 没 lessons 逐条展开，log 一条不删）；<span class="loc">settleWindow()</span> 优先读 lessons、没有才退回 log。<b>仍差</b>：主端缺勤只有容器、没有登记入口（入口在教师端）；双写收口等 log 退休。</div>
+        <div style="margin-top:6px;"><b class="yes">主端已在同步链上（2026-10-30 · S1.3）</b>：本机 <span class="key">zhops.sched.v2</span>。拉 = 启动读一次、云端较新才合并；推 = 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推。字段映射 <span class="loc">level↔lv / classId↔cls / slotId↔slot / teacherId↔teacher / applications↔apps</span>。<br>
+        <b class="no">仍存的限制</b>：① 本机键故意留在 v2（v3 是管理端、v1 是教师端，同源同键会串数据）。② <b>管理端推送没有 at 防冲撞</b>，仍是后写覆盖；主端有防冲撞，教师端已改成「读-改-写」（S1.9）。</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">仓库与发布</div>
+      <div class="field-value multi">
+        <div>发布仓库　<a href="https://github.com/Tony80-del/zhops"><span class="loc">github.com/Tony80-del/zhops</span></a></div>
+        <div>发布产物　<span class="loc">~/zhops/</span>（GitHub Pages 根目录）</div>
+        <div>发布命令　<span class="loc">sh build/publish-zhops.sh</span>
+          <span style="color:var(--hint);">（cp docs/*.html → ~/zhops/ 再 push）</span></div>
+        <div style="color:var(--hint); margin-top:4px;">三端的本地路径与线上地址见上方「位置」那一栏。</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">数据流向（规划 · 全部未实现）</div>
+      <div class="field-value multi">
+        <div><span class="yes">✓ 已实现（2026-10-31）：主端 / 教师端课次 → 人事（算薪酬）</span> —— 见上方「数据流向（现状）」</div>
+        <div class="plan">主端课次 → 财务（算收入）</div>
+        <div class="plan">主端班级 → 市场（招生参考）</div>
+        <div class="plan">主端排课成功 → Zalo 群（师生通知）</div>
+      </div>
+    </div>
+
+    <div class="pending-box">
+      <div class="pending-title">断点 3 · 4（断点 1 / 2 已修完，2026-10-31 Tony 定：<b>不再显示</b>，内容已并进上方各栏）</div>
+
+      <div class="pending-item">
+        <div class="pi-head"><span class="pi-num">断点 3</span><span class="pi-name">申请码通道已成死路</span><span class="status-badge s-warn">断点 2 已通 · 可删</span></div>
+        <div class="pi-row"><b>主端这边</b>：仍保留「导入教师端申请码」入口，<span class="loc">CODE_PREFIX = 'ZHA1.'</span>（<span class="loc">index.html:756</span>）、<span class="loc">importCode()</span>（<span class="loc">:1607</span>）。</div>
+        <div class="pi-row"><b>教师端这边</b>：<span class="no">已无生成入口</span> —— 全文没有 <span class="loc">btoa</span>、没有 <span class="loc">ZHA</span>；页面自述「提交即写入，无需申请码」（<span class="loc">teacher.html:499</span>）。</div>
+        <div class="pi-row"><b>已定处理方式（2026-10-29）</b>：<b class="yes">不单独修</b>。断点 2 推上云端、两边同步之后，这条自动消失 —— 顺手删掉那个空导入框即可。</div>
+      </div>
+
+      <div class="pending-item">
+        <div class="pi-head"><span class="pi-num">断点 4</span><span class="pi-name">课次目录无人更新</span><span class="status-badge s-wait">已推迟</span></div>
+        <div class="pi-row"><b>现象</b>：<span class="loc">CURRI_FALLBACK</span> 注释说由 <span class="loc">build/sync-curriculum.mjs</span> 生成。</div>
+        <div class="pi-row"><b>事实</b>：<span class="no">该脚本不存在</span>（<span class="loc">~/zhops</span> 下无 build/、无 .mjs）。云端 <span class="key">meta/curriculum</span> 也无写入代码。</div>
+        <div class="pi-row"><b>后果</b>：hsk.html 增删课次后，排课系统仍按旧目录排 —— 不报错，只是排错。</div>
+        <div class="pi-row"><b>已定处理方式（2026-10-29）</b>：<b class="plan">推迟</b>。教课体系研发还没完成，目录本来就要变，现在补脚本等于白写。<b>等 Tony 完成教课体系后再做。</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ 人事 -->
+<div class="sys-card partial" id="hr">
+  <div class="sys-head" onclick="toggleCard('hr')">
+    <div class="left">
+      <span class="sys-tag">人事</span>
+      <span class="sys-name">人事系统</span>
+      <span class="sys-sub">人员档案 · 合同证件 · 社保个税 · 制度库</span>
+    </div>
+    <div class="right"><span class="status-badge s-info">本地已建 · 未接云</span><span class="toggle">▶</span></div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">位置（现状）</div>
+      <div class="field-value multi">
+        <div><b>本地</b>　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/hr.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/hr.html</span></a></div>
+        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span> <span style="color:var(--hint);">刻意没发 —— 里面有工资表和合同，认证没做之前不上公网</span></div>
+        <div style="margin-top:6px;">
+          <b class="yes">已建（2026-10-30）</b>：单文件、零依赖、<b>双击即开</b>，
+          数据存本机浏览器（<span class="key">zhops.hr.v1</span>），<b class="no">没接 Firestore</b>。
+        </div>
+        <div><b>目标形态</b>：单文件 HTML + Firestore（<b class="yes">敏感库，与财务同库</b>，已定 2026-10-29）+ 九套配色（与财务同一套语义变量）。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">已建的范围（九个板块 + 配置）</div>
+      <div class="field-value multi">
+        <div><span class="yes">✓</span> ① 员工花名册（工号 / 岗位 / 在职状态 / 试用期提醒）</div>
+        <div><span class="yes">✓</span> ② 合同（起止 / 类型 / 到期提醒）· <b>合同是录入第一入口</b>：签完自动建员工档</div>
+        <div><span class="yes">✓</span> ③ 证件资质（工作许可 / 暂住证 / 到期提醒 —— <b>单独成板块，因为到期后果最重</b>）</div>
+        <div><span class="yes">✓</span> ④ 社保与个税（<b>按缴费基数算，不是按应发</b>）</div>
+        <div><span class="yes">✓</span> ⑤ 考勤与假勤（年假总额 / 已用 / 余额）</div>
+        <div><span class="yes">✓</span> ⑥ 薪酬发放（<b>人事算，提交财务批</b>；批准后只记发了没有）</div>
+        <div><span class="yes">✓</span> ⑦ 培训与培养 ⑧ 制度库（草稿 / 待批 / 已发布 / 已废止）⑨ 配置</div>
+        <div><span class="yes">✓</span> <b>独立整页人事档案</b>（2026-10-31 起）：点花名册任意一行进整页，七个区块（基本 / 合同 / 证件 / 社保 / 假勤 / 发放 / 培训）一屏可打印</div>
+        <div><span class="yes">✓</span> <b>合同挂 PDF 原件</b>（2026-10-31）：浏览器本机 IndexedDB 存二进制，页内可看 / 可下载，<b>不上网</b></div>
+        <div><span class="yes">✓</span> <b>删除要密码 + 删除前自动快照</b>（2026-10-31）：防手滑，可在配置页恢复上一次删除</div>
+        <div><span class="yes">✓</span> <b>导出全部数据（含合同 PDF）/ 恢复备份</b>（2026-10-31）：换电脑时 PDF 不丢</div>
+        <div style="margin-top:6px;"><b class="plan">缺</b>：Firestore 同步 · 认证与权限 · 手机端表格卡片化。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">职责边界（已定 2026-10-30）</div>
+      <div class="field-value">
+        <b class="yes">人员主档在人事</b>，zhops 只留「能排课的最小集」（姓名 / 可教级别 / 在职状态），靠<b>工号</b>关联。<br>
+        <b>学生不进人事</b> —— 学生是客户，档案在排课系统；助教签成员工才进这里。<br>
+        <b>不做审批</b> —— 制度只标四态，审批动作留给主页端，避免两套审批打架。<br>
+        <b>唯一例外：工资汇总单</b>（2026-10-31 定）—— 人事<b>算</b>，提交财务<b>批</b>；这是薪酬独有的流程，不推广到别的板块。<br>
+        <b>学生缺勤不进人事</b> —— 缺勤数据另开一条出口到业务部（见下）。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">薪酬口径（2026-10-31 改）</div>
+      <div class="field-value">
+        <b class="yes">人事算，提交财务批。</b>（原先「财务算，人事只管发放」<b class="no">已作废</b>）<br>
+        <b>量来自排课，价来自合同</b> —— 课时数自动从排课系统读（只算 <code>status === 'done'</code> 的课次），
+        单价<b>只认合同</b>，不认排课系统里的教师单价。<br>
+        人事生成月度汇总单 → 提交 <code>zhops/approvals</code> → 财务核对批准 / 驳回 → 人事记发放。<br>
+        <span style="color:var(--hint);">这样定的好处：算钱的人和看合同的人是同一拨人，不会出现「财务按旧合同算、人事按新合同发」。</span>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（通道已接一部分，2026-10-31）</div>
+      <div class="field-value multi">
+        <div><b class="yes">已通</b>　入：zhops 课次 <code>done</code> → 人事算课时费。主端「推进一课」、教师端「这节课已上完」<b>都会立刻写一条 <code>zhops/done_&lt;课次ID&gt;</code></b>，不用等整份推送。</div>
+        <div><b class="yes">已通</b>　出：人事月度工资汇总单 → <code>zhops/approvals</code> → 财务审批</div>
+        <div><b class="yes">已通</b>　入：zhops 教师档案（人员信息，不含课时）→ 建员工档案</div>
+        <div class="plan">待做：出 —— 制度文件（审批后）→ 主页端</div>
+        <div><span class="no">已作废：</span>财务算好金额推给人事</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">另外一处错位</div>
+      <div class="field-value"><b>教室租金不该在人事。</b>原总览把「教师 / 学生 / 助教 / 教室租金」都挂在人事，但租金是财务的支出科目。人事只管人，不管场地。<b>租金归财务。</b></div>
+    </div>
+    <div class="field">
+      <div class="field-label">搭建顺序</div>
+      <div class="field-value">
+        <b class="yes">骨架已建（2026-10-30）</b> —— 见 <a href="zhops-polish.html" class="loc">工作台账 P-52</a>。<br>
+        <b class="yes">本地功能已收口（2026-10-31）</b>：合同 → 自动建档 → 按合同算汇总 → 提交财务；档案整页 + 合同 PDF + 备份恢复 + 防误删。<br>
+        S3 剩下的<b>全是上云与打通</b>：Firestore 同步 · 认证与权限 · 主端入口 · 财务审批工作台。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">学生缺勤 → 业务部（待办 · 2026-10-31 定）</div>
+      <div class="field-value">
+        <b>人事不看学生缺勤。</b>人事只认教师课时（<code>done</code> 课次 × 合同单价），学生来没来<b>不影响课时费</b>。<br>
+        <b class="plan">待建</b>：学生缺席数据<b>单独一条出口到业务部</b> —— 由业务部决定要不要跟进、要不要补课、要不要算违约。<br>
+        <span style="color:var(--hint)">现在缺勤已经跟着 <code>zhops/done_*</code> 一起写了（<code>absent</code> / <code>size</code> 两个字段），只是业务部那边还没有消费方。人事端<b>会读但不使用</b>。</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 财务 -->
+<div class="sys-card partial" id="fin">
+  <div class="sys-head" onclick="toggleCard('fin')">
+    <div class="left">
+      <span class="sys-tag">财务</span>
+      <span class="sys-name">财务系统</span>
+      <span class="sys-sub">核算 · 管账 · 预算 · 发薪</span>
+    </div>
+    <div class="right"><span class="status-badge s-info">本地已建 · 未接云</span><span class="toggle">▶</span></div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">位置（现状）</div>
+      <div class="field-value multi">
+        <div><b>本地</b>　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/finance.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/finance.html</span></a></div>
+        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span> <span style="color:var(--hint);">刻意没发 —— 里面有工资表和股东账面，认证没做之前不上公网</span></div>
+        <div style="margin-top:6px;">
+          <b class="yes">已建（2026-10-30）</b>：单文件、零依赖、<b>双击即开</b>，
+          数据存本机浏览器（<span class="key">zhops.fin.v1</span>），<b class="no">没接 Firestore</b>。
+        </div>
+        <div><b>目标形态</b>：单文件 HTML + Firestore（<b class="yes">敏感库，独立于排课库</b>，已定 2026-10-29）+ 5 皮肤。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">已建的范围（六个板块）</div>
+      <div class="field-value multi">
+        <div><span class="yes">✓</span> ① 收入（学费 / 材料费 / 补课费，含税率与发票号）</div>
+        <div><span class="yes">✓</span> ② 支出（课时费自动 / 工资社保 / 其他支出）</div>
+        <div><span class="yes">✓</span> ③ 结算（按班算单课收入、课时费、社保分摊、单课毛利）</div>
+        <div><span class="yes">✓</span> ④ 报表（月毛利、毛利率、成本结构、班级盈亏排名）</div>
+        <div><span class="yes">✓</span> ⑤ 配置（社保 / 企税 / 分红个税 / 默认税率，改一次长期用）</div>
+        <div><span class="yes">✓</span> ⑥ 导出（收入明细 / 支出明细 / 工资社保，三张 <span class="loc">.xls</span> 给代账）</div>
+        <div style="margin-top:6px;"><b class="plan">缺</b>：Firestore 同步 · 认证 · 与 zhops 的课次通道 · 应收/实收分栏 · 手机端表格卡片化。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">角色</div>
+      <div class="field-value">核算 · 管账 · 预算 · 发薪。收入（学费 / B2B 收款）、支出（教师课时费 / 助教补贴 / 教室租金 / 宣传费）、毛利、缴税、月底股东账面。</div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（规划 · 通道未接）</div>
+      <div class="field-value multi">
+        <div class="plan">入：zhops 课次数据 → 算收入 <span style="color:var(--hint);">（现在班级课次手填）</span></div>
+        <div class="plan">入：zhops 课次 × 课时单价 → <b class="yes">算薪酬（已定：财务算）</b></div>
+        <div class="plan">出：薪酬金额 → 人事（人事只管发放归档）</div>
+        <div class="plan">出：月度汇总摘要（审批后）→ 主页端</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">职责边界（已定 2026-10-29）</div>
+      <div class="field-value">
+        <b class="yes">财务是薪酬的唯一计算方。</b>课时单价、补贴规则、扣款口径全部落在财务。<br>
+        人事拿到的已经是金额，不再做乘法。<b>教室租金也归财务</b>（支出科目），不挂人事。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">保密边界</div>
+      <div class="field-value">明细账 / 工资表 / 税务 / 股东账面<b class="no">不进主页端</b>。主页端只放「公开预算摘要」。</div>
+    </div>
+    <div class="field">
+      <div class="field-label">待定的一处口径（影响毛利）</div>
+      <div class="field-value">
+        <b class="no">会双算</b>：本月支出 = 课时费 + 工资（含教师月薪）+ 公司社保 + 其他。
+        若教师的「月薪」本身就是按课时算出来的总额，这笔钱被算了两次。<br>
+        <b>要定</b>：工资页月薪 = <b>底薪</b>（课时费另加）还是 = <b>全部</b>？
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">搭建顺序</div>
+      <div class="field-value">
+        <b class="yes">骨架已建（2026-10-30）</b> —— 见 <a href="zhops-polish.html" class="loc">工作台账 P-49</a>。<br>
+        S2 剩下的部分是<b>上云 + 接 zhops 课次</b>。跟 zhops 数据往来最紧，也是人事的前置。下一步 = 在主端加一个入口链到 <span class="loc">finance.html</span>（两边各存各的，只做跳转）。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ 市场 -->
+<div class="sys-card todo" id="mkt">
+  <div class="sys-head" onclick="toggleCard('mkt')">
+    <div class="left">
+      <span class="sys-tag">市场</span>
+      <span class="sys-name">市场系统</span>
+      <span class="sys-sub">内容研发 · 渠道发布 · 活动管理</span>
+    </div>
+    <div class="right"><span class="status-badge s-wait">未建</span><span class="toggle">▶</span></div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">位置</div>
+      <div class="field-value multi">
+        <div><b>本地</b>　<span class="status-badge s-wait" style="font-size:10px;">未建</span> <span style="color:var(--hint);">还没有文件</span></div>
+        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span></div>
+        <div style="margin-top:6px;">目标形态：单文件 HTML + Firestore + 5 皮肤</div>
+        <div><b class="yes">库归属已定（2026-10-29）：进业务库</b>，不单独建库。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">库归属 · 怎么拆</div>
+      <div class="field-value multi">
+        <div>市场的数据不是「一个系统一个风险级」，是<b>三类数据三个去处</b>：</div>
+        <div style="margin-top:6px;">① <b>渠道账号密码</b>（FB / Zalo / 微信后台）→ <b class="no">不进任何数据库</b>，放密码管理器。系统里只存账号名 + 「密码在哪个管理器」的备注。</div>
+        <div>② <b>广告投放花费</b> → <b class="yes">进财务库</b>。它本来就是支出科目，归财务天经地义。</div>
+        <div>③ <b>素材 / 活动 / 渠道发布计划 / 销售赛道</b> → <b class="yes">进业务库</b>。这些是业务级，泄露损失跟排课同级。</div>
+        <div style="margin-top:6px;"><b>拆完的结果</b>：市场系统剩下的全部是业务级数据 → 跟排课放一起，不需要第三个库。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">为什么密码不能进库</div>
+      <div class="field-value">
+        你的 Firestore 现在是<b>无认证可读</b>（我实测过 200）。把 Facebook / Zalo 后台密码写进去，等于贴在公网上。<br>
+        就算以后加了认证，密码也不该躺在一个前端页面能读到的地方 —— 一旦 XSS 或 key 泄露，全丢。<br>
+        <b>密码管理器（1Password / Bitwarden）就是干这个的</b>，别再自己造。<br>
+        <span style="color:var(--hint);">连带好处：密码一搬走，市场的风险等级立刻降一档，分库问题自动消失。</span>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">一个要留意的点</div>
+      <div class="field-value">
+        <b>客户线索名单</b>（姓名 + 电话）也归市场，会进业务库。它算个人信息，越南有专门法规管。<br>
+        <span class="plan">具体条款我没核，等真要建这块时我查一遍再说。</span>现在只需记住：<b>以后加认证时，这块名单要单独设规则</b>，不能跟排课数据同权限。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">角色</div>
+      <div class="field-value">内容研发 · 渠道发布 · 活动管理。短片研发、宣传册、渠道（Facebook / Zalo / 微信）、活动任务（自办 vs 协办）、销售赛道研发。</div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（规划）</div>
+      <div class="field-value multi">
+        <div class="plan">入：zhops 班级数据 → 招生参考</div>
+        <div class="plan">出：宣传素材 / 活动通知（审批后）→ 主页端</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">保密边界</div>
+      <div class="field-value">研发中草稿、渠道账号密码<b class="no">不进主页端</b>。</div>
+    </div>
+    <div class="field">
+      <div class="field-label">搭建顺序</div>
+      <div class="field-value">S4 —— 最独立，最后建。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 第三层 ===== -->
+<div class="section-title">第三层 · 数据流向</div>
+<div class="section-note">
+  这一层只写<b>代码里能验证的</b>。每条流标出源码位置，你可以直接去对照。<br>
+  <b>实线箭头 = 已通</b>；<b>✕ = 断点</b>；<b>┈▶ = 规划（代码不存在）</b>。
+</div>
+
+<div class="flow-box">
+
+  <!-- 块 1 -->
+  <div class="flow-block">
+    <div class="flow-h">
+      【通道一】课程目录 · 已通
+      <span class="fh-tag fh-ok">GET 只读</span>
+    </div>
+    <div class="flow-why">
+      排课主端启动时向云端要一份课次目录；失败就用内嵌的 <span class="loc">CURRI_FALLBACK</span> 兜底，断网也能开。这是三端里<b>唯一</b>跑通的自动流。
+    </div>
+    <div class="flow-line"><span class="src">排课主端 index.html</span>
+   │
+   │  <span class="lbl">curriSync()</span>   <span class="note">index.html:720</span>
+   ▼
+<span class="dst">Firestore  hsk-class-v1 / meta/curriculum</span>      <span class="note">实测 HTTP 200</span>
+   │
+   ├──▶ <span class="dst">CURRI</span> = 云端目录                            <span class="note">成功 · CURRI_SRC='cloud'</span>
+   │
+   └──▶ <span class="act">CURRI_FALLBACK</span>（内嵌常量）                    <span class="note">失败兜底 · 静默，不报错</span>
+              │
+              ▼
+        <span class="dst">排课界面课次下拉 / 进度计算</span>
+</div>
+  </div>
+
+  <!-- 块 2 -->
+  <div class="flow-block">
+    <div class="flow-h">
+      【通道二】教师端 ⇄ 管理端 · 已通
+      <span class="fh-tag fh-ok">双向</span>
+    </div>
+    <div class="flow-why">
+      两端读写<b>同一份云端文档</b> <span class="key">zhops/master</span>，各自在本机留一份 <span class="key">zhops.sched.v3</span>。教师提交的开班申请直接落进管理端的「待审批」队列 —— 不需要任何手工搬运。
+    </div>
+    <div class="flow-line"><span class="src">教师端 teacher.html</span>                        <span class="src">管理端 admin.html</span>
+   │  <span class="lbl">save()</span> → 本机 zhops.sched.v3        │  <span class="lbl">save()</span> → 本机 zhops.sched.v3
+   │                                              │
+   ├── <span class="lbl">fsPush()</span> ──▶                          ◀── <span class="lbl">fsPush()</span> ──┤
+   │            <span class="dst">Firestore  zhops/master</span>          │
+   └── <span class="lbl">fsPull()</span> ◀──                          ──▶ <span class="lbl">fsPull()</span> ──┘
+                <span class="note">teacher.html:730 / admin.html:904 — coll:'zhops' doc:'master'</span>
+   │
+   │  <span class="lbl">提交开班申请</span>
+   ▼
+<span class="dst">管理端「开班申请 · 待审批」队列</span>              <span class="note">DB.apps[] · state:'待审批'</span>
+   │  <span class="act">approveApp()</span>
+   ▼
+<span class="dst">建班 · 自动分配教师 / 教室</span>                    <span class="note">在 admin.html 内完成</span>
+</div>
+  </div>
+
+  <!-- 块 3 -->
+  <div class="flow-block">
+    <div class="flow-h">
+      【断点】主端 ↔ 另外两端 · 不通
+      <span class="fh-tag fh-bad">三端不是三端</span>
+    </div>
+    <div class="flow-why">
+      <b>这是整张图最重要的一块。</b>主端 <span class="loc">index.html</span> 全文只有一个 <span class="loc">fetch()</span>（第 724 行），而且只读课次目录。<b>它从不读写 <span class="key">zhops/master</span>。</b>所以主端和教师/管理端之间没有任何自动通道。
+    </div>
+    <div class="flow-line"><span class="src">主端 index.html</span>
+   │
+   ├── 本机 <span class="key">zhops.sched.v2</span>            <span class="note">独立键，版本还比另两端低一级</span>
+   ├── <span class="dst">GET meta/curriculum</span>              <span class="note">唯一的外部调用</span>
+   └── <span class="dead">✕ 不写云 · 不读 zhops/master</span>
+
+<span class="src">主端排好的课</span>          <span class="dead">✕ ─ ─ ─▶</span>  <span class="dst">教师端今日课程</span>      <span class="note">主端不写云，教师端无从获取</span>
+<span class="src">教师端提交的申请</span>      <span class="dead">✕ ─ ─ ─▶</span>  <span class="dst">主端申请管理</span>        <span class="note">主端不读云，拿不到</span>
+
+<span class="note">唯一残留的人工通路：</span>
+<span class="src">教师端</span> 生成 <span class="act">ZHA1.…</span> 申请码  ──复制──▶  <span class="src">主端</span> <span class="lbl">importCode()</span>   <span class="note">index.html:1607</span>
+        <span class="dead">✕ 但教师端已无生成入口</span>                          <span class="note">teacher.html 全文无 btoa / 无 ZHA</span>
+</div>
+  </div>
+
+  <!-- 块 4 -->
+  <div class="flow-block">
+    <div class="flow-h">
+      【课程】hsk.html → 排课 · 半通
+      <span class="fh-tag fh-warn">转换脚本缺失</span>
+    </div>
+    <div class="flow-why">
+      生态地图原来写「课程研发无对外数据流、课程内容自包含」—— <b>这是错的</b>。排课系统的课次目录就是从 hsk.html 的 <span class="loc">DATA</span> 来的。问题是转换脚本不在仓库里，所以这条路只能靠手工同步。
+    </div>
+    <div class="flow-line"><span class="src">hsk.html</span>  <span class="lbl">const DATA</span>                    <span class="note">hsk.html:241 · stages / stageLessons</span>
+   │
+   │  <span class="dead">build/sync-curriculum.mjs</span>        <span class="note">注释承诺存在 · 实际不存在</span>
+   ▼
+<span class="dst">index.html</span>  <span class="lbl">CURRI_FALLBACK</span>               <span class="note">index.html:513 · 内嵌常量，手改会被覆盖</span>
+   │
+   ▼
+<span class="dst">排课主端课次目录</span>                        <span class="note">课程一改，这里不跟着改 → 静默错位</span>
+</div>
+  </div>
+
+  <!-- 块 5 -->
+  <div class="flow-block">
+    <div class="flow-h">
+      【未通】两项功能 · 字段有、代码无
+      <span class="fh-tag fh-bad">零实现</span>
+    </div>
+    <div class="flow-why">
+      这两项在原图里被写成「待定」，实际状态比待定更靠后 —— <b>连读取代码都没有</b>。
+    </div>
+    <div class="flow-line"><span class="src">主端 class.link</span>（腾讯会议 / Zoom / Meet）
+   <span class="dead">✕ ─ ─ ─▶</span>  <span class="dst">教师端今日课程卡片</span>      <span class="note">主端有 link 字段 · 教师端无读取逻辑</span>
+
+<span class="src">主端排课成功</span>
+   <span class="dead">✕ ─ ─ ─▶</span>  <span class="dst">Zalo 群（同班师生）</span>        <span class="note">无任何实现 · 手动复制 or Zalo OA API 都还没写</span>
+</div>
+  </div>
+
+  <!-- 块 6 -->
+  <div class="flow-block">
+    <div class="flow-h">
+      【规划】跨系统三条 + 审批三条 · 全部未建
+      <span class="fh-tag fh-warn">虚线</span>
+    </div>
+    <div class="flow-why">
+      这六条是生态地图的主体。财务与人事<b class="yes">本地骨架已建</b>，其余<b>代码一条都没有</b>。<br>
+      <b>口径已定 9 条</b>（2026-10-29）：薪酬由财务算 · 主页端转动态应用 · 角色分四层 · 数据库分 2 库 · 认证暂缓 · 记账用事实表 · 门槛 4–13 · 晚班以主端为准 · 市场进业务库。所以「主页端无接收能力」从「待定」变成「已定要建」。<br>
+      看这一块的时候当成<b>施工图</b>，不是现状图。
+    </div>
+    <div class="flow-line"><span class="note">── 跨系统（zhops 往外送）───────────────────────────────</span>
+<span class="src">zhops 课次</span>  ┈┈▶  <span class="dst">财务</span>  算收入                <span class="note">财务已本地建 · 通道未接</span>
+<span class="src">zhops 课次</span>  ┈┈▶  <span class="dst">财务</span>  算薪酬                <span class="note">同上 · 已定：财务算</span>
+<span class="src">zhops 教师</span>  ┈┈▶  <span class="dst">人事</span>  建员工档案            <span class="note">人事已本地建 · 通道未接，只传人员信息，不含课时</span>
+<span class="src">zhops 班级</span>  ┈┈▶  <span class="dst">市场</span>  招生参考              <span class="note">未建</span>
+
+<span class="note">── 审批（各部门往主页端送）─────────────────────────────</span>
+<span class="src">人事</span> 制度文件  ┈┈<span class="act">审批</span>┈┈▶  <span class="dst">主页端</span> 员工提取     <span class="note">主页端待转动态（已定）</span>
+<span class="src">市场</span> 宣传素材  ┈┈<span class="act">审批</span>┈┈▶  <span class="dst">主页端</span> 员工查看     <span class="note">同上</span>
+<span class="src">财务</span> 公告摘要  ┈┈<span class="act">审批</span>┈┈▶  <span class="dst">主页端</span> 公开预算     <span class="note">同上</span>
+
+<span class="note">── 财务 → 人事（薪酬）· 方向已定 2026-10-29 ─────────────</span>
+<span class="src">zhops 课次</span>  ┈┈▶  <span class="src">财务</span>  ×课时单价  ┈┈▶  <span class="dst">人事</span>  发放 / 归档
+                              <span class="note">金额在财务算完才给人事 · 人事不做乘法</span>
+<span class="dead">已作废：人事自己拿 zhops 课次算薪酬</span>                <span class="note">原图两个来源，等于没定</span>
+</div>
+  </div>
+
+</div>
+
+<!-- 断点清单 -->
+<div class="brk-box">
+  <div class="brk-title">⚠ 数据流向 · 三个已确认断点（按修复优先级）</div>
+
+  <div class="brk-item">
+    <div class="brk-h"><span class="brk-n">B1</span><span class="brk-t">主端不在同步链上</span><span class="status-badge s-ok">已通 2026-10-30</span></div>
+    <div class="brk-r">
+      <b>原证据</b>：<span class="loc">index.html</span> 只有 1 处 <span class="loc">fetch()</span>（GET 目录）；无 <span class="loc">method:'PATCH'</span>；本机键 <span class="key">zhops.sched.v2</span>。<br>
+      <b>已修（2026-10-30 · S1.3）</b>：新增 <span class="loc">fsGetDoc / fsGetMaster / cloudPreview</span> 读，<span class="loc">fsPullMain / fsPushMain</span> 读写双向 —— 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推 + 逐表按 id 合并。<br>
+      <b>实测发现</b>：云端只有 <span class="key">teachers 5 / students 19</span>，<b class="no">classes / apps / lessons 全 0，absences 字段都没有</b>。所以 S1.2 不是「合并两套数据」，是「主端单方面改模型」。<br>
+      <b class="yes">已改（2026-10-30 · S1.9）</b>：<b>教师端</b>推的时候不再整份覆盖 —— 先 GET 整份，别人的班原样留，只替换自己班的 <span class="loc">lessons / absences</span>，再整份写回；云端没有主数据时拒绝推。<br>
+      <b>还差</b>：<b>管理端</b>推的时候<b class="no">没有 at 防冲撞</b>，仍是后写覆盖（防冲撞只在主端一侧）。<span style="color:var(--hint);">旧文本「S1.2 改模型 → S1.3 加 fsPush」已完成。</span>
+    </div>
+  </div>
+
+  <div class="brk-item">
+    <div class="brk-h"><span class="brk-n">B2</span><span class="brk-t">申请码导入框是空的</span><span class="status-badge s-bad">同上，一起修</span></div>
+    <div class="brk-r">
+      <b>证据</b>：主端有 <span class="loc">CODE_PREFIX='ZHA1.'</span>（:756）+ <span class="loc">importCode()</span>（:1607）；教师端全文无 <span class="loc">btoa</span> / 无 <span class="loc">ZHA</span>，页面自述「提交即写入，无需申请码」（:499）。<br>
+      <b>影响</b>：主端那个粘贴框永远粘不到内容。B1 修好后这条自然作废 —— 建议<b>直接删掉</b>，别再留着误导。
+    </div>
+  </div>
+
+  <div class="brk-item">
+    <div class="brk-h"><span class="brk-n">B3</span><span class="brk-t">课次目录无人更新</span><span class="status-badge s-warn">静默错位</span></div>
+    <div class="brk-r">
+      <b>证据</b>：<span class="loc">CURRI_FALLBACK</span> 注释称由 <span class="loc">build/sync-curriculum.mjs</span> 生成（:503/:513）；<span class="loc">~/zhops</span> 无 build/、无任何 .mjs。<br>
+      <b>影响</b>：hsk.html 改课次 → 排课按旧目录排，不报错、只排错。<br>
+      <b>修法</b>：补一个脚本，读 hsk.html 的 DATA → 生成 CURRI_FALLBACK → PATCH <span class="key">meta/curriculum</span>。
+    </div>
+  </div>
+</div>
+
+<!-- ===== 第四层 ===== -->
+<div class="section-title">第四层 · 搭建路线</div>
+<div class="section-note">
+  原表缺了 S1（zhops 已建那一步），已补。新增一列「前置卡点」，指这一步之前必须先定死的东西。
+</div>
+
+<table class="rt">
+  <thead>
+    <tr><th style="width:9%">步骤</th><th style="width:38%">做什么</th><th style="width:11%">状态</th><th style="width:20%">依赖</th><th style="width:22%">前置卡点</th></tr>
+  </thead>
+  <tbody>
+    <tr class="done">
+      <td class="step">S0</td>
+      <td>主页端文档站（六章运营手册）</td>
+      <td><span class="status-badge s-ok">已完成</span></td>
+      <td>无</td>
+      <td class="sm">—</td>
+    </tr>
+    <tr class="done">
+      <td class="step">S1</td>
+      <td>排课系统三端（主端 / 教师端 / 管理端）</td>
+      <td><span class="status-badge s-ok">已完成</span></td>
+      <td>无</td>
+      <td class="sm">—</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S1.0</td>
+      <td>定「记账模型」用哪一套<br><span class="sm">流水 log ／ 事实表 lessons —— 这是接云的前置，不然后面全白做</span></td>
+      <td><span class="status-badge s-ok">已定</span></td>
+      <td>无</td>
+      <td class="sm"><b class="yes">台账 ⑧ 已定</b>：事实表，主端升级</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S1.1</td>
+      <td>主端加「云端只读预览」<br><span class="sm">只读 zhops/master，不写入 —— 让主端第一次能看见云端到底有什么</span></td>
+      <td><span class="status-badge s-ok">已做 2026-10-29</span></td>
+      <td>S1.0</td>
+      <td class="sm"><b class="yes">已落地</b>：<span class="loc">index.html</span> 新增 <span class="loc">fsGetDoc / fsGetMaster / cloudPreview</span>，参数页加按钮<br><b class="yes">PATCH/POST/PUT/DELETE 全为 0</b>（实测断言）</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S1.2</td>
+      <td>主端数据模型升级（事实表）<br><span class="sm">新增 S.lessons / S.absences，形状对齐管理端；log 双写 + 旧数据迁移</span></td>
+      <td><span class="status-badge s-ok">已做 2026-10-29</span></td>
+      <td>S1.0</td>
+      <td class="sm"><b class="yes">已落地</b>：<span class="loc">blank()</span> 加两表 · <span class="loc">lessonFromLog()</span> · <span class="loc">logLesson()</span> 双写 · <span class="loc">settleWindow()</span> 优先事实表 · <span class="loc">load()</span> 迁移<br><b class="no">本机键仍是 v2</b>：改键没有业务收益，却要冒一次迁移风险 —— 不改</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S1.3</td>
+      <td>主端接入云端同步<br><span class="sm">加 fsPull / fsPush 指向 zhops/master</span></td>
+      <td><span class="status-badge s-ok">已做 2026-10-30</span></td>
+      <td>S1.1</td>
+      <td class="sm"><b class="yes">已落地</b>：<span class="loc">fsPullMain</span>（启动拉，云端 at 较新才合并，只补空）· <span class="loc">fsPushMain</span>（白名单 + at 防冲撞 + 空库不推 + <b>逐表按 id 合并</b>，存盘后延迟 1.5s）· 映射层 <span class="loc">level↔lv / classId↔cls / slotId↔slot / teacherId↔teacher / applications↔apps</span><br><b class="yes">连带改两端</b>：教师端 / 管理端的云端认领放宽为 <span class="loc">APP_TAGS_OK</span>（zhops.admin / zhops.teacher / zhops.sched）—— 原来只认 admin，主端一推就被整份忽略，三端互相覆盖<br><b class="no">本机键仍是 v2</b>：v3 被教师端占用（同源同键会串数据），不改</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S1.4</td>
+      <td>删主端申请码导入框（修断点 3）<br><span class="sm">S1.3 打通后这条自动作废，顺手删</span></td>
+      <td><span class="status-badge s-wait">等 S1.3</span></td>
+      <td>S1.2</td>
+      <td class="sm">不单独做</td>
+    </tr>
+    <tr>
+      <td class="step">S1.5</td>
+      <td>补课程目录同步脚本（修断点 4）<br><span class="sm">build/sync-curriculum.mjs：hsk.html DATA → CURRI_FALLBACK + meta/curriculum</span></td>
+      <td><span class="status-badge s-wait">已推迟</span></td>
+      <td>无</td>
+      <td class="sm"><b class="plan">等教课体系研发完成</b>（目录本来要变，现在写等于白写）</td>
+    </tr>
+    <tr>
+      <td class="step">S1.6</td>
+      <td>教师端「视讯链接」<br><span class="sm">读主端 link 字段 → 显示可点链接</span></td>
+      <td><span class="status-badge s-info">暂缓</span></td>
+      <td>S1.3（主端不接云就无数据可读）</td>
+      <td class="sm"><b class="plan">平台选型</b>：Meet / Teams / Zoom</td>
+    </tr>
+    <tr>
+      <td class="step">S1.7</td>
+      <td>「Zalo 通知」<br><span class="sm">排课成功 → 生成文本 → 确认 → 发群</span></td>
+      <td><span class="status-badge s-info">暂缓</span></td>
+      <td>S1</td>
+      <td class="sm"><b class="plan">发送方式</b>：手动复制 / Zalo OA API</td>
+    </tr>
+    <tr>
+      <td class="step">S1.8</td>
+      <td>文档状态索引<br><span class="sm">33 份文档标「现行 / 历史 / 草稿 / 已作废」+ 取代关系 + 4 处已知冲突</span></td>
+      <td><span class="status-badge s-ok">已做</span></td>
+      <td>无</td>
+      <td class="sm"><b class="yes">已交付</b>：<a class="loc" href="zh-doc-index.html">docs/zh-doc-index.html</a><br>由 <span class="loc">build/23_build_zh_doc_index.py</span> 生成</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S1.9</td>
+      <td>多教师数据分片（public + 每师一份）<br><span class="sm">主端写 zhops/public 与 zhops/t{n}；教师端只读自己那份；写回读-改-写</span></td>
+      <td><span class="status-badge s-ok">已做 2026-10-30</span> · <a href="zhops-polish.html" class="loc">台账 P-57 / P-58 / P-59</a></td>
+      <td>S1.3</td>
+      <td class="sm"><b class="yes">已落地（本地，未推线上）</b>：<span class="loc">admin</span> 新增 <span class="loc">publicPayload / writePublic / slicePayload / writeSlices</span>，推完 master 跟着写 public 与 t1…t5；<span class="loc">teacher</span> 新增 <span class="loc">pullPublic / pullSlice / pullMaster</span>，<span class="loc">cloudBootPull</span> 改为「public → 我的分片 → 兜底全量」，写回改「读-改-写」，本机键拆成 <span class="key">zhops.teacher.v1</span><br><b class="no">未做</b>：登录密码（方案 B）· 只写不删（教师移除后旧分片留云端）· <span class="key">master</span> 仍是全量一份<br><b class="plan">定性</b>：软隔离 —— 页面里没有别人的数据，但 API key 公开、「我是谁」可改。试用期给可信老师</td>
+    </tr>
+    <tr class="hl">
+      <td class="step">S2</td>
+      <td>财务系统搭建<br><span class="sm">六个板块：收入 / 支出 / 结算 / 报表 / 配置 / 导出</span></td>
+      <td><span class="status-badge s-info">骨架已建 2026-10-30</span> · <a href="zhops-polish.html" class="loc">台账 P-49</a></td>
+      <td>zhops 课次数据通道</td>
+      <td class="sm"><b class="yes">已交付</b>：<a class="loc" href="finance.html">docs/finance.html</a>（单文件 · 本机存储 · 九套配色 · 三张表可导出）<br><b class="no">未做</b>：Firestore 同步 / 认证 / 接 zhops 课次<br><b class="yes">薪酬口径已定</b>：财务算 · <b class="yes">分库已定</b>：敏感库独立</td>
+    </tr>
+    <tr>
+      <td class="step">S2.1</td>
+      <td>财务数据通道打通（zhops → 财务）<br><span class="sm">主端加一个入口链到 finance.html</span></td>
+      <td><span class="status-badge s-wait">待做</span></td>
+      <td>S2 · S1.3</td>
+      <td class="sm">课次字段口径（单价 / 课时 / 补贴）· 两边各存各的，先只做跳转</td>
+    </tr>
+    <tr>
+      <td class="step">S3</td>
+      <td>人事系统搭建<br><span class="sm">九个板块：花名册 / 合同 / 证件 / 社保个税 / 假勤 / 发放 / 培训 / 制度库 / 配置</span></td>
+      <td><span class="status-badge s-info">骨架已建 2026-10-30</span> · <a href="zhops-polish.html" class="loc">台账 P-52</a></td>
+      <td>S2（薪酬金额从财务来）</td>
+      <td class="sm">本地版已建。未做：上云 · 认证 · 接财务薪酬 · 导出 · 主端入口</td>
+    </tr>
+    <tr>
+      <td class="step">S3.1</td>
+      <td>人事制度文件迁进系统</td>
+      <td><span class="status-badge s-wait">待做</span></td>
+      <td>S3</td>
+      <td class="sm">制度文件版本基线</td>
+    </tr>
+    <tr>
+      <td class="step">S4</td>
+      <td>市场系统搭建</td>
+      <td><span class="status-badge s-wait">待做</span></td>
+      <td>无（最独立）</td>
+      <td class="sm">—</td>
+    </tr>
+    <tr>
+      <td class="step">S4.1</td>
+      <td>市场素材库 + 渠道管理</td>
+      <td><span class="status-badge s-wait">待做</span></td>
+      <td>S4</td>
+      <td class="sm">渠道账号归属</td>
+    </tr>
+    <tr>
+      <td class="step">S5</td>
+      <td>主页端加「审批接收」能力<br><span class="sm">已定：升级为动态应用 + 加后端，不是加三个链接</span></td>
+      <td><span class="status-badge s-wait">待做</span></td>
+      <td>S2 + S3 + S4</td>
+      <td class="sm"><b class="yes">架构已定</b>：转动态应用<br><b class="yes">角色分层已定方向</b>：见台账⑤<br><b class="plan">认证暂缓</b>：落地后再设，之前敏感库不放真数据</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===== 底部 ===== -->
+<div class="foot">
+  <b>怎么用这份地图</b><br>
+  0. <b>决策台账</b>：顶部四张卡，绿边 = 已定（照这个建），黄边 = 待定（别按它动手）。定一条就改一处。<br>
+  1. <b>第一层</b>：看哪个建了、哪个没建。<b>虚线框 = 只有计划</b>，别当成已有能力。<br>
+  2. <b>第二层</b>：点标题展开。每张卡的「数据流向」分成「现状」和「规划」两栏，别混着读。<br>
+  3. <b>第三层</b>：六块分开看 —— 通道一（课程目录）、通道二（教师⇄管理）、断点（主端孤立）、课程（半通）、未通功能、规划。<b>先看断点那一块</b>，那是现在真正卡住的地方。<br>
+  4. <b>第四层</b>：S1.0 已定 · <b>S1.1 / S1.2 已做（2026-10-29）</b>。S1.3 起不用等外部决定，可以接着做。<br>
+  5. 全部结论按源码核对，不是按计划写。核对日期 2026-10-29，涉及文件：<span class="loc">ops-index.html</span> · <span class="loc">zhops/index.html</span> · <span class="loc">zhops/teacher.html</span> · <span class="loc">zhops/admin.html</span> · <span class="loc">hsk.html</span>。<br>
+  6. 云端两条路径已实测：<span class="key">meta/curriculum</span> 与 <span class="key">zhops/master</span> 均返回 HTTP 200。后者载荷实测：<b>teachers 5 / students 19 / classes 0 / apps 0 / lessons 0 / absences 无此字段</b>，推送时间 <span class="key">2026-10-25T16:16:55Z</span>，来源 <span class="key">zhops.admin</span>。<br>
+  7. <b>口径变更记录 · 2026-10-29</b><br>
+  &nbsp;&nbsp;&nbsp;<b class="yes">已定 8</b>：① 薪酬由财务算 · ④ 主页端转动态应用加后端 · ⑤ 角色分层四层（工资表/股东账面只有老板看）· ⑥ 数据库分 2 库（业务库 / 敏感库）· ⑦ 认证暂缓 · ⑧ 记账用事实表（主端升级，两头都记）· ⑨ 开班门槛 4–13 · ⑩ 晚班以主端为准 18:30–19:15<br>
+  &nbsp;&nbsp;&nbsp;<b style="color:var(--info);">已记暂缓 4</b>：② 视讯平台（等排课全顺利再定）· ③ Zalo 方式（不急）· ⑪ 教师身份验证（跟 ⑦ 一起做）· ⑫ 班级设「哪几天」（一步一步来）<br>
+  &nbsp;&nbsp;&nbsp;<b class="yes">待定 0 条</b> —— 所有口径已定，剩下全是执行。<br>
+  8. <b>加认证时要做的事（已记录，别忘）</b>：定 ① 加给谁（只财务人事 or 全套）② 哪种方式（邮箱密码 / 手机验证码 / 微信）③ 现有 3 个 zhops 页面要不要一起加。加之前，敏感库只放测试数据。<br>
+  9. <b>配套文档（四层分工，别混）</b>：<br>
+  &nbsp;&nbsp;&nbsp;<span class="loc">work.html</span> —— 上一层，跨 <b>8 个系统</b>的总控台（含财务、BMS v1/v2、Material Book、MGD Live）<br>
+  &nbsp;&nbsp;&nbsp;<b>本页</b> —— 系统地图，讲「<b>系统怎么建</b>」：模块 / 断点 / 决策台账 / S1.0–S1.8<br>
+  &nbsp;&nbsp;&nbsp;<a class="loc" href="zhops-polish.html">zhops-polish.html</a> —— <b>工作台账</b>，讲「<b>做了什么 / 没做什么</b>」：唯一进度来源，按日期归档，全系统共用<br>
+  &nbsp;&nbsp;&nbsp;<a class="loc" href="zh-doc-index.html">zh-doc-index.html</a> —— 文档索引，讲「<b>33 份文档哪份算数</b>」：状态 / 取代关系 / 4 处已知冲突<br>
+  &nbsp;&nbsp;&nbsp;<span style="color:var(--hint);">改文档后，两个脚本都要重跑：<span class="loc">build/14_build_worktable.py</span> · <span class="loc">build/23_build_zh_doc_index.py</span></span><br>
+  10. <b class="yes">代码变更清单 · 2026-10-29（第一段生产代码）</b><br>
+  &nbsp;&nbsp;&nbsp;<b>S1.1</b> <span class="loc">~/zhops/index.html</span> 150,498 → 157,773 B<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;新增 <span class="loc">CLOUD_DOC / fsGetDoc() / fsGetMaster() / cvN / cvTxt / cvSlotTime / cloudPreview()</span>；参数页加「云端只读预览」按钮。<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>写入方法 PATCH/POST/PUT/DELETE 全为 0</b>（断言实测，含 admin 反向对照）。<br>
+  &nbsp;&nbsp;&nbsp;<b>S1.2</b> <span class="loc">~/zhops/index.html</span> 157,773 → 161,046 B<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="loc">blank()</span> 加 <span class="key">lessons[]</span> / <span class="key">absences[]</span>；新增 <span class="loc">lessonFromLog()</span>；<span class="loc">logLesson()</span> 双写；<span class="loc">settleWindow()</span> 优先事实表、无则退回 log；<span class="loc">load()</span> 加 log→lessons 迁移；数据页显示课次事实 / 缺勤条数。<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b class="no">决定不改本机键名</b>（仍 <span class="key">zhops.sched.v2</span>）：改键没有业务收益，却要在他读不到的 localStorage 上冒一次迁移风险。新增字段靠 <span class="loc">Object.assign</span> 自动补齐，零迁移成本。<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>实测</b>：迁移 3 条 log → 3 条 lessons，id 唯一；结算两条路径输出完全一致（inc 150,000 / cst 400,000 / n 3）；时间窗筛选正确。<br>
+  &nbsp;&nbsp;&nbsp;<b>备份</b>：<span class="loc">index.html.bak-20261029-2145-before-s11</span> · <span class="loc">index.html.bak-20261029-2155-before-s12</span><br>
+  &nbsp;&nbsp;&nbsp;<b>回滚</b>：<span class="loc">cp ~/zhops/index.html.bak-20261029-2155-before-s12 ~/zhops/index.html</span> —— 但注意：v2 里已有的 lessons 字段旧代码不读，数据不会丢。
+</div>
+
+</div>
+
+<!-- ===== 图例 ===== -->
+<div class="legend">
+  <div class="legend-title">图例</div>
+  <div class="legend-row"><span class="legend-dot" style="background:var(--ok);"></span> 已建 / 已通</div>
+  <div class="legend-row"><span class="legend-dot" style="background:var(--warn);"></span> 未建 / 待定</div>
+  <div class="legend-row"><span class="legend-dot" style="background:var(--bad);"></span> 断点 / 未通</div>
+  <div class="legend-row"><span class="legend-dot" style="background:var(--info);"></span> 骨架已建 / 未接云 · 本次修复</div>
+  <div class="legend-row"><span class="legend-dot" style="background:var(--acc);"></span> 文档站</div>
+  <div class="legend-sep"></div>
+  <div class="legend-row"><span style="font-family:monospace; color:var(--tag3);">──▶</span> 已通</div>
+  <div class="legend-row"><span style="font-family:monospace; color:var(--bad);">✕ ─ ─</span> 断点</div>
+  <div class="legend-row"><span style="font-family:monospace; color:var(--warn);">┈┈▶</span> 规划</div>
+</div>
+
+<script>
+  function toggleCard(id){
+    var el = document.getElementById(id);
+    if(el) el.classList.toggle('open');
+  }
+  // 默认展开排课系统（含三个断点）
+  document.getElementById('zhops').classList.add('open');
+</script>
+
+</body>
+</html>
