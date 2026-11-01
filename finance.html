@@ -391,8 +391,9 @@ table.fmt td.bad{color:var(--neg)}
         <div><div class="ptitle">这套系统怎么用</div><div class="psub">先看布局和切换，再看每页填什么</div></div>
       </div>
       <div class="pnote">
-        这是财务系统的<b>使用说明</b>。第一次用建议按 1 → 2 → 3 → 4 的顺序走一遍：
-        先记收入，再记支出，才能算结算和报表。
+        这是财务系统的<b>使用说明</b>。第一次用建议按 <b>1 收入 → 2 支出 → 3 结算 → 4 报表</b> 的顺序走一遍：
+        先记收入，再记支出，才能算结算和报表。<br>
+        <b>工资不由这里算</b> —— 人事部算完提交，这边在 <b>5 审批</b> 核对总数、批、付。财务只出钱，不改数字。
       </div>
 
       <div class="card">
@@ -433,7 +434,7 @@ table.fmt td.bad{color:var(--neg)}
           <thead><tr><th style="width:60px">板块</th><th style="width:110px">干什么</th><th>数据从哪来</th><th style="width:100px">要手填吗</th></tr></thead>
           <tbody>
             <tr><td>① 收入</td><td>记学费进来</td><td>手填</td><td><span class="tag has">全手填</span></td></tr>
-            <tr><td>② 支出</td><td>记钱出去</td><td>工资社保来自人事单据；课时费只作参考；其他手填</td><td><span class="tag partial">大部分自动</span></td></tr>
+            <tr><td>② 支出</td><td>记钱出去</td><td>工资社保由人事单据批后自动记；课时费只作参考；其他手填</td><td><span class="tag partial">大部分自动</span></td></tr>
             <tr><td>③ 结算</td><td>每节课赚多少</td><td>班级课次 + ①②</td><td><span class="tag partial">班级要填</span></td></tr>
             <tr><td>④ 报表</td><td>月毛利、班级盈亏</td><td>③ 汇总</td><td><span class="tag has">不用填</span></td></tr>
             <tr><td>⑤ 审批</td><td>核对人事单据 → 批 → 付</td><td>人事部提交，云端拉取</td><td><span class="tag has">只点按钮</span></td></tr>
@@ -451,16 +452,16 @@ table.fmt td.bad{color:var(--neg)}
             <div class="sd">社保个人 / 公司、企业所得税、分红个税。默认值是常见口径，<b>要本地会计确认过再用</b>。</div>
           </div></div>
           <div class="step"><div class="sn">B</div><div>
-            <div class="st">到「支出 → 工资社保」把人录进去</div>
-            <div class="sd">教师和员工都录。教师姓名要跟结算页的班级教师对得上，社保才能摊到课上。</div>
+            <div class="st">到「审批」看人事送上来的工资单</div>
+            <div class="sd"><b>钱由人事算，财务只核对总数、批、付</b> —— 应发 / 社保 / 个税 / 预支 / 扣款 / 补发全在人事算好，这里不重算、不改数字。批完回来记付款日和凭证号。</div>
           </div></div>
           <div class="step"><div class="sn">C</div><div>
             <div class="st">到「结算」把班级填进去</div>
             <div class="sd">班级名、计划课次、本月课次、整班学费、教师、单价。接排课系统后这步由系统自动填。</div>
           </div></div>
           <div class="step"><div class="sn">D</div><div>
-            <div class="st">日常只做两件事：记收入、记支出</div>
-            <div class="sd">结算和报表全自动。月底到「导出」拿三张表给代账。</div>
+            <div class="st">日常三件事：记收入 / 记支出 / 批工资单</div>
+            <div class="sd">结算和报表全自动。人事提交工资单后到「审批」核对<b>总数</b>（明细在人事，这里不重算），批完记付款。<b>月底到「导出」拿三张表给代账。</b></div>
           </div></div>
         </div>
       </div>

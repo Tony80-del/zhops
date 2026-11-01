@@ -528,10 +528,10 @@ table.fmt td.bad{color:var(--neg)}
       </div>
 
       <div class="card">
-        <div class="card-h"><h3>布局：两栏，不是九个页面</h3></div>
+        <div class="card-h"><h3>布局：两栏，不是十一个页面</h3></div>
         <div class="wire">
-          <div class="wtop">顶栏 · 系统名 / 配色 / 敏感库标记</div>
-          <div class="wside">左侧导航<br>0–8 板块 + 9 配置</div>
+          <div class="wtop">顶栏 · 系统名 / 配色 / 敏感库标记 / 语言切换</div>
+          <div class="wside">左侧导航<br>0–9 板块 + 10 配置</div>
           <div class="wmain">右侧主区<br>当前板块的表格</div>
         </div>
         <p class="sm mu" style="margin:10px 0 0">所有板块在<b>同一个页面</b>里，切换只是把右边内容换掉。数据不重载，页面不刷新。</p>
@@ -542,7 +542,7 @@ table.fmt td.bad{color:var(--neg)}
         <div class="steps">
           <div class="step"><div class="sn">1</div><div>
             <div class="st">板块切换：点左边导航</div>
-            <div class="sd">九个板块，右边内容立刻换。当前板块高亮，顶部面包屑同步显示名字。</div>
+            <div class="sd">十个板块，右边内容立刻换。当前板块高亮，顶部面包屑同步显示名字。</div>
           </div></div>
           <div class="step"><div class="sn">2</div><div>
             <div class="st">板块内：填表格</div>
@@ -557,21 +557,31 @@ table.fmt td.bad{color:var(--neg)}
       </div>
 
       <div class="card">
-        <div class="card-h"><h3>九个板块的分工</h3><span class="sp"></span><span class="tag pending">0 是说明，不算板块</span></div>
+        <div class="card-h"><h3>十个板块的分工</h3><span class="sp"></span><span class="tag pending">0 是说明，不算板块</span></div>
         <table class="grid">
           <thead><tr><th style="width:60px">板块</th><th style="width:110px">干什么</th><th>数据从哪来</th><th style="width:104px">要手填吗</th></tr></thead>
           <tbody>
             <tr><td>① 花名册</td><td>谁在这干活</td><td>zhops 教师档案（只取人员信息）+ 手填补齐</td><td><span class="tag partial">半手填</span></td></tr>
             <tr><td>② 合同</td><td>签了多久、什么时候到期</td><td>手填，到期日自动算剩余天数</td><td><span class="tag has">全手填</span></td></tr>
             <tr><td>③ 证件资质</td><td>护照 / 签证 / 工作许可 / 教师资格</td><td>手填，到期自动预警</td><td><span class="tag has">全手填</span></td></tr>
-            <tr><td>④ 社保与个税</td><td>参保状态、缴费基数</td><td>比例从配置取，<b>金额不进工资</b></td><td><span class="tag partial">只填基数</span></td></tr>
+            <tr><td>④ 社保与个税</td><td>参保状态、缴费基数</td><td>比例从配置取，<b>按基数算，不按应发算</b></td><td><span class="tag partial">只填基数</span></td></tr>
             <tr><td>⑤ 考勤与假勤</td><td>年假 / 病假 / 事假 / 加班</td><td>手填（课次 ≠ 考勤）</td><td><span class="tag has">全手填</span></td></tr>
-            <tr><td>⑥ 薪酬发放</td><td>这个月发了没有</td><td><b>金额从财务来</b>，人事只记发放</td><td><span class="tag partial">只记发放</span></td></tr>
-            <tr><td>⑦ 培训与培养</td><td>助教培养、培训记录、考核</td><td>手填</td><td><span class="tag has">全手填</span></td></tr>
-            <tr><td>⑧ 制度库</td><td>制度版本与发布状态</td><td>手填，<b>不做审批</b>，只标状态</td><td><span class="tag has">全手填</span></td></tr>
-            <tr><td>⑨ 配置</td><td>社保比例、提醒天数、年假规则</td><td>改一次长期用</td><td><span class="tag has">手填</span></td></tr>
+            <tr><td>⑥ 薪酬发放</td><td><b>算钱</b> + 记发了没有</td><td><b>量来自排课、价来自合同</b>，人事算好提交财务批</td><td><span class="tag partial">按合同算</span></td></tr>
+            <tr><td>⑦ 预支与调整</td><td>预支 / 其他扣款 / 补发</td><td>手填金额与事由，<b>预支自动抵扣当月</b></td><td><span class="tag has">全手填</span></td></tr>
+            <tr><td>⑧ 培训与培养</td><td>助教培养、培训记录、考核</td><td>手填</td><td><span class="tag has">全手填</span></td></tr>
+            <tr><td>⑨ 制度库</td><td>制度版本与发布状态</td><td>手填，<b>不做审批</b>，只标状态</td><td><span class="tag has">全手填</span></td></tr>
+            <tr><td>⑩ 配置</td><td>社保比例、提醒天数、年假规则</td><td>改一次长期用</td><td><span class="tag has">手填</span></td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>语言：中文 / Tiếng Việt</h3><span class="sp"></span><span class="tag has">2026-11-01 加</span></div>
+        <p class="sm" style="margin:0;line-height:1.9;color:var(--noteTx)">
+          顶栏右上角有 <b>🇨🇳 中文 / 🇻🇳 Tiếng Việt</b> 切换，点一下整页换语言，不用刷新。选择记在这台电脑上，关掉再开还是那个语言。<br>
+          <b>越南语模式下只翻界面</b>（侧栏、表头、按钮、提示），<b>人名、合同号、事由这些你自己填的字不翻</b> —— 翻了反而认不出是谁。<br>
+          <b>说明文字在越南语模式下会收起来</b>（包括这一页的使用说明）—— 那些是写给你看的，不是给越南同事操作的。切回中文立刻恢复。
+        </p>
       </div>
 
       <div class="card">
@@ -590,18 +600,19 @@ table.fmt td.bad{color:var(--neg)}
             <div class="sd">合同填起止日，系统自动算还剩多少天；证件填到期日，快到期时左侧导航会亮感叹号。</div>
           </div></div>
           <div class="step"><div class="sn">D</div><div>
-            <div class="st">日常只做两件事：记假勤、记发放</div>
-            <div class="sd">社保金额和薪酬金额都不在这里算 —— <b>社保按基数算、薪酬从财务来</b>。人事只管「这个人这个月休了几天、钱发了没有」。</div>
+            <div class="st">月度结算：生成 → 提交财务 → 记发放</div>
+            <div class="sd">到「薪酬发放」点<b>生成</b>，系统按合同算应发（底薪 + 课时费），扣社保、个税、预支，得出实发；点<b>提交财务</b>送审，财务批准后回来记发放日 / 方式 / 签收。<b>有预支的先去「预支与调整」登记</b>，生成时会自动抵扣，扣不完留到下月。</div>
           </div></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-h"><h3>三条边界（已定 2026-10-30）</h3></div>
+        <div class="card-h"><h3>四条边界（2026-10-30 定三条，11-01 加第四条）</h3></div>
         <p class="sm" style="margin:0;line-height:1.9;color:var(--noteTx)">
           <b>① 人员主档在这里。</b>zhops 只保留「能排课的最小集」（姓名 / 可教级别 / 在职状态），合同、证件、社保号只有这份系统有。<br>
           <b>② 学生不进人事。</b>学生是客户，档案在排课系统。助教一旦签成员工，才进这里。<br>
-          <b>③ 不做审批。</b>制度只标状态（草稿 / 待批 / 已发布 / 已废止），审批动作留给主页端 —— 避免两套审批打架。
+          <b>③ 不做审批。</b>制度只标状态（草稿 / 待批 / 已发布 / 已废止），审批动作留给主页端 —— 避免两套审批打架。<br>
+          <b>④ 钱由人事算，财务只付。</b>应发、社保、个税、预支、扣款、补发全在人事算完得出实发，财务核对总数、批、付 —— <b>不改数字</b>。以后加任何扣款项都只动人事，财务一个字不用改。
         </p>
       </div>
     </section>
