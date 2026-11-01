@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">9 行 · 已打磨 8 · 按决定暂缓 1</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">10 行 · 已打磨 9 · 按决定暂缓 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -333,6 +333,23 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>★ Tony 的决定（2026-11-01）：现在什么都不动。</b>原因 —— 要试用<b>第二台电脑连接</b>，还要让成员试教师端 / 主端；关掉匿名读，多设备就拉不到云端数据。<b>这是有意识的取舍，不是遗漏。</b><br>
               <b>已记入生态地图</b>：⑥ / ⑦ 两张决策卡各补一段（含实测证据 + 为什么不关 + 「分库≠安全」的定性）；顺手修正两处过期口径 —— 原写「① 薪酬由财务算」，<b>实际已改为「人事算、财务只付」</b>。<br>
               <b>落地前必须做</b>（到时才做，现在不做）：⑦ 加认证 → ⑥ 再分库。顺序不能反，先有门再分房间。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-85</td>
+              <td><b>断点 3「申请码通道已成死路」结案（不改代码）</b><br><span style="color:#8899aa;font-size:12px">「它已经不是断点了，只是一个不再是问题的事实」</span></td>
+              <td class="nw">架构 · 文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>实测查证</b>（不是推理）：<br>
+              ・<b>主端</b> <span class="mono">zhops-admin.html</span>：<span class="mono">CODE_PREFIX</span>、<span class="mono">importCode</span>、<span class="mono">ZHA1</span> <b>各 0 处</b> —— 导入框早就没了，只剩一行注释提到「④ 申请码」。<br>
+              ・<b>教师端</b> <span class="mono">zhops-teacher.html</span>：<span class="mono">btoa</span> <b>0 处</b>，生成入口确实已删。<br>
+              ・<b>老排课系统</b> <span class="mono">docs/schedule.html</span>：<span class="mono">CODE_PREFIX = 'ZHA1.'</span>（第 1134 行）+ 解析函数（1144–1145 行）<b>还在</b>。<br>
+              <b>所以断点 3 描述的位置错了</b>：生态地图原写「主端仍保留导入入口（index.html:756）」—— 那个 <span class="mono">index.html</span> 指老排课系统，<b>不是主端</b>。<br>
+              <b>性质</b>：这不是 bug，是<b>一段永远不会执行的死代码</b> —— 教师端已无生成入口，没有码可喂给它。不报错、不泄露、不影响任何功能。<br>
+              <b>★ Tony 决定：选方案 2 —— 不改代码，只把它从「断点」移走。</b>理由：老排课系统是线上正在用的系统，不为了三行死代码单独动它；等它本身要改时顺手清理。<br>
+              <b>改的只有文档</b>：生态地图 4 处 —— ① 顶部状态条「断点 3」→「断点 3 已结案」② 待办卡删掉断点 3 整块，标题改成只剩断点 4 ③ 数据流正文改成「已成死路，但不再是断点」+ 说清是死代码 ④ S1.4 那行划掉并标「已结案」。</td>
             </tr>
           </tbody>
         </table>
