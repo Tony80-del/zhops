@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">8 行 · 已打磨 8</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">9 行 · 已打磨 8 · 按决定暂缓 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -319,6 +319,20 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>★ 新探针</b> <span class="mono">check-guide-consistency.js</span> <b>27 条</b>（run.sh ⑲，覆盖两页）：说明里的「N 个板块」是否等于侧栏实际数（<b>查全部，不只第一个</b>）· 「0–N 板块 + M 配置」编号区间 · 分工表行数 · <b>双向不漏行</b>（表→侧栏、侧栏→表）。<br>
               <b>反向控制</b>：把「十个」改回「九个」→ 报红 1 条，直接点名「九个板块（应 10）」；sha256 确认还原。<br>
               <b>探针自坑</b>：① 第一版只查了第一个「N 个板块」，漏了分工表标题那处（正好是我要抓的地方）；② 配置编号假设「排最后」，财务页是 6 配置 / 7 导出，假红；③ 用跨页共用词表判「幽灵板块」，人事页被判成有「结算 / 审批」。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-84</td>
+              <td><b>云端「没装门」风险的定性 + 记进生态地图（暂不动手）</b><br><span style="color:#8899aa;font-size:12px">「目前是在搭建研发中，先不用设什么密码…… 我还要试用第二台电脑连接」</span></td>
+              <td class="nw">架构 · 安全</td>
+              <td><span class="b wait">⛔按决定暂缓</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>实测结论（不是推测）</b>：用网页里那串公开 apiKey、不带任何登录，<b>从公网读到了</b> <span class="mono">zhops/approvals</span> 里的工资单 JSON。apiKey 写在 <span class="mono">hr.html</span> 源码里，页面在 GitHub Pages 公开 → <b>这串 key 等同于公开</b>。<br>
+              <b>逻辑定性</b>：⑥ 分库 + ⑦ 不加认证 = <b>只分了两个房间，没装门</b>。两个库用同一套「无认证可读」规则，<b>分不分库对安全性没有区别</b>。所以分库现在的价值<b>不是更安全</b>，而是「以后能分别上锁」的结构准备。推论：⑦ 补上之前，财务库和人事库<b>只能放测试数据</b>。<br>
+              <b>★ Tony 的决定（2026-11-01）：现在什么都不动。</b>原因 —— 要试用<b>第二台电脑连接</b>，还要让成员试教师端 / 主端；关掉匿名读，多设备就拉不到云端数据。<b>这是有意识的取舍，不是遗漏。</b><br>
+              <b>已记入生态地图</b>：⑥ / ⑦ 两张决策卡各补一段（含实测证据 + 为什么不关 + 「分库≠安全」的定性）；顺手修正两处过期口径 —— 原写「① 薪酬由财务算」，<b>实际已改为「人事算、财务只付」</b>。<br>
+              <b>落地前必须做</b>（到时才做，现在不做）：⑦ 加认证 → ⑥ 再分库。顺序不能反，先有门再分房间。</td>
             </tr>
           </tbody>
         </table>
