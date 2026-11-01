@@ -352,6 +352,13 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   .fld-row{grid-template-columns:1fr;}
   #view{padding:14px 12px 40px;}
 }
+/* 返回主端（2026-11-01 · P-89）：跟主端「业务部 ↗」出口对称的回头路 */
+.backmain{display:inline-flex;align-items:center;gap:5px;margin-right:12px;padding:4px 10px;
+  border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink3);
+  font-size:12.5px;text-decoration:none;white-space:nowrap;flex:0 0 auto;
+  transition:background .15s,color .15s,border-color .15s;}
+.backmain:hover{background:var(--surface-3);color:var(--ink);border-color:var(--brand);}
+.backmain:focus-visible{outline:2px solid var(--brand);outline-offset:1px;}
 </style>
 </head>
 <body data-theme="graphite">
@@ -416,6 +423,10 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 
   <!-- 顶栏 -->
   <header id="top">
+    <!-- ★ 2026-11-01（P-89）：回主端的路。href 由脚本按「线上 / 本地」自动改对
+         （线上主端叫 admin.html，本地源文件叫 zhops-admin.html）。
+         跟人事 / 财务的「← 主端」同一套逻辑，回来落回原视图。 -->
+    <a class="backmain" id="backMain" href="admin.html" title="返回主端">← 主端</a>
     <div class="crumb">
       <b>业务部</b>
       <span class="sep">/</span>
@@ -1511,9 +1522,27 @@ document.querySelectorAll('#nav a').forEach(function(a){
   a.addEventListener('click', function(e){ e.preventDefault(); nav(a.dataset.v); });
 });
 
+/* ---- 返回主端的 href（2026-11-01 · P-89） ----
+   线上 = admin.html，本地源文件 = zhops-admin.html。
+   ★ 不用 fetch 探存在性 —— 本地没有 admin.html，探一下会在控制台打一条 404。
+     直接看地址更干净：file:// 或本机 http（localhost / 127.0.0.1）= 本地，其余 = 线上。
+   ★ 主端切过来之前把「停在哪一页」写进 sessionStorage（本标签内有效），这里拼回地址
+     → 回来直接落回原视图，不是总览。只认安全 hash，别的一律丢掉。 */
+function backMainFix(){
+  var a = document.getElementById('backMain');
+  if(!a) return;
+  var h = (location.hostname || '');
+  var local = location.protocol === 'file:' || h === '' || h === 'localhost' || h === '127.0.0.1';
+  var back = '';
+  try { back = sessionStorage.getItem('zhops.backTo') || ''; } catch(e){}
+  if(!/^#[A-Za-z0-9_\/-]*$/.test(back)) back = '';
+  a.href = (local ? 'zhops-admin.html' : 'admin.html') + back;
+}
+
 /* ---- 启动 ---- */
 load();
 nav('overview');
+backMainFix();
 </script>
 </body>
 </html>

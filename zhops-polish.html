@@ -410,7 +410,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td><b>去字样</b>：<span class="mono">biz.html</span> 3 处、生态地图 5 处、台账 P-87/P-88 3 处，全清。历史条目（P-40/P-47）不动。<br>
               <b>主端入口</b>：侧栏「其他系统」加「业务部 ↗」（<span class="mono">data-ext</span>，同窗口跳转，不带 <span class="mono">target</span>、不带 <span class="mono">data-v</span>）；补越南语 <span class="mono">'业务部':'Phòng Kinh doanh'</span>。<br>
               <b>发布脚本</b>：<span class="mono">publish-zhops.sh</span> 加 <span class="mono">SRC_BIZ</span> + 复制 + 保险丝（判据 <span class="mono">zhops.biz.v1</span>，并反向禁止出现 hr/fin 的键）+ 提交清单 + 输出地址。<br>
-              <b>探针</b>：<span class="mono">check-admin-dept-links.js</span> 从 2 入口扩到 3 入口，36 → 43 项全过；全套 20/20。<br>
+              <b>探针</b>：<span class="mono">check-admin-dept-links.js</span> 从 2 入口扩到 3 入口，36 → 43 项全过；新建 <span class="mono">check-biz-core.js</span>（36 项，含存盘键隔离 / 回主端 / 脏 hash 丢弃），已进 <span class="mono">run.sh</span>；全套 21/21。<br>
+              <b>回主端</b>：<span class="mono">biz.html</span> 顶栏补「← 主端」（原来进得去回不来），href 按线上 / 本地自动切，带回原视图。<br>
               <b>线上</b>：<span class="mono">biz.html</span> 首次上线，线上 sha 与本地一致（已下载核对）。</td>
             </tr>
           </tbody>
