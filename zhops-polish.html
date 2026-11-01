@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-01">2026-11-01 · 今天<span class="c">3</span></button>
+    <button class="on" data-day="2026-11-01">2026-11-01 · 今天<span class="c">13</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
     <button data-day="2026-10-19">2026-10-19<span class="c">10</span></button>
@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">11 行 · 已打磨 10 · 按决定暂缓 1</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">13 行 · 已打磨 11 · 按决定暂缓 1 · 待打磨 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -366,6 +366,38 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>块 1 术语混了</b>：「排课主端 index.html」其实是<b>老排课系统</b>（源 <span class="mono">docs/schedule.html</span> → 发布成 <span class="mono">index.html</span>），不是 MGD 主端（<span class="mono">zhops-admin.html</span> → <span class="mono">admin.html</span>）。已加显著术语说明。<br>
               <b>连带修正</b>：块 1 原写「三端里唯一跑通的自动流」已不成立（现在多条通）；第三层顶部说明加「★ 2026-11-01 复核」一行交代这次改了什么。<br>
               <b>验证</b>：div 开闭平衡（481/481）；无头 Chrome 打开零页面报错，第三层与新「三端已连」块都渲染出来了。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-87</td>
+              <td><b>业务部 + 市场系统搭建</b><br><span style="color:#8899aa;font-size:12px">「市场素材库 + 业务……给我个方案」</span></td>
+              <td class="nw">业务部 · 新建</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>新建</b>：<span class="mono">docs/biz.html</span> —— 一个页面两块板（业务 + 市场），与人事 / 财务同级。<br>
+              <b>风格</b>：跟主端同一套 Blueprint 设计系统（深青蓝图色 / 深蓝侧栏 / 浅底网格），默认主题改为石墨灰（graphite）暗色。<br>
+              <b>板块</b>：① 业务总览（KPI + 招生漏斗 + 来源分布）② 线索池（表格 + 筛选 + 抽屉表单）③ 学员档案（学号 / 等级 / 已缴 / 状态）④ 报价收费（6 个统计卡 + 收费单卡片 + 登记收款）⑤ 市场调查（关键数据说明条 + 卡片式记录）⑥ 投放记录（ROI 统计 + 单线索成本 / 单个学员成本）⑦ 宣传素材（文案 / 海报 / 视频 / 状态筛选）⑧ 讲座活动（到场率 / 转化率自动算 + 单转化成本）。<br>
+              <b>数据</b>：<span class="mono">localStorage['zhops.biz.v1']</span>，本地存、不碰其他键。已种示例数据。<br>
+              <b>修掉的坑</b>：① 改 body 标签时误删 <span class="mono">&lt;div id="app"&gt;</span> → flex 布局崩、主内容区空白（已修回）② 表格悬停写死 <span class="mono">#f8fbfd</span> 白底 → 暗色主题下白底白字（改成 <span class="mono">var(--surface-3)</span>）③ 顶栏白底字看不清 → 改成深底亮字。<br>
+              <b>Tony 定的</b>：去掉侧栏「MGD · BIZ」标识；去掉配色切换器（保留石墨灰）；学员档案跟排课主端打通这一块<b>搭建好之后再处理</b>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-88</td>
+              <td><b>业务部待完成清单</b><br><span style="color:#8899aa;font-size:12px">搭好了，这些还没做</span></td>
+              <td class="nw">业务部 · 待办</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">—</td>
+              <td>页面已跑通，以下按优先级排：<br>
+              <b>① 主端侧栏入口</b>：主端 <span class="mono">zhops-admin.html</span> 侧栏加「业务部 ↗」<span class="mono">data-ext</span> 外跳链接（跟「人事部 ↗ / 财务部 ↗」同模式），线上发布脚本 <span class="mono">publish-zhops.sh</span> 要加 <span class="mono">biz.html</span>。<br>
+              <b>② 学员档案 ↔ 排课打通</b>（Tony 定「搭建好之后再处理」）：学员 ID 共享、课次 done 后学员出勤自动 +1、学员缴费记录推到财务部（收入侧）。<br>
+              <b>③ 越南语切换</b>：按钮已留位（🇨🇳/🇻🇳），字典待补 —— 跟人事页同一套整句命中翻译层。<br>
+              <b>④ 宣传素材存文件</b>：图片 / 视频 / PDF 存 IndexedDB（跟人事合同 PDF 一样），现在只存文字元数据。<br>
+              <b>⑤ 投放记录 ↔ 线索池关联</b>：投放引来的线索按来源自动关联到线索池，现在只手动填数字。<br>
+              <b>⑥ 讲座活动 ↔ 线索池关联</b>：讲座引来的线索来源标「讲座会」自动关联。<br>
+              <b>⑦ 探针 + 验收脚本</b>：写 <span class="mono">check-biz-core.js</span> 探针，纳入 <span class="mono">verify.sh</span>。</td>
             </tr>
           </tbody>
         </table>

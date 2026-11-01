@@ -588,11 +588,11 @@
       <div class="ov-s-note">学费 / 成本 / 报表 · 读 approvals 审批，工资表只读</div>
     </div>
 
-    <div class="ov-sys todo">
-      <div class="ov-s-name">市场系统</div>
-      <div class="ov-s-file">待建</div>
-      <div class="ov-s-status"><span class="badge b-bad">未建</span></div>
-      <div class="ov-s-note">宣传 / 渠道 / 活动</div>
+    <div class="ov-sys partial">
+      <div class="ov-s-name">业务部（含市场）</div>
+      <div class="ov-s-file">docs/biz.html</div>
+      <div class="ov-s-status"><span class="badge b-wait">已建 · 待完善</span></div>
+      <div class="ov-s-note">线索池 / 学员档案 / 报价收费 / 市场调查 / 投放记录 / 宣传素材 / 讲座活动</div>
     </div>
   </div>
 
@@ -1096,23 +1096,23 @@
   </div>
 </div>
 
-<!-- ⑥ 市场 -->
-<div class="sys-card todo" id="mkt">
+<!-- ⑥ 业务部（含市场） -->
+<div class="sys-card partial" id="mkt">
   <div class="sys-head" onclick="toggleCard('mkt')">
     <div class="left">
-      <span class="sys-tag">市场</span>
-      <span class="sys-name">市场系统</span>
-      <span class="sys-sub">内容研发 · 渠道发布 · 活动管理</span>
+      <span class="sys-tag">业务</span>
+      <span class="sys-name">业务部（含市场）</span>
+      <span class="sys-sub">线索池 · 学员档案 · 报价收费 · 市场调查 · 投放记录 · 宣传素材 · 讲座活动</span>
     </div>
-    <div class="right"><span class="status-badge s-wait">未建</span><span class="toggle">▶</span></div>
+    <div class="right"><span class="status-badge s-info">已建 · 待完善</span><span class="toggle">▶</span></div>
   </div>
   <div class="sys-body">
     <div class="field">
       <div class="field-label">位置</div>
       <div class="field-value multi">
-        <div><b>本地</b>　<span class="status-badge s-wait" style="font-size:10px;">未建</span> <span style="color:var(--hint);">还没有文件</span></div>
+        <div><b>本地</b>　<span class="status-badge s-info" style="font-size:10px;">已建</span> <span class="mono">docs/biz.html</span></div>
         <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">未上线</span></div>
-        <div style="margin-top:6px;">目标形态：单文件 HTML + Firestore + 5 皮肤</div>
+        <div style="margin-top:6px;">形态：单文件 HTML + localStorage（键 <span class="mono">zhops.biz.v1</span>），石墨灰暗色主题</div>
         <div><b class="yes">库归属已定（2026-10-29）：进业务库</b>，不单独建库。</div>
       </div>
     </div>
@@ -1123,7 +1123,7 @@
         <div style="margin-top:6px;">① <b>渠道账号密码</b>（FB / Zalo / 微信后台）→ <b class="no">不进任何数据库</b>，放密码管理器。系统里只存账号名 + 「密码在哪个管理器」的备注。</div>
         <div>② <b>广告投放花费</b> → <b class="yes">进财务库</b>。它本来就是支出科目，归财务天经地义。</div>
         <div>③ <b>素材 / 活动 / 渠道发布计划 / 销售赛道</b> → <b class="yes">进业务库</b>。这些是业务级，泄露损失跟排课同级。</div>
-        <div style="margin-top:6px;"><b>拆完的结果</b>：市场系统剩下的全部是业务级数据 → 跟排课放一起，不需要第三个库。</div>
+        <div style="margin-top:6px;"><b>拆完的结果</b>：业务部剩下的全部是业务级数据 → 跟排课放一起，不需要第三个库。</div>
       </div>
     </div>
     <div class="field">
@@ -1481,10 +1481,10 @@
     </tr>
     <tr>
       <td class="step">S4</td>
-      <td>市场系统搭建</td>
-      <td><span class="status-badge s-wait">待做</span></td>
+      <td>业务部搭建（含市场）</td>
+      <td><span class="status-badge s-info">已建 · 待完善</span></td>
       <td>无（最独立）</td>
-      <td class="sm">—</td>
+      <td class="sm">docs/biz.html 已建，8 板块跑通；待办 7 项见台账 P-88</td>
     </tr>
     <tr>
       <td class="step">S4.1</td>

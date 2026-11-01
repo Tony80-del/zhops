@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>业务部 · 中文教学运营</title>
+<style>
+/* ==========================================================================
+   设计系统 · 多主题（与人事页同一套思路）
+   —— 默认 blueprint = 主端蓝图风：深蓝锚点 / 青线 / 琥珀标注 / 极淡网格
+   —— 切 body[data-theme] 即换全套变量，记忆存 localStorage
+   ========================================================================== */
+:root{
+  /* —— Blueprint（主端风 · 默认）—— */
+  --bg:#eef3f7;
+  --grid:rgba(14,116,144,.055);
+  --grid2:rgba(14,116,144,.028);
+  --surface:#ffffff;  --surface-2:#f7fafc;  --surface-3:#eef3f7;
+  --ink:#0d2436; --ink2:#4a6a80; --ink3:#8aa3b5;
+  --line:#dbe5ec; --line2:#c2d3de;
+  --brand:#0e7490; --brand2:#0891b2; --brand-soft:#e0f2f7; --brand-ink:#0b5f75;
+  --amber:#b45309; --amber-soft:#fef3e2; --amber-line:#e8cfa8;
+  --ok:#0f7b52; --ok-soft:#e6f5ee; --ok-line:#a8ddc4;
+  --warn:#a16207; --warn-soft:#fdf6e3;
+  --bad:#b42318; --bad-soft:#fdeceb; --bad-line:#f0bdb8;
+  --navy:#0d2436; --navy-line:rgba(103,232,249,.18); --navy-tx:#9fbdd0; --navy-tx2:#6f93a8;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ui:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --side-w:238px; --top-h:56px;
+  --shadow:0 1px 2px rgba(13,36,54,.06);
+}
+
+/* —— 象牙白（ivory · 人事页同款）—— */
+body[data-theme="ivory"]{
+  --bg:#F5F7FA; --grid:rgba(42,111,181,.04); --grid2:rgba(42,111,181,.02);
+  --surface:#FFFFFF; --surface-2:#FAFBFD; --surface-3:#EEF3F9;
+  --ink:#16202B; --ink2:#5A6B7E; --ink3:#8A99AA;
+  --line:#DCE3EC; --line2:#EDF1F6;
+  --brand:#2A6FB5; --brand2:#4E8FD0; --brand-soft:#E1EDFA; --brand-ink:#164E82;
+  --amber:#8A5A00; --amber-soft:#F0F6FC; --amber-line:#E6DCCE;
+  --ok:#2E8B6B; --ok-soft:#E6F5EE; --ok-line:#A8DDC4;
+  --warn:#B37A12; --warn-soft:#FDF6E3;
+  --bad:#C0392B; --bad-soft:#FDECEB; --bad-line:#F0BDB8;
+  --navy:#16202B; --navy-line:rgba(127,176,224,.2); --navy-tx:#5A6B7E; --navy-tx2:#8A99AA;
+  --shadow:0 1px 2px rgba(16,32,48,.06);
+}
+
+/* —— 薄荷白（mint · 人事页同款）—— */
+body[data-theme="mint"]{
+  --bg:#F2F8F6; --grid:rgba(36,138,112,.04); --grid2:rgba(36,138,112,.02);
+  --surface:#FFFFFF; --surface-2:#F8FCFA; --surface-3:#EAF5F1;
+  --ink:#122A24; --ink2:#5C7D74; --ink3:#8AA79E;
+  --line:#D5E5DF; --line2:#E9F2EE;
+  --brand:#248A70; --brand2:#4AA98F; --brand-soft:#DDF0E9; --brand-ink:#136351;
+  --amber:#A9761A; --amber-soft:#FEF8EC; --amber-line:#E6DCCE;
+  --ok:#2E8B6B; --ok-soft:#E6F5EE; --ok-line:#A8DDC4;
+  --warn:#A9761A; --warn-soft:#FDF6E3;
+  --bad:#BC4034; --bad-soft:#FDECEB; --bad-line:#F0BDB8;
+  --navy:#122A24; --navy-line:rgba(79,211,174,.18); --navy-tx:#5C7D74; --navy-tx2:#8AA79E;
+  --shadow:0 1px 2px rgba(18,42,36,.06);
+}
+
+/* —— 深海蓝（deep · 暗色主题）—— */
+body[data-theme="deep"]{
+  --bg:#060D1A; --grid:rgba(55,138,221,.06); --grid2:rgba(55,138,221,.03);
+  --surface:#0D1A2E; --surface-2:#0A1526; --surface-3:#10203A;
+  --ink:#E8F1FB; --ink2:#7FA3C8; --ink3:#4E6C8C;
+  --line:#1C3350; --line2:#12233B;
+  --brand:#378ADD; --brand2:#85B7EB; --brand-soft:#142B4A; --brand-ink:#B5D4F4;
+  --amber:#EF9F27; --amber-soft:#1C2A14; --amber-line:#3A2C20;
+  --ok:#5DCAA5; --ok-soft:#0A2A20; --ok-line:#1B3A2F;
+  --warn:#EF9F27; --warn-soft:#1C2A14;
+  --bad:#E24B4A; --bad-soft:#2A1010; --bad-line:#3A1818;
+  --navy:#060D1A; --navy-line:rgba(55,138,221,.2); --navy-tx:#7FA3C8; --navy-tx2:#4E6C8C;
+  --shadow:none;
+}
+
+/* —— 石墨灰（graphite · 暗色主题）—— */
+body[data-theme="graphite"]{
+  --bg:#0A0A0B; --grid:rgba(124,136,150,.05); --grid2:rgba(124,136,150,.025);
+  --surface:#15171A; --surface-2:#101214; --surface-3:#1C2126;
+  --ink:#ECEDEF; --ink2:#9AA3AC; --ink3:#6A747D;
+  --line:#2B3035; --line2:#1F2429;
+  --brand:#7C8896; --brand2:#B4BEC9; --brand-soft:#242B31; --brand-ink:#D6DCE3;
+  --amber:#D9A84E; --amber-soft:#1C1810; --amber-line:#2A2016;
+  --ok:#6FBF9A; --ok-soft:#0A1F18; --ok-line:#1B2A22;
+  --warn:#D9A84E; --warn-soft:#1C1810;
+  --bad:#D96B62; --bad-soft:#1C1010; --bad-line:#2A1818;
+  --navy:#0A0A0B; --navy-line:rgba(124,136,150,.2); --navy-tx:#9AA3AC; --navy-tx2:#6A747D;
+  --shadow:none;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 var(--ui);
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(var(--grid2) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
+  background-size:96px 96px,96px 96px,24px 24px,24px 24px;
+}
+a{color:var(--brand);text-decoration:none;}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+
+/* ---------------- 布局 ---------------- */
+#app{display:flex;min-height:100vh;}
+#side{
+  width:var(--side-w);flex:0 0 auto;background:var(--navy);color:var(--navy-tx);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;
+  background-image:
+    linear-gradient(rgba(103,232,249,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(103,232,249,.055) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+#main{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+/* ---------------- 侧栏 ---------------- */
+.brand{padding:16px 18px 14px;border-bottom:1px solid var(--navy-line);}
+.brand .lg{display:flex;align-items:center;gap:9px;}
+.brand .mark{width:26px;height:26px;flex:0 0 auto;border:1.5px solid #67e8f9;position:relative;}
+.brand .mark::after{content:"";position:absolute;inset:5px;background:#67e8f9;opacity:.85;}
+.brand h1{font-size:14.5px;margin:0;color:#fff;font-weight:650;letter-spacing:.04em;}
+.brand p{margin:6px 0 0;font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);letter-spacing:.06em;}
+.nav{padding:8px 0;flex:1;overflow:auto;}
+.nav .grp{padding:13px 18px 5px;font-size:10px;letter-spacing:.16em;color:#547f96;font-family:var(--mono);}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 18px;color:var(--navy-tx);
+  font-size:13.5px;border-left:3px solid transparent;cursor:pointer;}
+.nav a:hover{background:rgba(103,232,249,.07);color:#dff0f8;}
+.nav a.on{background:rgba(103,232,249,.12);color:#fff;border-left-color:#67e8f9;}
+.nav a svg{flex:0 0 auto;opacity:.9;}
+.nav a .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--navy-tx2);}
+.nav a.on .cnt{color:#67e8f9;}
+.side-foot{padding:11px 18px;border-top:1px solid var(--navy-line);
+  font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);line-height:1.7;}
+.side-foot b{color:#ffd166;font-weight:600;}
+
+/* ---------------- 顶栏 ---------------- */
+#top{
+  height:var(--top-h);flex:0 0 auto;background:var(--navy);
+  border-bottom:1px solid var(--navy-line);display:flex;align-items:center;gap:12px;
+  padding:0 20px;position:sticky;top:0;z-index:20;
+}
+.crumb{font-size:13px;color:var(--navy-tx);white-space:nowrap;}
+.crumb b{color:#fff;font-weight:650;}
+.crumb .sep{color:var(--navy-tx2);margin:0 7px;}
+.sp{flex:1;}
+
+/* 语言切换 */
+.lang-switch{display:flex;align-items:stretch;border:1px solid var(--navy-line);background:rgba(103,232,249,.06);flex:0 0 auto;}
+.lang-switch button{font:12.5px var(--ui);display:flex;align-items:center;gap:6px;padding:0 11px;height:32px;
+  border:0;background:transparent;color:var(--navy-tx);cursor:pointer;white-space:nowrap;}
+.lang-switch button + button{border-left:1px solid var(--navy-line);}
+.lang-switch button:hover{background:rgba(103,232,249,.1);color:#fff;}
+.lang-switch button.on{background:rgba(103,232,249,.18);color:#fff;font-weight:650;}
+.lang-switch .fl{font-size:15px;line-height:1;}
+
+/* ★ 主题切换器（5 个色样圆点） */
+.themes{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+.themes .lb{font-size:10.5px;color:var(--ink3);margin-right:2px;letter-spacing:.06em;}
+.theme-dot{
+  width:16px;height:16px;border-radius:50%;border:2px solid transparent;
+  background:var(--sw);cursor:pointer;padding:0;
+  box-shadow:0 0 0 1px rgba(128,140,155,.35) inset;
+  transition:transform .12s,border-color .12s;
+}
+.theme-dot:hover{transform:scale(1.18);}
+.theme-dot.on{border-color:var(--ink);transform:scale(1.18);}
+
+/* ---------------- 按钮 ---------------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 13px;
+  font:13px var(--ui);background:var(--surface);border:1px solid var(--line2);color:var(--ink);
+  cursor:pointer;white-space:nowrap;}
+.btn:hover{border-color:var(--brand);color:var(--brand);}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff;}
+.btn.pri:hover{background:var(--brand-ink);border-color:var(--brand-ink);color:#fff;}
+.btn.danger{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+.btn.danger:hover{background:var(--bad);border-color:var(--bad);color:#fff;}
+.btn[disabled]{opacity:.45;cursor:not-allowed;}
+.btn.sm{height:26px;padding:0 9px;font-size:12px;}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2);}
+.btn.ghost:hover{background:var(--surface-3);color:var(--brand);}
+
+/* ---------------- 内容区 ---------------- */
+#view{padding:20px 20px 60px;flex:1;min-width:0;}
+.page-h{display:flex;align-items:flex-end;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.page-h h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em;}
+.page-h .desc{margin:0;font-size:12.5px;color:var(--ink3);}
+.page-h .sp{flex:1;}
+
+/* ---------------- 卡片 ---------------- */
+.card{background:var(--surface);border:1px solid var(--line);position:relative;margin-bottom:14px;}
+.card.marks::before,.card.marks::after{content:"";position:absolute;width:10px;height:10px;
+  border:1.5px solid var(--brand);pointer-events:none;}
+.card.marks::before{top:-1px;left:-1px;border-right:0;border-bottom:0;}
+.card.marks::after{bottom:-1px;right:-1px;border-left:0;border-top:0;}
+.card-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 15px;border-bottom:1px solid var(--line);}
+.card-h h3{margin:0;font-size:13.5px;font-weight:650;}
+.card-h .sub{font-size:11.5px;color:var(--ink3);}
+.card-h .sp{flex:1;}
+.card-b{padding:15px;}
+.card-b.tight{padding:0;}
+
+/* 统计卡 */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:14px;}
+.stats.n6{grid-template-columns:repeat(6,minmax(0,1fr));}
+.stat{background:var(--surface);border:1px solid var(--line);padding:13px 14px;border-left:3px solid var(--line2);}
+.stat.acc{border-left-color:var(--brand);}
+.stat.amber{border-left-color:#d99427;}
+.stat.bad{border-left-color:var(--bad);}
+.stat.ok{border-left-color:var(--ok);}
+.stat .k{font-size:11.5px;color:var(--ink3);letter-spacing:.03em;}
+.stat .v{font-size:23px;font-weight:650;font-family:var(--mono);font-variant-numeric:tabular-nums;
+  margin-top:5px;letter-spacing:-.02em;line-height:1.15;}
+.stat .v small{font-size:12px;font-weight:400;color:var(--ink3);font-family:var(--ui);margin-left:3px;}
+.stat .d{font-size:11.5px;color:var(--ink3);margin-top:5px;}
+
+/* ---------------- 表格 ---------------- */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
+  font-weight:650;padding:10px 13px;border-bottom:1px solid var(--line2);background:var(--surface-2);white-space:nowrap;}
+.tbl td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
+.tbl tr:last-child td{border-bottom:0;}
+.tbl tbody tr:hover td{background:var(--surface-3);}
+.tbl .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;}
+.tbl .m{font-family:var(--mono);font-size:12.5px;}
+.tbl .act{display:inline-block;margin-right:5px;padding:3px 9px;border:1px solid var(--line2);
+  border-radius:4px;font-size:11.5px;color:var(--brand);text-decoration:none;background:var(--surface);}
+.tbl .act:hover{background:var(--brand-soft);border-color:var(--brand);}
+.tbl .act.danger{color:var(--bad);}
+.tbl .act.danger:hover{background:var(--bad-soft);border-color:var(--bad-line);}
+
+/* ---------------- 标签 ---------------- */
+.tg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:1px 8px;
+  border:1px solid;white-space:nowrap;line-height:1.65;}
+.tg.own{color:var(--brand-ink);border-color:#a8d8e6;background:var(--brand-soft);}
+.tg.on{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
+.tg.warn{color:var(--warn);border-color:#e8d9a8;background:var(--warn-soft);}
+.tg.bad{color:var(--bad);border-color:var(--bad-line);background:var(--bad-soft);}
+.tg.off{color:var(--ink2);border-color:var(--line2);background:var(--surface-3);}
+.tg.amber{color:#8a4a06;border-color:var(--amber-line);background:var(--amber-soft);}
+
+/* 状态点 */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+.dot.on{background:var(--ok);} .dot.warn{background:var(--warn);} .dot.bad{background:var(--bad);} .dot.off{background:var(--ink3);}
+
+/* ---------------- 工具条 ---------------- */
+.bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px;}
+.bar .sp{flex:1;}
+.seg{display:inline-flex;border:1px solid var(--line2);background:var(--surface);}
+.seg button{background:transparent;border:0;border-right:1px solid var(--line);padding:0 12px;height:30px;
+  font:12.5px var(--ui);color:var(--ink2);cursor:pointer;}
+.seg button:last-child{border-right:0;}
+.seg button:hover{color:var(--brand);}
+.seg button.on{background:var(--brand);color:#fff;}
+select.inp,input.inp{height:30px;border:1px solid var(--line2);background:var(--surface);
+  font:13px var(--ui);color:var(--ink);padding:0 9px;outline:0;min-width:0;}
+select.inp:focus,input.inp:focus{border-color:var(--brand);}
+.lbl{font-size:12px;color:var(--ink3);}
+
+/* ---------------- 视图切换 ---------------- */
+.view{display:none;}
+.view.on{display:block;}
+
+/* ---------------- 抽屉/弹窗 ---------------- */
+#mask{position:fixed;inset:0;background:rgba(13,36,54,.4);z-index:80;opacity:0;pointer-events:none;transition:opacity .18s;}
+#mask.on{opacity:1;pointer-events:auto;}
+#drawer{
+  position:fixed;right:0;top:0;height:100vh;height:100dvh;width:440px;max-width:92vw;
+  background:var(--surface);box-shadow:-4px 0 24px rgba(0,0,0,.12);z-index:90;
+  transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column;
+}
+#drawer.on{transform:translateX(0);}
+.drawer-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);
+  background:var(--surface-2);flex:0 0 auto;}
+.drawer-h h3{margin:0;font-size:15px;font-weight:650;}
+.drawer-h .sp{flex:1;}
+.drawer-h .close{font-size:20px;color:var(--ink3);cursor:pointer;border:0;background:transparent;
+  line-height:1;padding:0 4px;}
+.drawer-h .close:hover{color:var(--bad);}
+.drawer-b{padding:18px;flex:1;overflow:auto;}
+
+/* 表单（抽屉内） */
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:13px;}
+.fld label{font-size:11.5px;color:var(--ink2);font-weight:500;}
+.fld input,.fld select,.fld textarea{
+  height:34px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);
+  font:13px var(--ui);color:var(--ink);padding:0 9px;outline:0;width:100%;
+}
+.fld textarea{height:auto;min-height:64px;padding:8px 9px;resize:vertical;line-height:1.5;}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--brand);box-shadow:0 0 0 2px rgba(14,116,144,.12);}
+.fld-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fld-row .fld{margin-bottom:13px;}
+
+/* ---------------- 空状态 ---------------- */
+.empty{text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px;}
+.empty svg{margin-bottom:10px;opacity:.4;}
+
+/* ---------------- 说明条 ---------------- */
+.note{padding:11px 14px;border-left:3px solid var(--brand);background:var(--brand-soft);
+  border-radius:0 6px 6px 0;font-size:12.5px;color:var(--brand-ink);margin-bottom:14px;}
+.note b{font-weight:650;}
+
+/* ---------------- 来源分布条 ---------------- */
+.src-bar{display:flex;height:22px;border-radius:4px;overflow:hidden;margin-bottom:6px;}
+.src-bar .seg-s{display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;font-weight:500;
+  font-family:var(--mono);overflow:hidden;white-space:nowrap;transition:flex .3s;}
+.src-legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:11.5px;color:var(--ink2);}
+.src-legend span{display:flex;align-items:center;gap:5px;}
+.src-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+/* ---------------- 报价卡片 ---------------- */
+.quote-card{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--surface-2);}
+.quote-card.over{border-color:var(--bad-line);background:var(--bad-soft);}
+.quote-card .qh{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.quote-card .qh b{font-size:14px;}
+.quote-card .qh .sp{flex:1;}
+.quote-card .row{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;color:var(--ink2);}
+.quote-card .row b{color:var(--ink);font-family:var(--mono);}
+.quote-card .row.due{color:var(--bad);font-weight:500;}
+
+/* ---------------- 漏斗 ---------------- */
+.funnel{display:flex;flex-direction:column;gap:4px;}
+.funnel .fr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;font-size:13px;
+  background:var(--surface);border:1px solid var(--line);}
+.funnel .fr .lbl{flex:0 0 100px;color:var(--ink2);}
+.funnel .fr .bar-w{flex:1;height:24px;border-radius:4px;background:var(--surface-3);overflow:hidden;position:relative;}
+.funnel .fr .bar-f{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;
+  color:#fff;font-size:11.5px;font-family:var(--mono);font-weight:500;transition:width .4s;}
+.funnel .fr .num{flex:0 0 50px;text-align:right;font-family:var(--mono);font-weight:650;font-size:15px;}
+
+/* ---------------- 活动卡片 ---------------- */
+.evt-card{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--surface);transition:border-color .15s;}
+.evt-card:hover{border-color:var(--brand);}
+.evt-card .eh{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.evt-card .eh b{font-size:14px;}
+.evt-card .eh .sp{flex:1;}
+.evt-card .em{display:flex;gap:16px;font-size:12px;color:var(--ink2);flex-wrap:wrap;}
+.evt-card .em span b{color:var(--ink);font-family:var(--mono);}
+
+/* ---------------- 响应式 ---------------- */
+@media (max-width:1024px){
+  :root{--side-w:60px;}
+  #side .brand h1,#side .brand p,#side .nav .grp,#side .side-foot{display:none;}
+  #side .nav a{justify-content:center;padding:12px 0;font-size:0;}
+  #side .nav a svg{font-size:initial;}
+  .stats{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width:640px){
+  .stats{grid-template-columns:1fr;}
+  .fld-row{grid-template-columns:1fr;}
+  #view{padding:14px 12px 40px;}
+}
+</style>
+</head>
+<body data-theme="graphite">
+<div id="app">
+
+<aside id="side">
+  <div class="brand">
+    <div class="lg">
+      <div class="mark"></div>
+      <div>
+        <h1>业务部</h1>
+      </div>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <div class="grp">总览</div>
+    <a data-v="overview" class="on">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5"/><rect x="9.5" y="1.5" width="5" height="5"/><rect x="1.5" y="9.5" width="5" height="5"/><rect x="9.5" y="9.5" width="5" height="5"/></svg>
+      业务总览
+    </a>
+
+    <div class="grp">业务</div>
+    <a data-v="leads">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5.5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+      线索池 <span class="cnt" id="cnt-leads">0</span>
+    </a>
+    <a data-v="students">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8H2z"/><path d="M2 4l6 5 6-5"/></svg>
+      学员档案 <span class="cnt" id="cnt-students">0</span>
+    </a>
+    <a data-v="billing">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12v12H2z"/><path d="M2 6h12M6 2v12"/></svg>
+      报价收费 <span class="cnt" id="cnt-billing">0</span>
+    </a>
+
+    <div class="grp">市场</div>
+    <a data-v="research">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      市场调查
+    </a>
+    <a data-v="campaigns">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V6l5-2v10M7 14V8M7 8l5-1v7M12 14V3"/></svg>
+      投放记录
+    </a>
+    <a data-v="assets">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12"/><path d="M2 10l3-3 3 3 2-2 4 4"/></svg>
+      宣传素材
+    </a>
+    <a data-v="events">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11"/><path d="M2 6h12M5 1v3M11 1v3"/></svg>
+      讲座活动
+    </a>
+  </nav>
+  <div class="side-foot">
+    数据键 <b>zhops.biz.v1</b><br>
+    本地存档
+  </div>
+</aside>
+
+<!-- ============ 主区 ============ -->
+<div id="main">
+
+  <!-- 顶栏 -->
+  <header id="top">
+    <div class="crumb">
+      <b>业务部</b>
+      <span class="sep">/</span>
+      <span id="crumb-sub">业务总览</span>
+    </div>
+    <div class="sp"></div>
+    <div class="lang-switch">
+      <button class="on" id="btn-zh"><span class="fl">🇨🇳</span>中文</button>
+      <button id="btn-vi"><span class="fl">🇻🇳</span>Tiếng Việt</button>
+    </div>
+  </header>
+
+  <!-- 内容 -->
+  <div id="view">
+
+    <!-- ====== 总览 ====== -->
+    <div class="view on" data-view="overview">
+      <div class="page-h">
+        <h2>业务总览</h2>
+        <p class="desc">市场 + 业务 一条龙：线索 → 学员 → 收费</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addLead()">+ 新线索</button>
+      </div>
+
+      <!-- KPI -->
+      <div class="stats">
+        <div class="stat acc">
+          <div class="k">本月新增线索</div>
+          <div class="v" id="kpi-leads">—</div>
+          <div class="d">较上月 <b id="kpi-leads-d">—</b></div>
+        </div>
+        <div class="stat ok">
+          <div class="k">在读学员</div>
+          <div class="v" id="kpi-students">—</div>
+          <div class="d">本月新增 <b id="kpi-students-d">—</b></div>
+        </div>
+        <div class="stat amber">
+          <div class="k">本月应收</div>
+          <div class="v" id="kpi-revenue">—<small>VND</small></div>
+          <div class="d">已收 <b id="kpi-revenue-d">—</b></div>
+        </div>
+        <div class="stat bad">
+          <div class="k">逾期</div>
+          <div class="v" id="kpi-overdue">—<small>VND</small></div>
+          <div class="d"><b id="kpi-overdue-d">—</b> 人</div>
+        </div>
+      </div>
+
+      <!-- 漏斗 -->
+      <div class="card marks">
+        <div class="card-h">
+          <h3>招生漏斗</h3>
+          <span class="sub">线索 → 试听 → 报名 → 在读</span>
+          <div class="sp"></div>
+        </div>
+        <div class="card-b">
+          <div class="funnel" id="funnel"></div>
+        </div>
+      </div>
+
+      <!-- 来源分布 -->
+      <div class="card">
+        <div class="card-h">
+          <h3>线索来源分布</h3>
+          <span class="sub">各渠道占比</span>
+          <div class="sp"></div>
+        </div>
+        <div class="card-b">
+          <div class="src-bar" id="src-bar"></div>
+          <div class="src-legend" id="src-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 线索池 ====== -->
+    <div class="view" data-view="leads">
+      <div class="page-h">
+        <h2>线索池</h2>
+        <p class="desc">每一条可能成为学员的线索</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addLead()">+ 新线索</button>
+      </div>
+      <div class="bar">
+        <input class="inp" placeholder="搜索姓名/联系方式…" style="min-width:200px" oninput="filterLeads(this.value)">
+        <select class="inp" onchange="filterLeadsStatus(this.value)">
+          <option value="">全部状态</option>
+          <option value="new">新线索</option>
+          <option value="contacted">已联系</option>
+          <option value="trial">已试听</option>
+          <option value="enrolled">已报名</option>
+          <option value="lost">已流失</option>
+        </select>
+        <select class="inp" onchange="filterLeadsSrc(this.value)">
+          <option value="">全部来源</option>
+          <option>朋友介绍</option>
+          <option>Zalo</option>
+          <option>Facebook</option>
+          <option>TikTok</option>
+          <option>Wechat</option>
+          <option>讲座会</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table class="tbl" id="tbl-leads">
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>类型</th>
+                <th>来源</th>
+                <th>介绍人</th>
+                <th>联系方式</th>
+                <th>状态</th>
+                <th>录入</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tb-leads"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 学员档案 ====== -->
+    <div class="view" data-view="students">
+      <div class="page-h">
+        <h2>学员档案</h2>
+        <p class="desc">正式报名的学员 · 长期记录</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addStudent()">+ 新学员</button>
+      </div>
+      <div class="bar">
+        <input class="inp" placeholder="搜索学号/姓名…" style="min-width:200px" oninput="filterStudents(this.value)">
+        <select class="inp" onchange="filterStudentType(this.value)">
+          <option value="">全部类型</option>
+          <option value="学生">学生</option>
+          <option value="白领">白领</option>
+        </select>
+        <select class="inp" onchange="filterStudentStatus(this.value)">
+          <option value="">全部状态</option>
+          <option value="在读">在读</option>
+          <option value="结业">结业</option>
+          <option value="暂停">暂停</option>
+          <option value="退学">退学</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table class="tbl" id="tbl-students">
+            <thead>
+              <tr>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>类型</th>
+                <th>来源</th>
+                <th>等级</th>
+                <th>报名日期</th>
+                <th>已缴</th>
+                <th>状态</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tb-students"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 报价收费 ====== -->
+    <div class="view" data-view="billing">
+      <div class="page-h">
+        <h2>报价与收费</h2>
+        <p class="desc">每个学员该交多少、什么时候交、交了没</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addBilling()">+ 新收费单</button>
+      </div>
+      <div class="stats n6">
+        <div class="stat ok"><div class="k">本月已收</div><div class="v" id="bill-paid">—<small>VND</small></div></div>
+        <div class="stat amber"><div class="k">待收</div><div class="v" id="bill-pending">—<small>VND</small></div></div>
+        <div class="stat bad"><div class="k">逾期</div><div class="v" id="bill-overdue">—<small>VND</small></div></div>
+        <div class="stat acc"><div class="k">总合同额</div><div class="v" id="bill-total">—<small>VND</small></div></div>
+        <div class="stat"><div class="k">在收</div><div class="v" id="bill-active">—<small>单</small></div></div>
+        <div class="stat"><div class="k">已结清</div><div class="v" id="bill-closed">—<small>单</small></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <h3>收费单</h3>
+          <div class="sp"></div>
+          <span class="sub" id="bill-count">0 单</span>
+        </div>
+        <div class="card-b tight">
+          <div id="billing-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 市场调查 ====== -->
+    <div class="view" data-view="research">
+      <div class="page-h">
+        <h2>市场调查</h2>
+        <p class="desc">对市场的判断和结论</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addResearch()">+ 新记录</button>
+      </div>
+      <div class="note">
+        <b>越南中文教学市场 · 关键数据（2025–2026）</b><br>
+        HSK 考生 14.6 万（全球第一） · 中文岗薪资溢价 10–40% · 500+ 家培训机构 · HSK3 备考 <1000 万 VND · Zalo 触达率 40%（Facebook 的 4–8 倍）
+      </div>
+      <div id="research-list"></div>
+    </div>
+
+    <!-- ====== 投放记录 ====== -->
+    <div class="view" data-view="campaigns">
+      <div class="page-h">
+        <h2>投放记录</h2>
+        <p class="desc">在哪里花了多少钱引来了多少人</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addCampaign()">+ 新投放</button>
+      </div>
+      <div class="stats">
+        <div class="stat acc"><div class="k">总投放</div><div class="v" id="cmp-total">—<small>VND</small></div></div>
+        <div class="stat"><div class="k">总线索</div><div class="v" id="cmp-leads">—</div></div>
+        <div class="stat ok"><div class="k">总转化</div><div class="v" id="cmp-conv">—</div></div>
+        <div class="stat amber"><div class="k">单线索成本</div><div class="v" id="cmp-cpl">—<small>VND</small></div></div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table class="tbl" id="tbl-campaigns">
+            <thead>
+              <tr>
+                <th>平台</th>
+                <th>类型</th>
+                <th>日期</th>
+                <th>花费</th>
+                <th>线索</th>
+                <th>转化</th>
+                <th>单线索成本</th>
+                <th>单个学员</th>
+                <th>评价</th>
+              </tr>
+            </thead>
+            <tbody id="tb-campaigns"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 宣传素材 ====== -->
+    <div class="view" data-view="assets">
+      <div class="page-h">
+        <h2>宣传素材</h2>
+        <p class="desc">文案 / 海报 / 视频 / 落地页</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addAsset()">+ 新素材</button>
+      </div>
+      <div class="bar">
+        <select class="inp" onchange="filterAssetType(this.value)">
+          <option value="">全部类型</option>
+          <option>文案</option><option>海报</option><option>视频</option><option>帖子模板</option><option>落地页</option>
+        </select>
+        <select class="inp" onchange="filterAssetStatus(this.value)">
+          <option value="">全部状态</option>
+          <option>草稿</option><option>已发</option><option>测试中</option><option>退役</option>
+        </select>
+      </div>
+      <div id="assets-list"></div>
+    </div>
+
+    <!-- ====== 讲座活动 ====== -->
+    <div class="view" data-view="events">
+      <div class="page-h">
+        <h2>讲座活动</h2>
+        <p class="desc">线下/线上活动 · 体验课 · 沙龙</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addEvent()">+ 新活动</button>
+      </div>
+      <div class="stats n6">
+        <div class="stat acc"><div class="k">本年活动</div><div class="v" id="evt-count">—</div></div>
+        <div class="stat"><div class="k">总报名</div><div class="v" id="evt-reg">—</div></div>
+        <div class="stat"><div class="k">总到场</div><div class="v" id="evt-att">—</div></div>
+        <div class="stat ok"><div class="k">现场转化</div><div class="v" id="evt-conv">—</div></div>
+        <div class="stat amber"><div class="k">总成本</div><div class="v" id="evt-cost">—<small>VND</small></div></div>
+        <div class="stat"><div class="k">单转化成本</div><div class="v" id="evt-cpa">—<small>VND</small></div></div>
+      </div>
+      <div id="events-list"></div>
+    </div>
+
+  </div><!-- /#view -->
+</div><!-- /#main -->
+</div><!-- /#app -->
+
+<!-- 抽屉 -->
+<div id="mask" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <div class="drawer-h">
+    <h3 id="drawer-title">新建</h3>
+    <div class="sp"></div>
+    <button class="close" onclick="closeDrawer()">&times;</button>
+  </div>
+  <div class="drawer-b" id="drawer-body"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);
+  background:var(--navy);color:#e6f6fb;border:1px solid var(--navy-line);border-radius:8px;
+  padding:9px 16px;font-size:12.5px;z-index:100;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;"></div>
+
+<script>
+/* ============================================================
+   业务部 · 数据 + 渲染
+   存储：localStorage['zhops.biz.v1']
+   ============================================================ */
+
+var KEY = 'zhops.biz.v1';
+var S = { leads:[], students:[], billing:[], research:[], campaigns:[], assets:[], events:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1} };
+
+/* ---- 主题色（来源分布用） ---- */
+var SRC_COLORS = {
+  '朋友介绍':'#0e7490','Zalo':'#0068ff','Facebook':'#1877f2','TikTok':'#ff0050',
+  'Wechat':'#07c160','讲座会':'#b45309','其他':'#8aa3b5'
+};
+
+/* ---- 课程包参考价（VND） ---- */
+var PACKAGES = [
+  { id:'hsk1', name:'HSK1 完整（60课时）', price:8000000 },
+  { id:'hsk2', name:'HSK2 完整（60课时）', price:9000000 },
+  { id:'hsk3', name:'HSK3 备考包（含考试费）', price:10000000 },
+  { id:'trial', name:'试听课', price:0 },
+  { id:'vip1', name:'一对一（每小时）', price:350000 },
+  { id:'small', name:'小班（每课时）', price:280000 }
+];
+
+/* ---- 初始化 ---- */
+function load(){
+  try{ var raw = localStorage.getItem(KEY); if(raw){ S = JSON.parse(raw); } }catch(e){}
+  if(!S.leads || !S.leads.length){ seed(); }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); toast('已保存'); }
+  catch(e){ toast('保存失败', true); }
+}
+function seed(){
+  /* 种几条示例数据让页面不是空的 */
+  S.leads = [
+    { id:'L-001', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'zalo: 0901234567', status:'enrolled', note:'大学生，要考 HSK3', date:'2026-10-15' },
+    { id:'L-002', name:'Trần Thị B', type:'白领', source:'朋友介绍', refBy:'S-001', contact:'0909876543', status:'trial', note:'在日企工作，要学日常口语', date:'2026-10-20' },
+    { id:'L-003', name:'Lê Minh C', type:'学生', source:'Facebook', refBy:'', contact:'fb: leminh.c', status:'contacted', note:'高中生，目标 HSK4', date:'2026-10-25' },
+    { id:'L-004', name:'Phạm D', type:'白领', source:'讲座会', refBy:'', contact:'0902222333', status:'new', note:'参加了体验课', date:'2026-10-28' },
+    { id:'L-005', name:'Hoàng E', type:'学生', source:'朋友介绍', refBy:'S-001', contact:'wechat: hoang_e', status:'new', note:'朋友推荐', date:'2026-10-30' },
+  ];
+  S.students = [
+    { id:'S-001', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'0901234567', level:'HSK3', enrollDate:'2026-10-16', pkg:'hsk3', paid:10000000, status:'在读' },
+  ];
+  S.billing = [
+    { id:'B-001', sid:'S-001', sname:'Nguyễn Văn A', pkg:'HSK3 备考包（含考试费）', total:10000000, paid:5000000, method:'分期', plan:'分2期：5M + 5M', dueDate:'2026-12-01', status:'进行中' },
+  ];
+  S.research = [
+    { id:'R-001', topic:'越南 HSK 考生画像', content:'2025 年越南 HSK 考生 14.6 万，全球第一。主力为大学生和年轻白领，目标进中资企业。', data:'14.6 万考生 / 薪资溢价 10-40%', source:'人民日报 / 国侨办', date:'2026-10-01', tags:'趋势,客户画像' },
+    { id:'R-002', topic:'中文岗薪资分析', content:'通用中文岗月薪 1200-1800 万 VND；技术中文岗 1800-4200 万 VND。懂中文比不懂薪资高 10-40%。', data:'1200-4200 万 VND', source:'脉脉 / 中越联合声明', date:'2026-10-05', tags:'定价,竞品' },
+  ];
+  S.campaigns = [
+    { id:'C-001', platform:'Zalo', type:'帖子', date:'2026-10-10', cost:2000000, leads:12, conv:3 },
+    { id:'C-002', platform:'Facebook', type:'广告', date:'2026-10-15', cost:3500000, leads:8, conv:1 },
+  ];
+  S.assets = [
+    { id:'A-001', title:'HSK3 备考海报 v1', type:'海报', use:'招生', platform:'Facebook', status:'已发', date:'2026-10-12' },
+    { id:'A-002', title:'免费体验课文案', type:'文案', use:'讲座宣传', platform:'Zalo', status:'测试中', date:'2026-10-18' },
+  ];
+  S.events = [
+    { id:'E-001', name:'免费中文体验课', type:'线下体验课', date:'2026-10-28', loc:'胡志明市 District 1', reg:25, att:18, conv:4, cost:1500000, note:'到场率 72%，现场转化 22%' },
+  ];
+  S.seq = { lead:6, stu:2, bill:2, res:3, cmp:3, ast:3, evt:2 };
+  save();
+}
+
+/* ---- 导航 ---- */
+function nav(v){
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===v));
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on', el.dataset.view===v));
+  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'报价收费', research:'市场调查', campaigns:'投放记录', assets:'宣传素材', events:'讲座活动' };
+  document.getElementById('crumb-sub').textContent = titles[v]||'';
+  render(v);
+}
+
+/* ---- 渲染分派 ---- */
+function render(v){
+  v = v || currentView();
+  if(v==='overview') renderOverview();
+  if(v==='leads') renderLeads();
+  if(v==='students') renderStudents();
+  if(v==='billing') renderBilling();
+  if(v==='research') renderResearch();
+  if(v==='campaigns') renderCampaigns();
+  if(v==='assets') renderAssets();
+  if(v==='events') renderEvents();
+  updateCounts();
+}
+function currentView(){
+  var on = document.querySelector('.view.on'); return on ? on.dataset.view : 'overview';
+}
+function updateCounts(){
+  document.getElementById('cnt-leads').textContent = S.leads.length;
+  document.getElementById('cnt-students').textContent = S.students.length;
+  document.getElementById('cnt-billing').textContent = S.billing.length;
+}
+
+/* ---- 工具 ---- */
+function fmtVND(n){
+  if(!n) return '0';
+  return Math.round(n).toLocaleString('vi-VN');
+}
+function fmtDate(d){
+  if(!d) return '—';
+  return d;
+}
+function statusTag(s){
+  var map = { 'new':['tg off','新线索'], 'contacted':['tg amber','已联系'], 'trial':['tg warn','已试听'], 'enrolled':['tg on','已报名'], 'lost':['tg bad','已流失'] };
+  var m = map[s]||['tg off',s];
+  return '<span class="'+m[0]+'">'+m[1]+'</span>';
+}
+function studentStatusTag(s){
+  var map = { '在读':['tg on','在读'], '结业':['tg off','结业'], '暂停':['tg warn','暂停'], '退学':['tg bad','退学'] };
+  var m = map[s]||['tg off',s];
+  return '<span class="'+m[0]+'">'+m[1]+'</span>';
+}
+function toast(msg, bad){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  if(bad) t.style.background = 'var(--bad)'; else t.style.background = 'var(--navy)';
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(8px)'; }, 1800);
+}
+
+/* ============================================================
+   总览
+   ============================================================ */
+function renderOverview(){
+  var now = new Date();
+  var ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  var monthLeads = S.leads.filter(function(l){ return l.date && l.date.startsWith(ym); });
+  var monthStus = S.students.filter(function(s){ return s.enrollDate && s.enrollDate.startsWith(ym); });
+  var activeBills = S.billing.filter(function(b){ return b.status==='进行中'; });
+  var totalDue = activeBills.reduce(function(a,b){ return a + (b.total - b.paid); }, 0);
+  var overdue = activeBills.filter(function(b){ return b.dueDate && new Date(b.dueDate) < now; });
+  var overdueAmt = overdue.reduce(function(a,b){ return a + (b.total - b.paid); }, 0);
+
+  document.getElementById('kpi-leads').textContent = monthLeads.length;
+  document.getElementById('kpi-leads-d').textContent = '—';
+  document.getElementById('kpi-students').textContent = S.students.filter(function(s){return s.status==='在读';}).length;
+  document.getElementById('kpi-students-d').textContent = monthStus.length;
+  document.getElementById('kpi-revenue').innerHTML = fmtVND(totalDue) + '<small>VND</small>';
+  document.getElementById('kpi-revenue-d').textContent = fmtVND(S.billing.reduce(function(a,b){return a+b.paid;},0)) + ' VND';
+  document.getElementById('kpi-overdue').innerHTML = fmtVND(overdueAmt) + '<small>VND</small>';
+  document.getElementById('kpi-overdue-d').textContent = overdue.length;
+
+  /* 漏斗 */
+  var stages = [
+    { lbl:'线索', val:S.leads.length, color:'#0e7490' },
+    { lbl:'已联系', val:S.leads.filter(function(l){return ['contacted','trial','enrolled'].includes(l.status);}).length, color:'#0891b2' },
+    { lbl:'已试听', val:S.leads.filter(function(l){return ['trial','enrolled'].includes(l.status);}).length, color:'#b45309' },
+    { lbl:'已报名', val:S.students.length, color:'#0f7b52' },
+    { lbl:'在读', val:S.students.filter(function(s){return s.status==='在读';}).length, color:'#0f7b52' },
+  ];
+  var max = Math.max.apply(null, stages.map(function(s){return s.val;})) || 1;
+  var html = stages.map(function(s){
+    var w = Math.round(s.val / max * 100);
+    return '<div class="fr"><div class="lbl">'+s.lbl+'</div>'+
+      '<div class="bar-w"><div class="bar-f" style="width:'+w+'%;background:'+s.color+'">'+s.val+'</div></div>'+
+      '<div class="num">'+s.val+'</div></div>';
+  }).join('');
+  document.getElementById('funnel').innerHTML = html;
+
+  /* 来源分布 */
+  var srcs = {};
+  S.leads.forEach(function(l){ srcs[l.source] = (srcs[l.source]||0) + 1; });
+  var total = S.leads.length || 1;
+  var srcArr = Object.keys(srcs).map(function(k){ return {name:k, val:srcs[k], pct:Math.round(srcs[k]/total*100)}; });
+  srcArr.sort(function(a,b){ return b.val - a.val; });
+  document.getElementById('src-bar').innerHTML = srcArr.map(function(s){
+    return '<div class="seg-s" style="width:'+s.pct+'%;background:'+(SRC_COLORS[s.name]||'#8aa3b5')+'">'+s.pct+'%</div>';
+  }).join('');
+  document.getElementById('src-legend').innerHTML = srcArr.map(function(s){
+    return '<span><i style="background:'+(SRC_COLORS[s.name]||'#8aa3b5')+'"></i>'+s.name+' '+s.val+'</span>';
+  }).join('');
+}
+
+/* ============================================================
+   线索池
+   ============================================================ */
+function renderLeads(){
+  var tb = document.getElementById('tb-leads');
+  var rows = S.leads;
+  if(!rows.length){ tb.innerHTML = '<tr><td colspan="8" class="empty">还没有线索。点「+ 新线索」开始。</td></tr>'; return; }
+  tb.innerHTML = rows.map(function(l){
+    return '<tr>'+
+      '<td><b>'+l.name+'</b></td>'+
+      '<td>'+(l.type||'—')+'</td>'+
+      '<td><span class="tg own">'+l.source+'</span></td>'+
+      '<td class="m">'+(l.refBy||'—')+'</td>'+
+      '<td class="m">'+(l.contact||'—')+'</td>'+
+      '<td>'+statusTag(l.status)+'</td>'+
+      '<td class="m">'+fmtDate(l.date)+'</td>'+
+      '<td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td>'+
+      '</tr>';
+  }).join('');
+}
+function filterLeads(q){
+  q = (q||'').toLowerCase();
+  var rows = S.leads.filter(function(l){ return !q || (l.name||'').toLowerCase().includes(q) || (l.contact||'').toLowerCase().includes(q); });
+  var tb = document.getElementById('tb-leads');
+  tb.innerHTML = rows.length ? rows.map(function(l){
+    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td></tr>';
+  }).join('') : '<tr><td colspan="8" class="empty">没有匹配的线索</td></tr>';
+}
+function filterLeadsStatus(v){ /* 简单筛选 */
+  var tb = document.getElementById('tb-leads');
+  var rows = v ? S.leads.filter(function(l){ return l.status===v; }) : S.leads;
+  tb.innerHTML = rows.length ? rows.map(function(l){
+    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td></tr>';
+  }).join('') : '<tr><td colspan="8" class="empty">没有匹配</td></tr>';
+}
+function filterLeadsSrc(v){
+  var tb = document.getElementById('tb-leads');
+  var rows = v ? S.leads.filter(function(l){ return l.source===v; }) : S.leads;
+  tb.innerHTML = rows.length ? rows.map(function(l){
+    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td></tr>';
+  }).join('') : '<tr><td colspan="8" class="empty">没有匹配</td></tr>';
+}
+
+/* ============================================================
+   学员档案
+   ============================================================ */
+function renderStudents(){
+  var tb = document.getElementById('tb-students');
+  if(!S.students.length){ tb.innerHTML = '<tr><td colspan="9" class="empty">还没有学员。</td></tr>'; return; }
+  tb.innerHTML = S.students.map(function(s){
+    return '<tr>'+
+      '<td class="m">'+s.id+'</td>'+
+      '<td><b>'+s.name+'</b></td>'+
+      '<td>'+(s.type||'—')+'</td>'+
+      '<td><span class="tg own">'+(s.source||'—')+'</span></td>'+
+      '<td><span class="tg amber">'+(s.level||'—')+'</span></td>'+
+      '<td class="m">'+fmtDate(s.enrollDate)+'</td>'+
+      '<td class="num">'+fmtVND(s.paid)+'</td>'+
+      '<td>'+studentStatusTag(s.status)+'</td>'+
+      '<td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td>'+
+      '</tr>';
+  }).join('');
+}
+function filterStudents(q){
+  q = (q||'').toLowerCase();
+  var rows = S.students.filter(function(s){ return !q || (s.name||'').toLowerCase().includes(q) || (s.id||'').toLowerCase().includes(q); });
+  var tb = document.getElementById('tb-students');
+  tb.innerHTML = rows.length ? rows.map(function(s){
+    return '<tr><td class="m">'+s.id+'</td><td><b>'+s.name+'</b></td><td>'+(s.type||'—')+'</td><td><span class="tg own">'+(s.source||'—')+'</span></td><td><span class="tg amber">'+(s.level||'—')+'</span></td><td class="m">'+fmtDate(s.enrollDate)+'</td><td class="num">'+fmtVND(s.paid)+'</td><td>'+studentStatusTag(s.status)+'</td><td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td></tr>';
+  }).join('') : '<tr><td colspan="9" class="empty">没有匹配</td></tr>';
+}
+function filterStudentType(v){
+  var rows = v ? S.students.filter(function(s){return s.type===v;}) : S.students;
+  var tb = document.getElementById('tb-students');
+  tb.innerHTML = rows.map(function(s){
+    return '<tr><td class="m">'+s.id+'</td><td><b>'+s.name+'</b></td><td>'+(s.type||'—')+'</td><td><span class="tg own">'+(s.source||'—')+'</span></td><td><span class="tg amber">'+(s.level||'—')+'</span></td><td class="m">'+fmtDate(s.enrollDate)+'</td><td class="num">'+fmtVND(s.paid)+'</td><td>'+studentStatusTag(s.status)+'</td><td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td></tr>';
+  }).join('');
+}
+function filterStudentStatus(v){
+  var rows = v ? S.students.filter(function(s){return s.status===v;}) : S.students;
+  var tb = document.getElementById('tb-students');
+  tb.innerHTML = rows.map(function(s){
+    return '<tr><td class="m">'+s.id+'</td><td><b>'+s.name+'</b></td><td>'+(s.type||'—')+'</td><td><span class="tg own">'+(s.source||'—')+'</span></td><td><span class="tg amber">'+(s.level||'—')+'</span></td><td class="m">'+fmtDate(s.enrollDate)+'</td><td class="num">'+fmtVND(s.paid)+'</td><td>'+studentStatusTag(s.status)+'</td><td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td></tr>';
+  }).join('');
+}
+
+/* ============================================================
+   报价收费
+   ============================================================ */
+function renderBilling(){
+  var total = S.billing.reduce(function(a,b){return a+b.total;},0);
+  var paid = S.billing.reduce(function(a,b){return a+b.paid;},0);
+  var now = new Date();
+  var active = S.billing.filter(function(b){return b.status==='进行中';});
+  var pending = active.reduce(function(a,b){return a+(b.total-b.paid);},0);
+  var overdue = active.filter(function(b){return b.dueDate && new Date(b.dueDate)<now;});
+  var overdueAmt = overdue.reduce(function(a,b){return a+(b.total-b.paid);},0);
+  var closed = S.billing.filter(function(b){return b.status==='已结清';}).length;
+
+  document.getElementById('bill-paid').innerHTML = fmtVND(paid)+'<small>VND</small>';
+  document.getElementById('bill-pending').innerHTML = fmtVND(pending)+'<small>VND</small>';
+  document.getElementById('bill-overdue').innerHTML = fmtVND(overdueAmt)+'<small>VND</small>';
+  document.getElementById('bill-total').innerHTML = fmtVND(total)+'<small>VND</small>';
+  document.getElementById('bill-active').innerHTML = active.length+'<small>单</small>';
+  document.getElementById('bill-closed').innerHTML = closed+'<small>单</small>';
+  document.getElementById('bill-count').textContent = S.billing.length + ' 单';
+
+  var el = document.getElementById('billing-list');
+  if(!S.billing.length){ el.innerHTML = '<div class="empty">还没有收费单。</div>'; return; }
+  el.innerHTML = S.billing.map(function(b){
+    var isOver = b.status==='进行中' && b.dueDate && new Date(b.dueDate)<now;
+    var remain = b.total - b.paid;
+    return '<div class="quote-card'+(isOver?' over':'')+'">'+
+      '<div class="qh"><b>'+(b.sname||'—')+'</b><span class="tg own">'+b.id+'</span><div class="sp"></div>'+
+        (b.status==='进行中'?'<span class="tg '+(isOver?'bad':'warn')+'">'+(isOver?'逾期':'进行中')+'</span>':'<span class="tg on">已结清</span>')+
+      '</div>'+
+      '<div class="row"><span>课程包</span><b>'+(b.pkg||'—')+'</b></div>'+
+      '<div class="row"><span>总金额</span><b>'+fmtVND(b.total)+' VND</b></div>'+
+      '<div class="row"><span>已缴</span><b>'+fmtVND(b.paid)+' VND</b></div>'+
+      (remain>0?'<div class="row'+(isOver?' due':'')+'"><span>'+(isOver?'逾期 ':'')+'待缴</span><b>'+fmtVND(remain)+' VND</b></div>':'')+
+      (b.dueDate?'<div class="row'+(isOver?' due':'')+'"><span>下次应收</span><b>'+b.dueDate+'</b></div>':'')+
+      (b.plan?'<div class="row"><span>分期</span><b>'+b.plan+'</b></div>':'')+
+      '<div style="margin-top:8px"><a class="act" onclick="editBilling(\''+b.id+'\')">编辑</a>'+
+      (remain>0?' <a class="act" onclick="recordPayment(\''+b.id+'\')">登记收款</a>':'')+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ============================================================
+   市场调查
+   ============================================================ */
+function renderResearch(){
+  var el = document.getElementById('research-list');
+  if(!S.research.length){ el.innerHTML = '<div class="empty">还没有记录。</div>'; return; }
+  el.innerHTML = S.research.map(function(r){
+    var tags = (r.tags||'').split(',').filter(Boolean).map(function(t){ return '<span class="tg amber">'+t.trim()+'</span>'; }).join(' ');
+    return '<div class="card marks"><div class="card-h"><h3>'+r.topic+'</h3>'+
+      '<span class="sub">'+fmtDate(r.date)+'</span><div class="sp"></div>'+tags+'</div>'+
+      '<div class="card-b">'+
+        '<p style="margin:0 0 10px">'+r.content+'</p>'+
+        (r.data?'<p class="sm mono" style="color:var(--brand-ink);background:var(--brand-soft);padding:8px 10px;border-radius:4px;margin:0 0 8px">'+r.data+'</p>':'')+
+        '<p class="sm" style="color:var(--ink3);margin:0">来源：'+(r.source||'—')+'</p>'+
+      '</div></div>';
+  }).join('');
+}
+
+/* ============================================================
+   投放记录
+   ============================================================ */
+function renderCampaigns(){
+  var tb = document.getElementById('tb-campaigns');
+  var totalCost = S.campaigns.reduce(function(a,c){return a+c.cost;},0);
+  var totalLeads = S.campaigns.reduce(function(a,c){return a+c.leads;},0);
+  var totalConv = S.campaigns.reduce(function(a,c){return a+c.conv;},0);
+  document.getElementById('cmp-total').innerHTML = fmtVND(totalCost)+'<small>VND</small>';
+  document.getElementById('cmp-leads').textContent = totalLeads;
+  document.getElementById('cmp-conv').textContent = totalConv;
+  document.getElementById('cmp-cpl').innerHTML = (totalLeads?fmtVND(totalCost/totalLeads):'0')+'<small>VND</small>';
+
+  if(!S.campaigns.length){ tb.innerHTML = '<tr><td colspan="9" class="empty">还没有投放。</td></tr>'; return; }
+  tb.innerHTML = S.campaigns.map(function(c){
+    var cpl = c.leads ? Math.round(c.cost/c.leads) : 0;
+    var cpa = c.conv ? Math.round(c.cost/c.conv) : 0;
+    var rate = c.leads ? Math.round(c.conv/c.leads*100) : 0;
+    var evalTag = c.conv>=3 ? '<span class="tg on">值</span>' : c.conv>=1 ? '<span class="tg warn">一般</span>' : '<span class="tg bad">不值</span>';
+    return '<tr>'+
+      '<td><span class="tg own">'+c.platform+'</span></td>'+
+      '<td>'+(c.type||'—')+'</td>'+
+      '<td class="m">'+fmtDate(c.date)+'</td>'+
+      '<td class="num">'+fmtVND(c.cost)+'</td>'+
+      '<td class="num">'+c.leads+'</td>'+
+      '<td class="num">'+c.conv+' <span class="sm" style="color:var(--ink3)">('+rate+'%)</span></td>'+
+      '<td class="num">'+fmtVND(cpl)+'</td>'+
+      '<td class="num">'+fmtVND(cpa)+'</td>'+
+      '<td>'+evalTag+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+/* ============================================================
+   宣传素材
+   ============================================================ */
+function renderAssets(){
+  var el = document.getElementById('assets-list');
+  if(!S.assets.length){ el.innerHTML = '<div class="empty">还没有素材。</div>'; return; }
+  el.innerHTML = S.assets.map(function(a){
+    var stTag = { '草稿':'tg off','已发':'tg on','测试中':'tg warn','退役':'tg bad' };
+    var st = stTag[a.status]||'tg off';
+    return '<div class="card"><div class="card-h"><h3>'+a.title+'</h3>'+
+      '<span class="tg own">'+a.type+'</span>'+
+      '<span class="'+st+'">'+a.status+'</span>'+
+      '<div class="sp"></div><span class="sub">'+fmtDate(a.date)+'</span></div>'+
+      '<div class="card-b" style="padding:10px 15px">'+
+        '<div class="sm" style="color:var(--ink2)">用途：'+(a.use||'—')+' · 平台：'+(a.platform||'—')+'</div>'+
+        '<div style="margin-top:8px"><a class="act" onclick="editAsset(\''+a.id+'\')">编辑</a></div>'+
+      '</div></div>';
+  }).join('');
+}
+function filterAssetType(v){
+  renderAssetsFiltered(v, null);
+}
+function filterAssetStatus(v){
+  renderAssetsFiltered(null, v);
+}
+function renderAssetsFiltered(type, status){
+  var el = document.getElementById('assets-list');
+  var rows = S.assets.filter(function(a){
+    return (!type || a.type===type) && (!status || a.status===status);
+  });
+  if(!rows.length){ el.innerHTML = '<div class="empty">没有匹配</div>'; return; }
+  el.innerHTML = rows.map(function(a){
+    var stTag = { '草稿':'tg off','已发':'tg on','测试中':'tg warn','退役':'tg bad' };
+    var st = stTag[a.status]||'tg off';
+    return '<div class="card"><div class="card-h"><h3>'+a.title+'</h3><span class="tg own">'+a.type+'</span><span class="'+st+'">'+a.status+'</span><div class="sp"></div><span class="sub">'+fmtDate(a.date)+'</span></div><div class="card-b" style="padding:10px 15px"><div class="sm" style="color:var(--ink2)">用途：'+(a.use||'—')+' · 平台：'+(a.platform||'—')+'</div><div style="margin-top:8px"><a class="act" onclick="editAsset(\''+a.id+'\')">编辑</a></div></div></div>';
+  }).join('');
+}
+
+/* ============================================================
+   讲座活动
+   ============================================================ */
+function renderEvents(){
+  var el = document.getElementById('events-list');
+  var totalReg = S.events.reduce(function(a,e){return a+(e.reg||0);},0);
+  var totalAtt = S.events.reduce(function(a,e){return a+(e.att||0);},0);
+  var totalConv = S.events.reduce(function(a,e){return a+(e.conv||0);},0);
+  var totalCost = S.events.reduce(function(a,e){return a+(e.cost||0);},0);
+  document.getElementById('evt-count').textContent = S.events.length;
+  document.getElementById('evt-reg').textContent = totalReg;
+  document.getElementById('evt-att').textContent = totalAtt;
+  document.getElementById('evt-conv').textContent = totalConv;
+  document.getElementById('evt-cost').innerHTML = fmtVND(totalCost)+'<small>VND</small>';
+  document.getElementById('evt-cpa').innerHTML = (totalConv?fmtVND(totalCost/totalConv):'0')+'<small>VND</small>';
+
+  if(!S.events.length){ el.innerHTML = '<div class="empty">还没有活动。</div>'; return; }
+  el.innerHTML = S.events.map(function(e){
+    var attRate = e.reg ? Math.round(e.att/e.reg*100) : 0;
+    var convRate = e.att ? Math.round(e.conv/e.att*100) : 0;
+    return '<div class="evt-card">'+
+      '<div class="eh"><b>'+e.name+'</b><span class="tg amber">'+e.type+'</span><div class="sp"></div><span class="sm" style="color:var(--ink3)">'+fmtDate(e.date)+'</span></div>'+
+      '<div class="em">'+
+        '<span>地点 <b>'+(e.loc||'—')+'</b></span>'+
+        '<span>报名 <b>'+(e.reg||0)+'</b></span>'+
+        '<span>到场 <b>'+(e.att||0)+'</b> ('+attRate+'%)</span>'+
+        '<span>转化 <b>'+(e.conv||0)+'</b> ('+convRate+'%)</span>'+
+        '<span>成本 <b>'+fmtVND(e.cost||0)+' VND</b></span>'+
+      '</div>'+
+      (e.note?'<p class="sm" style="margin:8px 0 0;color:var(--ink2)">'+e.note+'</p>':'')+
+      '<div style="margin-top:8px"><a class="act" onclick="editEvent(\''+e.id+'\')">编辑</a></div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ============================================================
+   抽屉（新建/编辑表单）
+   ============================================================ */
+function openDrawer(title, html){
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-body').innerHTML = html;
+  document.getElementById('mask').classList.add('on');
+  document.getElementById('drawer').classList.add('on');
+}
+function closeDrawer(){
+  document.getElementById('mask').classList.remove('on');
+  document.getElementById('drawer').classList.remove('on');
+}
+
+/* ---- 线索表单 ---- */
+function addLead(){
+  openDrawer('新线索', leadForm());
+}
+function editLead(id){
+  var l = S.leads.find(function(x){return x.id===id;});
+  if(!l) return;
+  openDrawer('编辑线索 · '+l.name, leadForm(l));
+}
+function leadForm(l){
+  l = l || {};
+  return '<div class="fld"><label>姓名</label><input id="f-name" value="'+(l.name||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>类型</label><select id="f-type"><option '+(l.type==='学生'?'selected':'')+'>学生</option><option '+(l.type==='白领'?'selected':'')+'>白领</option></select></div>'+
+    '<div class="fld"><label>来源</label><select id="f-source">'+
+      ['朋友介绍','Zalo','Facebook','TikTok','Wechat','讲座会','其他'].map(function(s){return '<option '+(l.source===s?'selected':'')+'>'+s+'</option>';}).join('')+
+    '</select></div></div>'+
+    '<div class="fld"><label>介绍人（朋友介绍时填，可填学员编号）</label><input id="f-refBy" value="'+(l.refBy||'')+'"></div>'+
+    '<div class="fld"><label>联系方式</label><input id="f-contact" value="'+(l.contact||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>状态</label><select id="f-status">'+
+      [['new','新线索'],['contacted','已联系'],['trial','已试听'],['enrolled','已报名'],['lost','已流失']].map(function(s){return '<option value="'+s[0]+'" '+(l.status===s[0]?'selected':'')+'>'+s[1]+'</option>';}).join('')+
+    '</select></div>'+
+    '<div class="fld"><label>录入日期</label><input type="date" id="f-date" value="'+(l.date||new Date().toISOString().slice(0,10))+'"></div></div>'+
+    '<div class="fld"><label>备注</label><textarea id="f-note">'+(l.note||'')+'</textarea></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveLead('+(l.id?"'"+l.id+"'":"null")+')">保存</button>'+
+      (l.id?'<button class="btn danger" onclick="delLead(\''+l.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function saveLead(id){
+  var data = {
+    name: val('f-name'), type: val('f-type'), source: val('f-source'), refBy: val('f-refBy'),
+    contact: val('f-contact'), status: val('f-status'), date: val('f-date'), note: val('f-note')
+  };
+  if(!data.name){ toast('请填姓名', true); return; }
+  if(id){
+    var l = S.leads.find(function(x){return x.id===id;});
+    Object.assign(l, data);
+  } else {
+    data.id = 'L-' + String(S.seq.lead++).padStart(3,'0');
+    S.leads.unshift(data);
+  }
+  save(); closeDrawer(); render('leads');
+}
+function delLead(id){
+  if(!confirm('删除这条线索？')) return;
+  S.leads = S.leads.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('leads');
+}
+
+/* ---- 学员表单 ---- */
+function addStudent(){
+  openDrawer('新学员', studentForm());
+}
+function editStudent(id){
+  var s = S.students.find(function(x){return x.id===id;});
+  if(!s) return;
+  openDrawer('编辑学员 · '+s.name, studentForm(s));
+}
+function studentForm(s){
+  s = s || {};
+  return '<div class="fld"><label>姓名</label><input id="f-name" value="'+(s.name||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>类型</label><select id="f-type"><option '+(s.type==='学生'?'selected':'')+'>学生</option><option '+(s.type==='白领'?'selected':'')+'>白领</option></select></div>'+
+    '<div class="fld"><label>来源</label><select id="f-source">'+['朋友介绍','Zalo','Facebook','TikTok','Wechat','讲座会','其他'].map(function(t){return '<option '+(s.source===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="fld"><label>联系方式</label><input id="f-contact" value="'+(s.contact||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>等级</label><select id="f-level">'+['HSK1','HSK2','HSK3','HSK4','HSK5','HSK6','入门','初级','中级'].map(function(t){return '<option '+(s.level===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+    '<div class="fld"><label>报名日期</label><input type="date" id="f-enrollDate" value="'+(s.enrollDate||new Date().toISOString().slice(0,10))+'"></div></div>'+
+    '<div class="fld"><label>课程包</label><select id="f-pkg">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
+    '<div class="fld-row"><div class="fld"><label>已缴（VND）</label><input type="number" id="f-paid" value="'+(s.paid||0)+'"></div>'+
+    '<div class="fld"><label>状态</label><select id="f-status">'+['在读','结业','暂停','退学'].map(function(t){return '<option '+(s.status===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveStudent('+(s.id?"'"+s.id+"'":"null")+')">保存</button>'+
+      (s.id?'<button class="btn danger" onclick="delStudent(\''+s.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function saveStudent(id){
+  var pkgId = val('f-pkg');
+  var pkg = PACKAGES.find(function(p){return p.id===pkgId;});
+  var data = {
+    name: val('f-name'), type: val('f-type'), source: val('f-source'), contact: val('f-contact'),
+    level: val('f-level'), enrollDate: val('f-enrollDate'), pkg: pkgId, paid: parseInt(val('f-paid')||'0'),
+    status: val('f-status')
+  };
+  if(!data.name){ toast('请填姓名', true); return; }
+  if(id){
+    var s = S.students.find(function(x){return x.id===id;});
+    Object.assign(s, data);
+  } else {
+    data.id = 'S-' + String(S.seq.stu++).padStart(3,'0');
+    S.students.unshift(data);
+  }
+  save(); closeDrawer(); render('students');
+}
+function delStudent(id){
+  if(!confirm('删除这个学员？')) return;
+  S.students = S.students.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('students');
+}
+
+/* ---- 收费表单 ---- */
+function addBilling(){
+  var stuOpts = S.students.map(function(s){return '<option value="'+s.id+'">'+s.id+' '+s.name+'</option>';}).join('');
+  if(!S.students.length){ toast('请先添加学员', true); return; }
+  openDrawer('新收费单', billingForm(null, stuOpts));
+}
+function editBilling(id){
+  var b = S.billing.find(function(x){return x.id===id;});
+  if(!b) return;
+  var stuOpts = S.students.map(function(s){return '<option value="'+s.id+'" '+(b.sid===s.id?'selected':'')+'>'+s.id+' '+s.name+'</option>';}).join('');
+  openDrawer('编辑收费单 · '+b.id, billingForm(b, stuOpts));
+}
+function billingForm(b, stuOpts){
+  b = b || {};
+  return '<div class="fld"><label>学员</label><select id="f-sid">'+stuOpts+'</select></div>'+
+    '<div class="fld"><label>课程包</label><select id="f-pkg" onchange="autoPrice()">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" data-price="'+p.price+'" '+(b.pkg&&b.pkg.includes(p.name.split('（')[0])?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
+    '<div class="fld-row"><div class="fld"><label>总金额（VND）</label><input type="number" id="f-total" value="'+(b.total||0)+'"></div>'+
+    '<div class="fld"><label>已缴（VND）</label><input type="number" id="f-paid" value="'+(b.paid||0)+'"></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>缴费方式</label><select id="f-method"><option '+(b.method==='一次性'?'selected':'')+'>一次性</option><option '+(b.method==='分期'?'selected':'')+'>分期</option></select></div>'+
+    '<div class="fld"><label>下次应收日期</label><input type="date" id="f-dueDate" value="'+(b.dueDate||'')+'"></div></div>'+
+    '<div class="fld"><label>分期计划</label><input id="f-plan" value="'+(b.plan||'')+'" placeholder="如：分2期：5M + 5M"></div>'+
+    '<div class="fld"><label>状态</label><select id="f-status"><option '+(b.status==='进行中'?'selected':'')+'>进行中</option><option '+(b.status==='已结清'?'selected':'')+'>已结清</option></select></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveBilling('+(b.id?"'"+b.id+"'":"null")+')">保存</button>'+
+      (b.id?'<button class="btn danger" onclick="delBilling(\''+b.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function autoPrice(){
+  var sel = document.getElementById('f-pkg');
+  var opt = sel.options[sel.selectedIndex];
+  if(opt && opt.dataset.price){
+    document.getElementById('f-total').value = opt.dataset.price;
+  }
+}
+function saveBilling(id){
+  var sid = val('f-sid');
+  var stu = S.students.find(function(s){return s.id===sid;});
+  var pkgId = val('f-pkg');
+  var pkgObj = PACKAGES.find(function(p){return p.id===pkgId;});
+  var data = {
+    sid: sid, sname: stu?stu.name:'—', pkg: pkgObj?pkgObj.name:val('f-pkg'),
+    total: parseInt(val('f-total')||'0'), paid: parseInt(val('f-paid')||'0'),
+    method: val('f-method'), plan: val('f-plan'), dueDate: val('f-dueDate'), status: val('f-status')
+  };
+  if(id){
+    var b = S.billing.find(function(x){return x.id===id;});
+    Object.assign(b, data);
+  } else {
+    data.id = 'B-' + String(S.seq.bill++).padStart(3,'0');
+    S.billing.unshift(data);
+  }
+  save(); closeDrawer(); render('billing');
+}
+function delBilling(id){
+  if(!confirm('删除这条收费单？')) return;
+  S.billing = S.billing.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('billing');
+}
+function recordPayment(id){
+  var b = S.billing.find(function(x){return x.id===id;});
+  if(!b) return;
+  var amt = prompt('本次收款金额（VND）：', String(b.total - b.paid));
+  if(!amt) return;
+  amt = parseInt(amt);
+  if(isNaN(amt) || amt<=0){ toast('金额不对', true); return; }
+  b.paid += amt;
+  if(b.paid >= b.total){ b.status = '已结清'; }
+  save(); render('billing'); toast('已登记收款 '+fmtVND(amt)+' VND');
+}
+
+/* ---- 市场调查表单 ---- */
+function addResearch(){
+  openDrawer('新市场调查', researchForm());
+}
+function editResearch(id){
+  var r = S.research.find(function(x){return x.id===id;});
+  if(!r) return;
+  openDrawer('编辑 · '+r.topic, researchForm(r));
+}
+function researchForm(r){
+  r = r || {};
+  return '<div class="fld"><label>主题</label><input id="f-topic" value="'+(r.topic||'')+'"></div>'+
+    '<div class="fld"><label>内容（你的判断和结论）</label><textarea id="f-content" style="min-height:100px">'+(r.content||'')+'</textarea></div>'+
+    '<div class="fld"><label>关键数据</label><input id="f-data" value="'+(r.data||'')+'" placeholder="如：14.6 万考生 / 薪资溢价 10-40%"></div>'+
+    '<div class="fld-row"><div class="fld"><label>来源</label><input id="f-source" value="'+(r.source||'')+'"></div>'+
+    '<div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(r.date||new Date().toISOString().slice(0,10))+'"></div></div>'+
+    '<div class="fld"><label>标签（逗号分隔）</label><input id="f-tags" value="'+(r.tags||'')+'" placeholder="如：趋势,定价,渠道"></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveResearch('+(r.id?"'"+r.id+"'":"null")+')">保存</button>'+
+      (r.id?'<button class="btn danger" onclick="delResearch(\''+r.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function saveResearch(id){
+  var data = { topic: val('f-topic'), content: val('f-content'), data: val('f-data'), source: val('f-source'), date: val('f-date'), tags: val('f-tags') };
+  if(!data.topic){ toast('请填主题', true); return; }
+  if(id){ Object.assign(S.research.find(function(x){return x.id===id;}), data); }
+  else { data.id = 'R-' + String(S.seq.res++).padStart(3,'0'); S.research.unshift(data); }
+  save(); closeDrawer(); render('research');
+}
+function delResearch(id){
+  if(!confirm('删除？')) return;
+  S.research = S.research.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('research');
+}
+
+/* ---- 投放表单 ---- */
+function addCampaign(){
+  openDrawer('新投放', campaignForm());
+}
+function editCampaign(id){
+  var c = S.campaigns.find(function(x){return x.id===id;});
+  if(!c) return;
+  openDrawer('编辑投放 · '+c.id, campaignForm(c));
+}
+function campaignForm(c){
+  c = c || {};
+  return '<div class="fld-row"><div class="fld"><label>平台</label><select id="f-platform">'+['Zalo','Facebook','TikTok','Google'].map(function(t){return '<option '+(c.platform===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+    '<div class="fld"><label>类型</label><select id="f-type">'+['广告','帖子','私信群发','KOL合作'].map(function(t){return '<option '+(c.type===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(c.date||new Date().toISOString().slice(0,10))+'"></div>'+
+    '<div class="fld"><label>花费（VND）</label><input type="number" id="f-cost" value="'+(c.cost||0)+'"></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>引来线索</label><input type="number" id="f-leads" value="'+(c.leads||0)+'"></div>'+
+    '<div class="fld"><label>转化报名</label><input type="number" id="f-conv" value="'+(c.conv||0)+'"></div></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveCampaign('+(c.id?"'"+c.id+"'":"null")+')">保存</button>'+
+      (c.id?'<button class="btn danger" onclick="delCampaign(\''+c.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function saveCampaign(id){
+  var data = { platform: val('f-platform'), type: val('f-type'), date: val('f-date'), cost: parseInt(val('f-cost')||'0'), leads: parseInt(val('f-leads')||'0'), conv: parseInt(val('f-conv')||'0') };
+  if(id){ Object.assign(S.campaigns.find(function(x){return x.id===id;}), data); }
+  else { data.id = 'C-' + String(S.seq.cmp++).padStart(3,'0'); S.campaigns.unshift(data); }
+  save(); closeDrawer(); render('campaigns');
+}
+function delCampaign(id){
+  if(!confirm('删除？')) return;
+  S.campaigns = S.campaigns.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('campaigns');
+}
+
+/* ---- 素材表单 ---- */
+function addAsset(){
+  openDrawer('新素材', assetForm());
+}
+function editAsset(id){
+  var a = S.assets.find(function(x){return x.id===id;});
+  if(!a) return;
+  openDrawer('编辑素材 · '+a.title, assetForm(a));
+}
+function assetForm(a){
+  a = a || {};
+  return '<div class="fld"><label>标题</label><input id="f-title" value="'+(a.title||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>类型</label><select id="f-type">'+['文案','海报','视频','帖子模板','落地页'].map(function(t){return '<option '+(a.type===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+    '<div class="fld"><label>用途</label><select id="f-use">'+['招生','品牌推广','讲座宣传','转介绍'].map(function(t){return '<option '+(a.use===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>使用平台</label><input id="f-platform" value="'+(a.platform||'')+'" placeholder="Zalo / Facebook / TikTok"></div>'+
+    '<div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(a.date||new Date().toISOString().slice(0,10))+'"></div></div>'+
+    '<div class="fld"><label>状态</label><select id="f-status">'+['草稿','已发','测试中','退役'].map(function(t){return '<option '+(a.status===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveAsset('+(a.id?"'"+a.id+"'":"null")+')">保存</button>'+
+      (a.id?'<button class="btn danger" onclick="delAsset(\''+a.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function saveAsset(id){
+  var data = { title: val('f-title'), type: val('f-type'), use: val('f-use'), platform: val('f-platform'), date: val('f-date'), status: val('f-status') };
+  if(!data.title){ toast('请填标题', true); return; }
+  if(id){ Object.assign(S.assets.find(function(x){return x.id===id;}), data); }
+  else { data.id = 'A-' + String(S.seq.ast++).padStart(3,'0'); S.assets.unshift(data); }
+  save(); closeDrawer(); render('assets');
+}
+function delAsset(id){
+  if(!confirm('删除？')) return;
+  S.assets = S.assets.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('assets');
+}
+
+/* ---- 活动表单 ---- */
+function addEvent(){
+  openDrawer('新活动', eventForm());
+}
+function editEvent(id){
+  var e = S.events.find(function(x){return x.id===id;});
+  if(!e) return;
+  openDrawer('编辑活动 · '+e.name, eventForm(e));
+}
+function eventForm(e){
+  e = e || {};
+  return '<div class="fld"><label>活动名</label><input id="f-name" value="'+(e.name||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>类型</label><select id="f-type">'+['线下讲座','线上直播','体验课','沙龙'].map(function(t){return '<option '+(e.type===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+    '<div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(e.date||new Date().toISOString().slice(0,10))+'"></div></div>'+
+    '<div class="fld"><label>地点 / 线上链接</label><input id="f-loc" value="'+(e.loc||'')+'"></div>'+
+    '<div class="fld-row"><div class="fld"><label>报名人数</label><input type="number" id="f-reg" value="'+(e.reg||0)+'"></div>'+
+    '<div class="fld"><label>实到人数</label><input type="number" id="f-att" value="'+(e.att||0)+'"></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>现场转化</label><input type="number" id="f-conv" value="'+(e.conv||0)+'"></div>'+
+    '<div class="fld"><label>成本（VND）</label><input type="number" id="f-cost" value="'+(e.cost||0)+'"></div></div>'+
+    '<div class="fld"><label>备注</label><textarea id="f-note">'+(e.note||'')+'</textarea></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveEvent('+(e.id?"'"+e.id+"'":"null")+')">保存</button>'+
+      (e.id?'<button class="btn danger" onclick="delEvent(\''+e.id+'\')">删除</button>':'')+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function saveEvent(id){
+  var data = { name: val('f-name'), type: val('f-type'), date: val('f-date'), loc: val('f-loc'),
+    reg: parseInt(val('f-reg')||'0'), att: parseInt(val('f-att')||'0'), conv: parseInt(val('f-conv')||'0'),
+    cost: parseInt(val('f-cost')||'0'), note: val('f-note') };
+  if(!data.name){ toast('请填活动名', true); return; }
+  if(id){ Object.assign(S.events.find(function(x){return x.id===id;}), data); }
+  else { data.id = 'E-' + String(S.seq.evt++).padStart(3,'0'); S.events.unshift(data); }
+  save(); closeDrawer(); render('events');
+}
+function delEvent(id){
+  if(!confirm('删除？')) return;
+  S.events = S.events.filter(function(x){return x.id!==id;});
+  save(); closeDrawer(); render('events');
+}
+
+/* ---- 工具：取 input/select 值 ---- */
+function val(id){
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+/* ---- 语言切换（预留，暂只切换按钮状态） ---- */
+document.getElementById('btn-zh').onclick = function(){
+  this.classList.add('on'); document.getElementById('btn-vi').classList.remove('on');
+  toast('中文模式（越南语待补）');
+};
+document.getElementById('btn-vi').onclick = function(){
+  this.classList.add('on'); document.getElementById('btn-zh').classList.remove('on');
+  toast('Tiếng Việt（chưa hoàn thiện）');
+};
+
+/* ---- 侧栏导航 ---- */
+document.querySelectorAll('#nav a').forEach(function(a){
+  a.addEventListener('click', function(e){ e.preventDefault(); nav(a.dataset.v); });
+});
+
+/* ---- 启动 ---- */
+load();
+nav('overview');
+</script>
+</body>
+</html>
