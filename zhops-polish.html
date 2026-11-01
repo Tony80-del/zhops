@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-01">2026-11-01 · 今天<span class="c">13</span></button>
+    <button class="on" data-day="2026-11-01">2026-11-01 · 今天<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
     <button data-day="2026-10-19">2026-10-19<span class="c">10</span></button>
@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">13 行 · 已打磨 11 · 按决定暂缓 1 · 待打磨 1</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">14 行 · 已打磨 12 · 按决定暂缓 1 · 待打磨 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -391,13 +391,27 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-01</td>
               <td class="mono nw">—</td>
               <td>页面已跑通，以下按优先级排：<br>
-              <b>① 主端侧栏入口</b>：主端 <span class="mono">zhops-admin.html</span> 侧栏加「业务部 ↗」<span class="mono">data-ext</span> 外跳链接（跟「人事部 ↗ / 财务部 ↗」同模式），线上发布脚本 <span class="mono">publish-zhops.sh</span> 要加 <span class="mono">biz.html</span>。<br>
+              <b>① 主端侧栏入口</b> <span class="b done" style="font-size:11px">✅ 已完成 P-89</span>：主端 <span class="mono">zhops-admin.html</span> 侧栏加「业务部 ↗」<span class="mono">data-ext</span> 外跳链接（跟「人事部 ↗ / 财务部 ↗」同模式），线上发布脚本 <span class="mono">publish-zhops.sh</span> 已加 <span class="mono">biz.html</span>。<br>
               <b>② 学员档案 ↔ 排课打通</b>（Tony 定「搭建好之后再处理」）：学员 ID 共享、课次 done 后学员出勤自动 +1、学员缴费记录推到财务部（收入侧）。<br>
               <b>③ 越南语切换</b>：按钮已留位（🇨🇳/🇻🇳），字典待补 —— 跟人事页同一套整句命中翻译层。<br>
               <b>④ 宣传素材存文件</b>：图片 / 视频 / PDF 存 IndexedDB（跟人事合同 PDF 一样），现在只存文字元数据。<br>
               <b>⑤ 投放记录 ↔ 线索池关联</b>：投放引来的线索按来源自动关联到线索池，现在只手动填数字。<br>
               <b>⑥ 讲座活动 ↔ 线索池关联</b>：讲座引来的线索来源标「讲座会」自动关联。<br>
               <b>⑦ 探针 + 验收脚本</b>：写 <span class="mono">check-biz-core.js</span> 探针，纳入 <span class="mono">verify.sh</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-89</td>
+              <td><b>业务部上线 + 去掉 Demo 字样</b><br><span style="color:#8899aa;font-size:12px">「把这个字 Demo 去掉，现在我们是正式版的」</span></td>
+              <td class="nw">业务部 · 上线</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>去字样</b>：<span class="mono">biz.html</span> 3 处、生态地图 5 处、台账 P-87/P-88 3 处，全清。历史条目（P-40/P-47）不动。<br>
+              <b>主端入口</b>：侧栏「其他系统」加「业务部 ↗」（<span class="mono">data-ext</span>，同窗口跳转，不带 <span class="mono">target</span>、不带 <span class="mono">data-v</span>）；补越南语 <span class="mono">'业务部':'Phòng Kinh doanh'</span>。<br>
+              <b>发布脚本</b>：<span class="mono">publish-zhops.sh</span> 加 <span class="mono">SRC_BIZ</span> + 复制 + 保险丝（判据 <span class="mono">zhops.biz.v1</span>，并反向禁止出现 hr/fin 的键）+ 提交清单 + 输出地址。<br>
+              <b>探针</b>：<span class="mono">check-admin-dept-links.js</span> 从 2 入口扩到 3 入口，36 → 43 项全过；全套 20/20。<br>
+              <b>线上</b>：<span class="mono">biz.html</span> 首次上线，线上 sha 与本地一致（已下载核对）。</td>
             </tr>
           </tbody>
         </table>
