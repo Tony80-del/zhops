@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">6 行 · 已打磨 6</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">7 行 · 已打磨 7</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -280,6 +280,30 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>★ 探针自身也踩了三个坑</b>：① 只查 <span class="mono">#nav</span>，漏了 <span class="mono">#nav2</span> 里的「配置」；② 用 <span class="mono">body.innerText</span> 取文字 —— 花名册的「展开行」是 <span class="mono">display:none</span>，第二个人名取不到（<span class="mono">innerHTML</span> 有、<span class="mono">textContent</span> 没有）；③ 「事由」是输入框的 <span class="mono">value</span>，<span class="mono">textContent</span> 取不到。<br>
               <b>★ 一条真装饰品被揪出来</b>：「存盘值不动」原本只比内存对象，而翻译层本来就不写 S，<b>永远绿</b>。改成走真存盘（<span class="mono">save()</span> → 读 <span class="mono">localStorage</span> → 比对），并在探针里<b>内建反向控制</b>：手工把一条状态改成越南语再存盘，证明那几条真会报红。<br>
               <b>没做</b>：使用说明页的长段说明文字、制度库正文<b>不翻</b>（那属于内容，不是界面骨架）；<span class="mono">VI_HR</span> 目前约 150 条，没进字典的句子保持中文，逐条补。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-82</td>
+              <td><b>越南语切换改机制：不再半翻 + 说明文字收起</b><br><span style="color:#8899aa;font-size:12px">「我切换到越文，还有中文的残留」</span></td>
+              <td class="nw">人事 · 语言</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>★ 不是字典不够，是机制错了。</b>P-81 的翻译层是<b>逐词替换</b>：整串不在字典，就把字典里的词一个个找出来换。必然产出夹生句 —— 比全中文还难读：<br>
+              <span class="mono">「合同提前提醒（天）」→「Hợp đồng提前Nhắc nhở（天）」</span><br>
+              <span class="mono">「按合同定价」→「按Hợp đồng定价」</span><br>
+              <b>新规则（两条）</b>：① 整串在字典里 → 整串替换；② 整串不在 → <b>原样返回中文，一个字都不动</b>。永远只有「全越南语」和「全中文」两种结果。<br>
+              <b>带数字的句子</b>（「1 人」「☁︎ 排课数据 · 2 位教师 · 31 节课」）写不进字典 —— 用<b>整串正则</b>匹配（<span class="mono">NUM_RULES</span>），仍然是整句规则，不逐词拆。<br>
+              <b>★ 说明文字在越南语模式下收起</b>（只隐藏、不删除，切回中文立刻恢复）：<br>
+              ・<span class="mono">.pnote</span> / <span class="mono">.psub</span> —— 「这套怎么用」「为什么这么设计」这类长段落<br>
+              ・<span class="mono">#v-guide</span> 整个板块 + 侧栏「0 使用说明」按钮 + 侧栏页脚（切过去会自动跳到花名册，避免空白页）<br>
+              ・<span class="mono">.fmtcard</span> —— 三张「格式怎么填」规则表（字段 / 格式 / 规则，讲的是你怎么填，不是界面）<br>
+              ・<span class="mono">p.sm.mu</span> —— 表格下方那行解释小字<br>
+              理由：那些是写给你（负责人）看的设计说明，不是越南同事操作的界面。硬翻 = 花最多 token 翻一堆没人读的字。越南同事要的是「按钮在哪、这格填什么」。<br>
+              <b>效果（真 Chrome 逐板块扫描可见中文节点）</b>：<b>298 条 → 0 条</b>。10 个业务板块全部归零，混排夹生句从大量降到 0（仅剩 1 条格式示例 <span class="mono">HĐ-年-序号</span>，那本来就该是中文示例）。<br>
+              <b>探针</b> <span class="mono">check-p81-lang.js</span> 从 37 条扩到 <b>49 条全绿</b>：新增「整串命中才翻」「不在字典不拆」「全页无夹生句」「说明块已收起」+ <b>反向断言「业务表格还在」</b>（防止把该显示的也藏了）。<br>
+              <b>反向控制</b>：把逐词拆分改回去 → 探针直接复现那两句夹生句，报红 2 条；sha256 确认逐字还原。<br>
+              <b>剩下要翻的</b>：0 条可见界面文字。以后新增界面文字若没进字典，会以<b>整句中文</b>形式出现（不再是夹生句），一眼能认出、便于补。</td>
             </tr>
           </tbody>
         </table>

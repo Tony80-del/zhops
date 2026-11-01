@@ -202,6 +202,39 @@ table{border-collapse:collapse;width:100%}
 }
 .pnote b{color:var(--tx);font-weight:500}
 
+/* ★ 2026-11-01（P-82）：越南语模式下**隐藏说明文字**。
+   理由：.pnote / .psub / .pfoot 里装的是「这套系统怎么用」「为什么这么设计」这类
+   中文长段落 —— 那是写给你（负责人）看的设计说明，不是越南同事要操作的界面。
+   硬翻成越南语 = 花大量 token 翻一堆没人读的字，而且翻坏了更误导。
+   越南同事要的是：按钮在哪、这一格填什么。所以直接收起来。
+   ⚠️ 只隐藏、不删除 —— 切回中文立刻恢复，数据一个字节不动。 */
+body[data-hrlang="vi"] .pnote,
+body[data-hrlang="vi"] .psub{display:none !important;}
+
+/* ★ 2026-11-01（P-82）：越南语模式下**整套「使用说明」收起来**。
+   理由：那个板块 100% 是设计说明（「布局：两栏」「三层切换」「九个板块分工」
+   「第一次用按这个顺序」），是写给你看的，不是给越南同事操作的。
+   把它翻了等于翻一整本中文说明书 —— 花最多 token，收益最低。
+   ★ 三处一起藏，缺一个就会出现「点得进去但一片空白」：
+     ① 侧栏「0 使用说明」按钮  ② #v-guide 板块本身  ③ 侧栏底部提示文字
+   切到越南语时 JS 会自动跳到「员工花名册」，避免停在空白页。 */
+body[data-hrlang="vi"] #nav button[data-v="guide"],
+body[data-hrlang="vi"] #v-guide,
+body[data-hrlang="vi"] .sidefoot{display:none !important;}
+
+/* ★ 2026-11-01（P-82）：越南语模式下藏掉「格式怎么填」那张规则表。
+   它整张表是「字段 / 格式 / 正确例子 / 规则·填错会怎样」——
+   讲的是**你怎么填**，不是**我在哪点**。给越南同事看反而是噪音。
+   ⚠️ 用 stable 的 class 标记（.fmtcard），不靠 :has()/标题文字匹配 ——
+      靠标题匹配一旦改字就静默失效，而且老浏览器不支持 :has()。 */
+body[data-hrlang="vi"] .fmtcard{display:none !important;}
+
+/* ★ 2026-11-01（P-82）：表格下方那一行小字说明（.sm.mu 且是 <p>）
+   和 .pnote 是同一类东西 —— 「签合同的时候填一次就够了」「两套系统 id 不通用」
+   都是解释给你听的，不是界面。越南语模式下一起收起。
+   ⚠️ 只匹配 <p>，不匹配 td 里的 .sm.mu（那里的「课时 0」「未填」是数据，要保留）。 */
+body[data-hrlang="vi"] p.sm.mu{display:none !important;}
+
 /* ---------- 卡片 ---------- */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
 .card-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
@@ -610,7 +643,7 @@ table.fmt td.bad{color:var(--neg)}
         <p class="sm mu" style="margin:9px 0 0"><b>工号 / 姓名 / 岗位 / 部门 / 入职日 / 状态 由「合同」页自动带出</b> —— 签合同的时候填一次就够了，这里只补合同上没有的（电话、住址、紧急联系人）。点任意一行 → 右侧拉出「一人一档」。</p>
         <p class="sm mu" style="margin:5px 0 0"><b>排课ID</b>：对应排课系统的教师 id（<code>t1</code> / <code>t2</code>）。<b>只有填了才会自动统计课时</b> —— 两套系统 id 不通用，这一栏是唯一的桥。点输入框会列出云端已有的教师。</p>
       </div>
-      <div class="card">
+      <div class="card fmtcard">
         <div class="card-h"><h3>格式怎么填</h3><span class="sp"></span><span class="tag nologic">最常错：排课ID空着</span></div>
         <table class="fmt">
           <thead><tr><th style="width:100px">字段</th><th style="width:150px">格式</th><th style="width:140px">正确例子</th><th>规则 / 填错会怎样</th></tr></thead>
@@ -654,7 +687,7 @@ table.fmt td.bad{color:var(--neg)}
         <p class="sm mu" style="margin:5px 0 0">「剩余」在提醒天数以内会变黄，已过期变红。<b>这里的月薪只是合同约定，不是实发</b> —— 实发在「薪酬发放」。</p>
         <p class="sm mu" style="margin:5px 0 0"><b>计价方式</b>决定怎么算钱：<b>月薪</b> 用「月薪（约定）」；<b>课时费</b> 用「课时单价 × 当月已完成课次」（课次自动从排课系统读，前提是花名册填了排课ID）。<b>合同是唯一的定价出口</b> —— 排课系统里的教师单价只作参考，不作结算依据。</p>
       </div>
-      <details class="card">
+      <details class="card fmtcard">
         <summary class="card-h" style="cursor:pointer;list-style:none;margin:0"><h3>格式怎么填</h3><span class="sp"></span><span class="tag nologic">点开看字段规则</span></summary>
         <table class="fmt" style="margin-top:10px">
           <thead><tr><th style="width:100px">字段</th><th style="width:150px">格式</th><th style="width:140px">正确例子</th><th>规则</th></tr></thead>
@@ -698,7 +731,7 @@ table.fmt td.bad{color:var(--neg)}
         </table>
         </div>
       </div>
-      <div class="card">
+      <div class="card fmtcard">
         <div class="card-h"><h3>格式怎么填</h3></div>
         <table class="fmt">
           <thead><tr><th style="width:110px">字段</th><th style="width:150px">格式</th><th style="width:140px">正确例子</th><th>规则</th></tr></thead>
@@ -3433,6 +3466,14 @@ var HR_LANG = (function(){
   '合计':'Tổng cộng', '未生成':'Chưa tạo', '草稿':'Bản nháp',
   /* ---- 云端灯 ---- */
   '检测中':'Đang kiểm tra', '已连':'Đã kết nối', '云端':'Đám mây',
+  /* ---- 花名册 · KPI 与按钮（P-82 扫描后补齐）---- */
+  '在册人数':'Số người trong danh sách',
+  '试用期':'Thời gian thử việc',
+  '合同将到期':'Hợp đồng sắp hết hạn',
+  '证件将到期':'Giấy tờ sắp hết hạn',
+  '+ 加一个人':'+ Thêm người',
+  /* 带数字的句子没法进字典（每次数字不同）→ 交给 JS 规则处理，
+     见 trText 下方的 NUM_RULES。这里只登记固定部分。 */
 };
 
 /* 不翻的地方：这些元素里的文字一律原样保留。
@@ -3452,30 +3493,57 @@ var VI_SKIP_SEL = '#drawer, .ro-list, [data-k], input, textarea, select, option,
     return false;
   }
 
-  /* 把一个文本节点按字典替换。
-     ⚠️ 性能：字典键排序**只做一次**（VI_KEYS），不能每个文本节点都排一遍 ——
-        人事页有几千个文本节点，每节点排 150 个键 = 页面直接卡死（真踩到，
-        CDP Evaluate 直接超时）。这个词表按长度倒序，保证「课时费」先于「课时」匹配。 */
+  /* 把一个文本节点翻成越南语。
+     ==========================================================================
+     ★ 2026-11-01（P-82）改机制：**整串命中才翻，绝不逐词拆**。
+     --------------------------------------------------------------------------
+     旧做法（错的）：整串不在字典，就把字典里的词一个个找出来替换。
+     后果 —— 半翻句，比全中文还难读：
+       「合同提前提醒（天）」 → 「Hợp đồng提前Nhắc nhở（天）」
+       「按合同定价」         → 「按Hợp đồng定价」
+       「补发」字典里有        → 「补」被翻、「发」没翻
+     这正是 Tony 反馈「切换到越文还有中文残留」的根因 —— 不是字典不够，
+     是机制必然产出这种夹生句。
+
+     新规则（两条，简单）：
+       ① 整串（去掉首尾空白）在字典里 → 整串替换
+       ② 整串不在字典里 → **原样返回中文，一个字都不动**
+     这样只有「全越南语」和「全中文」两种结果，永远不会有夹生。
+
+     代价：字典漏一条，那一整句就还是中文。但**看得懂的中文**远好过
+     **看不懂的夹生句** —— 而且漏的哪句一眼就能看出来，容易补。
+     ========================================================================== */
   function trText(raw){
     var s = String(raw);
     if (!s.trim()) return s;
     var lead = (s.match(/^\s*/) || [''])[0];
     var tail = (s.match(/\s*$/) || [''])[0];
     var core = s.slice(lead.length, s.length - tail.length);
+    /* 只认整串。不做任何拆分、不做任何词内替换。 */
     if (VI_HR[core] !== undefined) return lead + VI_HR[core] + tail;
-    /* 整串不在字典里：先看看有没有任何键出现在串里，没有就原样返回（绝大多数节点走这条路） */
-    var out = core, hit = false;
-    for (var i = 0; i < VI_KEYS.length; i++){
-      var k = VI_KEYS[i];
-      if (out.indexOf(k) === -1) continue;
-      out = out.split(k).join(VI_HR[k]);
-      hit = true;
+    /* ★ 带数字的句子（「1 人」「2 位教师 · 31 节课」）没法写进字典（数字每次都变），
+       用**整串正则**匹配 —— 仍然是整句规则，不是逐词拆。 */
+    for (var r = 0; r < NUM_RULES.length; r++){
+      var m = core.match(NUM_RULES[r].re);
+      if (m) return lead + NUM_RULES[r].to(m) + tail;
     }
-    return hit ? (lead + out + tail) : s;
+    return s;
   }
 
-  /* 字典键按长度倒序，全局只算一次 */
-  var VI_KEYS = Object.keys(VI_HR).sort(function(a, b){ return b.length - a.length; });
+  /* 带数字的整句规则。**必须是整串匹配**（^…$），不做局部替换。 */
+  var NUM_RULES = [
+    /* 「1 人」 */
+    { re: /^(\d+)\s*人$/, to: function(m){ return m[1] + ' người'; } },
+    /* 「☁︎ 排课数据 · 2 位教师 · 31 节课」 */
+    { re: /^☁︎\s*排课数据\s*·\s*(\d+)\s*位教师\s*·\s*(\d+)\s*节课$/,
+      to: function(m){ return '☁︎ Dữ liệu xếp lịch · ' + m[1] + ' giáo viên · ' + m[2] + ' tiết'; } },
+    /* 「共 8 条」这类计数 */
+    { re: /^共\s*(\d+)\s*条$/, to: function(m){ return m[1] + ' mục'; } },
+  ];
+
+  /* ⚠️ VI_KEYS 已不再需要 —— 整串查表就够了。
+     留这个空数组只为兼容旧探针里可能取到它（取到空数组不会报错）。 */
+  var VI_KEYS = [];
 
   function walk(root){
     if (!root) return;
@@ -3533,11 +3601,24 @@ var VI_SKIP_SEL = '#drawer, .ro-list, [data-k], input, textarea, select, option,
   function setLang(v){
     HR_LANG = (v === 'vi') ? 'vi' : 'zh';
     try { localStorage.setItem(HR_LANG_KEY, HR_LANG); } catch(e){}
+    /* ★ 2026-11-01（P-82）：把语言写到 body 属性上 —— CSS 靠它隐藏说明文字。
+       （不能用 JS 逐个 hide：渲染会重建节点，hide 会丢。） */
+    try { document.body.setAttribute('data-hrlang', HR_LANG); } catch(e){}
     var b = document.getElementById('langSwitch');
     if (b) b.textContent = HR_LANG === 'vi' ? '🇻🇳 Tiếng Việt' : '🇨🇳 中文';
+    /* 越南语模式下「使用说明」整块被 CSS 藏了 —— 如果当前正停在那一页，
+       切过去会看到一片空白。自动跳到花名册（越南同事最常用的一页）。 */
+    if (HR_LANG === 'vi'){
+      var cur = document.querySelector('.nav button.on');
+      if (cur && cur.getAttribute('data-v') === 'guide'){
+        try { show('emp'); } catch(e){}
+      }
+    }
     if (HR_LANG === 'vi') applyLang(document.body);
     else restore(document.body);
   }
+  /* 开机就把属性写上（存的是 vi 时要立刻生效） */
+  try { document.body.setAttribute('data-hrlang', HR_LANG); } catch(e){}
 
   /* 按钮 */
   var btn = document.getElementById('langSwitch');
