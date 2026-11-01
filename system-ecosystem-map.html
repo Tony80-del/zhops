@@ -1168,7 +1168,8 @@
 <div class="section-title">第三层 · 数据流向</div>
 <div class="section-note">
   这一层只写<b>代码里能验证的</b>。每条流标出源码位置，你可以直接去对照。<br>
-  <b>实线箭头 = 已通</b>；<b>✕ = 断点</b>；<b>┈▶ = 规划（代码不存在）</b>。
+  <b>实线箭头 = 已通</b>；<b>✕ = 断点 / 已作废</b>；<b>┈▶ = 规划（代码不存在）</b>。<br>
+  <span style="color:var(--warn)"><b>★ 2026-11-01 复核</b>：原来最重要的「主端 ↔ 另外两端 · 不通」<b>已作废</b> —— S1.3 打通、S1.9 改分片，主端现在写 <span class="loc">zhops/public</span> + <span class="loc">zhops/t1..t5</span>，拉取自动、推送手动。</span>
 </div>
 
 <div class="flow-box">
@@ -1180,7 +1181,9 @@
       <span class="fh-tag fh-ok">GET 只读</span>
     </div>
     <div class="flow-why">
-      排课主端启动时向云端要一份课次目录；失败就用内嵌的 <span class="loc">CURRI_FALLBACK</span> 兜底，断网也能开。这是三端里<b>唯一</b>跑通的自动流。
+      <b style="color:var(--warn)">⚠ 术语：这里的「排课主端 index.html」指<b>老的排课系统</b>（源文件 <span class="loc">docs/schedule.html</span>，发布成 <span class="loc">index.html</span>），<b>不是</b> MGD 主端 <span class="loc">zhops-admin.html</span>（发布成 <span class="loc">admin.html</span>）。两者是不同系统，别混。</b><br>
+      排课系统启动时向云端要一份课次目录；失败就用内嵌的 <span class="loc">CURRI_FALLBACK</span> 兜底，断网也能开。
+      <span style="color:var(--hint);">（原文写「三端里唯一跑通的自动流」—— 2026-11-01 已不成立：主端 ⇄ 教师端、三端 → 人事 都已通。）</span>
     </div>
     <div class="flow-line"><span class="src">排课主端 index.html</span>
    │
@@ -1226,24 +1229,27 @@
   <!-- 块 3 -->
   <div class="flow-block">
     <div class="flow-h">
-      【断点】主端 ↔ 另外两端 · 不通
-      <span class="fh-tag fh-bad">三端不是三端</span>
+      【已通】主端 ↔ 另外两端 · 2026-10-30 S1.3 打通
+      <span class="fh-tag fh-ok">三端已连</span>
     </div>
     <div class="flow-why">
-      <b>这是整张图最重要的一块。</b>主端 <span class="loc">index.html</span> 全文只有一个 <span class="loc">fetch()</span>（第 724 行），而且只读课次目录。<b>它从不读写 <span class="key">zhops/master</span>。</b>所以主端和教师/管理端之间没有任何自动通道。
+      <b>★ 2026-11-01 大改：这一块原来写「主端从不读写 zhops/master，三端不是三端」—— 已作废。</b>
+      2026-10-30 的 S1.3 给主端加了云端读写，2026-10-30 的 S1.9 又把写法改成<b>多教师分片</b>，所以现在<b>主端不再写单一 <span class="key">zhops/master</span>，而是写 <span class="key">zhops/public</span> + <span class="key">zhops/t1..t5</span></b>。
     </div>
-    <div class="flow-line"><span class="src">主端 index.html</span>
+    <div class="flow-line"><span class="src">主端 zhops-admin.html</span>
    │
-   ├── 本机 <span class="key">zhops.sched.v2</span>            <span class="note">独立键，版本还比另两端低一级</span>
-   ├── <span class="dst">GET meta/curriculum</span>              <span class="note">唯一的外部调用</span>
-   └── <span class="dead">✕ 不写云 · 不读 zhops/master</span>
+   ├── 本机 <span class="key">zhops.sched.v3</span>            <span class="note">v3（原 v2 已升；v3 曾被教师端占用，现已分开）</span>
+   ├── <span class="dst">GET meta/curriculum</span>              <span class="note">课次目录（通道一，未变）</span>
+   ├── <span class="act">fsPull()</span> 自动 · <span class="act">fsPush()</span> <b>手动</b>  <span class="note">zhops-admin.html:1134 / :1150</span>
+   ├── <span class="note">⚠️ 推送是「手点 ☁︎ 推送到云端」（Tony 2026-10-17 定：全手动）。<span class="loc">fsSchedulePush()</span> 保留但 save() 不再调用 = 死代码。只有<b>拉取</b>是开机自动。</span>
+   ├── <span class="dst">zhops/public</span>                    <span class="note">时段表 / 课程目录 / 阶段名 / 教室省市 / 门槛 —— 公共那份</span>
+   ├── <span class="dst">zhops/t1…t5</span>                     <span class="note">每位教师一份分片（sliceDocId）</span>
+   └── <span class="dst">zhops/done_&lt;课次ID&gt;</span>              <span class="note">课次标 done 时的增量记录（给人事）</span>
 
-<span class="src">主端排好的课</span>          <span class="dead">✕ ─ ─ ─▶</span>  <span class="dst">教师端今日课程</span>      <span class="note">主端不写云，教师端无从获取</span>
-<span class="src">教师端提交的申请</span>      <span class="dead">✕ ─ ─ ─▶</span>  <span class="dst">主端申请管理</span>        <span class="note">主端不读云，拿不到</span>
+<span class="src">主端排好的课</span>          <span class="yes">──▶</span>  <span class="dst">教师端今日课程</span>      <span class="note">已通：教师端读自己那份 t&lt;id&gt;</span>
+<span class="src">教师端提交的申请</span>      <span class="yes">──▶</span>  <span class="dst">主端申请管理</span>        <span class="note">已通：主端启动 fsPull 合并</span>
 
-<span class="note">唯一残留的人工通路：</span>
-<span class="src">教师端</span> 生成 <span class="act">ZHA1.…</span> 申请码  ──复制──▶  <span class="src">主端</span> <span class="lbl">importCode()</span>   <span class="note">index.html:1607</span>
-        <span class="dead">✕ 但教师端已无生成入口</span>                          <span class="note">teacher.html 全文无 btoa / 无 ZHA</span>
+<span class="note">申请码通路：</span><span class="dead">✕ 已彻底作废</span> <span class="note">两端都已无此功能（2026-11-01 结案），只剩老排课系统一段不执行的解析代码</span>
 </div>
   </div>
 
@@ -1296,20 +1302,22 @@
       看这一块的时候当成<b>施工图</b>，不是现状图。
     </div>
     <div class="flow-line"><span class="note">── 跨系统（zhops 往外送）───────────────────────────────</span>
+<span class="src">zhops 课次</span>  <b class="yes">──▶</b>  <span class="dst">人事</span>  <b>算课时</b>          <span class="note">★ 2026-10-31 已通：课次标 done 就写 zhops/done_&lt;课次ID&gt;</span>
 <span class="src">zhops 课次</span>  ┈┈▶  <span class="dst">财务</span>  算收入                <span class="note">财务已本地建 · 通道未接</span>
-<span class="src">zhops 课次</span>  ┈┈▶  <span class="dst">财务</span>  算薪酬                <span class="note">同上 · 已定：财务算</span>
-<span class="src">zhops 教师</span>  ┈┈▶  <span class="dst">人事</span>  建员工档案            <span class="note">人事已本地建 · 通道未接，只传人员信息，不含课时</span>
+<span class="src">zhops 教师</span>  ┈┈▶  <span class="dst">人事</span>  建员工档案            <span class="note">人事已本地建 · 通道未接，只传人员信息</span>
 <span class="src">zhops 班级</span>  ┈┈▶  <span class="dst">市场</span>  招生参考              <span class="note">未建</span>
 
 <span class="note">── 审批（各部门往主页端送）─────────────────────────────</span>
+<span class="src">人事</span> 工资单  <b class="yes">──▶</b> <span class="act">财务审批</span> <b class="yes">──▶</b> <span class="dst">财务付款</span>  <span class="note">★ 已通：zhops/approvals，财务 PATCH 回写凭证号</span>
 <span class="src">人事</span> 制度文件  ┈┈<span class="act">审批</span>┈┈▶  <span class="dst">主页端</span> 员工提取     <span class="note">主页端待转动态（已定）</span>
 <span class="src">市场</span> 宣传素材  ┈┈<span class="act">审批</span>┈┈▶  <span class="dst">主页端</span> 员工查看     <span class="note">同上</span>
 <span class="src">财务</span> 公告摘要  ┈┈<span class="act">审批</span>┈┈▶  <span class="dst">主页端</span> 公开预算     <span class="note">同上</span>
 
-<span class="note">── 财务 → 人事（薪酬）· 方向已定 2026-10-29 ─────────────</span>
-<span class="src">zhops 课次</span>  ┈┈▶  <span class="src">财务</span>  ×课时单价  ┈┈▶  <span class="dst">人事</span>  发放 / 归档
-                              <span class="note">金额在财务算完才给人事 · 人事不做乘法</span>
-<span class="dead">已作废：人事自己拿 zhops 课次算薪酬</span>                <span class="note">原图两个来源，等于没定</span>
+<span class="note">── 薪酬链 · <b class="yes">2026-11-01 定：人事算、财务付</b> ────────────</span>
+<span class="src">zhops 课次</span>  <b class="yes">──▶</b>  <span class="src">人事</span>  ×合同单价 → 应发 −社保 −个税 −预支 −扣款 +补发 = 实发
+                                                        <span class="note">人事算完提交 zhops/approvals</span>
+                                                  <span class="dst">财务</span>  核对总数 · 批 · 付    <span class="note">不改数字 · 只点按钮</span>
+<span class="dead">已作废（原图两处）：① 财务算薪酬 ② 人事只记发放不计算</span>  <span class="note">两条都是旧口径，2026-11-01 统一为「人事算、财务付」</span>
 </div>
   </div>
 

@@ -180,7 +180,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-10-31 ============ -->
   <div class="day-panel on" data-day="2026-11-01">
     <div class="card">
-      <h2>2026-11-01 · 打磨记录<span class="n">10 行 · 已打磨 9 · 按决定暂缓 1</span><span class="sp"></span>
+      <h2>2026-11-01 · 打磨记录<span class="n">11 行 · 已打磨 10 · 按决定暂缓 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -350,6 +350,22 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>性质</b>：这不是 bug，是<b>一段永远不会执行的死代码</b> —— 教师端已无生成入口，没有码可喂给它。不报错、不泄露、不影响任何功能。<br>
               <b>★ Tony 决定：选方案 2 —— 不改代码，只把它从「断点」移走。</b>理由：老排课系统是线上正在用的系统，不为了三行死代码单独动它；等它本身要改时顺手清理。<br>
               <b>改的只有文档</b>：生态地图 4 处 —— ① 顶部状态条「断点 3」→「断点 3 已结案」② 待办卡删掉断点 3 整块，标题改成只剩断点 4 ③ 数据流正文改成「已成死路，但不再是断点」+ 说清是死代码 ④ S1.4 那行划掉并标「已结案」。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-86</td>
+              <td><b>生态地图「第三层 · 数据流向」整层复核更新</b><br><span style="color:#8899aa;font-size:12px">「第三层 · 数据流向 有更新吗？」</span></td>
+              <td class="nw">架构 · 文档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-01</td>
+              <td class="mono nw">11-01</td>
+              <td><b>有，而且错的不少。</b>逐块对源码核过：<br>
+              <b>★ 块 3「主端 ↔ 另外两端 · 不通」整块作废</b> —— 标题写着「这是整张图最重要的一块」，内容却是「主端从不读写 zhops/master，三端不是三端」。<b>实际早已打通</b>（S1.3 加云端读写、S1.9 改多教师分片）。重写为「已通」：主端写 <span class="mono">zhops/public</span> + <span class="mono">zhops/t1…t5</span> + <span class="mono">zhops/done_&lt;课次ID&gt;</span>，本机键 <span class="mono">zhops.sched.v3</span>。<br>
+              <b>★ 补一条关键细节</b>：<b>拉取自动、推送手动</b>。<span class="mono">fsSchedulePush()</span> 保留但 <span class="mono">save()</span> 不再调用（Tony 2026-10-17 定「全手动」），所以推送靠手点 ☁︎。<br>
+              <b>块 6 三处口径反了</b>：① 原写「zhops 课次 → 财务 算薪酬 · 已定：财务算」→ 改成「→ 人事 算课时，已通」② 原写「→ 人事 建档案 · 只传人员信息，不含课时」→ 删掉「不含课时」（课时早就在传）③ 新增「人事 工资单 → 财务审批 → 付款」已通，并重画薪酬链为「人事算、财务付」。<br>
+              <b>块 1 术语混了</b>：「排课主端 index.html」其实是<b>老排课系统</b>（源 <span class="mono">docs/schedule.html</span> → 发布成 <span class="mono">index.html</span>），不是 MGD 主端（<span class="mono">zhops-admin.html</span> → <span class="mono">admin.html</span>）。已加显著术语说明。<br>
+              <b>连带修正</b>：块 1 原写「三端里唯一跑通的自动流」已不成立（现在多条通）；第三层顶部说明加「★ 2026-11-01 复核」一行交代这次改了什么。<br>
+              <b>验证</b>：div 开闭平衡（481/481）；无头 Chrome 打开零页面报错，第三层与新「三端已连」块都渲染出来了。</td>
             </tr>
           </tbody>
         </table>
