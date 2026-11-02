@@ -798,6 +798,9 @@ var PACKAGES = [
 function load(){
   try{ var raw = localStorage.getItem(KEY); if(raw){ S = JSON.parse(raw); } }catch(e){}
   if(!S.leads || !S.leads.length){ seed(); }
+  /* ★ 2026-11-02（P-93）：把老的 S-001 编号迁成 st 编号（幂等，跑一次就够）。
+     放在 seed() 之后 —— 种子数据本身已经用 st 编号，不会重复迁。 */
+  if(migrateStudentIds()) save();
 }
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); toast('已保存'); }
@@ -807,16 +810,17 @@ function seed(){
   /* 种几条示例数据让页面不是空的 */
   S.leads = [
     { id:'L-001', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'zalo: 0901234567', status:'enrolled', note:'大学生，要考 HSK3', date:'2026-10-15' },
-    { id:'L-002', name:'Trần Thị B', type:'白领', source:'朋友介绍', refBy:'S-001', contact:'0909876543', status:'trial', note:'在日企工作，要学日常口语', date:'2026-10-20' },
+    { id:'L-002', name:'Trần Thị B', type:'白领', source:'朋友介绍', refBy:'st1', contact:'0909876543', status:'trial', note:'在日企工作，要学日常口语', date:'2026-10-20' },
     { id:'L-003', name:'Lê Minh C', type:'学生', source:'Facebook', refBy:'', contact:'fb: leminh.c', status:'contacted', note:'高中生，目标 HSK4', date:'2026-10-25' },
     { id:'L-004', name:'Phạm D', type:'白领', source:'讲座会', refBy:'', contact:'0902222333', status:'new', note:'参加了体验课', date:'2026-10-28' },
-    { id:'L-005', name:'Hoàng E', type:'学生', source:'朋友介绍', refBy:'S-001', contact:'wechat: hoang_e', status:'new', note:'朋友推荐', date:'2026-10-30' },
+    { id:'L-005', name:'Hoàng E', type:'学生', source:'朋友介绍', refBy:'st1', contact:'wechat: hoang_e', status:'new', note:'朋友推荐', date:'2026-10-30' },
   ];
   S.students = [
-    { id:'S-001', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'0901234567', level:'HSK3', enrollDate:'2026-10-16', pkg:'hsk3', paid:10000000, status:'在读' },
+    /* ★ 2026-11-02（P-93）：编号统一成主端的 st 格式 —— 两边对得上，出勤才算得出来 */
+    { id:'st1', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'0901234567', level:'HSK3', enrollDate:'2026-10-16', pkg:'hsk3', paid:10000000, status:'在读' },
   ];
   S.billing = [
-    { id:'B-001', sid:'S-001', sname:'Nguyễn Văn A', pkg:'HSK3 备考包（含考试费）', total:10000000, paid:5000000, method:'分期', plan:'分2期：5M + 5M', dueDate:'2026-12-01', status:'进行中' },
+    { id:'B-001', sid:'st1', sname:'Nguyễn Văn A', pkg:'HSK3 备考包（含考试费）', total:10000000, paid:5000000, method:'分期', plan:'分2期：5M + 5M', dueDate:'2026-12-01', status:'进行中' },
   ];
   S.research = [
     { id:'R-001', topic:'越南 HSK 考生画像', content:'2025 年越南 HSK 考生 14.6 万，全球第一。主力为大学生和年轻白领，目标进中资企业。', data:'14.6 万考生 / 薪资溢价 10-40%', source:'人民日报 / 国侨办', date:'2026-10-01', tags:'趋势,客户画像' },
@@ -1316,11 +1320,87 @@ function saveStudent(id){
     var s = S.students.find(function(x){return x.id===id;});
     Object.assign(s, data);
   } else {
-    data.id = 'S-' + String(S.seq.stu++).padStart(3,'0');
+    /* ★ 2026-11-02（P-93）：学员编号改成主端同一套 —— st + 数字。
+       原因：主端学生是 st1/st2/st3，缺勤表 DB.absences 里存的 sid 也是 st 编号。
+       业务部原来用 S-001，两边编号对不上，出勤根本没法统计。
+       ★ 取号规则跟主端 addStudentsFromRoster 完全一致：
+         「取现有所有 st 编号里的最大数字 +1」，不是简单自增 ——
+         因为主端可能已经建到 st28，业务部这边必须接着往后排，不能从 1 开始撞。
+       ⚠️ 已经用 st 开头的号不重复用；删除学员后的空号也不回收（避免历史记录指向别人）。 */
+    data.id = nextStudentId();
     S.students.unshift(data);
   }
   save(); closeDrawer(); render('students');
 }
+/* ★ 2026-11-02（P-93）：学员取号 —— 跟主端 addStudentsFromRoster 同一套规则。
+   取现有所有 st 编号里的「最大数字 + 1」，不是简单自增。
+   因为主端可能已经建到 st28，业务部必须接着往后排，不能从 1 开始撞号。
+   ⚠️ 删除学员后的空号不回收 —— 历史记录（收费单 / 出勤）可能还指着它。
+      所以除了看现存数据，还要看 seq.stu 这个「水位」：
+      发过的号只增不减，删了人水位也不退。
+   ★ 拆成两个函数（2026-11-02 修的坑）：
+     peekStudentId() 纯计算，无副作用 —— 探针 / 预览用
+     nextStudentId() 取号并推高水位 —— 只有真的新建学员才调它
+     一开始合成一个函数，结果「取号」会改数据：同一页面调两次就漏号（st1 → st3）。 */
+function peekStudentId(){
+  var max = 0;
+  function bump(v){
+    var n = parseInt(String(v || '').replace(/\D/g, ''), 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  (S.students || []).forEach(function(s){ bump(s.id); });
+  /* 收费单里也可能引用了已被删的学员编号，一并算进最大值，防止撞号 */
+  (S.billing || []).forEach(function(b){ bump(b.sid); });
+  /* 水位：历史上发到过的最大号，删人不退 */
+  var wm = (S.seq && S.seq.stu) ? (parseInt(S.seq.stu, 10) - 1) : 0;
+  if (!isNaN(wm) && wm > max) max = wm;
+  return 'st' + (max + 1);
+}
+function nextStudentId(){
+  var id = peekStudentId();
+  var n = parseInt(String(id).replace(/\D/g, ''), 10) || 0;
+  S.seq = S.seq || {};
+  S.seq.stu = n + 1;          /* 水位推到「下一个」 */
+  return id;
+}
+
+/* ★ 2026-11-02（P-93）：老数据迁移 —— S-001 / S-002 … → st1 / st2 …
+   为什么要迁：业务部原来自己一套编号，跟主端 st 编号对不上，出勤统计不出来。
+   只在 load() 时跑一次，且是幂等的（已经是 st 开头的不会被再动）。
+   ★ 收费单的 sid、线索的 refBy 一起改 —— 不然外键就断了。 */
+function migrateStudentIds(){
+  var map = {};
+  var changed = false;
+
+  (S.students || []).forEach(function(s){
+    var m = /^S-(\d+)$/.exec(String(s.id || ''));
+    if (!m) return;
+    var newId = 'st' + parseInt(m[1], 10);
+    map[s.id] = newId;
+    s.id = newId;
+    changed = true;
+  });
+  if (!changed) return false;
+
+  /* 外键跟着改 */
+  (S.billing || []).forEach(function(b){
+    if (b.sid && map[b.sid]) b.sid = map[b.sid];
+  });
+  (S.leads || []).forEach(function(l){
+    if (l.refBy && map[l.refBy]) l.refBy = map[l.refBy];
+  });
+
+  /* 迁移完更新取号水位 —— 迁移后可能已经到 st3，下一个必须是 st4 */
+  var max = 0;
+  (S.students || []).forEach(function(s){
+    var n = parseInt(String(s.id || '').replace(/\D/g, ''), 10);
+    if (!isNaN(n) && n > max) max = n;
+  });
+  S.seq = S.seq || {};
+  S.seq.stu = max + 1;
+  return true;
+}
+
 function delStudent(id){
   if(!confirm('删除这个学员？')) return;
   S.students = S.students.filter(function(x){return x.id!==id;});
