@@ -595,6 +595,7 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
                 <th>类型</th>
                 <th>来源</th>
                 <th>等级</th>
+                <th>上课方式</th>
                 <th>报名日期</th>
                 <th>已缴</th>
                 <th>状态</th>
@@ -1011,44 +1012,52 @@ function filterLeadsSrc(v){
 /* ============================================================
    学员档案
    ============================================================ */
-function renderStudents(){
+/* ---- 学员列表（2026-11-02 重构 · P-94） ----
+   原来这里有 4 个函数各拼一份 <tr>：renderStudents / filterStudents /
+   filterStudentType / filterStudentStatus。加一列要改 4 处，漏一处就错位。
+   现在统一成 stuRow()，四处都调它 —— 以后改表只改这一个地方。 */
+
+/* 上课方式的短标签：线上 / 线下 · 教室编码 */
+function roomText(s){
+  if ((s.mode || 'offline') === 'online') return '线上';
+  return '线下' + (s.preferRoom ? ' · ' + s.preferRoom : '');
+}
+function stuRow(s){
+  var online = (s.mode || 'offline') === 'online';
+  return '<tr>'+
+    '<td class="m">'+esc(s.id)+'</td>'+
+    '<td><b>'+esc(s.name)+'</b></td>'+
+    '<td>'+(esc(s.type)||'—')+'</td>'+
+    '<td><span class="tg own">'+(esc(s.source)||'—')+'</span></td>'+
+    '<td><span class="tg amber">'+(esc(s.level)||'—')+'</span></td>'+
+    /* ★ 2026-11-02（P-94）：上课方式 —— 线上走 .on（青），线下走 .off */
+    '<td><span class="tg '+(online?'on':'off')+'">'+esc(roomText(s))+'</span></td>'+
+    '<td class="m">'+esc(fmtDate(s.enrollDate))+'</td>'+
+    '<td class="num">'+fmtVND(s.paid)+'</td>'+
+    '<td>'+studentStatusTag(s.status)+'</td>'+
+    '<td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td>'+
+    '</tr>';
+}
+function fillStudents(rows, emptyText){
   var tb = document.getElementById('tb-students');
-  if(!S.students.length){ tb.innerHTML = '<tr><td colspan="9" class="empty">还没有学员。</td></tr>'; return; }
-  tb.innerHTML = S.students.map(function(s){
-    return '<tr>'+
-      '<td class="m">'+s.id+'</td>'+
-      '<td><b>'+s.name+'</b></td>'+
-      '<td>'+(s.type||'—')+'</td>'+
-      '<td><span class="tg own">'+(s.source||'—')+'</span></td>'+
-      '<td><span class="tg amber">'+(s.level||'—')+'</span></td>'+
-      '<td class="m">'+fmtDate(s.enrollDate)+'</td>'+
-      '<td class="num">'+fmtVND(s.paid)+'</td>'+
-      '<td>'+studentStatusTag(s.status)+'</td>'+
-      '<td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td>'+
-      '</tr>';
-  }).join('');
+  tb.innerHTML = rows.length
+    ? rows.map(stuRow).join('')
+    : '<tr><td colspan="10" class="empty">'+(emptyText||'还没有学员。')+'</td></tr>';
+}
+function renderStudents(){
+  fillStudents(S.students, '还没有学员。');
 }
 function filterStudents(q){
   q = (q||'').toLowerCase();
-  var rows = S.students.filter(function(s){ return !q || (s.name||'').toLowerCase().includes(q) || (s.id||'').toLowerCase().includes(q); });
-  var tb = document.getElementById('tb-students');
-  tb.innerHTML = rows.length ? rows.map(function(s){
-    return '<tr><td class="m">'+s.id+'</td><td><b>'+s.name+'</b></td><td>'+(s.type||'—')+'</td><td><span class="tg own">'+(s.source||'—')+'</span></td><td><span class="tg amber">'+(s.level||'—')+'</span></td><td class="m">'+fmtDate(s.enrollDate)+'</td><td class="num">'+fmtVND(s.paid)+'</td><td>'+studentStatusTag(s.status)+'</td><td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td></tr>';
-  }).join('') : '<tr><td colspan="9" class="empty">没有匹配</td></tr>';
+  fillStudents(S.students.filter(function(s){
+    return !q || (s.name||'').toLowerCase().includes(q) || (s.id||'').toLowerCase().includes(q);
+  }), '没有匹配的学员。');
 }
 function filterStudentType(v){
-  var rows = v ? S.students.filter(function(s){return s.type===v;}) : S.students;
-  var tb = document.getElementById('tb-students');
-  tb.innerHTML = rows.map(function(s){
-    return '<tr><td class="m">'+s.id+'</td><td><b>'+s.name+'</b></td><td>'+(s.type||'—')+'</td><td><span class="tg own">'+(s.source||'—')+'</span></td><td><span class="tg amber">'+(s.level||'—')+'</span></td><td class="m">'+fmtDate(s.enrollDate)+'</td><td class="num">'+fmtVND(s.paid)+'</td><td>'+studentStatusTag(s.status)+'</td><td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td></tr>';
-  }).join('');
+  fillStudents(v ? S.students.filter(function(s){return s.type===v;}) : S.students, '没有这个类型的学员。');
 }
 function filterStudentStatus(v){
-  var rows = v ? S.students.filter(function(s){return s.status===v;}) : S.students;
-  var tb = document.getElementById('tb-students');
-  tb.innerHTML = rows.map(function(s){
-    return '<tr><td class="m">'+s.id+'</td><td><b>'+s.name+'</b></td><td>'+(s.type||'—')+'</td><td><span class="tg own">'+(s.source||'—')+'</span></td><td><span class="tg amber">'+(s.level||'—')+'</span></td><td class="m">'+fmtDate(s.enrollDate)+'</td><td class="num">'+fmtVND(s.paid)+'</td><td>'+studentStatusTag(s.status)+'</td><td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td></tr>';
-  }).join('');
+  fillStudents(v ? S.students.filter(function(s){return s.status===v;}) : S.students, '没有这个状态的学员。');
 }
 
 /* ============================================================
@@ -1298,6 +1307,24 @@ function studentForm(s){
     '<div class="fld"><label>联系方式</label><input id="f-contact" value="'+(s.contact||'')+'"></div>'+
     '<div class="fld-row"><div class="fld"><label>等级</label><select id="f-level">'+['HSK1','HSK2','HSK3','HSK4','HSK5','HSK6','入门','初级','中级'].map(function(t){return '<option '+(s.level===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
     '<div class="fld"><label>报名日期</label><input type="date" id="f-enrollDate" value="'+(s.enrollDate||new Date().toISOString().slice(0,10))+'"></div></div>'+
+    /* ★ 2026-11-02（P-94）：上课方式 + 指定教室。
+       业务部收学生时必须问清「线上还是线下、线下想去哪间教室」，
+       这是主端开班编班的依据。教室列表来自业务部自己的教室库（S.rooms），
+       还没录教室时给一句提示，不让下拉框空着让人猜。 */
+    '<div class="fld-row">'+
+      '<div class="fld"><label>上课方式</label><select id="f-mode" onchange="roomPickHint()">'+
+        '<option value="offline" '+((s.mode||'offline')==='offline'?'selected':'')+'>线下</option>'+
+        '<option value="online" '+(s.mode==='online'?'selected':'')+'>线上</option>'+
+      '</select></div>'+
+      '<div class="fld"><label>指定教室</label><select id="f-preferRoom">'+
+        '<option value="">（未指定）</option>'+
+        (S.rooms||[]).filter(function(r){return r.open!==false;}).map(function(r){
+          return '<option value="'+esc(r.code)+'" '+(s.preferRoom===r.code?'selected':'')+'>'+
+            esc(r.code)+(r.name?' · '+esc(r.name):'')+(r.area?' · '+esc(r.area):'')+'</option>';
+        }).join('')+
+      '</select></div>'+
+    '</div>'+
+    '<div id="room-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
     '<div class="fld"><label>课程包</label><select id="f-pkg">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
     '<div class="fld-row"><div class="fld"><label>已缴（VND）</label><input type="number" id="f-paid" value="'+(s.paid||0)+'"></div>'+
     '<div class="fld"><label>状态</label><select id="f-status">'+['在读','结业','暂停','退学'].map(function(t){return '<option '+(s.status===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
@@ -1307,13 +1334,48 @@ function studentForm(s){
       '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
     '</div>';
 }
+/* ★ 2026-11-02（P-94）：表单里「上课方式 / 指定教室」的联动提示。
+   - 选线上 → 教室下拉置灰（线上不占教室），并说明「不占教室，只占老师时段」
+   - 选线下但没指定教室 → 提示「主端编班时要再选」
+   - 一间教室都没录 → 直接叫去教室板块录，别让人在那儿猜 */
+function roomPickHint(){
+  var mEl = document.getElementById('f-mode');
+  var rEl = document.getElementById('f-preferRoom');
+  var hint = document.getElementById('room-hint');
+  if(!mEl || !rEl || !hint) return;
+
+  var isOnline = mEl.value === 'online';
+  var hasRoom = (S.rooms || []).some(function(r){ return r.open !== false; });
+
+  rEl.disabled = isOnline;
+  if (isOnline) rEl.value = '';
+
+  if (isOnline){
+    hint.textContent = '线上课不占教室，只占老师的时段。';
+  } else if (!hasRoom){
+    hint.textContent = '还没有录入教室 —— 先去「市场 › 教室」录一间，这里才能选。';
+  } else if (!rEl.value){
+    hint.textContent = '线下课建议指定教室；不选也行，主端编班时再定。';
+  } else {
+    var r = (S.rooms || []).find(function(x){ return x.code === rEl.value; });
+    hint.textContent = r
+      ? '教室：' + r.code + (r.area ? ' · ' + r.area : '') + (r.addr ? ' · ' + r.addr : '')
+      : '';
+  }
+}
+/* 列表里显示「线下 · Q7-01」这种短标签；没指定就只显示「线下」。
+   ⚠️ 定义在学员列表区（stuRow 上方），这里不再重复定义。 */
+
 function saveStudent(id){
   var pkgId = val('f-pkg');
   var pkg = PACKAGES.find(function(p){return p.id===pkgId;});
   var data = {
     name: val('f-name'), type: val('f-type'), source: val('f-source'), contact: val('f-contact'),
     level: val('f-level'), enrollDate: val('f-enrollDate'), pkg: pkgId, paid: parseInt(val('f-paid')||'0'),
-    status: val('f-status')
+    status: val('f-status'),
+    /* ★ 2026-11-02（P-94）：上课方式 + 指定教室 */
+    mode: val('f-mode') || 'offline',
+    preferRoom: val('f-preferRoom') || ''
   };
   if(!data.name){ toast('请填姓名', true); return; }
   if(id){

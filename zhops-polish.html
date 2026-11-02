@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">4</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">5</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">5 行 · 已打磨 5 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -239,6 +239,20 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>老数据迁移</b>：<span class="mono">load()</span> 时跑一次 <span class="mono">migrateStudentIds()</span>，<span class="mono">S-001→st1</span>；<b>收费单 sid、线索 refBy 一起改</b> —— 只改主键不改外键 = 静默断裂，最难发现。幂等，跑两次结果一样。<br>
               <b>自己踩的坑</b>：第一版取号函数带副作用（取号顺带写水位），同一页面调两次就漏号 <span class="mono">st1→st3</span>。拆成 <span class="mono">peekStudentId()</span>（纯计算）+ <span class="mono">nextStudentId()</span>（取号并推水位）。<br>
               <b>探针</b>：新建 <span class="mono">check-biz-stuid.js</span>（27 项，6 段）；反向控制三条全验（取号从 1 开始 / 迁移不改收费单外键 / 迁移不改线索外键 → 都报红）。全套 23/23。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-94</td>
+              <td><b>业务部学员加「上线/线下 + 指定教室」</b><br><span style="color:#8899aa;font-size:12px">「这位学生是打算就在这个教室上课，课室：胡志明市 D7」</span></td>
+              <td class="nw">业务部 · 学员</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>加两个字段</b>：<span class="mono">mode</span>（线上 / 线下）+ <span class="mono">preferRoom</span>（指定教室）。教室下拉<b>来自业务部自己的教室库</b>，不写死。<br>
+              <b>★ 线上不占教室</b>：选「线上」时教室下拉自动禁用 + 清空。否则主端编班会白占一个线下座位，教室排满、学生排不进去。<br>
+              <b>顺手重构</b>：学员列表原来有<b>四个函数各拼一份 &lt;tr&gt;</b>（render / filter 姓名 / filter 类型 / filter 状态），加一列要改四处。统一成 <span class="mono">stuRow()</span> + <span class="mono">fillStudents()</span>，以后改表只改一个地方。<br>
+              <b>表格</b>：加「上课方式」列，9 列 → 10 列。<br>
+              <b>探针</b>：新建 <span class="mono">check-biz-stumode.js</span>（32 项，7 段）；反向控制四条全验（线上不禁用教室 / 线上不清空 / 写死 mode / colspan 改 9 → 都报红）。全套 24/24。</td>
             </tr>
           </tbody>
         </table>
