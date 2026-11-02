@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">11</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">12</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">11 行 · 已打磨 11 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">12 行 · 已打磨 12 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -339,6 +339,19 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>每间教室显示</b>：编码 · 名称 · 地址 · 可用时段；配了几位教师（按 <span class="mono">roomCode</span> 找班去重）、几个学生 / 容量、哪些星期还空着（可用星期 − 已排星期）。<br>
               <b>★ 线上班不占教室</b>：连误填了编码的线上班也不算；没挂到教室的线下班单独列一行提示。<br>
               <b>探针</b>：新建 <span class="mono">check-p100-rooms.js</span>（32 项，7 段）；反向控制五条全验（空时段不减占用 / 线上算进教室 / 未挂把线上也算 / 空地区不归类 / 空态早退 → 都报红）。全套 30/30。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-101</td>
+              <td><b>生态地图加「编号字典」</b><br><span style="color:#8899aa;font-size:12px">「编号总表记进生态地图」</span></td>
+              <td class="nw">生态地图</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>是什么</b>：在 <span class="mono">system-ecosystem-map.html</span> 加一张「编号字典」表，把全系统编号集中登记一次：<b>是什么 / 长什么样 / 谁生成 / 能不能改 / 存在哪</b>。<br>
+              <b>收录</b>：学员 <span class="mono">stN</span>（业务部 S-001 已迁移）、教师 <span class="mono">tN</span>、班级 id / 代号、教室编码 <span class="mono">Q7-01</span>、课次序号、业务部 <span class="mono">L-/B-/R-/C-/A-/E-</span>、云端 <span class="mono">zhops/master · zhops/&lt;教师id&gt; · zhops/bizstudents · zhops/done_&lt;课次ID&gt;</span>、本机 5 个存盘键 + IndexedDB、打磨 <span class="mono">P-xx</span>。<br>
+              <b>只登记、只读</b>：不新增任何编号规则，只把现有的写清楚；以后加编号往表里加一行。<br>
+              <b>探针</b>：新建 <span class="mono">check-p101-idmap.js</span>（38 项，4 段），接 <span class="mono">run.sh</span> ㉕；按「编号 + 对象」行签名断，反向控制四条全验（删行 / 破坏尖括号转义 / 改分组名 / 整段删除 → 都报红）。全套 31/31。</td>
             </tr>
           </tbody>
         </table>

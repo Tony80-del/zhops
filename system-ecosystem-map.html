@@ -247,6 +247,9 @@
   table.rt tr.done .step{color:var(--ok);}
   table.rt tr.hl{background:rgba(91,155,245,.06);}
   table.rt tr.hl .step{color:var(--info);}
+  /* 编号字典（P-101）：编号列等宽 + 高亮，一眼和正文区分开 */
+  table.rt .code{font-family:"SF Mono",monospace; color:var(--acc); font-weight:600; white-space:nowrap;}
+  table.rt .key{font-family:"SF Mono",monospace; font-size:11px; color:var(--tag3); word-break:break-all;}
 
   /* ===== 图例 ===== */
   .legend{
@@ -1502,6 +1505,56 @@
     </tr>
   </tbody>
 </table>
+
+<!-- ===== 编号字典（P-101 · 2026-11-02）=====
+     只登记、只读说明。新增编号往这里加一行，别再让「同一个东西两个叫法」。
+     ⚠️ 文档名里的尖括号要写成 &lt; &gt;，否则会被当成 HTML 标签吞掉。 -->
+<div class="section-title">编号字典 · 全系统编号 / 编码总表</div>
+<div class="section-note">
+  只登记、只读说明：<b>系统里每一个编号是什么、长什么样、谁生成、能不能改、存在哪</b>。新增编号就往这张表加一行，别再让「同一个东西两个叫法」。<br>
+  <b class="yes">学员编号已统一</b>：业务部原来叫 <span class="key">S-001</span>，现已迁移成 <span class="key">st1</span>，两边同一套（主端 / 业务部 / 云端都认 <span class="key">stN</span>）。
+</div>
+<div style="overflow-x:auto;">
+<table class="rt">
+  <thead><tr><th>编号 / 编码</th><th>对象</th><th>格式 · 例子</th><th>谁生成</th><th>能改吗</th><th>存在哪</th></tr></thead>
+  <tbody>
+    <tr class="hl"><td colspan="6"><b>主端 · 排课（<span class="key">zhops.sched.v3</span>）</b></td></tr>
+    <tr><td class="code">st1 / st2 …</td><td>学员</td><td><span class="key">st</span> + 数字（不补零）</td><td>主端自动取号（业务部同一套；空号不回收）</td><td>不能</td><td><span class="key">students[].id</span>；云端 <span class="key">zhops/bizstudents</span></td></tr>
+    <tr><td class="code">t1 / t2 …</td><td>教师</td><td><span class="key">t</span> + 序号（演示用 <span class="key">t_demo</span>）</td><td>主端 <span class="key">saveEdit()</span> 自动生成</td><td>不能</td><td><span class="key">teachers[].id</span>；云端分片 <span class="key">zhops/&lt;教师id&gt;</span></td></tr>
+    <tr><td class="code">c3-lx8f2a</td><td>班级内部 id</td><td><span class="key">c</span> + 序号 + <span class="key">-</span> + 36 进制时间戳</td><td>建班时自动</td><td>不能</td><td><span class="key">classes[].id</span></td></tr>
+    <tr><td class="code">CL-01 / NW-01</td><td>班级代号</td><td>字母 + 数字</td><td>开班时填；留空自动 <span class="key">NW-序号</span></td><td>可改（代号而已）</td><td><span class="key">classes[].code</span></td></tr>
+    <tr><td class="code">Q7-01 / D1-03</td><td>教室编码</td><td>你手定（例：区号-序号）</td><td>业务部「市场 › 教室」录入</td><td>存了不能改</td><td><span class="key">zhops.biz.v1</span> 的 <span class="key">rooms[].code</span></td></tr>
+    <tr><td class="code">#1 … #42</td><td>课次序号</td><td>第 N 节</td><td>建班时按级别生成</td><td>不能</td><td><span class="key">lessons[].no</span>（还带 <span class="key">roomCode</span> 快照）</td></tr>
+
+    <tr class="hl"><td colspan="6"><b>业务部 · 市场（<span class="key">zhops.biz.v1</span>）</b></td></tr>
+    <tr><td class="code">st1 …</td><td>学员</td><td>同主端 <span class="key">stN</span></td><td>业务部 <span class="key">nextStudentId()</span></td><td>不能</td><td><span class="key">students[].id</span></td></tr>
+    <tr><td class="code">L-001</td><td>线索</td><td><span class="key">L-</span> + 3 位</td><td>自动</td><td>不能</td><td><span class="key">leads[].id</span></td></tr>
+    <tr><td class="code">B-001</td><td>报价收费</td><td><span class="key">B-</span> + 3 位</td><td>自动</td><td>不能</td><td><span class="key">billing[].id</span></td></tr>
+    <tr><td class="code">R-001</td><td>市场调查</td><td><span class="key">R-</span> + 3 位</td><td>自动</td><td>不能</td><td><span class="key">research[].id</span></td></tr>
+    <tr><td class="code">C-001</td><td>投放记录</td><td><span class="key">C-</span> + 3 位</td><td>自动</td><td>不能</td><td><span class="key">campaigns[].id</span></td></tr>
+    <tr><td class="code">A-001</td><td>宣传素材</td><td><span class="key">A-</span> + 3 位</td><td>自动</td><td>不能</td><td><span class="key">assets[].id</span></td></tr>
+    <tr><td class="code">E-001</td><td>讲座活动</td><td><span class="key">E-</span> + 3 位</td><td>自动</td><td>不能</td><td><span class="key">events[].id</span></td></tr>
+
+    <tr class="hl"><td colspan="6"><b>云端文档（Firestore 集合 <span class="key">zhops</span>）</b></td></tr>
+    <tr><td class="code">zhops/master</td><td>主端整份</td><td>固定名</td><td>主端点「推送」</td><td>—</td><td>云端</td></tr>
+    <tr><td class="code">zhops/&lt;教师id&gt;</td><td>教师分片</td><td>文档 id = 教师 id（<span class="key">t1</span>）</td><td>主端自动</td><td>—</td><td>云端</td></tr>
+    <tr><td class="code">zhops/bizstudents</td><td>业务部学生</td><td>固定名</td><td>业务部推送</td><td>—</td><td>云端</td></tr>
+    <tr><td class="code">zhops/done_&lt;课次ID&gt;</td><td>增量：某课次已上</td><td><span class="key">done_</span> + 课次 id</td><td>标 done 时自动</td><td>—</td><td>云端</td></tr>
+    <tr><td class="code">meta/curriculum</td><td>教材大纲</td><td>固定名（另一个集合）</td><td>—</td><td>—</td><td>云端</td></tr>
+
+    <tr class="hl"><td colspan="6"><b>本机存盘（localStorage / IndexedDB）</b></td></tr>
+    <tr><td class="code">zhops.sched.v3</td><td>主端 + 教师端排课</td><td>固定键（两端共用一把）</td><td>—</td><td>—</td><td>localStorage</td></tr>
+    <tr><td class="code">zhops.biz.v1</td><td>业务部全部</td><td>固定键</td><td>—</td><td>—</td><td>localStorage</td></tr>
+    <tr><td class="code">zhops.hr.v1</td><td>人事</td><td>固定键</td><td>—</td><td>—</td><td>localStorage</td></tr>
+    <tr><td class="code">zhops.fin.v1</td><td>财务</td><td>固定键</td><td>—</td><td>—</td><td>localStorage</td></tr>
+    <tr><td class="code">zhops.lang</td><td>语言（zh / vi）</td><td>固定键</td><td>—</td><td>—</td><td>localStorage</td></tr>
+    <tr><td class="code">zhops_hr_files / files</td><td>人事附件（二进制）</td><td>IndexedDB 库 / 表</td><td>—</td><td>—</td><td>IndexedDB（永不进 localStorage）</td></tr>
+
+    <tr class="hl"><td colspan="6"><b>工作台账（<span class="key">zhops-polish.html</span>）</b></td></tr>
+    <tr><td class="code">P-100</td><td>打磨项</td><td><span class="key">P-</span> + 数字，跨天连续、永不重置</td><td>人定</td><td>只追加</td><td>打磨台</td></tr>
+  </tbody>
+</table>
+</div>
 
 <!-- ===== 底部 ===== -->
 <div class="foot">
