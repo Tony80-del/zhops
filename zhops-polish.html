@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">6</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">8</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">6 行 · 已打磨 6 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">8 行 · 已打磨 7 · 待打磨 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -267,6 +267,34 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>★ 线上不显示要求教室</b>：业务部已挡这一层，主端必须也挡 —— 否则开班的人会照着去排一个线下教室，那间教室白占一个座位。<br>
               <b>老学生兼容</b>：没有这两个字段的按「线下」算，不报错。<br>
               <b>探针</b>：新建 <span class="mono">check-p95-poolroom.js</span>（20 项，6 段）；反向控制三条全验（线上也显示教室 / 缺 mode 字段 / 候选池不显示教室 → 都报红）。全套 25/25。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-96</td>
+              <td><b>云端通道 ①：业务部推学生到云端</b><br><span style="color:#8899aa;font-size:12px">「先把云端通道插进来，通道不通 P-96 做了也没法验」</span></td>
+              <td class="nw">业务部 · 云端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td>业务部加「☁︎ 推送到云端」按钮，写 <span class="mono">zhops/bizstudents</span>（独立文档，<b>不塞进 master</b> —— 否则主端一推送就把它冲掉）。<br>
+              <b>推全部</b>，不做增量（学生量小，几百 KB，简单不会漏）。<br>
+              <b>只推五个字段</b>：<span class="mono">id / name / phone / lv / mode / preferRoom / deleted</span>，学费、线索、投放一律不推（少暴露）。<br>
+              <b>删人不删号</b>：删学员时留墓碑 <span class="mono">S.studentsDeleted</span>，下次推送带 <span class="mono">deleted:true</span> 上去。<br>
+              <b>实测</b>：本地点击真实推送 → 云端 <span class="mono">zhops/bizstudents</span> 已写入，<span class="mono">__app='zhops.biz'</span> 标记正确。<br>
+              <b>探针</b>：新建 <span class="mono">check-biz-push.js</span>（45 项，7 段）；反向控制四条全验（改推 master / 多推 paid / 删人不留墓碑 / 不带 __app → 都报红）。全套 26/26。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-97</td>
+              <td><b>云端通道 ②：主端拉取业务部学生</b><br><span style="color:#8899aa;font-size:12px">「信息发到主页端后选池，就能看到这位学生」</span></td>
+              <td class="nw">主端 · 云端</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">—</td>
+              <td>主端加「☁︎ 拉取业务部学生」按钮，读 <span class="mono">zhops/bizstudents</span>。<br>
+              <b>只覆盖 4 个字段</b>：<span class="mono">name / phone / mode / preferRoom</span>；主端的 <span class="mono">cls / teacherId / exam / slots</span> 一个都不碰。<br>
+              <b>不删</b>：业务部删了人，主端留着并标「业务部已删除」（可能已编班）。<br>
+              <b>冲突业务部赢</b>（它是登记方），界面提示「这一项由业务部管」。</td>
             </tr>
           </tbody>
         </table>

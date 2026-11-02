@@ -134,6 +134,18 @@ a{color:var(--brand);text-decoration:none;}
 .side-foot{padding:11px 18px;border-top:1px solid var(--navy-line);
   font-size:10.5px;color:var(--navy-tx2);font-family:var(--mono);line-height:1.7;}
 .side-foot b{color:#ffd166;font-weight:600;}
+/* 云端推送按钮 + 状态（2026-11-02 · P-96 · 照主端 .sf-btn 的样子） */
+.sf-btn{margin-top:8px;width:100%;padding:6px 8px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--navy-line);background:transparent;color:var(--navy-tx);
+  font:inherit;font-size:11.5px;transition:background .15s,color .15s,border-color .15s;}
+.sf-btn:hover{background:rgba(103,232,249,.10);color:#67e8f9;border-color:#67e8f9;}
+.sf-btn:disabled{opacity:.5;cursor:not-allowed;}
+.bizcld{display:block;margin-top:8px;font-size:10.5px;padding:3px 7px;border-radius:4px;
+  border:1px solid var(--navy-line);color:var(--navy-tx2);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;}
+.bizcld.ok{color:#6fbf9a;border-color:#1b2a22;background:rgba(111,191,154,.10);}
+.bizcld.bad{color:#d96b62;border-color:#2a1818;background:rgba(217,107,98,.10);}
+.bizcld.wait{color:#d9a84e;border-color:#2a2016;background:rgba(217,168,78,.10);}
 
 /* ---------------- 顶栏 ---------------- */
 #top{
@@ -426,6 +438,10 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   <div class="side-foot">
     数据键 <b>zhops.biz.v1</b><br>
     本地存档
+    <!-- ★ 2026-11-02（P-96）：业务部 → 主端 的云端出口。
+         手动推，不做自动同步 —— 自动同步一旦出错，两边会互相冲。 -->
+    <span class="bizcld idle" id="bizCld">☁︎ 还没推送过</span>
+    <button type="button" class="sf-btn" id="btnBizPush">☁︎ 推送到云端</button>
   </div>
 </aside>
 
@@ -777,7 +793,104 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
    ============================================================ */
 
 var KEY = 'zhops.biz.v1';
-var S = { leads:[], students:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1} };
+var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1} };
+
+/* ============================================================
+   云端通道（2026-11-02 · P-96）
+   ------------------------------------------------------------
+   方向：业务部 → 主端（单向）。
+     业务部点「☁︎ 推送到云端」→ 写 zhops/bizstudents
+     主端点「☁︎ 拉取业务部学生」→ 读 zhops/bizstudents
+
+   ★ 为什么单独开一个文档，不塞进 zhops/master：
+     master 是主端整份排课数据，主端一推送就整份覆盖 ——
+     业务部塞进去的学生会被当场冲掉。而且人事读 master 是为了拿课次，
+     混进学生表会打乱它的判据。责任也不清：谁写谁读说不明白。
+
+   ★ 只存「主端要知道的那几件事」，不存业务部的全部：
+     线索、投放、素材、收费单这些主端用不着，推上去只是把学生电话
+     暴露在公网多一个入口。这里只推 name/phone/mode/preferRoom/lv/deleted。
+
+   ⚠️ 安全提醒（2026-11-02 Tony 定：暂不做）：apiKey 明文在前端，
+      页面在 GitHub Pages 上公开 —— 知道地址的人都能读写。
+   ============================================================ */
+var FS = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', coll:'zhops' };
+var BIZ_CLOUD_TAG = 'zhops.biz';
+var BIZSTU_DOC = 'bizstudents';
+var CLD = { state:'idle', at:null };
+
+function fsUrlOf(doc){
+  return 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+    '/databases/(default)/documents/' + FS.coll + '/' + doc + '?key=' + encodeURIComponent(FS.key);
+}
+
+/* 把业务部学生压成主端要的最小集合。
+   ★ deleted 字段：业务部删了的人不直接消失，而是带 deleted:true 推上去 ——
+     主端看到后标「业务部已删除」但保留人（可能已编班，删了出勤就指向空气）。 */
+function bizStudentsPayload(){
+  return (S.students || []).map(function(s){
+    return {
+      id:         s.id,
+      name:       s.name || '',
+      phone:      s.contact || '',
+      lv:         s.level || '',
+      mode:       s.mode || 'offline',
+      preferRoom: s.preferRoom || '',
+      deleted:    false,
+    };
+  });
+}
+
+/* 已删除学员的墓碑 —— 业务部删人时留一条记录，下次推送带上去。
+   ⚠️ 不回收编号也跟着这个道理：删了 st3，水位不退，见 peekStudentId。 */
+function bizDeletedPayload(){
+  return (S.studentsDeleted || []).map(function(d){
+    return { id: d.id, name: d.name || '', deleted: true, at: d.at || '' };
+  });
+}
+
+function cldMark(state, at, msg){
+  CLD.state = state;
+  if (at !== undefined) CLD.at = at;
+  var el = document.getElementById('bizCld');
+  if (!el) return;
+  if (state === 'syncing'){ el.className = 'bizcld wait'; el.textContent = '☁︎ 推送中…'; return; }
+  if (state === 'ok'){
+    el.className = 'bizcld ok';
+    el.textContent = '☁︎ 已推送' + (CLD.at ? ' · ' + String(CLD.at).slice(5,16).replace('T',' ') : '');
+    return;
+  }
+  if (state === 'bad'){ el.className = 'bizcld bad'; el.textContent = '☁︎ ' + (msg || '推送失败'); return; }
+  el.className = 'bizcld idle'; el.textContent = '☁︎ 还没推送过';
+}
+
+/* 推送：整份写 zhops/bizstudents（P-96 定的「推全部」，不做增量） */
+function bizPush(){
+  if (typeof fetch !== 'function'){ cldMark('bad', undefined, '这个浏览器不支持联网'); toast('推送失败：浏览器不支持联网', true); return; }
+  var payload = {
+    __app: BIZ_CLOUD_TAG,
+    at: new Date().toISOString(),
+    students: bizStudentsPayload().concat(bizDeletedPayload()),
+  };
+  cldMark('syncing');
+  var body = { fields: {
+    payload: { stringValue: JSON.stringify(payload) },
+    at:      { stringValue: payload.at },
+    app:     { stringValue: BIZ_CLOUD_TAG },
+  }};
+  fetch(fsUrlOf(BIZSTU_DOC), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(){
+    cldMark('ok', payload.at);
+    toast('已推送 ' + payload.students.length + ' 位学员到云端');
+  })
+  .catch(function(e){
+    cldMark('bad', undefined, '推送失败');
+    toast('推送失败：' + (e && e.message ? e.message : '连不上云端'), true);
+  });
+}
 
 /* ---- 主题色（来源分布用） ---- */
 var SRC_COLORS = {
@@ -799,6 +912,9 @@ var PACKAGES = [
 function load(){
   try{ var raw = localStorage.getItem(KEY); if(raw){ S = JSON.parse(raw); } }catch(e){}
   if(!S.leads || !S.leads.length){ seed(); }
+  /* ★ 2026-11-02（P-96）：老数据没有这两个集合，补上空数组，别让渲染炸 */
+  if(!Array.isArray(S.studentsDeleted)) S.studentsDeleted = [];
+  if(!Array.isArray(S.rooms)) S.rooms = [];
   /* ★ 2026-11-02（P-93）：把老的 S-001 编号迁成 st 编号（幂等，跑一次就够）。
      放在 seed() 之后 —— 种子数据本身已经用 st 编号，不会重复迁。 */
   if(migrateStudentIds()) save();
@@ -1465,6 +1581,14 @@ function migrateStudentIds(){
 
 function delStudent(id){
   if(!confirm('删除这个学员？')) return;
+  /* ★ 2026-11-02（P-96）：删人不删号，留一块墓碑。
+     下次推送时带 deleted:true 上去 —— 主端看到后标「业务部已删除」但保留人，
+     因为这个人可能已经编进班了，直接删掉会让历史出勤记录指向空气。 */
+  var gone = S.students.find(function(x){ return x.id === id; });
+  if (gone){
+    S.studentsDeleted = S.studentsDeleted || [];
+    S.studentsDeleted.push({ id: gone.id, name: gone.name || '', at: new Date().toISOString() });
+  }
   S.students = S.students.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('students');
 }
@@ -1864,10 +1988,24 @@ function backMainFix(){
   a.href = (local ? 'zhops-admin.html' : 'admin.html') + back;
 }
 
+/* ---- 云端推送按钮（2026-11-02 · P-96） ---- */
+(function(){
+  var btn = document.getElementById('btnBizPush');
+  if (!btn) return;
+  btn.addEventListener('click', function(){
+    btn.disabled = true;
+    try { bizPush(); } finally {
+      /* 推送是异步的，1.5 秒后放开按钮，防止连点把云端打满 */
+      setTimeout(function(){ btn.disabled = false; }, 1500);
+    }
+  });
+})();
+
 /* ---- 启动 ---- */
 load();
 nav('overview');
 backMainFix();
+cldMark('idle');
 </script>
 </body>
 </html>
