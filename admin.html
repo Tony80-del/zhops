@@ -2083,10 +2083,14 @@ function vStudents(){
            · 有市 + 班未开 → 「杭州 → 待开班」（候选池，开班后自动编入）
            · 没选教师      → 「未选教师」 */
         '<td>'+(function(){
-          if (!s.teacherId) return '<span class="lbl">未选教师</span>';
+          /* ★ 2026-11-02（P-95）：业务部标了「要求教室」就先显示它 ——
+             这是操作员选教师/市时最需要看的参考。还没编班的人在候选池里能直接看到。 */
+          const pref = (s.mode !== 'online' && s.preferRoom)
+            ? '<span class="tg own" style="font-size:11px">'+esc(s.preferRoom)+'</span> ' : '';
+          if (!s.teacherId) return pref + '<span class="lbl">未选教师</span>';
           const t   = DB.teachers.find(x => x.id === s.teacherId);
           const box = s.cls ? DB.classes.find(x => x.id === s.cls) : null;
-          let h = '<span class="tg off">'+esc(t ? t.name : '?')+'</span>';
+          let h = pref + '<span class="tg off">'+esc(t ? t.name : '?')+'</span>';
           if (!s.city) return h + ' <span class="lbl" style="font-size:11px">市未选</span>';
           h += ' <span class="lbl" style="font-size:11px">· '+esc(s.city)+'</span>';
           if (box) h += ' <span class="tg on" style="font-size:11px">'+esc(box.name)+'</span>';
@@ -2414,13 +2418,20 @@ function slotCells(s){
 }
 function bPool(){
   const pool = DB.students.filter(s=>!s.cls);
-  return `<div class="note"><b>候选池 = 还没编班的学生。</b>填了「意向班级」的会在对应班开出来之后<b>自动编入</b>（前提是级别 + 可上课时段都对得上）。</div>
+  return `<div class="note"><b>候选池 = 还没编班的学生。</b>填了「意向班级」的会在对应班开出来之后<b>自动编入</b>（前提是级别 + 可上课时段都对得上）。<br>
+  <b>上课方式 / 要求教室</b>来自业务部登记 —— 业务部收学生时就问清了「线上还是线下、线下想去哪间教室」。主端只读，开班时照着排。</div>
   <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>学生</th><th>归属</th><th>级别</th><th>意向班级</th><th>联系人</th><th>可上课时段</th><th></th></tr></thead>
+    <thead><tr><th>学生</th><th>归属</th><th>级别</th><th>上课方式</th><th>要求教室</th><th>意向班级</th><th>联系人</th><th>可上课时段</th><th></th></tr></thead>
     <tbody>${pool.map(s=>'<tr>'+
       '<td><b>'+esc(s.name)+'</b></td>'+
       '<td>'+ownTag(s.own)+'</td>'+
       '<td><span class="tg off">'+s.lv+'</span></td>'+
+      /* ★ 2026-11-02（P-95）：业务部标的上课方式。没这个字段的老学生按线下算 */
+      '<td>'+modeTag(s.mode || 'offline')+'</td>'+
+      /* ★ 要求教室：业务部指定了才显示；线上课即使有值也不显示（线上不占教室） */
+      '<td>'+((s.mode !== 'online' && s.preferRoom)
+        ? '<span class="tg own">'+esc(s.preferRoom)+'</span>'
+        : '<span style="color:var(--ink3)">—</span>')+'</td>'+
       '<td>'+(s.intent ? '<span class="tg warn">'+esc(s.intent)+'</span>' : '<span style="color:var(--ink3)">—</span>')+'</td>'+
       '<td><span class="tg off">'+esc(s.contact)+'</span></td>'+
       '<td>'+slotCells(s)+'</td>'+
@@ -3615,6 +3626,12 @@ function blankStudent(){
        ⚠️ 没有 att / attAll —— 出勤是算出来的，存下来就会过期 */
     cls:'', joinedAt:'', intent:'', exam:{},
     room:'', city:'', teacherId:'',   /* 教室（省 + 市）+ 教师 —— 学生归属教室，跟 s.cls 编班独立 */
+    /* ★ 2026-11-02（P-95）：业务部标的两项 —— 阅读方向只有「业务部 → 主端」，主端不写。
+       mode        'offline' / 'online'
+       preferRoom  业务部指定的教室编码（教室编码由 Tony 在业务部「市场 › 教室」里定）
+       ⚠️ 主端不校验这个编码是否存在于主端的教室体系 —— 主端没有教室编码表。
+          只做「显示给操作员看」，选哪间由开班的人决定。 */
+    mode:'offline', preferRoom:'',
   };
 }
 function blankMember(){
