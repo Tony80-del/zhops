@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-01">2026-11-01 · 今天<span class="c">14</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">1</span></button>
+    <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
     <button data-day="2026-10-19">2026-10-19<span class="c">10</span></button>
@@ -177,8 +178,34 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     <button data-day="2026-10-12">2026-10-12<span class="c">2</span></button>
   </div>
 
-  <!-- ============ 2026-10-31 ============ -->
-  <div class="day-panel on" data-day="2026-11-01">
+  <!-- ============ 2026-11-02 ============ -->
+  <div class="day-panel on" data-day="2026-11-02">
+    <div class="card">
+      <h2>2026-11-02 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-90</td>
+              <td><b>生态地图 biz.html 改成可点链接</b><br><span style="color:#8899aa;font-size:12px">「这样子我没办法复制打开……直接可以复制的，这个把它改」</span></td>
+              <td class="nw">生态地图 · 修</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td>业务部「位置」栏本地 / 线上两条都改成 <span class="mono">&lt;a href&gt;</span> + <span class="mono">.loc</span>，跟人事 / 财务同写法。顺手把「线上 / 未上线」改成「已上线 11-01」+ 线上地址。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-11-01 ============ -->
+  <div class="day-panel" data-day="2026-11-01">
     <div class="card">
       <h2>2026-11-01 · 打磨记录<span class="n">14 行 · 已打磨 12 · 按决定暂缓 1 · 待打磨 1</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
