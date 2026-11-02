@@ -352,6 +352,13 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   .fld-row{grid-template-columns:1fr;}
   #view{padding:14px 12px 40px;}
 }
+/* 教室 · 周几勾选（2026-11-02 · P-91） */
+.rm-day{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid var(--line);
+  border-radius:6px;font-size:12.5px;cursor:pointer;user-select:none;background:var(--surface-2);color:var(--ink2);}
+.rm-day:hover{border-color:var(--brand);color:var(--ink);}
+.rm-day input{width:auto;flex:0 0 auto;margin:0;accent-color:var(--brand);}
+.rm-day:has(input:checked){border-color:var(--brand);background:var(--surface-3);color:var(--ink);}
+
 /* 返回主端（2026-11-01 · P-89）：跟主端「业务部 ↗」出口对称的回头路 */
 .backmain{display:inline-flex;align-items:center;gap:5px;margin-right:12px;padding:4px 10px;
   border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink3);
@@ -410,6 +417,10 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
     <a data-v="events">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11"/><path d="M2 6h12M5 1v3M11 1v3"/></svg>
       讲座活动
+    </a>
+    <a data-v="rooms">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 14h13"/><path d="M3 14V4l5-2.5L13 4v10"/><rect x="6.2" y="8" width="3.6" height="6"/></svg>
+      教室 <span class="cnt" id="cnt-rooms">0</span>
     </a>
   </nav>
   <div class="side-foot">
@@ -715,6 +726,29 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
       <div id="events-list"></div>
     </div>
 
+    <!-- ====== 教室（2026-11-02 · P-91） ====== -->
+    <div class="view" data-view="rooms">
+      <div class="page-h">
+        <h2>教室</h2>
+        <p class="desc">市场部 / 业务部去不同地区找到的教学点 —— 编码 · 地址 · 费用 · 可用时段</p>
+        <div class="sp"></div>
+        <button class="btn pri" onclick="addRoom()">+ 新教室</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat acc"><div class="k">教室总数</div><div class="v" id="rm-count">—</div></div>
+        <div class="stat"><div class="k">在用</div><div class="v" id="rm-open">—</div></div>
+        <div class="stat"><div class="k">总座位</div><div class="v" id="rm-seats">—</div></div>
+        <div class="stat amber"><div class="k">月租金合计</div><div class="v" id="rm-rent">—<small>VND</small></div></div>
+      </div>
+
+      <div class="note">
+        编码由你定，系统只查两件事：<b>不能空、不能重复</b>。存下去就锁住 —— 要换只能停用旧的、再建新的，<b>历史记录不会被改</b>。
+      </div>
+
+      <div id="rooms-list"></div>
+    </div>
+
   </div><!-- /#view -->
 </div><!-- /#main -->
 </div><!-- /#app -->
@@ -742,7 +776,7 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
    ============================================================ */
 
 var KEY = 'zhops.biz.v1';
-var S = { leads:[], students:[], billing:[], research:[], campaigns:[], assets:[], events:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1} };
+var S = { leads:[], students:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1} };
 
 /* ---- 主题色（来源分布用） ---- */
 var SRC_COLORS = {
@@ -807,7 +841,7 @@ function seed(){
 function nav(v){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===v));
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on', el.dataset.view===v));
-  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'报价收费', research:'市场调查', campaigns:'投放记录', assets:'宣传素材', events:'讲座活动' };
+  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'报价收费', research:'市场调查', campaigns:'投放记录', assets:'宣传素材', events:'讲座活动', rooms:'教室' };
   document.getElementById('crumb-sub').textContent = titles[v]||'';
   render(v);
 }
@@ -823,6 +857,7 @@ function render(v){
   if(v==='campaigns') renderCampaigns();
   if(v==='assets') renderAssets();
   if(v==='events') renderEvents();
+  if(v==='rooms') renderRooms();
   updateCounts();
 }
 function currentView(){
@@ -832,9 +867,19 @@ function updateCounts(){
   document.getElementById('cnt-leads').textContent = S.leads.length;
   document.getElementById('cnt-students').textContent = S.students.length;
   document.getElementById('cnt-billing').textContent = S.billing.length;
+  var cr = document.getElementById('cnt-rooms');
+  if(cr) cr.textContent = (S.rooms||[]).length;
 }
 
 /* ---- 工具 ---- */
+/* HTML 转义：教室 / 学生等用户手填的内容要进 innerHTML，必须转。
+   ★ 2026-11-02（P-91）补：以前这个页面没有 esc()，所有渲染都是直接拼字符串。
+     教室的编码 / 地址 / 备注是手填的自由文本，不转义会把表结构搞坏。 */
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
 function fmtVND(n){
   if(!n) return '0';
   return Math.round(n).toLocaleString('vi-VN');
@@ -1499,6 +1544,144 @@ function delEvent(id){
   if(!confirm('删除？')) return;
   S.events = S.events.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('events');
+}
+
+/* ============================================================
+   教室（2026-11-02 · P-91）
+   ------------------------------------------------------------
+   ★ 编码由 Tony 定，系统不生成、不预设格式、不预设地区。
+     系统只保证三件事：① 不能为空 ② 不能重复 ③ 存了不能改。
+   ★ 「地区」也是手填，不预置任何值 —— Tony 说还没定区域，
+     定了再录，别在代码里写死。
+   ============================================================ */
+var WEEK = ['一','二','三','四','五','六','日'];
+
+function renderRooms(){
+  var el = document.getElementById('rooms-list');
+  var list = S.rooms || [];
+
+  var open = list.filter(function(r){ return r.open !== false; });
+  var seats = open.reduce(function(a,r){ return a + (Number(r.cap)||0); }, 0);
+  var rent  = open.reduce(function(a,r){ return a + (Number(r.rent)||0); }, 0);
+
+  document.getElementById('rm-count').textContent = list.length;
+  document.getElementById('rm-open').textContent  = open.length;
+  document.getElementById('rm-seats').textContent = seats;
+  document.getElementById('rm-rent').innerHTML    = fmtVND(rent) + '<small>VND</small>';
+
+  if(!list.length){
+    el.innerHTML = '<div class="empty">还没有教室。点右上角「+ 新教室」录入第一间 —— 编码、地址、费用、可用时段。</div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
+    '<th>编码</th><th>名称</th><th>地区</th><th>地址</th><th>可用时段</th>'+
+    '<th class="num">容量</th><th class="num">费用</th><th>电话</th><th>状态</th><th></th>'+
+    '</tr></thead><tbody>'+
+    list.map(function(r){
+      var isOpen = r.open !== false;
+      return '<tr'+(isOpen ? '' : ' style="opacity:.55"')+'>'+
+        '<td class="mono"><b>'+esc(r.code)+'</b></td>'+
+        '<td>'+esc(r.name||'—')+'</td>'+
+        '<td>'+esc(r.area||'—')+'</td>'+
+        '<td>'+esc(r.addr||'—')+'</td>'+
+        '<td class="sm">'+(r.days?'周'+r.days.map(function(d){return WEEK[d];}).join('')+' · ':'')+esc(r.hours||'—')+'</td>'+
+        '<td class="num">'+(r.cap||'—')+'</td>'+
+        '<td class="num">'+(r.rent?fmtVND(r.rent):'—')+(r.rent?'<small>VND</small>':'')+'</td>'+
+        '<td class="mono sm">'+esc(r.tel||'—')+'</td>'+
+        '<td>'+(isOpen?'<span class="tg on">在用</span>':'<span class="tg off">停用</span>')+'</td>'+
+        '<td class="nw"><a class="act" onclick="editRoom(\''+r.code+'\')">编辑</a></td>'+
+        '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+
+function addRoom(){
+  openDrawer('新教室', roomForm());
+}
+function editRoom(code){
+  var r = (S.rooms||[]).find(function(x){ return x.code === code; });
+  if(!r) return;
+  openDrawer('编辑教室 · '+r.code, roomForm(r));
+}
+
+function roomForm(r){
+  r = r || {};
+  var isNew = !r.code;
+  var days = r.days || [];
+  /* ★ 编码存了就不能改 —— 编辑时锁死，只读展示 */
+  var codeField = isNew
+    ? '<div class="fld"><label>教室编码 <span style="color:#e24b4a">*</span></label>'+
+      '<input id="f-code" placeholder="你自己定，例：Q7-01 / PML-01" autocomplete="off">'+
+      '<div class="sm" style="color:var(--ink3);margin-top:5px">不能为空、不能跟已有重复。存下去就锁住，以后不能改。</div></div>'
+    : '<div class="fld"><label>教室编码（已锁定）</label>'+
+      '<input value="'+esc(r.code)+'" disabled style="opacity:.6;cursor:not-allowed">'+
+      '<div class="sm" style="color:var(--ink3);margin-top:5px">要换编码 → 停用这间，另建一间。</div></div>';
+
+  return codeField+
+    '<div class="fld"><label>教室名称</label><input id="f-rm-name" value="'+esc(r.name||'')+'" placeholder="例：富美兴教学点"></div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label>地区</label><input id="f-rm-area" value="'+esc(r.area||'')+'" placeholder="你自己填，例：D7 / 第七郡"></div>'+
+      '<div class="fld"><label>容量（人）</label><input type="number" id="f-rm-cap" value="'+(r.cap||'')+'"></div>'+
+    '</div>'+
+    '<div class="fld"><label>地址</label><input id="f-rm-addr" value="'+esc(r.addr||'')+'" placeholder="门牌 + 街道 + 郡"></div>'+
+    '<div class="fld"><label>可用时段（周几）</label>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+        WEEK.map(function(d,i){
+          return '<label class="rm-day"><input type="checkbox" id="f-rm-d'+i+'"'+(days.indexOf(i)>=0?' checked':'')+'> 周'+d+'</label>';
+        }).join('')+
+      '</div></div>'+
+    '<div class="fld"><label>可用时段（几点）</label><input id="f-rm-hours" value="'+esc(r.hours||'')+'" placeholder="例：18:00-21:00 / 全天"></div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label>费用（VND / 月）</label><input type="number" id="f-rm-rent" value="'+(r.rent||'')+'"></div>'+
+      '<div class="fld"><label>电话</label><input id="f-rm-tel" value="'+esc(r.tel||'')+'" placeholder="房东 / 管理员"></div>'+
+    '</div>'+
+    '<div class="fld"><label>备注</label><textarea id="f-rm-note" placeholder="停车、电梯、门禁、限制…">'+esc(r.note||'')+'</textarea></div>'+
+    (isNew ? '' :
+      '<div class="fld"><label>状态</label><select id="f-rm-open">'+
+        '<option value="1"'+(r.open!==false?' selected':'')+'>在用</option>'+
+        '<option value="0"'+(r.open===false?' selected':'')+'>停用</option>'+
+      '</select></div>')+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="saveRoom('+(isNew?"null":"'"+r.code+"'")+')">保存</button>'+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+
+function saveRoom(origCode){
+  var code = origCode || val('f-code');
+  /* ① 不能为空 */
+  if(!code){ toast('教室编码不能为空', true); return; }
+  /* ② 不能重复（新建时；编辑时前面已锁定） */
+  if(!origCode && (S.rooms||[]).some(function(x){ return x.code === code; })){
+    toast('编码「'+code+'」已经存在，换一个', true); return;
+  }
+
+  var days = [];
+  for(var i=0;i<7;i++){ if(document.getElementById('f-rm-d'+i).checked) days.push(i); }
+
+  var data = {
+    code:  code,
+    name:  val('f-rm-name'),
+    area:  val('f-rm-area'),
+    addr:  val('f-rm-addr'),
+    days:  days,
+    hours: val('f-rm-hours'),
+    cap:   parseInt(val('f-rm-cap')||'0', 10) || 0,
+    rent:  parseInt(val('f-rm-rent')||'0', 10) || 0,
+    tel:   val('f-rm-tel'),
+    note:  val('f-rm-note'),
+    open:  origCode ? (val('f-rm-open') === '1') : true,
+  };
+
+  if(origCode){
+    var r = (S.rooms||[]).find(function(x){ return x.code === origCode; });
+    if(r) Object.assign(r, data);
+  } else {
+    S.rooms = S.rooms || [];
+    S.rooms.unshift(data);
+  }
+  save(); closeDrawer(); render('rooms');
 }
 
 /* ---- 工具：取 input/select 值 ---- */
