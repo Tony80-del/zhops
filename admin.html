@@ -1691,6 +1691,11 @@ function seedLessonsOf(c){
        跟 cname / croom 一样是**快照**：班以后换市，历史课次不能跟着变。
        取值优先级：班上有独立 city 字段就用它，否则用 room（当前口径：市名 = 开班名 = room）。 */
     city: c.city || c.room || '',
+    /* ★ 2026-11-02（P-98）：课次记「具体哪间教室」。
+       跟 city / croom 一样是**快照**：班以后换教室，历史课次不能跟着变。
+       否则回看三月份的课次，会显示成现在那间教室 —— 那是篡改历史。
+       线上班留空。 */
+    roomCode: c.mode === 'online' ? '' : (c.roomCode || ''),
   };
   let d = c.startedAt, no = 0, guard = 0;
   while (d <= stop && no < (c.plannedLessons || 42) && guard++ < 900){
@@ -2302,7 +2307,10 @@ function bMatrix(){
                      '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
                      '<span class="nm">'+esc(c.name)+'</span></b>'+
                      '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
-                     '<span class="tn">'+esc(t.name)+(c.mode==='offline'&&c.room?' · '+esc(c.room):'')+'</span></a>';
+                     '<span class="tn">'+esc(t.name)
+                       +(c.mode==='offline'&&c.room?' · '+esc(c.room):'')
+                       +(c.mode==='offline'&&c.roomCode?' · '+esc(c.roomCode):'')
+                       +'</span></a>';
             }).join('')+'</td>';
           }).join('')+'</tr>';
       }).join('')}</tbody>
@@ -2324,6 +2332,7 @@ function bClasses(){
         '<td class="nowrap">'+sl.name+' <span class="m" style="color:var(--ink3)">'+sl.time+'</span><br><span style="color:var(--ink3);font-size:11.5px">'+sl.days+'</span></td>'+
         '<td>'+(c.mode==='offline'
                 ? (c.room ? esc(c.room) : '<span class="tg bad">未填</span>')
+                  + (c.roomCode ? '<br><span class="tg own" style="font-size:11px">'+esc(c.roomCode)+'</span>' : '<br><span class="lbl" style="font-size:11px">教室未指定</span>')
                 : '<span style="color:var(--ink3)">不占教室</span>')+'</td>'+
         lessonCell(c.lv,classLesson(c))+
         '<td>'+esc(t.name)+'</td>'+
@@ -4056,6 +4065,11 @@ function newAppForm(){
     lv: 'HSK1',
     mode: 'online',
     room: '',
+    /* ★ 2026-11-02（P-98）：具体教室编码。
+       「教室（市）」那个下拉在旧体系里就是「一间教室」；
+       roomCode 是业务部「市场 › 教室」里录入的具体教学点编号（如 Q7-01）。
+       两个不是一回事：市 = 哪一片，roomCode = 哪一间。 */
+    roomCode: '',
     /* ★ 2026-10-17 起：不再从固定 slots 里挑，改成自定义课表规则
        （Tony 定：方案 B —— 周几 + 几点 + 每节多长；总课次按级别自动） */
     days: [],                  /* ['1','3','5'] 周几（0=周日）*/
@@ -4165,6 +4179,13 @@ function renderNewAppDrawer(){
           if (free.length === 1) return fld('教室（市）', '<span class="tg on">'+esc(free[0])+'</span> <span class="lbl">（唯一可开班的市）</span>');
           return fld('教室（市）', sel('room', (free.indexOf(f.room)>=0? f.room : free[0]), free.map(c => [c, c]), 'data-a-inp'));
         })()+
+        /* ★ 2026-11-02（P-98）：具体教室编码（业务部「市场 › 教室」里录的）。
+           「教室（市）」= 哪一片，这里 = 哪一间。线上班不需要，填了也不生效。 */
+        fld('教室编码', inp('roomCode', f.roomCode || '', 'text', 'data-a-inp') +
+            '<span class="lbl" style="font-size:11px;display:block;margin-top:4px">'+
+            (f.mode === 'online'
+              ? '线上班不占教室，留空即可'
+              : '业务部「市场 › 教室」里的编码，例：Q7-01。留空 = 暂不指定')+'</span>')+
         fld('级别', sel('lv', f.lv, [['HSK1','HSK1'],['HSK2','HSK2'],['HSK3','HSK3']], 'data-a-inp'))+
         fld('形态', sel('mode', f.mode, [['online','线上'],['offline','线下']], 'data-a-inp'))+
         fld('学生人数', inp('n', f.n, 'number', 'data-a-inp'))+
@@ -4764,6 +4785,11 @@ function approveApp(){
       /* ★ 2026-10-17（Tony 定）：市名 = 开班名，线上班也要记 room。
          以前只在线下才存 room，导致线上班在「教室」页看不见、班名也取不到市名。 */
       room: cityName,
+      /* ★ 2026-11-02（P-98）：具体教室编码。
+         线上班留空 —— 线上课不占教室。
+         ⚠️ 主端没有教室编码表（编码由 Tony 在业务部「市场 › 教室」定），
+            这里只存他填的字符串，不校验存在性。 */
+      roomCode: (o.mode === 'online' ? '' : (f.roomCode || '')),
       name: cityName + '班',
       own: f.own,
     };

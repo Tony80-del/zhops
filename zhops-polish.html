@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">8</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">9</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">8 行 · 已打磨 8 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">9 行 · 已打磨 9 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -297,6 +297,22 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>来源校验</b>：只认 <span class="mono">__app==='zhops.biz'</span> 的数据，别的系统推的一律不认。<br>
               <b>端到端实测通过</b>：业务部塞学生 → 推送 → 云端确认 → 主端点拉取 → 主端出现、字段全对、进候选池、候选池里看得见「要求教室 Q7-01」。<br>
               <b>探针</b>：<span class="mono">check-p97-bizpull.js</span>（50 项，7 段）+ <span class="mono">e2e-bizpull.js</span>（21 项，真 Chrome 真网络，手动跑）；反向控制四条全验。全套 27/27。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-98</td>
+              <td><b>主端班加教室编码 + 课次加快照</b><br><span style="color:#8899aa;font-size:12px">「课室：胡志明市 D7 - Class-01,02,03 …… 主页端必须知道怎么安排课程，哪教室、哪一位教师」</span></td>
+              <td class="nw">主端 · 排课</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>两个概念分清</b>：「教室（市）」= 哪一片（旧体系已有）；<span class="mono">roomCode</span> = 哪一间（业务部「市场 › 教室」里录的编码，如 <span class="mono">Q7-01</span>）。<br>
+              <b>改了三处</b>：① 开班表单加「教室编码」输入框（带 <span class="mono">data-a-inp</span>，<span class="mono">readAppForm</span> 自动收回）② 建班时写进 <span class="mono">class.roomCode</span> ③ 课次生成时存 <span class="mono">roomCode</span> <b>快照</b>。<br>
+              <b>★ 为什么必须快照</b>：现算的话，回看三月份的课次会显示成「现在那间教室」—— 那是篡改历史，人事按教室算成本、老师按教室去上课都会被误导。<br>
+              <b>线上班不记编码</b>：线上不占教室，填了也不生效。<br>
+              <b>显示位置</b>：班列表「教室」列、矩阵班卡（老师 · 市 · 编码）。<br>
+              <b>老数据兼容</b>：没有 <span class="mono">roomCode</span> 的老班不报错，课次里是空字符串不是 undefined。<br>
+              <b>探针</b>：新建 <span class="mono">check-p98-roomcode.js</span>（23 项，6 段）；反向控制三条全验（线上班也记编码 / 课次不存快照 / 表单没输入框 → 都报红）。全套 28/28。</td>
             </tr>
           </tbody>
         </table>
