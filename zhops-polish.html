@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">10</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">11</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">10 行 · 已打磨 10 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">11 行 · 已打磨 11 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -326,6 +326,19 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>做了什么</b>：排课子页签「矩阵」拆成「线下矩阵 / 线上矩阵」，页签上各挂班级数；线下卡第三行 = 教师 · 教室市 · 教室编码，线上卡第三行 = 教师 · 人数。<br>
               <b>★ 老数据兼容</b>：只有 <span class="mono">mode==='online'</span> 才算线上，其余（含早期没写 mode 的老班）一律算线下 —— 过滤写成 <span class="mono">c.mode===mode</span> 的话，老班两张表都不匹配，凭空消失，而且消失的是线下主力班。<br>
               <b>探针</b>：新建 <span class="mono">check-p99-matrixsplit.js</span>（38 项，8 段）；反向控制四条全验（过滤失效 / 严格 mode 相等 / 线上也显示编码 / 线下环也亮 → 都报红）。全套 29/29。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-100</td>
+              <td><b>排课「教室」改成区域供给视图</b><br><span style="color:#8899aa;font-size:12px">「按地区看每个教室配了几位教师、几个学生、哪些时段还空着」</span></td>
+              <td class="nw">主端 · 排课</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>换了数据源</b>：旧版是「中国 10 省份」写死模型（<span class="mono">teacher.room=省</span> / <span class="mono">class.room=市</span>），早被纠正过「市只是班名、省不是地理」；现在改读业务部真实教室库 <span class="mono">localStorage['zhops.biz.v1']</span>，按「地区」分组。<br>
+              <b>每间教室显示</b>：编码 · 名称 · 地址 · 可用时段；配了几位教师（按 <span class="mono">roomCode</span> 找班去重）、几个学生 / 容量、哪些星期还空着（可用星期 − 已排星期）。<br>
+              <b>★ 线上班不占教室</b>：连误填了编码的线上班也不算；没挂到教室的线下班单独列一行提示。<br>
+              <b>探针</b>：新建 <span class="mono">check-p100-rooms.js</span>（32 项，7 段）；反向控制五条全验（空时段不减占用 / 线上算进教室 / 未挂把线上也算 / 空地区不归类 / 空态早退 → 都报红）。全套 30/30。</td>
             </tr>
           </tbody>
         </table>

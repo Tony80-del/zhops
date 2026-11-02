@@ -429,6 +429,30 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 .prov-h .pcnt{font-size:12px;color:var(--ink3);}
 .room-empty{font-size:12px;color:var(--ink3);padding:6px 2px;}
 .room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:0;}
+/* ---------------- 区域供给视图（P-100 · 2026-11-02）----------------
+   按「地区」分组，每间教室一张卡：教师 / 学生 / 空时段。
+   配色沿用主端（--brand 青 + --brand-soft 浅青），不另起一套。 */
+.sup-bd{padding:4px 0;}
+.sup-area{padding:12px 16px;border-bottom:1px solid var(--line);}
+.sup-area:last-child{border-bottom:0;}
+.sup-area-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.sup-area-h b{font-size:14px;color:var(--ink);}
+.sup-area-h .pcnt{font-size:12px;color:var(--ink3);}
+.sup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.sup-room{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;}
+.sup-rh{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.sup-rh b{font-size:14px;color:var(--ink);}
+.sup-rh .sup-rname{font-size:12px;color:var(--ink3);}
+.sup-meta{font-size:12px;color:var(--ink3);margin-bottom:10px;line-height:1.5;}
+.sup-nums{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.sup-num{font-size:12px;color:var(--ink);background:var(--brand-soft);border-radius:6px;padding:4px 9px;}
+.sup-num b{font-size:15px;color:var(--brand);margin-right:2px;}
+.sup-slots{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;}
+.sup-k{color:var(--ink3);}
+.sup-used{color:var(--ink3);font-size:11px;margin-left:2px;}
+.sup-teach{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);}
+.sup-orphan{margin:12px 16px;padding:10px 12px;border:1px dashed var(--line);border-radius:8px;font-size:12px;color:var(--ink3);}
+.sup-orphan b{color:var(--ink);}
 
 /* ---------------- 排课矩阵 ---------------- */
 .mx-wrap{overflow-x:auto;}
@@ -2585,44 +2609,100 @@ function weekRange(iso){
   return { from: from, to: addDays(from, 6) };
 }
 
-/* ---------- 教室卡片视图（2026-10-14 新增 · 排课第 5 个 tab）----------
-   省 → 市 两级：每个省下，属于该省的教师认领的市 = 一间教室（市名 = 开班名）。
-   教师 = t.room=省 且 t.cities 含该市；学生 = s.city 匹配（学生归属教室，跟 s.cls 编班无关）。 */
+/* ---------- 区域供给视图（P-100 · 2026-11-02 · 排课「教室」tab）----------
+   一张图看资源供给：按业务部录入的「地区」分组，每间教室显示
+     ① 配了几位教师   ② 几个学生 / 容量   ③ 哪些时段还空着（按星期）
+   数据来源：业务部「市场 › 教室」—— 与主端同源，直接读 localStorage['zhops.biz.v1']。
+   班级挂教室靠 class.roomCode（P-98），不是旧的 c.room（市名）。
+   线上班不占教室（roomCode 为空），不在这里出现。
+   ⚠️ 旧的「中国 10 省份」模型（teacher.room=省 / class.room=市）已被这套取代；
+      字段先留着（probe-audit 与教师档案还在用），本视图不再读它。 */
+const BIZ_STORE_KEY = 'zhops.biz.v1';
+function bizRooms(){
+  try{
+    const raw = localStorage.getItem(BIZ_STORE_KEY);
+    if (!raw) return [];
+    const o = JSON.parse(raw);
+    return Array.isArray(o.rooms) ? o.rooms : [];
+  }catch(e){ return []; }
+}
+
+/* 一间教室的供给：教师 / 学生 / 空时段 */
+function roomSupply(room){
+  const cs = DB.classes.filter(c => c.mode !== 'online' && c.roomCode && c.roomCode === room.code);
+  const tIds = {};
+  cs.forEach(c => { if (c.teacher) tIds[c.teacher] = 1; });
+  const teachers = Object.keys(tIds).map(id => T(id)).filter(Boolean);
+  const students = DB.students.filter(s => s.cls && cs.some(c => c.id === s.cls)).length;
+  /* 教室可用的星期（业务部录的）− 已被这些班占用的星期 */
+  const avail = Array.isArray(room.days) ? room.days.slice() : [];
+  const used = {};
+  cs.forEach(c => { const sl = S(c.slot); if (sl) slotDays(sl).forEach(d => { used[d] = 1; }); });
+  const freeDays = avail.filter(d => !used[d]);
+  const usedDays = avail.filter(d => used[d]);
+  return { classes: cs, teachers, students, avail, freeDays, usedDays };
+}
+
 function bRooms(){
-  return '<div class="card"><div class="card-h"><h3>教室</h3><span class="sub">'+
-    ROOMS.length+' 个省份 · 按省 → 市看每个教室的教师 + 学生</span></div>'+
-    '<div class="bd rooms-by-prov">'+
-      ROOMS.map(prov => provBlock(prov)).join('')+
-    '</div></div>';
+  const rooms = bizRooms();
+  const head = '<div class="card"><div class="card-h"><h3>区域供给视图</h3>'+
+    '<span class="sub">按业务部「地区」分组 · 每间教室配了几位教师、几个学生、哪些时段还空着</span></div>';
+
+  if (!rooms.length){
+    return head+'<div class="card-b"><div class="empty">还没有教室。去业务部「市场 › 教室」录入第一间 —— 编码、地区、地址、可用时段。录入后，这里会按地区显示每间教室的教师 / 学生 / 空时段。</div></div></div>';
+  }
+
+  /* 按地区分组；空地区归到「未定地区」 */
+  const groups = {};
+  rooms.forEach(r => { const k = String(r.area || '').trim() || '未定地区'; (groups[k] = groups[k] || []).push(r); });
+  const areaNames = Object.keys(groups).sort((a, b) =>
+    a === '未定地区' ? 1 : b === '未定地区' ? -1 : a.localeCompare(b, 'zh'));
+
+  const blocks = areaNames.map(area => {
+    const list = groups[area];
+    return '<div class="sup-area"><div class="sup-area-h"><b>'+esc(area)+'</b>'+
+      '<span class="pcnt">'+list.length+' 间教室</span></div>'+
+      '<div class="sup-grid">'+list.map(roomSupplyCard).join('')+'</div></div>';
+  }).join('');
+
+  /* 没挂到任何教室的线下班：没填编码，或编码不在教室库里 */
+  const codes = {};
+  rooms.forEach(r => { codes[r.code] = 1; });
+  const orphan = DB.classes.filter(c => c.mode !== 'online' && (!c.roomCode || !codes[c.roomCode]));
+  const orphanTip = orphan.length
+    ? '<div class="sup-orphan">还有 <b>'+orphan.length+'</b> 个线下班没挂到上面的教室里（没填教室编码，或编码不在教室库中）：'+
+      orphan.slice(0, 8).map(c => '<span class="tg off">'+esc(c.name || c.code || c.id)+'</span>').join(' ')+
+      (orphan.length > 8 ? ' …' : '')+'</div>'
+    : '';
+
+  return head+'<div class="bd sup-bd">'+blocks+orphanTip+'</div></div>';
 }
-/* 一个省的分组：省名 + 该省下所有市（有教师认领的市出卡片；没有的给提示） */
-function provBlock(prov){
-  const cities = CITIES[prov] || [];
-  /* 有教师认领的市 */
-  const openCities = cities.filter(city =>
-    DB.teachers.some(t => t.room === prov && (t.cities||[]).includes(city)));
-  const inner = openCities.length
-    ? '<div class="room-grid">'+openCities.map(city =>
-        roomCard(city, DB.teachers.filter(t => t.room === prov && (t.cities||[]).includes(city)), prov)).join('')+'</div>'
-    : '<div class="room-empty">'+(cities.length ? '尚无教师认领该省的市' : '该省暂无市（待补）')+'</div>';
-  return '<div class="prov-block">'+
-    '<div class="prov-h"><b>'+esc(prov)+'</b><span class="pcnt">'+openCities.length+' 间开班</span></div>'+
-    inner+
-  '</div>';
-}
-/* 教室卡（方案 A · 讲台式）：老师「站在前面」（讲台位），学生像课桌排在后面 */
-function roomCard(cityName, teachers, prov){
-  const students = DB.students.filter(s => s.city === cityName);
-  return '<div class="room-card">'+
-    '<div class="room-h"><b>'+esc(cityName)+'</b><span class="cnt">'+esc(prov)+' · '+students.length+' 学生</span></div>'+
-    /* 讲台：老师在最前 */
-    '<div class="room-front">'+(teachers.length
-      ? teachers.map(t => '<span class="teach">'+esc(t.name)+' · 授课教师</span>').join(' ')
-      : '<span class="lbl">无教师</span>')+'</div>'+
-    /* 课桌区：学生成排 */
-    '<div class="room-desks">'+(students.length
-      ? students.map(s => '<span class="desk">'+esc(s.name)+'</span>').join('')
-      : '<span class="lbl">暂无学生</span>')+'</div>'+
+
+/* 一间教室的供给卡 */
+function roomSupplyCard(r){
+  const sp = roomSupply(r);
+  const slots = sp.avail.length
+    ? (sp.freeDays.length
+        ? sp.freeDays.map(d => '<span class="tg on">'+DAY_NAMES[d]+'</span>').join(' ')
+        : '<span class="lbl">已排满</span>')
+    : '<span class="lbl">未录可用时段</span>';
+  return '<div class="sup-room">'+
+    '<div class="sup-rh"><b class="mono">'+esc(r.code)+'</b>'+
+      (r.name ? ' <span class="sup-rname">'+esc(r.name)+'</span>' : '')+
+      '<span class="sp"></span>'+
+      (r.open === false ? '<span class="tg out">停用</span>' : '<span class="tg own">在用</span>')+'</div>'+
+    '<div class="sup-meta">'+
+      (r.addr ? esc(r.addr) : '<span class="lbl">未填地址</span>')+
+      (r.hours ? ' · 可用 '+esc(r.hours) : '')+'</div>'+
+    '<div class="sup-nums">'+
+      '<span class="sup-num"><b>'+sp.teachers.length+'</b> 位教师</span>'+
+      '<span class="sup-num"><b>'+sp.students+'</b>'+(r.cap ? ' / '+r.cap : '')+' 学生</span>'+
+      '<span class="sup-num"><b>'+sp.classes.length+'</b> 个班</span>'+
+    '</div>'+
+    '<div class="sup-slots"><span class="sup-k">空时段</span>'+slots+
+      (sp.usedDays.length ? '<span class="sup-used">已排：'+sp.usedDays.map(d => DAY_NAMES[d]).join('、')+'</span>' : '')+
+    '</div>'+
+    (sp.teachers.length ? '<div class="sup-teach">'+sp.teachers.map(t => '<span class="tg off">'+esc(t.name)+'</span>').join(' ')+'</div>' : '')+
   '</div>';
 }
 
@@ -5426,6 +5506,24 @@ const VI = {
   /* 期数（班名后可能带「第二期」） */
   '第一期':'kỳ 1', '第二期':'kỳ 2', '第三期':'kỳ 3', '第四期':'kỳ 4', '第五期':'kỳ 5',
   '第六期':'kỳ 6', '第七期':'kỳ 7', '第八期':'kỳ 8', '第九期':'kỳ 9', '第十期':'kỳ 10',
+  /* ===== 2026-11-02 · P-100 区域供给视图 =====
+     数字在 <b> 里是独立文本节点，所以这里的复合词（位教师/间教室/空时段）
+     不会被「教师/教室/时段」拆开翻成半中半越。 */
+  '区域供给视图':'Tổng quan cung ứng khu vực',
+  '按业务部「地区」分组 · 每间教室配了几位教师、几个学生、哪些时段还空着':'Nhóm theo 「Khu vực」 của bộ phận kinh doanh · mỗi phòng có mấy giáo viên, mấy học viên, những ca nào còn trống',
+  '位教师':'giáo viên',
+  '间教室':'phòng học',
+  '个班':'lớp',
+  '空时段':'Ca trống',
+  '已排满':'Đã kín lịch',
+  '已排':'Đã xếp',
+  '未定地区':'Chưa rõ khu vực',
+  '未填地址':'Chưa nhập địa chỉ',
+  '未录可用时段':'Chưa nhập ca trống',
+  '在用':'Đang dùng',
+  '停用':'Ngưng dùng',
+  '可用':'Khả dụng',
+  '还没有教室。去业务部「市场 › 教室」录入第一间 —— 编码、地区、地址、可用时段。录入后，这里会按地区显示每间教室的教师 / 学生 / 空时段。':'Chưa có phòng học. Vào bộ phận kinh doanh 「Thị trường › Phòng học」 nhập phòng đầu tiên —— mã, khu vực, địa chỉ, ca trống. Nhập xong, nơi đây sẽ hiển thị theo khu vực: giáo viên / học viên / ca trống của từng phòng.',
 };
 const _langOrig = new WeakMap();   /* 记下中文原文，切回中文时还原 */
 /* 长的先替 —— 否则「课次」会先把「课次记录」啃掉一半。
