@@ -393,6 +393,13 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   font:13.5px var(--ui);color:var(--ink2);cursor:pointer;margin-bottom:-1px;white-space:nowrap;}
 .tabs button:hover{color:var(--brand);}
 .tabs button.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:650;}
+/* 页签上的班级数（2026-11-02 P-99）：线下 / 线上两张矩阵各挂一个，一眼看出哪边有班。
+   ⚠️ 必须写在 <span> 里，不能拼进按钮文字 —— 越南语翻译层按文本节点整词替换，
+      文字混了数字就匹配不上字典（「线下矩阵」对不上「线下矩阵 3」）。 */
+.tabs button .tbn{display:inline-block;min-width:16px;margin-left:6px;padding:0 4px;
+  font:600 10.5px/15px var(--mono);color:var(--ink3);background:var(--surface-3);
+  text-align:center;vertical-align:1px;}
+.tabs button.on .tbn{color:#fff;background:var(--brand);}
 
 /* ---------------- 教室卡片（排课第 5 tab）----------------
    方案 A · 讲台式 · 三色（背景色 / 教师色 / 学生色）
@@ -2207,14 +2214,24 @@ let bTab = 'matrix';
 /* 从排课矩阵点班级卡片跳过来时，要聚焦哪一个班（只活一次 render，见 render() 末尾） */
 let bFocus = null;
 function vBoard(){
-  /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 5 个子页
-     （2026-10-14 加「教室」—— 按省份看教师 + 学生名单） */
-  const tabs = [['matrix','排课矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历'],['rooms','教室']];
+  /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 6 个子页
+     （2026-10-14 加「教室」—— 按省份看教师 + 学生名单；
+       2026-11-02 P-99 把「矩阵」拆成线下 / 线上两个 —— Tony 定：线上线下排课分开） */
+  const tabs = [['matrix','线下矩阵'],['matrixOn','线上矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历'],['rooms','教室']];
   /* 从别处带着旧的 bTab 进来（比如以前从侧栏点过「开班申请」）→ 兜回矩阵，
      否则下面全不匹配，会渲染出一张空页 */
   if (!tabs.some(t => t[0] === bTab)) bTab = 'matrix';
+  /* 页签上挂班级数：一眼看出「这边有没有班」，不用点进去数。
+     0 个就不挂，免得页签上一串 0 更乱。 */
+  const tabN = {
+    matrix:   DB.classes.filter(c => c.mode !== 'online').length,
+    matrixOn: DB.classes.filter(c => c.mode === 'online').length,
+  };
+  const tabHtml = tabs.map(([id,n]) => '<button data-t="'+id+'" class="'+(bTab===id?'on':'')+'">'+n+
+    (tabN[id] ? '<span class="tbn">'+tabN[id]+'</span>' : '')+'</button>').join('');
   let body = '';
-  if (bTab === 'matrix')        body = bMatrix();
+  if (bTab === 'matrix')        body = bMatrix('offline');
+  else if (bTab === 'matrixOn') body = bMatrix('online');
   else if (bTab === 'classes')  body = bClasses();
   else if (bTab === 'pool')     body = bPool();
   else if (bTab === 'rooms')    body = bRooms();
@@ -2226,12 +2243,12 @@ function vBoard(){
     <div class="freeze-page">
     <div class="freeze-head">
     <div class="page-h">
-      <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
+      <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
       <div class="sp"></div>
       <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
     </div>
     ${autoBanner()}
-    <div class="tabs" id="btabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(bTab===id?'on':'')+'">'+n+'</button>').join('')}</div>
+    <div class="tabs" id="btabs">${tabHtml}</div>
     </div><!-- /freeze-head -->
     <div class="freeze-body">
     ${body}
@@ -2240,12 +2257,12 @@ function vBoard(){
   }
   return `
   <div class="page-h">
-    <div><h2>排课</h2><p class="desc">矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
+    <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
     <div class="sp"></div>
     <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
   </div>
   ${autoBanner()}
-  <div class="tabs" id="btabs">${tabs.map(([id,n])=>'<button data-t="'+id+'" class="'+(bTab===id?'on':'')+'">'+n+'</button>').join('')}</div>
+  <div class="tabs" id="btabs">${tabHtml}</div>
   ${body}`;
 }
 /* ---------- 视图：开班申请（一级板块 · 审批收件箱） ----------
@@ -2268,7 +2285,16 @@ function vApply(){
      ② 标出「今天」那一列。日历页一直有今天高亮，矩阵一直没有，看的人得自己数今天周几。
      ③ 卡片可点 → 跳到「班级」子页签并点亮那一行（班级没有自己的抽屉，
         跟总览「差 N 人开班」那条走的是同一个思路，只是多了个聚焦）。 */
-function bMatrix(){
+function bMatrix(mode){
+  /* ★ 2026-11-02（P-99）：矩阵拆成「线下 / 线上」两张（Tony 定：线上线下排课分开）。
+     为什么要拆：线下和线上是两套资源 —— 线下占教室（一间一间，不能撞时段），
+     线上不占教室、同一格能叠好几个班。混在一张表里，看的人分不清
+     「这一格空着」是「没教室了」还是「线上随便排」。
+     ★ 老数据兼容：只有 mode==='online' 才算线上，其余（含早期没写 mode 的班）
+       一律算线下 —— 宁可让它出现在线下矩阵，也不能两边都不出现（凭空消失最坏）。
+     参数不给 = 线下（bMatrix() 是历史调用方式，别让它变空页）。 */
+  const isOn = mode === 'online';
+  const mine = DB.classes.filter(c => (c.mode === 'online') === isOn);
   /* 列 = 周一 ~ 周六；**只有真有周日课的时候**才多排一列周日 ——
      否则周日排的班在矩阵上会凭空消失（onDays 里那个 0 匹配不到任何一列）。
      ⚠️ colDays 里存的是 DAY_NAMES 索引（0=周日 … 6=周六），不存列号，免得两套索引打架。 */
@@ -2276,13 +2302,26 @@ function bMatrix(){
   const colDays = hasSun ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6];
   const todayDi = new Date(DB.todayDate + 'T00:00:00').getDay();   /* 0=周日 */
   const todayInCols = colDays.indexOf(todayDi) >= 0;
+  /* 两张表各说各的话：标题 / 说明 / 图例 / 空态提示都分开写 */
+  const title = isOn ? '线上矩阵' : '线下矩阵';
+  const sub = isOn
+    ? '行 = 时段 · 列 = 星期 · 线上不占教室，同一格可以叠多个班'
+    : '行 = 时段 · 列 = 星期 · 琥珀 = 线下班 · 教师 · 教室市 · 教室编码';
+  const legend = isOn
+    ? '<span class="sub lg-donut"><span class="donut on live"></span>正在上课</span>'+
+      '<span class="sub lg-donut"><span class="donut on"></span>线上 · 未开始/已结束</span>'
+    : '<span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span>';
+  const emptyTip = isOn
+    ? '还没有线上班。开班时把上课方式选成线上，就会出现在这里。'
+    : '还没有线下班。开班时把上课方式选成线下，就会出现在这里。';
   return `<div class="card marks">
-    <div class="card-h"><h3>排课矩阵</h3><span class="sub">行 = 时段 · 列 = 星期 · 青=线上 / 琥珀=线下</span><span class="sp"></span>
-      <span class="sub lg-donut"><span class="donut on live"></span>正在上课</span>
-      <span class="sub lg-donut"><span class="donut on"></span>线上 · 未开始/已结束</span>
-      <span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span>
+    <div class="card-h"><h3>${title}</h3><span class="sub">${sub}</span><span class="sp"></span>
+      ${legend}
+      <span class="tg${mine.length ? ' off' : ''}">共 ${mine.length} 个班</span>
       <span class="tg warn" title="今天 = ${DB.todayDate}${todayInCols ? '' : '（周日 · 矩阵里没有这一列）'}">今天 ${DAY_NAMES[todayDi]}</span></div>
-    <div class="card-b tight"><div class="mx-wrap"><table class="mx">
+    <div class="card-b tight">
+      ${mine.length ? '' : '<div class="note" style="margin:0 0 10px">'+emptyTip+'</div>'}
+      <div class="mx-wrap"><table class="mx">
       <thead><tr><th class="rowh">时段</th>${colDays.map(di =>
         '<th'+(di===todayDi?' class="today"':'')+'>'+DAY_NAMES[di]+
         (di===todayDi?'<span class="tday">今天</span>':'')+'</th>').join('')}</tr></thead>
@@ -2292,25 +2331,28 @@ function bMatrix(){
           colDays.map(di=>{
             const tdCls = 'cell' + (di===todayDi ? ' today' : '');
             if (onDays.indexOf(di) < 0) return '<td class="'+tdCls+' empty"></td>';
-            const cs = DB.classes.filter(c=>c.slot===sl.id);
+            const cs = mine.filter(c=>c.slot===sl.id);
             if (!cs.length) return '<td class="'+tdCls+' empty"></td>';
             return '<td class="'+tdCls+'">'+cs.map(c=>{
               const t=T(c.teacher);
-              /* 环挂在班级上：这个班有没有在线，一眼看得出来 */
-              const live = c.mode==='online' && slotLive(S(c.slot).time);
-              const dotCls = c.mode!=='online' ? '' : (live?'on live':'on');
-              const dotTip = c.mode!=='online' ? '线下课 · 环无色'
-                           : (live ? '线上课 · 正在上课' : '线上课 · 未开始 / 已结束');
-              /* ★ ③ 卡片可点：去「班级」子页签看它的完整一行（级别 / 教室 / 人数 / 三个动作） */
-              return '<a href="#" class="chip '+(c.mode==='online'?'':'off')+'"'+
+              /* 环只对线上有意义（线上有没有在直播）；线下环恒无色，跟以前一样 */
+              const live = isOn && slotLive(S(c.slot).time);
+              const dotCls = isOn ? (live?'on live':'on') : '';
+              const dotTip = isOn ? (live ? '线上课 · 正在上课' : '线上课 · 未开始 / 已结束')
+                                  : '线下课 · 环无色';
+              /* 第三行两张表不一样：
+                 线下 = 教师 · 教室市 · 教室编码（排课的人要知道去哪间）
+                 线上 = 教师 · 人数（线上不占教室，人数才是要看的东西） */
+              const line3 = isOn
+                ? esc(t.name)+' · '+classN(c)+'/'+c.cap+' 人'
+                : esc(t.name)+(c.room?' · '+esc(c.room):'')+(c.roomCode?' · '+esc(c.roomCode):'');
+              /* ★ 卡片可点：去「班级」子页签看它的完整一行（级别 / 教室 / 人数 / 三个动作） */
+              return '<a href="#" class="chip '+(isOn?'':'off')+'"'+
                      ' data-c-act="open" data-cid="'+c.id+'" title="点开看这个班">'+
                      '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
                      '<span class="nm">'+esc(c.name)+'</span></b>'+
                      '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
-                     '<span class="tn">'+esc(t.name)
-                       +(c.mode==='offline'&&c.room?' · '+esc(c.room):'')
-                       +(c.mode==='offline'&&c.roomCode?' · '+esc(c.roomCode):'')
-                       +'</span></a>';
+                     '<span class="tn">'+line3+'</span></a>';
             }).join('')+'</td>';
           }).join('')+'</tr>';
       }).join('')}</tbody>
@@ -4972,6 +5014,13 @@ const VI = {
   '学生档案':'Hồ sơ học viên', '最近登录':'Đăng nhập gần nhất', '学生名单':'Danh sách học viên',
   '申请内容':'Nội dung đơn', '驳回原因':'Lý do từ chối', '阶段考试':'Thi giai đoạn',
   '结业等级':'Cấp độ tốt nghiệp', '排课矩阵':'Ma trận xếp lớp', '候选池':'Nhóm chờ xếp lớp',
+  /* P-99：矩阵拆线下 / 线上两张（key 长于「线下」「线上」，_viKeys 按长度降序 → 整词先命中） */
+  '线下矩阵':'Ma trận lớp trực tiếp', '线上矩阵':'Ma trận lớp trực tuyến',
+  '行 = 时段 · 列 = 星期 · 线上不占教室，同一格可以叠多个班':'Hàng = ca · Cột = thứ · Lớp trực tuyến không dùng phòng, một ô xếp được nhiều lớp',
+  '行 = 时段 · 列 = 星期 · 琥珀 = 线下班 · 教师 · 教室市 · 教室编码':'Hàng = ca · Cột = thứ · Hổ phách = lớp trực tiếp · Giáo viên · Thành phố · Mã phòng',
+  '还没有线下班。开班时把上课方式选成线下，就会出现在这里。':'Chưa có lớp trực tiếp. Khi mở lớp chọn hình thức trực tiếp thì lớp sẽ hiện ở đây.',
+  '还没有线上班。开班时把上课方式选成线上，就会出现在这里。':'Chưa có lớp trực tuyến. Khi mở lớp chọn hình thức trực tuyến thì lớp sẽ hiện ở đây.',
+  '无色':'không màu', '琥珀':'hổ phách',
   '未填':'Chưa điền', '待定':'Chờ xác định', '本人':'Bản thân', '家长':'Phụ huynh',
   '未选':'Chưa chọn', '未指定':'Chưa chỉ định',
   '操作':'Thao tác', '详情':'Chi tiết', '筛选':'Lọc', '排序':'Sắp xếp', '本月':'Tháng này',

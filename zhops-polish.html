@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">9</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">10</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">9 行 · 已打磨 9 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">10 行 · 已打磨 10 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -313,6 +313,19 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>显示位置</b>：班列表「教室」列、矩阵班卡（老师 · 市 · 编码）。<br>
               <b>老数据兼容</b>：没有 <span class="mono">roomCode</span> 的老班不报错，课次里是空字符串不是 undefined。<br>
               <b>探针</b>：新建 <span class="mono">check-p98-roomcode.js</span>（23 项，6 段）；反向控制三条全验（线上班也记编码 / 课次不存快照 / 表单没输入框 → 都报红）。全套 28/28。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-99</td>
+              <td><b>排课矩阵拆成「线下 / 线上」两张</b><br><span style="color:#8899aa;font-size:12px">「线上线下排课分开」</span></td>
+              <td class="nw">主端 · 排课</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>为什么拆</b>：线下占教室（一间一间，同一时段不能撞），线上不占教室（同一格能叠好几个班）。混在一张表里，看的人分不清「这一格空着」是「没教室了」还是「线上随便排」。<br>
+              <b>做了什么</b>：排课子页签「矩阵」拆成「线下矩阵 / 线上矩阵」，页签上各挂班级数；线下卡第三行 = 教师 · 教室市 · 教室编码，线上卡第三行 = 教师 · 人数。<br>
+              <b>★ 老数据兼容</b>：只有 <span class="mono">mode==='online'</span> 才算线上，其余（含早期没写 mode 的老班）一律算线下 —— 过滤写成 <span class="mono">c.mode===mode</span> 的话，老班两张表都不匹配，凭空消失，而且消失的是线下主力班。<br>
+              <b>探针</b>：新建 <span class="mono">check-p99-matrixsplit.js</span>（38 项，8 段）；反向控制四条全验（过滤失效 / 严格 mode 相等 / 线上也显示编码 / 线下环也亮 → 都报红）。全套 29/29。</td>
             </tr>
           </tbody>
         </table>
