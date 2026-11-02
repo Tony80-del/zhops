@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">2</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">3</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -212,6 +212,19 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>停用不删</b>：教室关掉标「停用」，数据留着，历史记录不受影响。<br>
               <b>顺手补的</b>：这个页面原来<b>没有 esc()</b>，所有渲染直接拼字符串。教室的编码/地址/备注是自由文本，不转义会撑坏表格 —— 补上了。<br>
               <b>探针</b>：新建 <span class="mono">check-biz-rooms.js</span>（43 项，7 段），已进 <span class="mono">run.sh</span>；反向控制三条全验（放开空编码 / 放开重复 / 去掉 disabled → 都报红）。全套 22/22。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-92</td>
+              <td><b>教室编码校验（三条铁律）</b><br><span style="color:#8899aa;font-size:12px">「你把它编成死码，我定好了，我编你再写」</span></td>
+              <td class="nw">业务部 · 校验</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>随 P-91 一起做完</b>，这里单独立项留个记号，免得以后以为漏了。<br>
+              <b>三条</b>：① 不能为空 ② 不能重复（跟已有编码比对，撞了提示「已经存在」）③ <b>存了不能改</b> —— 编辑时编码框 <span class="mono">disabled</span>，只读展示；要换只能停用旧的、再建新的。<br>
+              <b>系统不做的</b>：不生成编码、不预设格式、不预设地区。编号规则归 Tony，代码只查不编。<br>
+              <b>验证</b>：<span class="mono">check-biz-rooms.js</span> 第 [3] 段专门验这三条；三条反向控制全部报红，断言不是摆设。</td>
             </tr>
           </tbody>
         </table>
