@@ -668,6 +668,11 @@ tr[data-open]:hover td{background:var(--brand-soft);}
       <span id="stCloud"></span><br>
       <button type="button" class="sf-btn" id="btnCloudPush">☁︎ 推送到云端</button>
       <button type="button" class="sf-btn" id="btnCloudPull">☁︎ 从云端拉取</button><br>
+      <!-- ★ 2026-11-02（P-97）：业务部 → 主端 的入口。
+           跟上面两个不是一回事：上面拉的是 zhops/master（整份排课），
+           这个拉的是 zhops/bizstudents（业务部登记的学生）。 -->
+      <button type="button" class="sf-btn" id="btnBizPull">☁︎ 拉取业务部学生</button>
+      <span id="stBiz" style="font-size:10px;opacity:.7"></span><br>
       <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
       <!-- ★ 2026-10-17：版本标记 —— 用来确认浏览器加载的是不是最新文件（file:// 也会缓存） -->
       <!-- ★ 版本标记：必须带「构建日期 时间」，否则 Tony 无法判断跑的是哪一版。
@@ -1145,6 +1150,88 @@ function fsPull(cb){
     if (cb) cb(!!payload, payload, at);
   }).catch(() => { markCloud('fail'); if (cb) cb(false); });
 }
+/* ==========================================================================
+   拉取业务部学生（2026-11-02 · P-97）
+   --------------------------------------------------------------------------
+   通道：业务部写 zhops/bizstudents → 主端读同一份。单向，主端不写回去。
+
+   ★ 只覆盖 4 个字段：name / phone / mode / preferRoom
+     主端的 cls（编班）/ teacherId / exam（考试）/ slots（时段）是主端自己的，
+     业务部不知道也不该管 —— 一个都不碰。
+   ★ 不删：业务部删了人（deleted:true），主端标 bizGone 但保留人，
+     因为这个人可能已经编进班了，删掉会让历史出勤记录指向空气。
+   ★ 冲突业务部赢（它是登记方）：主端改过的 mode 会被下次拉取覆盖回去。
+   ========================================================================== */
+const BIZ_SRC_TAG = 'zhops.biz';
+const BIZSTU_DOC = 'bizstudents';
+
+/* 拉 zhops/bizstudents。cb(ok, list, at)。
+   断网 / 文档不存在 / 来源不对 → cb(false)，主端照常能用。 */
+function pullBizStudents(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  fetch(fsUrlOf(FS.coll, BIZSTU_DOC))
+    .then(r => r.ok ? r.json() : null)
+    .then(raw => {
+      if (!raw || !raw.fields){ if (cb) cb(false); return; }
+      const p = fsDec(raw.fields.payload);
+      const at = fsDec(raw.fields.at);
+      if (!p){ if (cb) cb(false); return; }
+      let o = null;
+      try { o = JSON.parse(p); } catch(e){ o = null; }
+      /* 来源校验：只认业务部推的，别把别人推的东西当学生名单 */
+      if (!o || o.__app !== BIZ_SRC_TAG || !Array.isArray(o.students)){
+        if (cb) cb(false); return;
+      }
+      if (cb) cb(true, o.students, at || o.at || '');
+    })
+    .catch(() => { if (cb) cb(false); });
+}
+
+/* 把业务部的学生合并进 DB.students。返回一份统计，供界面提示。 */
+function mergeBizStudents(list){
+  const stat = { added: 0, updated: 0, gone: 0, skipped: 0 };
+  if (!Array.isArray(list)) return stat;
+
+  list.forEach(b => {
+    if (!b || !b.id) { stat.skipped++; return; }
+
+    /* 已删除的：不删人，只标记 */
+    if (b.deleted){
+      const dead = DB.students.find(s => s.id === b.id);
+      if (dead){ dead.bizGone = true; dead.bizGoneAt = b.at || ''; stat.gone++; }
+      return;
+    }
+
+    const s = DB.students.find(x => x.id === b.id);
+    if (s){
+      /* ★ 只覆盖 4 个字段。name 空值不覆盖 —— 免得业务部漏填把主端的名字抹掉 */
+      if (b.name) s.name = b.name;
+      s.phone      = b.phone || s.phone || '';
+      s.mode       = b.mode === 'online' ? 'online' : 'offline';
+      s.preferRoom = b.preferRoom || '';
+      /* 业务部把他救回来了 → 清掉删除标记 */
+      delete s.bizGone;
+      delete s.bizGoneAt;
+      stat.updated++;
+      return;
+    }
+
+    /* 主端没有这个人 → 新建。用业务部给的 st 编号（两边同一套编号） */
+    const ns = blankStudent();
+    ns.id         = b.id;
+    ns.name       = b.name || '';
+    ns.phone      = b.phone || '';
+    ns.lv         = b.lv || 'HSK1';
+    ns.mode       = b.mode === 'online' ? 'online' : 'offline';
+    ns.preferRoom = b.preferRoom || '';
+    ns.fromBiz    = true;          /* 标记来源，方便以后查 */
+    DB.students.push(ns);
+    stat.added++;
+  });
+
+  return stat;
+}
+
 /* 推到云端。cb(ok) —— ★ 只有用户手动点按钮才会走到这里（2026-10-17 全手动）
    ★ 2026-10-30：加 at 防冲撞（S1.3 已知残留）。
    推之前先 GET 看云端 at；若云端比本机 lastSavedAt 新 → 先落本机再推。
@@ -2074,7 +2161,7 @@ function vStudents(){
       <tbody>${rows.map(s=>{
         const c = s.cls ? C(s.cls) : null;
         return '<tr data-open="student:'+s.id+'">'+
-        '<td><b>'+esc(s.name)+'</b></td>'+
+        '<td><b>'+esc(s.name)+'</b>'+(s.bizGone ? ' <span class="tg bad" style="font-size:10px">业务部已删除</span>' : '')+'</td>'+
         '<td>'+ownTag(s.own)+'</td>'+
         '<td><span class="tg off">'+s.lv+'</span></td>'+
         /* ★ 2026-10-17（Tony 定的三层链）：教室列显示「教师·市 → 班名」
@@ -2423,7 +2510,8 @@ function bPool(){
   <div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>学生</th><th>归属</th><th>级别</th><th>上课方式</th><th>要求教室</th><th>意向班级</th><th>联系人</th><th>可上课时段</th><th></th></tr></thead>
     <tbody>${pool.map(s=>'<tr>'+
-      '<td><b>'+esc(s.name)+'</b></td>'+
+      /* ★ 2026-11-02（P-97）：业务部删了这个人 —— 人留着（可能已编班），只标一句 */
+      '<td><b>'+esc(s.name)+'</b>'+(s.bizGone ? ' <span class="tg bad" style="font-size:10px">业务部已删除</span>' : '')+'</td>'+
       '<td>'+ownTag(s.own)+'</td>'+
       '<td><span class="tg off">'+s.lv+'</span></td>'+
       /* ★ 2026-11-02（P-95）：业务部标的上课方式。没这个字段的老学生按线下算 */
@@ -3632,6 +3720,10 @@ function blankStudent(){
        ⚠️ 主端不校验这个编码是否存在于主端的教室体系 —— 主端没有教室编码表。
           只做「显示给操作员看」，选哪间由开班的人决定。 */
     mode:'offline', preferRoom:'',
+    /* ★ 2026-11-02（P-97）：业务部拉取带来的两个标记
+       fromBiz   这条是从业务部拉进来的（不是主端自己建的）
+       bizGone   业务部那边已删除这个人 —— 主端保留人，只标一句 */
+    fromBiz:false, bizGone:false, bizGoneAt:'',
   };
 }
 function blankMember(){
@@ -5759,6 +5851,32 @@ if (_bl) _bl.addEventListener('click', () => {
     try { localStorage.setItem(KEY, payload); } catch(e){}
     loadedFromStore = true; markSaved('loaded'); markCloud('ok', at); render();
     toast('☁︎ 已从云端载入');
+  });
+});
+/* ★ 2026-11-02（P-97）：拉取业务部学生。
+   ⚠️ 跟上面那个「从云端拉取」不是一回事：
+      上面拉 zhops/master（整份排课，会整份覆盖本机）；
+      这里拉 zhops/bizstudents（只合学生，只覆盖 4 个字段，本机数据不动）。
+   ⚠️ 不弹确认框 —— 这个动作是「补充」，不覆盖本机，不需要吓人。 */
+const _bpBiz = document.getElementById('btnBizPull');
+if (_bpBiz) _bpBiz.addEventListener('click', () => {
+  const st = document.getElementById('stBiz');
+  if (st) st.textContent = '☁︎ 拉取中…';
+  _bpBiz.disabled = true;
+  pullBizStudents((ok, list, at) => {
+    _bpBiz.disabled = false;
+    if (!ok){
+      if (st) st.textContent = '☁︎ 拉取失败（没推送过 / 断网）';
+      toast('☁︎ 没拉到业务部学生 —— 先去业务部点「推送到云端」', true);
+      return;
+    }
+    const stat = mergeBizStudents(list);
+    buildFacts();
+    save(); render();
+    const msg = '新增 ' + stat.added + ' · 更新 ' + stat.updated +
+                (stat.gone ? ' · 业务部已删除 ' + stat.gone : '');
+    if (st) st.textContent = '☁︎ ' + msg + ' · ' + String(at || '').slice(5, 16).replace('T', ' ');
+    toast('☁︎ 已拉取业务部学生：' + msg);
   });
 });
 /* 顶栏搜索：一个框管三处（教师 / 学生 / 排课 › 班级），跟 placeholder 的承诺对齐。

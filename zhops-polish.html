@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">8 行 · 已打磨 7 · 待打磨 1</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">8 行 · 已打磨 8 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -288,13 +288,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-97</td>
               <td><b>云端通道 ②：主端拉取业务部学生</b><br><span style="color:#8899aa;font-size:12px">「信息发到主页端后选池，就能看到这位学生」</span></td>
               <td class="nw">主端 · 云端</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-02</td>
-              <td class="mono nw">—</td>
+              <td class="mono nw">11-02</td>
               <td>主端加「☁︎ 拉取业务部学生」按钮，读 <span class="mono">zhops/bizstudents</span>。<br>
-              <b>只覆盖 4 个字段</b>：<span class="mono">name / phone / mode / preferRoom</span>；主端的 <span class="mono">cls / teacherId / exam / slots</span> 一个都不碰。<br>
-              <b>不删</b>：业务部删了人，主端留着并标「业务部已删除」（可能已编班）。<br>
-              <b>冲突业务部赢</b>（它是登记方），界面提示「这一项由业务部管」。</td>
+              <b>★ 只覆盖 4 个字段</b>：<span class="mono">name / phone / mode / preferRoom</span>；主端的 <span class="mono">cls / teacherId / exam / slots / own / lv</span> 一个都不碰 —— 业务部不知道这些字段，抹掉就再也找不回来。<br>
+              <b>不删</b>：业务部删了人，主端标「业务部已删除」但保留人（可能已编班）。业务部救回来时标记自动清掉。<br>
+              <b>来源校验</b>：只认 <span class="mono">__app==='zhops.biz'</span> 的数据，别的系统推的一律不认。<br>
+              <b>端到端实测通过</b>：业务部塞学生 → 推送 → 云端确认 → 主端点拉取 → 主端出现、字段全对、进候选池、候选池里看得见「要求教室 Q7-01」。<br>
+              <b>探针</b>：<span class="mono">check-p97-bizpull.js</span>（50 项，7 段）+ <span class="mono">e2e-bizpull.js</span>（21 项，真 Chrome 真网络，手动跑）；反向控制四条全验。全套 27/27。</td>
             </tr>
           </tbody>
         </table>
