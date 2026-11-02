@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">12</span></button>
+    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">13</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -181,7 +181,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-02 ============ -->
   <div class="day-panel on" data-day="2026-11-02">
     <div class="card">
-      <h2>2026-11-02 · 打磨记录<span class="n">12 行 · 已打磨 12 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-02 · 打磨记录<span class="n">13 行 · 已打磨 13 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -352,6 +352,22 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <b>收录</b>：学员 <span class="mono">stN</span>（业务部 S-001 已迁移）、教师 <span class="mono">tN</span>、班级 id / 代号、教室编码 <span class="mono">Q7-01</span>、课次序号、业务部 <span class="mono">L-/B-/R-/C-/A-/E-</span>、云端 <span class="mono">zhops/master · zhops/&lt;教师id&gt; · zhops/bizstudents · zhops/done_&lt;课次ID&gt;</span>、本机 5 个存盘键 + IndexedDB、打磨 <span class="mono">P-xx</span>。<br>
               <b>只登记、只读</b>：不新增任何编号规则，只把现有的写清楚；以后加编号往表里加一行。<br>
               <b>探针</b>：新建 <span class="mono">check-p101-idmap.js</span>（38 项，4 段），接 <span class="mono">run.sh</span> ㉕；按「编号 + 对象」行签名断，反向控制四条全验（删行 / 破坏尖括号转义 / 改分组名 / 整段删除 → 都报红）。全套 31/31。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-102</td>
+              <td><b>生态地图加「折叠 + 导航卡」</b><br><span style="color:#8899aa;font-size:12px">「那个页面太长了，加一个收缩的功能……我点第一层，页面就跳到第一层」</span></td>
+              <td class="nw">生态地图</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-02</td>
+              <td class="mono nw">11-02</td>
+              <td><b>做了两件事</b>：① 7 个大块各自可折叠（决策台账 / 第 1–4 层 / 编号字典 / 页脚），标题行右侧一个「▾ 展开·收起」按钮；② 右侧固定一张导航卡，7 个按钮点哪跳哪。<br>
+              <b>★ 默认只展开「决策台账」</b>，其余全收起（你选 C）。首屏长度 2688px → <b>2557px</b>，整页不再一滚到底。<br>
+              <b>两个必须处理的坑</b>：① 折叠用 <span class="mono">display:none</span>，隐藏元素没有位置 —— 直接改 hash 会滚到「上一个可见位置」，所以改用脚本滚，且<b>先展开再滚</b>；② 内容层不能写死在 HTML 里（要手工挪几十个 <span class="mono">&lt;/div&gt;</span>，极易错位），改成脚本按「标题之后的兄弟节点」整段搬进 <span class="mono">.sec-b</span>。<br>
+              <b>决策台账例外</b>：它的标题在 <span class="mono">.dec-box &gt; .dec-head</span> 里，标题外面还包着盒子 —— 单独走一条分支，把按钮塞进 <span class="mono">.dec-head</span> 右边。<br>
+              <b>状态存档</b>：手动改过的折叠状态写 <span class="mono">localStorage['zhops.eco.fold']</span>，下次打开还是你上次的样子；「全部展开 / 全部收起」一个按钮切换。<br>
+              <b>窄屏</b>：≤1180px 自动隐藏导航卡（否则占掉正文宽度），折叠按钮仍在标题行上，功能不丢。<br>
+              <b>探针</b>：新建 <span class="mono">check-p102-ecofold.js</span>（36 项，6 段），<b>真 Chrome 真点击</b>（真量 <span class="mono">getBoundingClientRect</span>、真读 localStorage），接 <span class="mono">run.sh</span> ㉖；反向控制四条全验（点导航不展开 / 默认全展开 / 不生成导航按钮 / 收起规则失效 → 都报红）。全套 32/32。</td>
             </tr>
           </tbody>
         </table>

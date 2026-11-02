@@ -320,6 +320,61 @@
   .df-part{background:rgba(245,200,106,.18); color:var(--warn); border:1px solid rgba(245,200,106,.30);}
   .df-none{background:rgba(154,162,173,.12); color:var(--hint); border:1px solid rgba(154,162,173,.22);}
 
+  /* ===== 折叠（P-102 · 2026-11-02）=====
+     每个大区块 = .sec。标题行 .sec-h 点一下收起 / 展开。
+     ⚠️ 用 max-height + overflow 做动画只在展开时有意义；收起直接用 display:none，
+        否则内部锚点跳转会落到空白处。 */
+  .sec{position:relative;}
+  .sec-h{display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;}
+  .sec-h:hover .sec-t{color:var(--acc);}
+  .sec-t{margin:0; transition:color .15s;}
+  .sec-fold{
+    margin-left:auto; flex:0 0 auto;
+    font-size:10px; color:var(--hint); border:1px solid var(--line);
+    background:var(--card); border-radius:6px; padding:2px 8px; line-height:1.6;
+    cursor:pointer; transition:color .15s, border-color .15s;
+  }
+  .sec-h:hover .sec-fold{color:var(--acc); border-color:var(--acc);}
+  .sec-fold::before{content:"▾"; display:inline-block; margin-right:4px; transition:transform .15s;}
+  .sec.closed .sec-fold::before{transform:rotate(-90deg);}
+  .sec.closed > .sec-b{display:none;}
+  /* 收起后标题栏留一条淡淡的分隔，视觉上「这里还有内容」 */
+  .sec.closed > .sec-h{opacity:.72;}
+  /* 决策台账：标题在 .dec-box > .dec-head 里，收起时只保留那一条头 */
+  .sec.closed#sec-dec .dec-box{padding-bottom:0; border-bottom-color:transparent;}
+  .sec.closed#sec-dec .dec-head{margin-bottom:0;}
+  /* 章节锚点定位时留出 sticky 顶栏的高度，别让标题被盖住 */
+  .sec-h{scroll-margin-top:78px;}
+
+  /* ===== 折叠导航卡（P-102）===== */
+  .navcard{
+    position:fixed; right:16px; top:96px; z-index:60; width:150px;
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:9px 8px; box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  .navcard .nc-t{font-size:9px; color:var(--hint); letter-spacing:1px; margin:0 4px 7px; font-weight:600;}
+  .navcard .nc-all{
+    width:100%; font-size:10px; color:var(--hint); background:transparent;
+    border:1px solid var(--line); border-radius:5px; padding:3px 0; cursor:pointer;
+    margin-bottom:7px; transition:color .15s, border-color .15s;
+  }
+  .navcard .nc-all:hover{color:var(--acc); border-color:var(--acc);}
+  .navcard .nc-b{
+    display:flex; align-items:center; gap:6px; width:100%;
+    font-size:11.5px; color:var(--muted); background:transparent; border:0;
+    border-radius:6px; padding:6px 7px; cursor:pointer; text-align:left;
+    transition:background .12s, color .12s; line-height:1.35;
+  }
+  .navcard .nc-b:hover{background:rgba(255,255,255,.05); color:var(--text);}
+  .navcard .nc-b.on{background:rgba(79,209,197,.12); color:var(--acc);}
+  .navcard .nc-n{
+    font-family:"SF Mono",monospace; font-size:9.5px; color:var(--hint);
+    flex:0 0 16px; text-align:center;
+  }
+  .navcard .nc-b.on .nc-n{color:var(--acc);}
+  /* 窄屏：导航卡占掉正文宽度，直接收起（折叠按钮仍在标题行上，功能不丢） */
+  @media(max-width:1180px){ .navcard{display:none;} }
+
   @media(max-width:640px){
     .header{flex-wrap:wrap;}
     .meter{order:3; width:100%; max-width:100%;}
@@ -352,6 +407,8 @@
 <div class="wrap">
 
 <!-- ===== 决策台账 ===== -->
+<!-- P-102：套一层 .sec 才能折叠。dec-box 自己的样式一个字没动。 -->
+<div class="sec" id="sec-dec" data-title="决策台账" data-nav="决策台账">
 <div class="dec-box">
   <div class="dec-head">
     <span class="dh-t">决策台账</span>
@@ -531,9 +588,10 @@
   </div>
 
 </div>
+</div><!-- /sec-dec -->
 
 <!-- ===== 第一层 ===== -->
-<div class="section-title">第一层 · 系统生态总览</div>
+<div class="sec" id="sec-l1" data-title="第一层 · 系统生态总览" data-nav="第 1 层 · 生态总览"><div class="section-title">第一层 · 系统生态总览</div>
 <div class="section-note">
   读法：<b>实线边框 = 代码里已经能跑</b>；<b>虚线边框 = 只有计划、没有代码</b>。这一层只画现状，不画愿景。
 </div>
@@ -616,8 +674,10 @@
   </div>
 </div>
 
+</div><!-- /sec-l1 -->
+
 <!-- ===== 第二层 ===== -->
-<div class="section-title">第二层 · 系统卡片（点标题展开）</div>
+<div class="sec" id="sec-l2" data-title="第二层 · 系统卡片" data-nav="第 2 层 · 系统卡片"><div class="section-title">第二层 · 系统卡片（点标题展开）</div>
 <div class="section-note">
   每张卡片 7 个字段。其中<b>「数据流向」只写代码里真实存在的</b>，计划中的会明确标「规划」。
 </div>
@@ -1167,8 +1227,10 @@
   </div>
 </div>
 
+</div><!-- /sec-l2 -->
+
 <!-- ===== 第三层 ===== -->
-<div class="section-title">第三层 · 数据流向</div>
+<div class="sec" id="sec-l3" data-title="第三层 · 数据流向" data-nav="第 3 层 · 数据流向"><div class="section-title">第三层 · 数据流向</div>
 <div class="section-note">
   这一层只写<b>代码里能验证的</b>。每条流标出源码位置，你可以直接去对照。<br>
   <b>实线箭头 = 已通</b>；<b>✕ = 断点 / 已作废</b>；<b>┈▶ = 规划（代码不存在）</b>。<br>
@@ -1359,8 +1421,10 @@
   </div>
 </div>
 
+</div><!-- /sec-l3 -->
+
 <!-- ===== 第四层 ===== -->
-<div class="section-title">第四层 · 搭建路线</div>
+<div class="sec" id="sec-l4" data-title="第四层 · 搭建路线" data-nav="第 4 层 · 搭建路线"><div class="section-title">第四层 · 搭建路线</div>
 <div class="section-note">
   原表缺了 S1（zhops 已建那一步），已补。新增一列「前置卡点」，指这一步之前必须先定死的东西。
 </div>
@@ -1506,10 +1570,12 @@
   </tbody>
 </table>
 
+</div><!-- /sec-l4 -->
+
 <!-- ===== 编号字典（P-101 · 2026-11-02）=====
      只登记、只读说明。新增编号往这里加一行，别再让「同一个东西两个叫法」。
      ⚠️ 文档名里的尖括号要写成 &lt; &gt;，否则会被当成 HTML 标签吞掉。 -->
-<div class="section-title">编号字典 · 全系统编号 / 编码总表</div>
+<div class="sec" id="sec-idmap" data-title="编号字典 · 全系统编号 / 编码总表" data-nav="编号字典"><div class="section-title">编号字典 · 全系统编号 / 编码总表</div>
 <div class="section-note">
   只登记、只读说明：<b>系统里每一个编号是什么、长什么样、谁生成、能不能改、存在哪</b>。新增编号就往这张表加一行，别再让「同一个东西两个叫法」。<br>
   <b class="yes">学员编号已统一</b>：业务部原来叫 <span class="key">S-001</span>，现已迁移成 <span class="key">st1</span>，两边同一套（主端 / 业务部 / 云端都认 <span class="key">stN</span>）。
@@ -1556,7 +1622,12 @@
 </table>
 </div>
 
+</div><!-- /sec-idmap -->
+
 <!-- ===== 底部 ===== -->
+<div class="sec" id="sec-foot" data-title="怎么用这份地图" data-nav="页脚 · 怎么用">
+<!-- 页脚原本没有标题行，补一个 —— 否则这一块没有地方挂折叠按钮 -->
+<div class="section-title">怎么用这份地图</div>
 <div class="foot">
   <b>怎么用这份地图</b><br>
   0. <b>决策台账</b>：顶部四张卡，绿边 = 已定（照这个建），黄边 = 待定（别按它动手）。定一条就改一处。<br>
@@ -1588,8 +1659,17 @@
   &nbsp;&nbsp;&nbsp;<b>备份</b>：<span class="loc">index.html.bak-20261029-2145-before-s11</span> · <span class="loc">index.html.bak-20261029-2155-before-s12</span><br>
   &nbsp;&nbsp;&nbsp;<b>回滚</b>：<span class="loc">cp ~/zhops/index.html.bak-20261029-2155-before-s12 ~/zhops/index.html</span> —— 但注意：v2 里已有的 lessons 字段旧代码不读，数据不会丢。
 </div>
+</div><!-- /sec-foot -->
 
-</div>
+</div><!-- /wrap -->
+
+<!-- ===== 折叠导航卡（P-102 · 2026-11-02）=====
+     按钮由脚本按 .sec 的 data-nav 自动生成 —— 加新区块不用改这里。
+     放在图例上方（top:96px），两者都在右侧固定。 -->
+<nav class="navcard" id="navcard">
+  <div class="nc-t">跳转 / 折叠</div>
+  <button class="nc-all" id="ncAll">全部展开</button>
+</nav>
 
 <!-- ===== 图例 ===== -->
 <div class="legend">
@@ -1612,6 +1692,196 @@
   }
   // 默认展开排课系统（含三个断点）
   document.getElementById('zhops').classList.add('open');
+
+  /* ==================== 折叠 + 导航卡（P-102 · 2026-11-02）====================
+     Tony 定的：
+       ① 页面太长 → 加折叠；② 右侧加导航卡，点第 N 层就滚到第 N 层；
+       ③ 默认只展开「决策台账」，其余全收起（选 C）。
+
+     ★ 一个必须处理的坑：导航点「第三层」时，如果第三层是收起的，
+       滚过去只能看到一行标题 —— 用户会以为「跳错了 / 没内容」。
+       所以跳转前一律先展开目标块，再滚。
+
+     ★ 另一个坑：收起用 display:none，浏览器不会为隐藏元素保留位置，
+       直接改 location.hash 会滚到「上一个可见位置」。所以滚动由脚本来做，
+       且必须在展开之后（等一帧让布局落定）。
+     ========================================================================== */
+
+  /* 区块定义：id 与默认展开状态。想加新区块 → 这里加一行即可（导航按钮自动生成） */
+  var SECS = [
+    { id: 'sec-dec',   open: true  },   /* 决策台账 —— 唯一默认展开（Tony 选 C） */
+    { id: 'sec-l1',    open: false },
+    { id: 'sec-l2',    open: false },
+    { id: 'sec-l3',    open: false },
+    { id: 'sec-l4',    open: false },
+    { id: 'sec-idmap', open: false },
+    { id: 'sec-foot',  open: false }
+  ];
+  var LSKEY = 'zhops.eco.fold';   /* 记「用户手动改过哪些」，不记默认值 */
+
+  function savedFold(){
+    try { return JSON.parse(localStorage.getItem(LSKEY) || '{}') || {}; } catch(e){ return {}; }
+  }
+  function saveFold(o){
+    try { localStorage.setItem(LSKEY, JSON.stringify(o)); } catch(e){}
+  }
+
+  /* 把每块的内容包进 .sec-b，标题行包成 .sec-h。
+     ★ 必须在 DOM 加载后做：静态 HTML 里不能加 .sec-b（要手工把几十个 </div> 挪位置，
+       极易错位）。这里按「标题节点的下一个兄弟开始，一直到本块末尾」整段搬进 .sec-b。
+       决策台账例外：它的标题是 .dec-box 里的 .dec-head，标题外面还包着 .dec-box
+       —— 所以内容 = .dec-box 本身（把按钮塞进 .dec-head 右边即可）。 */
+  function wrapBody(sec, titleEl){
+    var b = document.createElement('div');
+    b.className = 'sec-b';
+    var n = titleEl.nextSibling;
+    while (n){ var nx = n.nextSibling; b.appendChild(n); n = nx; }
+    sec.appendChild(b);
+    return b;
+  }
+
+  function buildHeads(){
+    SECS.forEach(function(s){
+      var sec = document.getElementById(s.id);
+      if (!sec) return;
+
+      /* ---- 决策台账：标题在 .dec-box > .dec-head > .dh-t ---- */
+      if (s.id === 'sec-dec'){
+        var dh = sec.querySelector('.dec-box > .dec-head');
+        if (dh){
+          var btn0 = document.createElement('span');
+          btn0.className = 'sec-fold';
+          btn0.setAttribute('role', 'button');
+          dh.appendChild(btn0);
+          dh.style.cursor = 'pointer';
+          dh.addEventListener('click', function(){ toggleSec(s.id); });
+          /* 内容 = .dec-box 之后的所有兄弟（.dec-head 保持在外，收起时仍可见） */
+          var b0 = document.createElement('div');
+          b0.className = 'sec-b';
+          var n0 = sec.querySelector('.dec-box').nextSibling;
+          while (n0){ var nx0 = n0.nextSibling; b0.appendChild(n0); n0 = nx0; }
+          sec.appendChild(b0);
+        }
+        return;
+      }
+
+      /* ---- 其余六块：标题是 .section-title ---- */
+      var t = sec.querySelector(':scope > .section-title');
+      if (!t) return;
+      var h = document.createElement('div');
+      h.className = 'sec-h';
+      var inner = document.createElement('span');
+      inner.className = 'sec-t';
+      inner.innerHTML = t.innerHTML;
+      /* 标题本体沿用 .section-title 的排版，不另造一套样式 */
+      inner.style.cssText = 'font-size:11px;font-weight:600;letter-spacing:1.5px;color:var(--hint);text-transform:uppercase;';
+      var btn = document.createElement('span');
+      btn.className = 'sec-fold';
+      btn.setAttribute('role', 'button');
+      h.appendChild(inner); h.appendChild(btn);
+      t.parentNode.replaceChild(h, t);
+      h.addEventListener('click', function(){ toggleSec(s.id); });
+
+      wrapBody(sec, h);
+    });
+  }
+
+  function isOpen(id){
+    var sec = document.getElementById(id);
+    return sec ? !sec.classList.contains('closed') : false;
+  }
+
+  /* 只负责「显示 / 隐藏」和按钮文案，不写存档 */
+  function setOpen(id, open){
+    var sec = document.getElementById(id);
+    if (!sec) return;
+    sec.classList.toggle('closed', !open);
+    var btn = sec.querySelector('.sec-fold');
+    if (btn) btn.textContent = open ? '收起' : '展开';
+  }
+
+  function toggleSec(id){
+    var next = !isOpen(id);
+    setOpen(id, next);
+    var o = savedFold(); o[id] = next ? 1 : 0; saveFold(o);
+    syncNav();
+  }
+
+  /* ---- 导航卡 ---- */
+  function buildNav(){
+    var card = document.getElementById('navcard');
+    if (!card) return;
+    var all = document.getElementById('ncAll');
+    SECS.forEach(function(s, i){
+      var sec = document.getElementById(s.id);
+      if (!sec) return;
+      var b = document.createElement('button');
+      b.className = 'nc-b';
+      b.setAttribute('data-target', s.id);
+      var label = sec.getAttribute('data-nav') || sec.getAttribute('data-title') || s.id;
+      var num = String(i + 1);
+      b.innerHTML = '<span class="nc-n">' + num + '</span><span class="nc-l">' + label + '</span>';
+      b.addEventListener('click', function(){ goto(s.id); });
+      card.appendChild(b);
+    });
+  }
+
+  function goto(id){
+    setOpen(id, true);                 /* ★ 先展开，再滚 —— 见文件头说明 */
+    syncNav();
+    /* 等一帧让 display 生效、布局落定，否则量到的位置是旧的 */
+    requestAnimationFrame(function(){
+      var sec = document.getElementById(id);
+      if (!sec) return;
+      var h = sec.querySelector('.sec-h') || sec;
+      var y = h.getBoundingClientRect().top + window.pageYOffset - 74;
+      window.scrollTo({ top: y < 0 ? 0 : y, behavior: 'smooth' });
+    });
+  }
+
+  /* 滚到哪块，导航就亮哪块 */
+  function syncNav(){
+    var btns = document.querySelectorAll('.navcard .nc-b');
+    var best = null, bestD = Infinity;
+    SECS.forEach(function(s){
+      var sec = document.getElementById(s.id);
+      if (!sec) return;
+      var d = Math.abs(sec.getBoundingClientRect().top - 90);
+      if (sec.getBoundingClientRect().top - 120 <= 0 && d < bestD){ bestD = d; best = s.id; }
+    });
+    for (var i = 0; i < btns.length; i++){
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-target') === best);
+    }
+    var all = document.getElementById('ncAll');
+    if (all){
+      var anyClosed = SECS.some(function(s){ return !isOpen(s.id); });
+      all.textContent = anyClosed ? '全部展开' : '全部收起';
+    }
+  }
+
+  function boot(){
+    buildHeads();
+    buildNav();
+
+    /* 默认状态：先按 SECS 的 open 铺一遍 */
+    SECS.forEach(function(s){ setOpen(s.id, s.open); });
+    /* 再用存档覆盖（用户上次手动改过的） */
+    var o = savedFold();
+    Object.keys(o).forEach(function(k){ setOpen(k, !!o[k]); });
+
+    document.getElementById('ncAll').addEventListener('click', function(){
+      var anyClosed = SECS.some(function(s){ return !isOpen(s.id); });
+      var o = savedFold();
+      SECS.forEach(function(s){ setOpen(s.id, anyClosed); o[s.id] = anyClosed ? 1 : 0; });
+      saveFold(o);
+      syncNav();
+    });
+
+    syncNav();
+    window.addEventListener('scroll', syncNav, { passive: true });
+    window.addEventListener('resize', syncNav);
+  }
+  boot();
 </script>
 
 </body>
