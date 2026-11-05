@@ -759,8 +759,23 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
         <div class="stat amber"><div class="k">月租金合计</div><div class="v" id="rm-rent">—<small>VND</small></div></div>
       </div>
 
+      <!-- ★ 2026-11-05（P-103 ③）：场地 = 付钱单位，教室 = 排课单位。
+           整层租 5 间、月租 10.000.000：钱只写在场地一条里，不摊到每间教室。
+           主端不知道「场地」，仍旧只读 rooms[] 按 area 数教室。 -->
+      <div class="card">
+        <div class="card-h">
+          <h3>场地 · 整层租赁</h3>
+          <span class="sub">租金写一次，一次生成 N 间教室</span>
+          <div class="sp"></div>
+          <button class="btn pri" onclick="addPlace()">+ 新场地</button>
+        </div>
+        <div class="card-b tight" id="places-list"></div>
+      </div>
+
       <div class="note">
-        编码由你定，系统只查两件事：<b>不能空、不能重复</b>。存下去就锁住 —— 要换只能停用旧的、再建新的，<b>历史记录不会被改</b>。
+        <b>场地</b>是付钱的单位：整层月租只写在场地一条里，<b>不摊到每间教室</b>（摊开会被算成付了 N 次）。
+        <b>教室</b>是排课的单位：填 5 间就生成 5 条教室记录，主端按地区就能数到同一个地点有 5 间；
+        改成「办事处」的那几间，主端不数。编码由你定，系统只查两件事：<b>不能空、不能重复</b>。存下去就锁住 —— 要换只能停用旧的、再建新的，<b>历史记录不会被改</b>。
       </div>
 
       <div id="rooms-list"></div>
@@ -793,7 +808,7 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
    ============================================================ */
 
 var KEY = 'zhops.biz.v1';
-var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1} };
+var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], places:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1} };
 
 /* ============================================================
    云端通道（2026-11-02 · P-96）
@@ -915,6 +930,10 @@ function load(){
   /* ★ 2026-11-02（P-96）：老数据没有这两个集合，补上空数组，别让渲染炸 */
   if(!Array.isArray(S.studentsDeleted)) S.studentsDeleted = [];
   if(!Array.isArray(S.rooms)) S.rooms = [];
+  /* ★ 2026-11-05（P-103 ③）：老存盘没有「场地」集合，补空数组，别让渲染炸 */
+  if(!Array.isArray(S.places)) S.places = [];
+  if(!S.seq) S.seq = {};
+  if(!S.seq.place) S.seq.place = 1;
   /* ★ 2026-11-02（P-93）：把老的 S-001 编号迁成 st 编号（幂等，跑一次就够）。
      放在 seed() 之后 —— 种子数据本身已经用 st 编号，不会重复迁。 */
   if(migrateStudentIds()) save();
@@ -1825,6 +1844,7 @@ function delEvent(id){
 var WEEK = ['一','二','三','四','五','六','日'];
 
 function renderRooms(){
+  renderPlaces();
   var el = document.getElementById('rooms-list');
   var list = S.rooms || [];
 
@@ -1836,6 +1856,12 @@ function renderRooms(){
   var rent  = open.reduce(function(a,r){
     return a + (r.billMode === 'hour' ? 0 : (Number(r.rent)||0));
   }, 0);
+  /* ★ 2026-11-05（P-103 ③）：整层租金挂在「场地」上，任何一间教室的 rent 都是 0。
+     把在用场地的月租加进来，合计才等于真正要付出去的钱；按小时场地不算月租。
+     老存盘没有 S.places → 加 0，拆场地之前的统计结果一个字不变。 */
+  (S.places || []).forEach(function(p){
+    if(p && p.billMode !== 'hour') rent += Number(p.rent) || 0;
+  });
 
   document.getElementById('rm-count').textContent = list.length;
   document.getElementById('rm-open').textContent  = open.length;
@@ -1855,12 +1881,16 @@ function renderRooms(){
       var isOpen = r.open !== false;
       return '<tr'+(isOpen ? '' : ' style="opacity:.55"')+'>'+
         '<td class="mono"><b>'+esc(r.code)+'</b></td>'+
-        '<td>'+esc(r.name||'—')+'</td>'+
+        '<td>'+esc(r.name||'—')+
+          /* ★ 2026-11-05（P-103 ③）：属于场地的教室标出来，
+             否则一整排「月租费 —」会让人以为钱没录。 */
+          (r.placeId ? '<div class="sm" style="color:var(--ink3)">场地：'+esc(placeName(r.placeId))+'</div>' : '')+
+        '</td>'+
         '<td>'+esc(r.area||'—')+'</td>'+
         '<td>'+esc(r.addr||'—')+'</td>'+
         '<td class="sm">'+(r.days?'周'+r.days.map(function(d){return WEEK[d];}).join('')+' · ':'')+esc(r.hours||'—')+'</td>'+
         '<td class="num">'+(r.cap||'—')+'</td>'+
-        '<td class="nw">'+(r.billMode==='hour'?'按小时':'月租')+'</td>'+
+        '<td class="nw">'+(r.placeId ? '<span class="tg off">场地统一付</span>' : (r.billMode==='hour'?'按小时':'月租'))+'</td>'+
         '<td class="num">'+(r.rent?fmtVND(r.rent):'—')+(r.rent?'<small>VND</small>':'')+'</td>'+
         '<td class="num">'+(r.hourly?fmtVND(r.hourly):'—')+(r.hourly?'<small>VND</small>':'')+'</td>'+
         '<td class="mono sm">'+esc(r.tel||'—')+'</td>'+
@@ -1870,6 +1900,207 @@ function renderRooms(){
         '</tr>';
     }).join('')+
     '</tbody></table></div>';
+}
+
+/* ============================================================
+   场地（2026-11-05 · P-103 ③）
+   ------------------------------------------------------------
+   ★ 场地 = 付钱单位，教室 = 排课单位。
+     整层租 5 间、月租 10.000.000：钱只记在 S.places 一条里，
+     rooms[] 里那 5 间的 rent 一律 0。摊成每间 2.000.000 是假账 ——
+     之后一按教室汇总，同一笔钱会被算 5 次。
+   ★ 主端不知道「场地」这个概念，仍旧只读 rooms[] 按 area 分组（P-100）。
+     生成教室时把 area 原样抄过去，一个字不改；编码另外用 prefix 生成。
+   ★ 编码前缀取地区：area 里的 ASCII 字母数字抽出来当短码（D7 → D7）。
+     纯中文 / 带声调的地区抽不出短码，请人自己填，别去猜拼音。
+   ============================================================ */
+function areaPrefix(s){
+  /* 只取第一段连续的字母数字：'D7 / 第七郡' → D7，不会拼成 D77。
+     纯中文地区抽不出短码 → 返回空，表单里请人自己填，不猜拼音。 */
+  var m = String(s == null ? '' : s).match(/[A-Za-z0-9]+/);
+  return m ? m[0].toUpperCase().slice(0, 12) : '';
+}
+function placeName(id){
+  var p = (S.places||[]).find(function(x){ return x.id === id; });
+  return p ? (p.name || p.prefix || p.id) : '';
+}
+function placeRooms(id){
+  return (S.rooms||[]).filter(function(r){ return r && r.placeId === id; });
+}
+function peekPlaceId(){
+  S.seq = S.seq || {};
+  var n = Number(S.seq.place) || 1;
+  while((S.places||[]).some(function(p){ return p.id === 'pl'+n; })) n++;
+  S.seq.place = n + 1;
+  return 'pl' + n;
+}
+/* 从 01 往后找第一个没被占用的编码。
+   ★ 全库查重，不只查本场地 —— 手动建的教室可能已经占了 D7-03。
+   ★ 生成时立刻 push 进 S.rooms，下一轮查重看得见刚生成的，同批不会撞码。 */
+function nextRoomCode(prefix){
+  var used = {};
+  (S.rooms||[]).forEach(function(r){ if(r && r.code) used[String(r.code).toUpperCase()] = 1; });
+  for(var i=1;i<=999;i++){
+    var c = prefix + '-' + (i<10 ? '0'+i : String(i));
+    if(!used[c.toUpperCase()]) return c;
+  }
+  return '';
+}
+function makeRoomsForPlace(p, n){
+  var made = [];
+  S.rooms = S.rooms || [];
+  for(var i=0;i<n;i++){
+    var code = nextRoomCode(p.prefix);
+    if(!code) break;
+    var r = {
+      code:  code,
+      name:  (p.name || p.area || p.prefix) + ' · ' + code.slice(-2),
+      area:  p.area || '',
+      addr:  p.addr || '',
+      days:  [], hours: '', cap: 0,
+      /* ★ 整层租金一分钱都不摊到教室 */
+      billMode: 'month', rent: 0, hourly: 0,
+      purpose: 'class',
+      tel:   p.tel || '',
+      note:  '',
+      placeId: p.id,
+      open:  true,
+    };
+    S.rooms.push(r);
+    made.push(r);
+  }
+  return made;
+}
+function renderPlaces(){
+  var el = document.getElementById('places-list');
+  if(!el) return;
+  var list = S.places || [];
+  if(!list.length){
+    el.innerHTML = '<div class="empty">还没有场地。整层租下来的教学点点「+ 新场地」—— 租金填一次、间数填 5 就生成 5 间教室。</div>';
+    return;
+  }
+  el.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
+    '<th>场地</th><th>地区</th><th>编码前缀</th><th class="num">间数</th>'+
+    '<th>计费方式</th><th class="num">整层月租</th><th class="num">小时费</th><th></th>'+
+    '</tr></thead><tbody>'+
+    list.map(function(p){
+      return '<tr>'+
+        '<td><b>'+esc(p.name||'—')+'</b>'+
+          (p.addr ? '<div class="sm" style="color:var(--ink3)">'+esc(p.addr)+'</div>' : '')+'</td>'+
+        '<td>'+esc(p.area||'—')+'</td>'+
+        '<td class="mono">'+esc(p.prefix||'—')+'</td>'+
+        '<td class="num">'+placeRooms(p.id).length+'</td>'+
+        '<td class="nw">'+(p.billMode==='hour'?'按小时':'月租')+'</td>'+
+        '<td class="num">'+(p.rent?fmtVND(p.rent):'—')+(p.rent?'<small>VND</small>':'')+'</td>'+
+        '<td class="num">'+(p.hourly?fmtVND(p.hourly):'—')+(p.hourly?'<small>VND</small>':'')+'</td>'+
+        '<td class="nw"><a class="act" onclick="editPlace(\''+p.id+'\')">编辑</a>'+
+          '<a class="act" onclick="placeAddForm(\''+p.id+'\')">+ 补间数</a></td>'+
+        '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+function addPlace(){
+  openDrawer('新场地 · 整层租赁', placeForm());
+}
+function editPlace(id){
+  var p = (S.places||[]).find(function(x){ return x.id === id; });
+  if(!p) return;
+  openDrawer('编辑场地 · '+(p.name||p.prefix), placeForm(p));
+}
+function placeForm(p){
+  p = p || {};
+  var isNew = !p.id;
+  return '<div class="note" style="margin-bottom:14px">这里是<b>整层</b>的租金，一个月写一次。<b>不会摊到每间教室</b>；填了间数，教室按「地区码-01…N」一次建好，主端按地区就能数到几间。</div>'+
+    '<div class="fld"><label>场地名称 <span style="color:#e24b4a">*</span></label><input id="f-pl-name" value="'+esc(p.name||'')+'" placeholder="例：富美兴整层 / 第七郡教学点"></div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label>地区 <span style="color:#e24b4a">*</span></label><input id="f-pl-area" value="'+esc(p.area||'')+'" placeholder="例：D7 / 第七郡"></div>'+
+      '<div class="fld"><label>编码前缀</label><input id="f-pl-prefix" value="'+esc(p.prefix||'')+'" placeholder="留空自动取地区，例：D7"></div>'+
+    '</div>'+
+    '<div class="sm" style="color:var(--ink3);margin:-8px 0 13px">教室编码会是「前缀-01 / -02 …」。地区是中文时抽不出短码，请自己填一个字母或数字前缀。存了就锁住。</div>'+
+    '<div class="fld"><label>地址</label><input id="f-pl-addr" value="'+esc(p.addr||'')+'" placeholder="门牌 + 街道 + 郡"></div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label>计费方式</label><select id="f-pl-bill">'+
+        '<option value="month"'+(p.billMode!=='hour'?' selected':'')+'>月租</option>'+
+        '<option value="hour"'+(p.billMode==='hour'?' selected':'')+'>按小时</option>'+
+      '</select></div>'+
+      '<div class="fld"><label>电话</label><input id="f-pl-tel" value="'+esc(p.tel||'')+'" placeholder="房东 / 管理员"></div>'+
+    '</div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label>整层月租（VND / 月）</label><input type="number" id="f-pl-rent" value="'+(p.rent||'')+'"></div>'+
+      '<div class="fld"><label>小时费（VND / 小时）</label><input type="number" id="f-pl-hourly" value="'+(p.hourly||'')+'"></div>'+
+    '</div>'+
+    (isNew
+      ? '<div class="fld"><label>这层有几间？ <span style="color:#e24b4a">*</span></label><input type="number" id="f-pl-count" value="" placeholder="5 / 6 / 7 / 8 —— 看店铺多大"></div>'+
+        '<div class="sm" style="color:var(--ink3);margin:-8px 0 13px">以后房间多了，用场地卡上的「+ 补间数」加，租金不用重填。</div>'
+      : '<div class="fld"><label>已建教室</label><input value="'+placeRooms(p.id).length+' 间" disabled style="opacity:.6;cursor:not-allowed"></div>'+
+        '<div class="sm" style="color:var(--ink3);margin:-8px 0 13px">要加房间请点场地卡上的「+ 补间数」。改地区会同步到已建教室，编码不动。</div>')+
+    '<div class="fld"><label>备注</label><textarea id="f-pl-note" placeholder="合同、押金、起租日…">'+esc(p.note||'')+'</textarea></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="savePlace('+(isNew?"null":"'"+p.id+"'")+')">'+(isNew?'保存并生成教室':'保存')+'</button>'+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function savePlace(origId){
+  var name = val('f-pl-name');
+  var area = val('f-pl-area');
+  if(!name){ toast('场地名称不能为空', true); return; }
+  if(!area){ toast('地区不能为空 —— 主端靠它按地区数教室', true); return; }
+
+  /* 前缀只认字母数字开头，避免生成出「-01」这种没头没尾的编码 */
+  var prefix = val('f-pl-prefix') || areaPrefix(area);
+  prefix = String(prefix).toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12);
+  if(!/^[A-Z0-9]/.test(prefix)){ toast('编码前缀要以字母或数字开头，例：D7', true); return; }
+
+  var billMode = val('f-pl-bill') === 'hour' ? 'hour' : 'month';
+  var rent   = parseInt(val('f-pl-rent')||'0', 10) || 0;
+  var hourly = parseInt(val('f-pl-hourly')||'0', 10) || 0;
+  var n      = parseInt(val('f-pl-count')||'0', 10) || 0;
+  if(!origId && (n < 1 || n > 50)){ toast('间数填 1–50 之间', true); return; }
+
+  if(origId){
+    var p = (S.places||[]).find(function(x){ return x.id === origId; });
+    if(!p) return;
+    /* ★ 前缀存了就锁住：改了会让已有教室的编码跟场地对不上（P-91 老规矩） */
+    Object.assign(p, {
+      name:name, area:area, addr:val('f-pl-addr'),
+      billMode:billMode, rent:rent, hourly:hourly,
+      tel:val('f-pl-tel'), note:val('f-pl-note'),
+    });
+    /* 主端按 area 分组，场地和教室不能两处不一致；code 一个都不动 */
+    placeRooms(p.id).forEach(function(r){ r.area = area; r.addr = val('f-pl-addr'); });
+  } else {
+    var np = {
+      id: peekPlaceId(), name:name, area:area, prefix:prefix, addr:val('f-pl-addr'),
+      billMode:billMode, rent:rent, hourly:hourly,
+      tel:val('f-pl-tel'), note:val('f-pl-note'),
+      at: new Date().toISOString().slice(0, 10),
+    };
+    S.places = S.places || [];
+    S.places.unshift(np);
+    makeRoomsForPlace(np, n);
+  }
+  save(); closeDrawer(); render('rooms');
+}
+function placeAddForm(id){
+  var p = (S.places||[]).find(function(x){ return x.id === id; });
+  if(!p) return;
+  openDrawer('补间数 · '+(p.name||p.prefix),
+    '<div class="note" style="margin-bottom:14px">租金不用再填 —— 整层租金一直挂在这条场地上。<b>加房间不重复算钱。</b></div>'+
+    '<div class="fld"><label>再补几间？</label><input type="number" id="f-pl-add" value="1"></div>'+
+    '<div class="sm" style="color:var(--ink3);margin:-8px 0 13px">新编码从「'+esc(p.prefix)+'-」往后接着排，已有的编码不重排、不覆盖。</div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="savePlaceAdd(\''+id+'\')">生成</button>'+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>');
+}
+function savePlaceAdd(id){
+  var p = (S.places||[]).find(function(x){ return x.id === id; });
+  if(!p) return;
+  var n = parseInt(val('f-pl-add')||'0', 10) || 0;
+  if(n < 1 || n > 50){ toast('间数填 1–50 之间', true); return; }
+  var made = makeRoomsForPlace(p, n);
+  if(!made.length){ toast('编码排满了，换一个前缀', true); return; }
+  save(); closeDrawer(); render('rooms');
 }
 
 function addRoom(){
@@ -1885,6 +2116,8 @@ function roomForm(r){
   r = r || {};
   var isNew = !r.code;
   var days = r.days || [];
+  /* ★ 2026-11-05（P-103 ③）：场地生成的教室，钱在场地那条里付，这里不填。 */
+  var fromPlace = !!r.placeId;
   /* ★ 编码存了就不能改 —— 编辑时锁死，只读展示 */
   var codeField = isNew
     ? '<div class="fld"><label>教室编码 <span style="color:#e24b4a">*</span></label>'+
@@ -1914,16 +2147,17 @@ function roomForm(r){
       '<option value="class"'+(r.purpose!=='office'?' selected':'')+'>课室（主端可排课）</option>'+
       '<option value="office"'+(r.purpose==='office'?' selected':'')+'>办事处（主端不显示、不排课）</option>'+
     '</select><div class="sm" style="color:var(--ink3);margin-top:5px">整层租 5 间、其中 2 间做办事处 —— 在这里改，主端按地区只数「课室」。</div></div>'+
+    (fromPlace ? '<div class="note" style="margin:0 0 13px">这间属于场地「'+esc(placeName(r.placeId))+'」，<b>租金在场地那一条里付</b>，这里不填钱 —— 填了会把整层租金算第二遍。</div>' : '')+
     '<div class="fld-row">'+
-      '<div class="fld"><label>计费方式</label><select id="f-rm-bill">'+
+      '<div class="fld"><label>计费方式</label><select id="f-rm-bill"'+(fromPlace?' disabled':'')+'>'+
         '<option value="month"'+(r.billMode!=='hour'?' selected':'')+'>月租</option>'+
         '<option value="hour"'+(r.billMode==='hour'?' selected':'')+'>按小时</option>'+
       '</select></div>'+
       '<div class="fld"><label>电话</label><input id="f-rm-tel" value="'+esc(r.tel||'')+'" placeholder="房东 / 管理员"></div>'+
     '</div>'+
     '<div class="fld-row">'+
-      '<div class="fld"><label>月租费（VND / 月）</label><input type="number" id="f-rm-rent" value="'+(r.rent||'')+'"></div>'+
-      '<div class="fld"><label>小时费（VND / 小时）</label><input type="number" id="f-rm-hourly" value="'+(r.hourly||'')+'"></div>'+
+      '<div class="fld"><label>月租费（VND / 月）</label><input type="number" id="f-rm-rent" value="'+(r.rent||'')+'"'+(fromPlace?' disabled':'')+'></div>'+
+      '<div class="fld"><label>小时费（VND / 小时）</label><input type="number" id="f-rm-hourly" value="'+(r.hourly||'')+'"'+(fromPlace?' disabled':'')+'></div>'+
     '</div>'+
     '<div class="fld"><label>备注</label><textarea id="f-rm-note" placeholder="停车、电梯、门禁、限制…">'+esc(r.note||'')+'</textarea></div>'+
     (isNew ? '' :
@@ -1969,6 +2203,14 @@ function saveRoom(origCode){
     note:  val('f-rm-note'),
     open:  origCode ? (val('f-rm-open') === '1') : true,
   };
+
+  /* ★ 2026-11-05（P-103 ③）：场地生成的教室不许单独记租金。
+     整层钱只在 S.places 那一条里，这里再写一次就会被统计成两笔。
+     表单已把三个费用框禁用，这里再兜一道 —— 绕过表单也改不进去。 */
+  if(origCode){
+    var owned = (S.rooms||[]).find(function(x){ return x.code === origCode; });
+    if(owned && owned.placeId){ data.rent = 0; data.hourly = 0; data.billMode = 'month'; }
+  }
 
   if(origCode){
     var r = (S.rooms||[]).find(function(x){ return x.code === origCode; });

@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-05">2026-11-05 · 今天<span class="c">2</span></button>
+    <button class="on" data-day="2026-11-05">2026-11-05 · 今天<span class="c">3</span></button>
     <button data-day="2026-11-02">2026-11-02<span class="c">13</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
@@ -182,7 +182,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-05 ============ -->
   <div class="day-panel on" data-day="2026-11-05">
     <div class="card">
-      <h2>2026-11-05 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-05 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -208,6 +208,16 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-05</td>
               <td class="mono nw">11-05</td>
               <td>业务部教室表单与表格加「用途」，办事处不进学生「指定教室」下拉；主端区域供给视图只数课室（整层 5 间、2 间办事处 → 显示 3 间），老数据没标用途一律当课室、不迁移；挂在办事处的班会提示「未挂教室」；反向控制四组全红，全套 34/34。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-105</td>
+              <td><b>P-103 ③ 场地一次生成 N 间教室</b><br><span style="color:#8899aa;font-size:12px">「重点是整层的租金可以写下去，问题是怎么样去让主页端知道同一个地点有五间课室」· 四步里的第 ③ 步</span></td>
+              <td class="nw">业务部 · 教室 / 主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-05</td>
+              <td class="mono nw">11-05</td>
+              <td>业务部教室页加「场地」卡片：一条场地写一次整层租金 + 间数 N，按「地区码-01…N」一次生成 N 间教室（可补间数、可改用途），<b>租金只挂场地、不摊到每间</b>；主端一行未改，仍旧只读 rooms[] 按地区数课室（5 间里 2 间办事处 → 显示 3 间）；老存盘自动补空场地集合，反向控制六组全红，全套 35/35。</td>
             </tr>
           </tbody>
         </table>
