@@ -740,6 +740,38 @@ table.fmt td.bad{color:var(--neg)}
           预支 / 其他扣款 / 补发归人事部管，财务不碰。
         </p>
       </div>
+
+      <!-- ★ 2026-11-05（P-103 ④）：业务部按小时场地请款单。
+           跟工资单同一个 zhops/approvals 文档，但单独一张表、单独一个选中态，
+           工资单的列表 / 明细 / 人工成本口径一行都不动。 -->
+      <div class="card">
+        <div class="card-h">
+          <h3>业务部 · 场地请款单</h3>
+          <span class="sp"></span>
+          <span class="tag pending" id="plState">还没拉取</span>
+        </div>
+        <div class="tw">
+          <table class="grid">
+            <thead><tr>
+              <th style="width:92px">月份</th><th style="width:176px">单据号</th>
+              <th style="width:70px">条数</th><th style="width:124px">请款金额</th>
+              <th style="width:90px">状态</th><th style="width:70px"></th>
+            </tr></thead>
+            <tbody id="tb-place-appr"></tbody>
+          </table>
+        </div>
+        <p class="sm mu" style="margin:9px 0 0">
+          单据来自业务部「教室 › 场地使用」提交，同样存在云端 <b>zhops/approvals</b>。
+          <b>金额由业务部填，财务只核对、只批、只付</b>，不改数字。点上面「☁︎ 从云端拉取」一起取回。
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>场地请款单明细</h3><span class="sp"></span><span class="tag pending" id="plTitle">还没选单据</span></div>
+        <div id="placeApDetail">
+          <p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示每一次场地使用。</p>
+        </div>
+      </div>
     </section>
 
     <!-- ================= 6 配置 ================= -->
@@ -879,7 +911,10 @@ function blank(){
     income:[], expense:[], payroll:[], classes:[],
     /* 云端人事单据的本地缓存（只读镜像）。每次「从云端拉取」整份覆盖。
        存下来是为了断网时也能看到上次拉到的东西，不是为了离线审批。 */
-    approvals:[], approvalsAt:''
+    approvals:[], approvalsAt:'',
+    /* ★ 2026-11-05（P-103 ④）：业务部场地请款单，跟工资单分开放。
+       同一个 zhops/approvals 文档拉回来，按 dept 分流；工资表 / 人工成本一个字不动。 */
+    placeApprovals:[]
   };
 }
 function demo(){
@@ -907,7 +942,7 @@ function demo(){
       {name:'柚子班', lessons:'42', done:'5', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
       {name:'柠檬班', lessons:'42', done:'4', fee:'7140000',  teacher:'黎明俊', rate:'150000', own:true}
     ],
-    approvals:[], approvalsAt:''
+    approvals:[], approvalsAt:'', placeApprovals:[]
   };
 }
 var S = blank();
@@ -986,11 +1021,13 @@ function load(){
     var o = JSON.parse(raw);
     if(!o || typeof o !== 'object') return blank();
     var b = blank();
-    ['income','expense','payroll','classes','approvals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    ['income','expense','payroll','classes','approvals','placeApprovals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
     b.cfg = Object.assign(b.cfg, o.cfg || {});
     b.income = o.income; b.expense = o.expense; b.payroll = o.payroll; b.classes = o.classes;
     b.approvals = o.approvals;
     b.approvalsAt = String(o.approvalsAt || '');
+    /* ★ 2026-11-05（P-103 ④）：老存盘没有这个集合，补空数组 */
+    b.placeApprovals = o.placeApprovals;
     /* 迁移（2026-10-31 · Phase 1）：老工资行没有 month → 归到当月。
        不归的话，加了月份选择器以后这些行会「一条都看不见」。 */
     b.payroll.forEach(function(p){
@@ -1243,6 +1280,10 @@ function fsPullApprovals(cb){
     if(!o || !Array.isArray(o.vouchers)){ if(cb) cb(false, '云端结构不认识（没有 vouchers）'); return; }
     /* 只收人事的工资单。以后市场 / 其他部门的单据混进来也不影响财务这页。 */
     S.approvals = o.vouchers.filter(function(v){ return v && v.dept === 'hr'; });
+    /* ★ 2026-11-05（P-103 ④）：业务部场地请款单走同一个文档，但单独存一份。
+       绝不塞进 S.approvals —— 工资表、人工成本、月份列表都按 dept==='hr' 过滤，
+       混进去会把工资单多算一张、报表口径当场歪掉。 */
+    S.placeApprovals = o.vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'place'; });
     S.approvalsAt = new Date().toISOString();
     save();
     renderApprove(); renderPay(); refreshDerived();
@@ -1329,6 +1370,7 @@ function renderApprove(){
     el.className = 'tag ' + (S.approvalsAt ? 'has' : 'pending');
   }
   renderApDetail();
+  renderPlaceApprove();       /* ★ P-103 ④：场地请款单列表，跟工资单同时刷新 */
 }
 
 function renderApDetail(){
@@ -1458,6 +1500,159 @@ function apAct(act){
       if(!ok){ alert('付款没记上：' + msg); return; }
       v.state = ST_PAID; v.paidOn = d; v.paidAmt = amt; v.voucherNo = vno; v.paidAt = now; v.paidBy = 'finance';
       save(); renderApprove(); renderPay(); refreshDerived();
+    });
+    return;
+  }
+}
+
+/* ==========================================================================
+   ★ 2026-11-05（P-103 ④）：业务部场地请款单（审批 / 付款）
+   --------------------------------------------------------------------------
+   跟人事工资单同一套状态机、同一个 fsPatchVoucher()，但分开选、分开显示：
+     S.approvals      = 人事工资单（工资表 / 人工成本 / 月份列表全靠它）
+     S.placeApprovals = 业务部场地请款单（只在审批页这两张卡里出现）
+   ★ 财务不改数字：单据金额由业务部填，这里只认、只批、只付。
+   ★ 场地费不进 calc() 的人工成本，也不改写支出表 —— 报表口径本轮一个字不动。
+   ========================================================================== */
+var PL_SEL = '';
+function plFind(id){
+  var hit = null;
+  (S.placeApprovals || []).forEach(function(v){ if(v && v.id === id) hit = v; });
+  return hit;
+}
+function renderPlaceApprove(){
+  var tb = document.getElementById('tb-place-appr');
+  if(!tb) return;
+  var list = (S.placeApprovals || []).slice();
+  list.sort(function(a,b){ return String(b.month || '').localeCompare(String(a.month || '')); });
+  if(!list.length){
+    tb.innerHTML = emptyRow(6, '还没有场地请款单 —— 点右上角「☁︎ 从云端拉取」');
+  }else{
+    tb.innerHTML = list.map(function(v){
+      var t = apTotals(v);
+      var st = v.state || ST_WAIT;
+      return '<tr>'+
+        '<td>'+esc(v.month || '—')+'</td>'+
+        '<td class="sm">'+esc(v.id || '—')+'</td>'+
+        '<td class="num">'+((v.items || []).length)+'</td>'+
+        '<td class="num">'+money(t.net)+'</td>'+
+        '<td><span class="tag '+(ST_CLS[st] || 'pending')+'">'+esc(ST_TXT[st] || st)+'</span></td>'+
+        '<td><button class="mini" data-pl="'+esc(v.id || '')+'" style="padding:2px 7px">查看</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+  var el = document.getElementById('plState');
+  if(el){
+    el.textContent = S.approvalsAt ? ('上次拉取 ' + String(S.approvalsAt).slice(11,16)) : '还没拉取';
+    el.className = 'tag ' + (S.approvalsAt ? 'has' : 'pending');
+  }
+  renderPlaceApDetail();
+}
+function renderPlaceApDetail(){
+  var box = document.getElementById('placeApDetail');
+  var ttl = document.getElementById('plTitle');
+  if(!box) return;
+  var v = plFind(PL_SEL);
+  if(!v){
+    box.innerHTML = '<p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示每一次场地使用。</p>';
+    if(ttl){ ttl.textContent = '还没选单据'; ttl.className = 'tag pending'; }
+    return;
+  }
+  var st = v.state || ST_WAIT;
+  if(ttl){
+    ttl.textContent = (v.month || '') + ' · ' + (ST_TXT[st] || st);
+    ttl.className = 'tag ' + (ST_CLS[st] || 'pending');
+  }
+  var t = apTotals(v);
+  var head = '<div class="tw"><table class="grid"><thead><tr>'+
+    '<th style="width:100px">日期</th><th>班级</th><th style="width:60px">课次</th>'+
+    '<th style="width:100px">教室</th><th>场地</th><th style="width:110px">小时费参考</th>'+
+    '<th style="width:110px">请款金额</th>'+
+    '</tr></thead><tbody>';
+  var rows = (v.items || []).map(function(it){
+    return '<tr>'+
+      '<td class="sm">'+esc(it.date || '—')+'</td>'+
+      '<td>'+esc(it.cname || '—')+'</td>'+
+      '<td class="num">'+esc(it.cno==null?'—':it.cno)+'</td>'+
+      '<td class="sm">'+esc(it.roomCode || '—')+'</td>'+
+      '<td>'+esc(it.placeName || '—')+'</td>'+
+      '<td class="num">'+money(it.rate)+'</td>'+
+      '<td class="num">'+money(it.amt)+'</td>'+
+    '</tr>';
+  }).join('');
+  var foot = '</tbody><tfoot><tr><td colspan="6" class="mu">合计</td><td class="num">'+money(t.net)+'</td></tr></tfoot></table></div>';
+
+  var info = '';
+  if(st === ST_NO){
+    info = '<p class="sm" style="margin:12px 0 0;color:var(--neg)"><b>已驳回</b>：'+esc(v.reason || '（没写理由）')+
+      '<br><span class="mu">'+esc(String(v.rejectedAt || '').slice(0,16).replace('T',' '))+'　业务部会原样看到这段</span></p>';
+  }else if(st === ST_PAID){
+    info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已付款</b>　'+money(v.paidAmt)+' ₫　·　日期 '+
+      esc(v.paidOn || '—')+'　·　凭证 '+esc(v.voucherNo || '—')+'</p>';
+  }else if(st === ST_OK){
+    info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已批准</b>　'+
+      esc(String(v.approvedAt || '').slice(0,16).replace('T',' '))+'　可以付款了</p>';
+  }else{
+    info = '<p class="sm mu" style="margin:12px 0 0">业务部已提交，等财务核对。数字不对点「驳回」并写理由，业务部会原样看到。</p>';
+  }
+  var btns = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">';
+  if(st === ST_WAIT){
+    btns += '<button class="mini" data-pl-act="ok" style="padding:6px 14px">✓ 批准</button>';
+    btns += '<button class="mini" data-pl-act="no" style="padding:6px 14px">✗ 驳回</button>';
+  }else if(st === ST_OK){
+    btns += '<button class="mini" data-pl-act="pay" style="padding:6px 14px">₫ 付款</button>';
+  }
+  btns += '</div>';
+  box.innerHTML = head + rows + foot + info + btns;
+}
+function plAct(act){
+  var v = plFind(PL_SEL);
+  if(!v){ alert('先在上面选一张场地请款单'); return; }
+  var st = v.state || ST_WAIT;
+  var now = new Date().toISOString();
+  var t = apTotals(v);
+  if(act === 'ok'){
+    if(st !== ST_WAIT){ alert('这张单据现在是「'+(ST_TXT[st] || st)+'」，不能再批准。'); return; }
+    if(!confirm('批准 ' + v.month + ' 这张场地请款单？\n\n请款金额 ' + money(t.net) +
+      ' ₫\n\n批准之后才可以付款。财务不改数字，数字不对请驳回。')) return;
+    fsPatchVoucher(v.id, { state:ST_OK, approvedAt:now, approvedBy:'finance' }, function(ok, msg){
+      if(!ok){ alert('批准没成功：' + msg); return; }
+      v.state = ST_OK; v.approvedAt = now; v.approvedBy = 'finance';
+      save(); renderApprove();
+    });
+    return;
+  }
+  if(act === 'no'){
+    if(st !== ST_WAIT){ alert('这张单据现在是「'+(ST_TXT[st] || st)+'」，不能再驳回。'); return; }
+    var reason = prompt('驳回 ' + v.month + ' 这张场地请款单。\n\n理由（必填，业务部会原样看到）：');
+    if(reason === null) return;
+    reason = String(reason).trim();
+    if(!reason){ alert('理由不能空 —— 业务部要知道改哪儿。'); return; }
+    fsPatchVoucher(v.id, { state:ST_NO, reason:reason, rejectedAt:now, rejectedBy:'finance' }, function(ok, msg){
+      if(!ok){ alert('驳回没成功：' + msg); return; }
+      v.state = ST_NO; v.reason = reason; v.rejectedAt = now; v.rejectedBy = 'finance';
+      save(); renderApprove();
+    });
+    return;
+  }
+  if(act === 'pay'){
+    if(st !== ST_OK){ alert('必须先批准才能付款。没批就付，等于绕过审批。'); return; }
+    var d = prompt('付款日期（YYYY-MM-DD）：', today());
+    if(d === null) return;
+    d = String(d).trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ alert('日期格式要 YYYY-MM-DD'); return; }
+    var amt = prompt('付款金额（默认等于请款金额 ' + money(t.net) + '）：', String(t.net));
+    if(amt === null) return;
+    amt = Number(String(amt).replace(/[^0-9.\-]/g, ''));
+    if(!isFinite(amt) || amt <= 0){ alert('金额要大于 0'); return; }
+    var vno = prompt('凭证号（必填）：', '');
+    if(vno === null) return;
+    vno = String(vno).trim();
+    if(!vno){ alert('凭证号不能空 —— 不记凭证号，账对不上。'); return; }
+    fsPatchVoucher(v.id, { state:ST_PAID, paidOn:d, paidAmt:amt, voucherNo:vno, paidAt:now, paidBy:'finance' }, function(ok, msg){
+      if(!ok){ alert('付款没记上：' + msg); return; }
+      v.state = ST_PAID; v.paidOn = d; v.paidAmt = amt; v.voucherNo = vno; v.paidAt = now; v.paidBy = 'finance';
+      save(); renderApprove();
     });
     return;
   }
@@ -1751,6 +1946,19 @@ document.getElementById('apDetail').addEventListener('click', function(e){
   if(!b) return;
   apAct(b.getAttribute('data-act'));
 });
+/* ★ 2026-11-05（P-103 ④）：场地请款单用自己的 data-pl / data-pl-act，
+   不复用工资单的 data-ap / data-act —— 两张表的按钮不会互相误触发。 */
+document.getElementById('tb-place-appr').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-pl]') : null;
+  if(!b) return;
+  PL_SEL = b.getAttribute('data-pl');
+  renderApprove();
+});
+document.getElementById('placeApDetail').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-pl-act]') : null;
+  if(!b) return;
+  plAct(b.getAttribute('data-pl-act'));
+});
 document.getElementById('addClass').addEventListener('click', function(){
   S.classes.push({name:'', lessons:'42', done:'0', fee:'', teacher:'', rate:'', own:true});
   save(); renderSettle(); refreshDerived();
@@ -1968,6 +2176,13 @@ if (typeof window !== 'undefined'){
     apAct: apAct,
     apSelect: function(id){ AP_SEL = id; renderApprove(); },
     apGetSel: function(){ return AP_SEL; },
+    /* ★ 2026-11-05（P-103 ④）：场地请款单状态机给探针留的窗口（只读状态 + 业务函数） */
+    plFind: plFind,
+    plAct: plAct,
+    plSelect: function(id){ PL_SEL = id; renderApprove(); },
+    plGetSel: function(){ return PL_SEL; },
+    renderPlaceApprove: renderPlaceApprove,
+    renderPlaceApDetail: renderPlaceApDetail,
     fsPullApprovals: fsPullApprovals,
     fsPatchVoucher: fsPatchVoucher,
     renderApprove: renderApprove,

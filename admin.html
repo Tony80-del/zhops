@@ -1468,6 +1468,8 @@ function doneRecord(l){
   };
 }
 function pushDoneRecord(l){
+  /* ★ 2026-11-05（P-103 ④）：按小时场地的使用记录，离线也要写，所以放在 fetch 守卫之前 */
+  pushUsageRecord(l);
   if (typeof fetch !== 'function') return;
   const r = doneRecord(l);
   if (!r) return;
@@ -1482,6 +1484,92 @@ function pushDoneRecord(l){
   fetch(fsUrlOf('zhops', docId), {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   }).catch(() => {});   /* 静默 —— 离线照常用，本地数据不受影响 */
+}
+
+/* ==========================================================================
+   ★ 2026-11-05（P-103 ④）：按小时场地 → 上完课自动产出一条「使用记录」
+   --------------------------------------------------------------------------
+   —— 触发口只有一个：pushDoneRecord()。主端「推进一课 / 改课次状态」、
+      教师端「点名标已上完」都走它，不用在三个地方各写一遍。
+   —— 只记「按小时」的场地：月租场地整层已经付过，再按次请款就是重复付钱。
+      没挂教室 / 线上班 / 办事处 / 找不到场地，一律不产记录。
+   —— 教室编码用课次快照 l.roomCode（P-98），不能拿班现值现算 —— 回看历史不能穿越。
+   —— 写两处：本机 zhops.usage.v1（同一浏览器业务部直接读得到）
+      + 云端 zhops/usage_<课次ID>（换设备时「通知业务部」就靠它）。
+      跟 done_* 一样只写不删：课次退回 plan / cancel 写一条 state:'void' 冲销。
+   —— ⚠️ 主端原本对业务部数据是纯只读；这是唯一一个写口，且只写独立的使用记录键，
+      绝不回写 zhops.biz.v1（业务部可能正开着，回写会被它的 save() 覆盖）。
+   ========================================================================== */
+const USAGE_KEY = 'zhops.usage.v1';
+const USAGE_TAG = 'zhops.usage';
+const USAGE_DOC_PREFIX = 'usage_';
+
+/* 这节课占用的那间教室，属于哪个「按小时」场地？不是 → 返回 null */
+function usagePlaceOf(code){
+  if (!code) return null;
+  let o;
+  try { o = JSON.parse(localStorage.getItem('zhops.biz.v1') || '{}'); } catch(e){ return null; }
+  const rooms  = Array.isArray(o.rooms)  ? o.rooms  : [];
+  const places = Array.isArray(o.places) ? o.places : [];
+  const room = rooms.find(r => r && r.code === code);
+  if (!room || room.purpose === 'office') return null;
+  if (room.placeId){
+    const p = places.find(x => x && x.id === room.placeId);
+    if (!p || p.billMode !== 'hour') return null;
+    return { code:code, name:room.name || code, placeId:p.id,
+             placeName:p.name || p.prefix || '', area:p.area || room.area || '',
+             hourly:Number(p.hourly) || 0 };
+  }
+  /* P-103 ① 里单独录的按小时教室（不属于任何场地）也算 */
+  if (room.billMode !== 'hour') return null;
+  return { code:code, name:room.name || code, placeId:'',
+           placeName:room.name || code, area:room.area || '',
+           hourly:Number(room.hourly) || 0 };
+}
+function usageRecordOf(l){
+  if (!l || !l.id) return null;
+  const c = (DB.classes || []).find(x => x.id === l.cid) || {};
+  if (c.mode === 'online') return null;
+  const code = l.roomCode || c.roomCode || '';
+  const p = usagePlaceOf(code);
+  if (!p) return null;
+  const tid = l.teacher || c.teacher || c.ctch || '';
+  return {
+    id:'u-' + l.id, lid:l.id, cid:l.cid, cno:l.no, date:l.date || '',
+    cname:c.name || l.cname || '', roomCode:code, roomName:p.name,
+    placeId:p.placeId, placeName:p.placeName, area:p.area,
+    tid:tid, tname:((DB.teachers || []).find(x => x.id === tid) || {}).name || '',
+    hourly:p.hourly,
+    state: l.status === 'done' ? 'done' : 'void',
+    at: new Date().toISOString(),
+    __app: USAGE_TAG,
+  };
+}
+function usageUpsertLocal(rec){
+  try {
+    const o = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}') || {};
+    const arr = Array.isArray(o.records) ? o.records : [];
+    const i = arr.findIndex(x => x && x.lid === rec.lid);
+    if (i >= 0) arr[i] = rec; else arr.push(rec);
+    localStorage.setItem(USAGE_KEY, JSON.stringify({ records:arr }));
+  } catch(e){}
+}
+function pushUsageRecord(l){
+  const rec = usageRecordOf(l);
+  if (!rec) return;
+  usageUpsertLocal(rec);                     /* 断网也留痕，业务部同浏览器直接读得到 */
+  if (typeof fetch !== 'function') return;
+  const docId = USAGE_DOC_PREFIX + String(rec.lid).replace(/[^A-Za-z0-9_-]/g, '_');
+  const body = { fields: {
+    payload:{ stringValue: JSON.stringify(rec) },
+    at:     { stringValue: rec.at },
+    app:    { stringValue: USAGE_TAG },
+    state:  { stringValue: rec.state },
+    room:   { stringValue: String(rec.roomCode || '') },
+  }};
+  fetch(fsUrlOf('zhops', docId), {
+    method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body),
+  }).catch(() => {});
 }
 
 /* 启动：有存盘用存盘，没有才播种 */

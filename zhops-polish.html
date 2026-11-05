@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-05">2026-11-05 · 今天<span class="c">3</span></button>
+    <button class="on" data-day="2026-11-05">2026-11-05 · 今天<span class="c">4</span></button>
     <button data-day="2026-11-02">2026-11-02<span class="c">13</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
@@ -182,7 +182,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-05 ============ -->
   <div class="day-panel on" data-day="2026-11-05">
     <div class="card">
-      <h2>2026-11-05 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-05 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -218,6 +218,16 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-05</td>
               <td class="mono nw">11-05</td>
               <td>业务部教室页加「场地」卡片：一条场地写一次整层租金 + 间数 N，按「地区码-01…N」一次生成 N 间教室（可补间数、可改用途），<b>租金只挂场地、不摊到每间</b>；主端一行未改，仍旧只读 rooms[] 按地区数课室（5 间里 2 间办事处 → 显示 3 间）；老存盘自动补空场地集合，反向控制六组全红，全套 35/35。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-106</td>
+              <td><b>P-103 ④ 点名后自动记使用 → 业务部开单 → 财务请款 / 付款</b><br><span style="color:#8899aa;font-size:12px">「用了之后通知业务部，业务部再提交单据给财务部请款 / 付款」· 四步里的第 ④ 步</span></td>
+              <td class="nw">四页 · 主端 / 教师端 / 业务部 / 财务部</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-05</td>
+              <td class="mono nw">11-05</td>
+              <td>主端与教师端共用「上完课」写口，只为按小时场地产一条使用记录（教室取课次快照、断网也留痕、退回只冲销不撕账、两端不双算）；业务部拉记录后<b>手填请款金额</b>提交单据，财务单独批准 / 驳回 / 付款并回读状态，金额由业务部定、工资表与报表口径一字未动；反向控制六组全红，全套 36/36。</td>
             </tr>
           </tbody>
         </table>

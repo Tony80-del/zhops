@@ -794,6 +794,8 @@ function fsUrlOf(coll, doc){
    —— 失败静默：离线照常用。
    ========================================================================== */
 function pushDoneRecord(l){
+  /* ★ 2026-11-05（P-103 ④）：按小时场地的使用记录，离线也要写，所以放在 fetch 守卫之前 */
+  pushUsageRecord(l);
   if (typeof fetch !== 'function') return;
   if (!l || !l.id) return;
   const c = (DB.classes || []).find(x => x.id === l.cid) || {};
@@ -822,6 +824,84 @@ function pushDoneRecord(l){
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   }).catch(() => {});
 }
+/* ==========================================================================
+   ★ 2026-11-05（P-103 ④）：按小时场地 → 点名标「已上完」自动产出使用记录
+   —— 与主端完全同一套口径（同一个写口 pushDoneRecord、同一个本地键、同一个云端前缀）。
+      教师在手机上点名、主端在电脑上推进，两条路落的是同一条记录，按 lid 去重不会双算。
+   —— 只记按小时场地；月租场地、线上班、办事处、没挂教室一律不记。
+   —— 教室编码取课次快照，不取班现值（P-98）。
+   —— 只写独立的 zhops.usage.v1 和 zhops/usage_<课次ID>，绝不回写业务部存盘。
+   ========================================================================== */
+const USAGE_KEY = 'zhops.usage.v1';
+const USAGE_TAG = 'zhops.usage';
+const USAGE_DOC_PREFIX = 'usage_';
+
+function usagePlaceOf(code){
+  if (!code) return null;
+  let o;
+  try { o = JSON.parse(localStorage.getItem('zhops.biz.v1') || '{}'); } catch(e){ return null; }
+  const rooms  = Array.isArray(o.rooms)  ? o.rooms  : [];
+  const places = Array.isArray(o.places) ? o.places : [];
+  const room = rooms.find(r => r && r.code === code);
+  if (!room || room.purpose === 'office') return null;
+  if (room.placeId){
+    const p = places.find(x => x && x.id === room.placeId);
+    if (!p || p.billMode !== 'hour') return null;
+    return { code:code, name:room.name || code, placeId:p.id,
+             placeName:p.name || p.prefix || '', area:p.area || room.area || '',
+             hourly:Number(p.hourly) || 0 };
+  }
+  if (room.billMode !== 'hour') return null;
+  return { code:code, name:room.name || code, placeId:'',
+           placeName:room.name || code, area:room.area || '',
+           hourly:Number(room.hourly) || 0 };
+}
+function usageRecordOf(l){
+  if (!l || !l.id) return null;
+  const c = (DB.classes || []).find(x => x.id === l.cid) || {};
+  if (c.mode === 'online') return null;
+  const code = l.roomCode || c.roomCode || '';
+  const p = usagePlaceOf(code);
+  if (!p) return null;
+  const tid = l.teacher || c.teacher || c.ctch || '';
+  return {
+    id:'u-' + l.id, lid:l.id, cid:l.cid, cno:l.no, date:l.date || '',
+    cname:c.name || l.cname || '', roomCode:code, roomName:p.name,
+    placeId:p.placeId, placeName:p.placeName, area:p.area,
+    tid:tid, tname:((DB.teachers || []).find(x => x.id === tid) || {}).name || '',
+    hourly:p.hourly,
+    state: l.status === 'done' ? 'done' : 'void',
+    at: new Date().toISOString(),
+    __app: USAGE_TAG,
+  };
+}
+function usageUpsertLocal(rec){
+  try {
+    const o = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}') || {};
+    const arr = Array.isArray(o.records) ? o.records : [];
+    const i = arr.findIndex(x => x && x.lid === rec.lid);
+    if (i >= 0) arr[i] = rec; else arr.push(rec);
+    localStorage.setItem(USAGE_KEY, JSON.stringify({ records:arr }));
+  } catch(e){}
+}
+function pushUsageRecord(l){
+  const rec = usageRecordOf(l);
+  if (!rec) return;
+  usageUpsertLocal(rec);
+  if (typeof fetch !== 'function') return;
+  const docId = USAGE_DOC_PREFIX + String(rec.lid).replace(/[^A-Za-z0-9_-]/g, '_');
+  const body = { fields: {
+    payload:{ stringValue: JSON.stringify(rec) },
+    at:     { stringValue: rec.at },
+    app:    { stringValue: USAGE_TAG },
+    state:  { stringValue: rec.state },
+    room:   { stringValue: String(rec.roomCode || '') },
+  }};
+  fetch(fsUrlOf('zhops', docId), {
+    method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body),
+  }).catch(() => {});
+}
+
 /* ==================== 公共只读 zhops/public（第 3 步）====================
    主端每次推云都重写一份。这里只读：时段表 · 课程目录（课名）· 阶段名 ·
    教室省/市 · 开班门槛。

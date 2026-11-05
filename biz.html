@@ -779,6 +779,35 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
       </div>
 
       <div id="rooms-list"></div>
+
+      <!-- ★ 2026-11-05（P-103 ④）：按小时场地的使用记录 → 业务部开单给财务。
+           排在教室表下面：上面是「场地 / 教室」台账，下面是「用了几次、钱怎么请」。 -->
+      <div class="card">
+        <div class="card-h">
+          <h3>场地使用 · 待开单</h3>
+          <span class="sub">按小时场地，上完课自动记一次</span>
+          <div class="sp"></div>
+          <select id="usage-month" onchange="renderUsage()" style="width:auto;flex:0 0 auto"></select>
+          <button class="btn" onclick="pullUsage()">☁︎ 拉取使用记录</button>
+        </div>
+        <div class="card-b tight" id="usage-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>已提交请款单</h3>
+          <span class="sub">财务批 / 付之后，点上面「☁︎ 拉取使用记录」回读状态</span>
+        </div>
+        <div class="card-b tight" id="place-vouchers"></div>
+      </div>
+
+      <div class="note">
+        <b>谁产出、谁付钱</b>：主端 / 教师端把课次标「已上完」时，系统只对<b>按小时场地</b>自动记一次使用 ——
+        月租场地整层已经付过，不会重复记；线上班、办事处、没挂教室的课也不记。
+        <b>请款金额由业务部填</b>（默认带出场地小时费作参考，系统不替你换算课时 / 时长）；
+        点「提交财务请款」写成一张单据送到云端 <b>zhops/approvals</b>，财务在「审批」页核对、批准、付款。
+        同一节课退回「待上 / 已取消」会记一条冲销，不会再出现在待开单里。
+      </div>
     </div>
 
   </div><!-- /#view -->
@@ -808,7 +837,10 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
    ============================================================ */
 
 var KEY = 'zhops.biz.v1';
-var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], places:[], seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1} };
+var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], places:[],
+  /* ★ 2026-11-05（P-103 ④）：场地使用记录 / 已提交请款单 / 每条使用记录的请款金额（手填） */
+  usage:[], placeVouchers:[], usageAmt:{},
+  seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1} };
 
 /* ============================================================
    云端通道（2026-11-02 · P-96）
@@ -934,6 +966,10 @@ function load(){
   if(!Array.isArray(S.places)) S.places = [];
   if(!S.seq) S.seq = {};
   if(!S.seq.place) S.seq.place = 1;
+  /* ★ 2026-11-05（P-103 ④）：老存盘没有这三个集合，补空值，别让渲染炸 */
+  if(!Array.isArray(S.usage)) S.usage = [];
+  if(!Array.isArray(S.placeVouchers)) S.placeVouchers = [];
+  if(!S.usageAmt || typeof S.usageAmt !== 'object') S.usageAmt = {};
   /* ★ 2026-11-02（P-93）：把老的 S-001 编号迁成 st 编号（幂等，跑一次就够）。
      放在 seed() 之后 —— 种子数据本身已经用 st 编号，不会重复迁。 */
   if(migrateStudentIds()) save();
@@ -1845,6 +1881,10 @@ var WEEK = ['一','二','三','四','五','六','日'];
 
 function renderRooms(){
   renderPlaces();
+  /* ★ 2026-11-05（P-103 ④）：教室页下面两张卡（待开单 / 已提交请款单）一起画。
+     挂在 renderRooms() 而不是 render() 的分派表 —— 保存教室 / 补间数之后也会重画，
+     不会出现「刚提交完请款单、页面还是旧数字」。分派表形态保持不动。 */
+  renderUsage();
   var el = document.getElementById('rooms-list');
   var list = S.rooms || [];
 
@@ -2222,6 +2262,249 @@ function saveRoom(origCode){
   save(); closeDrawer(); render('rooms');
 }
 
+/* ============================================================
+   场地使用 → 请款（2026-11-05 · P-103 ④）
+   ------------------------------------------------------------
+   方向：主端 / 教师端（点名标已上完）→ 使用记录 → 业务部开单 → 财务审批付款。
+   ★ 使用记录**不是业务部自己录的**：主端写独立键 zhops.usage.v1 +
+     云端 zhops/usage_<课次ID>；这里点「拉取使用记录」把两边合并进 S.usage。
+     Firestore 没有按 id 前缀查询，只能列整个 zhops 集合再本地筛（人事同款做法）。
+   ★ 请款金额手填，默认只带出场地小时费作参考。系统不替业务部定「一节课算几小时」，
+     也不自动算金额 —— 那是业务决定，不是代码能猜的。
+   ★ 单据写进 zhops/approvals 的 vouchers[]，和人事工资单同一个文档、不同 dept。
+     read → merge → PATCH，结构不认识就拒绝写，绝不清空别人的数据（人事同款口径）。
+     每张单据独立 id（月份 + 序号），再开一张不会覆盖已经提交的那张。
+   ============================================================ */
+var USAGE_TAG = 'zhops.usage';
+var USAGE_DOC_PREFIX = 'usage_';
+var USAGE_KEY = 'zhops.usage.v1';
+var APPROVAL_DOC = 'approvals';
+var VOUCHER_STATES = {'已提交':'待审批','已批':'已批准','已驳':'已驳回','已付':'已付款'};
+
+function usageMonths(){
+  var m = {};
+  (S.usage||[]).forEach(function(u){ if(u && u.state === 'done') m[String(u.date||'').slice(0,7)] = 1; });
+  m[new Date().toISOString().slice(0,7)] = 1;
+  return Object.keys(m).filter(Boolean).sort().reverse();
+}
+/* 合并口径跟人事 done_* 一样：按 lid 去重，at 最新的那条赢。
+   void（课次退回）会盖掉 done，业务部待开单列表就自然少一条 —— 账不撕，只冲销。 */
+function mergeUsage(recs){
+  if(!Array.isArray(S.usage)) S.usage = [];
+  var by = {};
+  S.usage.forEach(function(u){ if(u && u.lid) by[u.lid] = u; });
+  var n = 0;
+  (recs||[]).forEach(function(u){
+    if(!u || !u.lid || u.__app !== USAGE_TAG) return;   /* 不认别的应用推上来的东西 */
+    var old = by[u.lid];
+    if(!old || String(u.at||'') >= String(old.at||'')){ by[u.lid] = u; n++; }
+  });
+  S.usage = Object.keys(by).map(function(k){ return by[k]; });
+  return n;
+}
+function mergeLocalUsage(){
+  try{
+    var o = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+    return mergeUsage(Array.isArray(o.records) ? o.records : []);
+  }catch(e){ return 0; }
+}
+function usagePending(m){
+  return (S.usage||[]).filter(function(u){
+    return u && u.state === 'done' && !u.voucherId && String(u.date||'').slice(0,7) === m;
+  }).sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')); });
+}
+function setUsageAmt(lid, amt){
+  S.usageAmt = S.usageAmt || {};
+  S.usageAmt[lid] = amt;
+}
+function usageAmtOf(u){
+  var a = Number((S.usageAmt||{})[u.lid]);
+  if(isFinite(a) && a > 0) return a;
+  return Number(u.hourly) || 0;
+}
+function newVoucherId(m){
+  var used = {};
+  (S.placeVouchers||[]).forEach(function(v){ if(v && v.id) used[v.id] = 1; });
+  var i = 1;
+  while(used['v-biz-place-' + m + '-' + i]) i++;
+  return 'v-biz-place-' + m + '-' + i;
+}
+function buildPlaceVoucher(m){
+  var pending = usagePending(m);
+  if(!pending.length) return { error:'这个月没有待开单的使用记录' };
+  var items = pending.map(function(u){
+    var amt = usageAmtOf(u);
+    return { lid:u.lid, date:u.date||'', cname:u.cname||'', cno:u.cno,
+             roomCode:u.roomCode||'', placeName:u.placeName||'',
+             rate:Number(u.hourly)||0, amt:amt,
+             /* 兼容财务 apTotals() 的工资单字段：社保 / 个税 / 课时费都是 0 */
+             gross:amt, siEmp:0, pit:0, tch:0 };
+  });
+  if(items.some(function(it){ return !(it.amt > 0); })){
+    return { error:'有使用记录没填请款金额（小时费参考为 0 时要手填）' };
+  }
+  var sum = items.reduce(function(a,it){ return a + it.amt; }, 0);
+  return {
+    id:newVoucherId(m), type:'place', dept:'biz', month:m,
+    title:m + ' 按小时场地费', items:items,
+    total:{ gross:sum, net:sum, siEmp:0, pit:0, tch:0 },
+    state:'已提交', submittedAt:new Date().toISOString(), by:'业务部'
+  };
+}
+function fsPushPlaceVoucher(v, cb){
+  if(typeof fetch !== 'function'){ if(cb) cb(false, '这个环境不支持网络'); return; }
+  fetch(fsUrlOf(APPROVAL_DOC)).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    var full = { vouchers: [] };
+    if(raw && raw.fields){
+      var p = raw.fields.payload ? raw.fields.payload.stringValue : null;
+      if(p){
+        try{ var o = JSON.parse(p); if(o && typeof o === 'object') full = o; }
+        catch(e){ if(cb) cb(false, '云端那份不是 JSON，拒绝覆盖'); return; }
+      }
+      if(!Array.isArray(full.vouchers)){ if(cb) cb(false, '云端文档结构不认识，拒绝覆盖'); return; }
+    }
+    var idx = -1;
+    for(var i=0;i<full.vouchers.length;i++){
+      if(full.vouchers[i] && full.vouchers[i].id === v.id){ idx = i; break; }
+    }
+    if(idx >= 0) full.vouchers[idx] = v; else full.vouchers.push(v);
+    var body = { fields: {
+      payload:{ stringValue: JSON.stringify(full) },
+      at:     { stringValue: new Date().toISOString() },
+      app:    { stringValue: BIZ_CLOUD_TAG }
+    }};
+    return fetch(fsUrlOf(APPROVAL_DOC), {
+      method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+  }).then(function(res){
+    if(!res) return;
+    if(cb) cb(res.ok, res.ok ? '' : ('HTTP ' + res.status));
+  }).catch(function(e){ if(cb) cb(false, String((e && e.message) || e)); });
+}
+function submitPlaceVoucher(m){
+  m = m || val('usage-month') || new Date().toISOString().slice(0,7);
+  var v = buildPlaceVoucher(m);
+  if(v.error){ toast(v.error, true); return false; }
+  fsPushPlaceVoucher(v, function(ok, msg){
+    if(!ok){ toast('提交失败：' + (msg || '断网或云端被拦'), true); return; }
+    var ids = {};
+    v.items.forEach(function(it){ ids[it.lid] = 1; });
+    (S.usage||[]).forEach(function(u){ if(u && ids[u.lid]) u.voucherId = v.id; });
+    S.placeVouchers = S.placeVouchers || [];
+    S.placeVouchers.unshift(v);
+    save(); renderUsage();
+    toast('已提交财务：' + v.title + ' · ' + v.items.length + ' 条');
+  });
+  return true;
+}
+function pullUsage(){
+  if(typeof fetch !== 'function'){ toast('这个浏览器不支持联网', true); return; }
+  var url = 'https://firestore.googleapis.com/v1/projects/' + FS.pid +
+    '/databases/(default)/documents/' + FS.coll + '?key=' + encodeURIComponent(FS.key) + '&pageSize=300';
+  fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    var recs = [];
+    (raw && Array.isArray(raw.documents) ? raw.documents : []).forEach(function(d){
+      var name = String(d.name||''), docId = name.slice(name.lastIndexOf('/')+1);
+      if(docId.indexOf(USAGE_DOC_PREFIX) !== 0) return;
+      var pl = d.fields && d.fields.payload ? d.fields.payload.stringValue : null;
+      if(!pl) return;
+      try{ var o = JSON.parse(pl); if(o && o.lid) recs.push(o); }catch(e){}
+    });
+    var n = mergeLocalUsage() + mergeUsage(recs);
+    save(); renderUsage();
+    toast('拉取到 ' + recs.length + ' 条云端使用记录，合并 ' + n + ' 条');
+    pullVoucherStates();
+  }).catch(function(){ toast('拉取失败（断网或云端被拦）', true); });
+}
+/* 状态回读：财务在云端改同一张单据，这里只认状态字段，金额一个字不动 */
+function applyVoucherStates(vouchers){
+  var hit = {};
+  (vouchers||[]).forEach(function(v){
+    if(v && v.dept === 'biz' && v.type === 'place') hit[v.id] = v;
+  });
+  var n = 0;
+  (S.placeVouchers||[]).forEach(function(v){
+    var c = hit[v.id];
+    if(!c) return;
+    ['state','reason','approvedAt','rejectedAt','paidOn','paidAmt','voucherNo'].forEach(function(k){
+      if(c[k] !== undefined) v[k] = c[k];
+    });
+    n++;
+  });
+  return n;
+}
+function pullVoucherStates(){
+  fetch(fsUrlOf(APPROVAL_DOC)).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    var pl = raw && raw.fields && raw.fields.payload ? raw.fields.payload.stringValue : null;
+    if(!pl) return;
+    var full = null;
+    try{ full = JSON.parse(pl); }catch(e){ return; }
+    if(!full || !Array.isArray(full.vouchers)) return;
+    applyVoucherStates(full.vouchers);
+    save(); renderUsage();
+  }).catch(function(){});
+}
+function renderUsage(){
+  var box = document.getElementById('usage-list');
+  var vb  = document.getElementById('place-vouchers');
+  if(!box) return;
+  var sel = document.getElementById('usage-month');
+  var months = usageMonths();
+  var m = (sel && sel.value) || '';
+  if(months.indexOf(m) < 0) m = months[0] || new Date().toISOString().slice(0,7);
+  if(sel){
+    sel.innerHTML = months.map(function(x){
+      return '<option value="'+esc(x)+'"'+(x===m?' selected':'')+'>'+esc(x)+'</option>';
+    }).join('');
+    sel.value = m;
+  }
+  var pending = usagePending(m);
+  if(!pending.length){
+    box.innerHTML = '<div class="empty">'+esc(m)+' 还没有待开单的使用记录 —— 上完课点「☁︎ 拉取使用记录」。</div>';
+  }else{
+    box.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
+      '<th>日期</th><th>班级</th><th class="num">课次</th><th>教室</th><th>场地</th>'+
+      '<th class="num">小时费参考</th><th class="num">请款金额</th>'+
+      '</tr></thead><tbody>'+
+      pending.map(function(u){
+        return '<tr>'+
+          '<td class="mono nw">'+esc(u.date||'—')+'</td>'+
+          '<td>'+esc(u.cname||'—')+'</td>'+
+          '<td class="num">'+esc(u.cno==null?'—':u.cno)+'</td>'+
+          '<td class="mono">'+esc(u.roomCode||'—')+'</td>'+
+          '<td>'+esc(u.placeName||'—')+'</td>'+
+          '<td class="num">'+(u.hourly?fmtVND(u.hourly):'—')+'</td>'+
+          '<td class="num"><input type="number" style="width:auto;min-width:110px" data-usage-amt="'+esc(u.lid)+'" value="'+(usageAmtOf(u)||'')+'" placeholder="手填"></td>'+
+          '</tr>';
+      }).join('')+
+      '</tbody></table></div>'+
+      '<div style="display:flex;gap:10px;align-items:center;margin-top:12px">'+
+        '<button class="btn pri" onclick="submitPlaceVoucher()">提交财务请款（'+pending.length+' 条）</button>'+
+        '<span class="sm" style="color:var(--ink3)">金额由业务部确认；默认只带出小时费参考，不会替你自动算。</span>'+
+      '</div>';
+  }
+  if(vb){
+    var list = (S.placeVouchers||[]).slice().sort(function(a,b){
+      return String(b.submittedAt||'').localeCompare(String(a.submittedAt||''));
+    });
+    vb.innerHTML = !list.length
+      ? '<div class="empty">还没提交过请款单。</div>'
+      : '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
+        '<th>单据号</th><th>月份</th><th class="num">条数</th><th class="num">金额</th><th>状态</th>'+
+        '</tr></thead><tbody>'+
+        list.map(function(v){
+          var st = v.state || '已提交';
+          return '<tr>'+
+            '<td class="mono sm">'+esc(v.id||'—')+'</td>'+
+            '<td class="mono">'+esc(v.month||'—')+'</td>'+
+            '<td class="num">'+((v.items||[]).length)+'</td>'+
+            '<td class="num">'+(v.total ? fmtVND(v.total.net) : '—')+'</td>'+
+            '<td><span class="tg '+(st==='已驳'?'off':'on')+'">'+esc(VOUCHER_STATES[st] || st)+'</span></td>'+
+            '</tr>';
+        }).join('')+'</tbody></table></div>';
+  }
+}
+
 /* ---- 工具：取 input/select 值 ---- */
 function val(id){
   var el = document.getElementById(id);
@@ -2270,6 +2553,18 @@ function backMainFix(){
       /* 推送是异步的，1.5 秒后放开按钮，防止连点把云端打满 */
       setTimeout(function(){ btn.disabled = false; }, 1500);
     }
+  });
+})();
+
+/* ---- 场地使用：请款金额手填（2026-11-05 · P-103 ④）----
+   用事件委托：表格每次重画，把监听绑在单格上会丢。 */
+(function(){
+  var box = document.getElementById('usage-list');
+  if(!box) return;
+  box.addEventListener('input', function(e){
+    var el = e.target;
+    var k = el && el.getAttribute ? el.getAttribute('data-usage-amt') : null;
+    if(k) setUsageAmt(k, el.value);
   });
 })();
 
