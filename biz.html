@@ -1434,7 +1434,9 @@ function studentForm(s){
       '</select></div>'+
       '<div class="fld"><label>指定教室</label><select id="f-preferRoom">'+
         '<option value="">（未指定）</option>'+
-        (S.rooms||[]).filter(function(r){return r.open!==false;}).map(function(r){
+        /* ★ 2026-11-05（P-103 ②）：办事处不能拿来上课，不进「指定教室」下拉。
+           老数据没有 purpose，一律当课室 —— 拆用途之前的行为不变。 */
+        (S.rooms||[]).filter(function(r){return r.open!==false && r.purpose!=='office';}).map(function(r){
           return '<option value="'+esc(r.code)+'" '+(s.preferRoom===r.code?'selected':'')+'>'+
             esc(r.code)+(r.name?' · '+esc(r.name):'')+(r.area?' · '+esc(r.area):'')+'</option>';
         }).join('')+
@@ -1461,7 +1463,7 @@ function roomPickHint(){
   if(!mEl || !rEl || !hint) return;
 
   var isOnline = mEl.value === 'online';
-  var hasRoom = (S.rooms || []).some(function(r){ return r.open !== false; });
+  var hasRoom = (S.rooms || []).some(function(r){ return r.open !== false && r.purpose !== 'office'; });
 
   rEl.disabled = isOnline;
   if (isOnline) rEl.value = '';
@@ -1828,7 +1830,12 @@ function renderRooms(){
 
   var open = list.filter(function(r){ return r.open !== false; });
   var seats = open.reduce(function(a,r){ return a + (Number(r.cap)||0); }, 0);
-  var rent  = open.reduce(function(a,r){ return a + (Number(r.rent)||0); }, 0);
+  /* ★ 2026-11-05（P-103 ①）：「月租金合计」只算月租场地。
+     按小时计费的场地是另一套口径，加进来会把成本算成按月付。
+     老数据没有 billMode，一律当月租 —— 统计结果跟拆栏之前一模一样。 */
+  var rent  = open.reduce(function(a,r){
+    return a + (r.billMode === 'hour' ? 0 : (Number(r.rent)||0));
+  }, 0);
 
   document.getElementById('rm-count').textContent = list.length;
   document.getElementById('rm-open').textContent  = open.length;
@@ -1842,7 +1849,7 @@ function renderRooms(){
 
   el.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'+
     '<th>编码</th><th>名称</th><th>地区</th><th>地址</th><th>可用时段</th>'+
-    '<th class="num">容量</th><th class="num">费用</th><th>电话</th><th>状态</th><th></th>'+
+    '<th class="num">容量</th><th>计费方式</th><th class="num">月租费</th><th class="num">小时费</th><th>电话</th><th>用途</th><th>状态</th><th></th>'+
     '</tr></thead><tbody>'+
     list.map(function(r){
       var isOpen = r.open !== false;
@@ -1853,8 +1860,11 @@ function renderRooms(){
         '<td>'+esc(r.addr||'—')+'</td>'+
         '<td class="sm">'+(r.days?'周'+r.days.map(function(d){return WEEK[d];}).join('')+' · ':'')+esc(r.hours||'—')+'</td>'+
         '<td class="num">'+(r.cap||'—')+'</td>'+
+        '<td class="nw">'+(r.billMode==='hour'?'按小时':'月租')+'</td>'+
         '<td class="num">'+(r.rent?fmtVND(r.rent):'—')+(r.rent?'<small>VND</small>':'')+'</td>'+
+        '<td class="num">'+(r.hourly?fmtVND(r.hourly):'—')+(r.hourly?'<small>VND</small>':'')+'</td>'+
         '<td class="mono sm">'+esc(r.tel||'—')+'</td>'+
+        '<td>'+(r.purpose==='office'?'<span class="tg off">办事处</span>':'<span class="tg on">课室</span>')+'</td>'+
         '<td>'+(isOpen?'<span class="tg on">在用</span>':'<span class="tg off">停用</span>')+'</td>'+
         '<td class="nw"><a class="act" onclick="editRoom(\''+r.code+'\')">编辑</a></td>'+
         '</tr>';
@@ -1898,9 +1908,22 @@ function roomForm(r){
         }).join('')+
       '</div></div>'+
     '<div class="fld"><label>可用时段（几点）</label><input id="f-rm-hours" value="'+esc(r.hours||'')+'" placeholder="例：18:00-21:00 / 全天"></div>'+
+    /* ★ 2026-11-05（P-103 ②）：整层租下来的房间，有些拿去做办事处，不算课室。
+       用途归业务部定，主端只读结果 —— 主端不加任何「启用 / 停用」开关。 */
+    '<div class="fld"><label>房间用途</label><select id="f-rm-purpose">'+
+      '<option value="class"'+(r.purpose!=='office'?' selected':'')+'>课室（主端可排课）</option>'+
+      '<option value="office"'+(r.purpose==='office'?' selected':'')+'>办事处（主端不显示、不排课）</option>'+
+    '</select><div class="sm" style="color:var(--ink3);margin-top:5px">整层租 5 间、其中 2 间做办事处 —— 在这里改，主端按地区只数「课室」。</div></div>'+
     '<div class="fld-row">'+
-      '<div class="fld"><label>费用（VND / 月）</label><input type="number" id="f-rm-rent" value="'+(r.rent||'')+'"></div>'+
+      '<div class="fld"><label>计费方式</label><select id="f-rm-bill">'+
+        '<option value="month"'+(r.billMode!=='hour'?' selected':'')+'>月租</option>'+
+        '<option value="hour"'+(r.billMode==='hour'?' selected':'')+'>按小时</option>'+
+      '</select></div>'+
       '<div class="fld"><label>电话</label><input id="f-rm-tel" value="'+esc(r.tel||'')+'" placeholder="房东 / 管理员"></div>'+
+    '</div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label>月租费（VND / 月）</label><input type="number" id="f-rm-rent" value="'+(r.rent||'')+'"></div>'+
+      '<div class="fld"><label>小时费（VND / 小时）</label><input type="number" id="f-rm-hourly" value="'+(r.hourly||'')+'"></div>'+
     '</div>'+
     '<div class="fld"><label>备注</label><textarea id="f-rm-note" placeholder="停车、电梯、门禁、限制…">'+esc(r.note||'')+'</textarea></div>'+
     (isNew ? '' :
@@ -1934,7 +1957,14 @@ function saveRoom(origCode){
     days:  days,
     hours: val('f-rm-hours'),
     cap:   parseInt(val('f-rm-cap')||'0', 10) || 0,
+    /* ★ 2026-11-05（P-103 ①）：费用拆三栏。rent 保留原名 = 月租费，
+       老数据一个字段都不删、不迁移，只新增下面两个字段。 */
     rent:  parseInt(val('f-rm-rent')||'0', 10) || 0,
+    billMode: val('f-rm-bill') === 'hour' ? 'hour' : 'month',
+    hourly:   parseInt(val('f-rm-hourly')||'0', 10) || 0,
+    /* ★ 2026-11-05（P-103 ②）：用途只记 class / office 两种；
+       老数据没有 purpose，一律当课室，不做迁移、不改旧账。 */
+    purpose: val('f-rm-purpose') === 'office' ? 'office' : 'class',
     tel:   val('f-rm-tel'),
     note:  val('f-rm-note'),
     open:  origCode ? (val('f-rm-open') === '1') : true,

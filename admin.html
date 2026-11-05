@@ -2623,7 +2623,12 @@ function bizRooms(){
     const raw = localStorage.getItem(BIZ_STORE_KEY);
     if (!raw) return [];
     const o = JSON.parse(raw);
-    return Array.isArray(o.rooms) ? o.rooms : [];
+    const list = Array.isArray(o.rooms) ? o.rooms : [];
+    /* ★ 2026-11-05（P-103 ②）：用途在业务部定，主端只读结果。
+       整层租 5 间、其中 2 间做办事处 → 主端按地区只数到 3 间课室。
+       这里不加「启用 / 停用」开关：主端只是如实反映业务部的房间用途。
+       老数据没有 purpose，一律当课室 —— 拆用途之前的行为不变。 */
+    return list.filter(r => r && r.purpose !== 'office');
   }catch(e){ return []; }
 }
 
@@ -2649,7 +2654,7 @@ function bRooms(){
     '<span class="sub">按业务部「地区」分组 · 每间教室配了几位教师、几个学生、哪些时段还空着</span></div>';
 
   if (!rooms.length){
-    return head+'<div class="card-b"><div class="empty">还没有教室。去业务部「市场 › 教室」录入第一间 —— 编码、地区、地址、可用时段。录入后，这里会按地区显示每间教室的教师 / 学生 / 空时段。</div></div></div>';
+    return head+'<div class="card-b"><div class="empty">还没有教室（用途为「办事处」的房间不算教室）。去业务部「市场 › 教室」录入第一间 —— 编码、地区、地址、可用时段。录入后，这里会按地区显示每间教室的教师 / 学生 / 空时段。</div></div></div>';
   }
 
   /* 按地区分组；空地区归到「未定地区」 */

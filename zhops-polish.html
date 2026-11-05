@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-02">2026-11-02 · 今天<span class="c">13</span></button>
+    <button class="on" data-day="2026-11-05">2026-11-05 · 今天<span class="c">2</span></button>
+    <button data-day="2026-11-02">2026-11-02<span class="c">13</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
     <button data-day="2026-10-30">2026-10-30<span class="c">14</span></button>
@@ -178,8 +179,44 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     <button data-day="2026-10-12">2026-10-12<span class="c">2</span></button>
   </div>
 
+  <!-- ============ 2026-11-05 ============ -->
+  <div class="day-panel on" data-day="2026-11-05">
+    <div class="card">
+      <h2>2026-11-05 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-103</td>
+              <td><b>业务部教室「租金」拆成月租费 / 小时费</b><br><span style="color:#8899aa;font-size:12px">「租金会有分别在 1. 月租费 2. 小时费用」· 四步里的第 ① 步</span></td>
+              <td class="nw">业务部 · 教室</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-05</td>
+              <td class="mono nw">11-05</td>
+              <td>教室表「费用」拆成 <b>计费方式 / 月租费 / 小时费</b> 三栏，表单同步拆开；老数据只加 <span class="mono">billMode / hourly</span> 两个字段，<span class="mono">rent</span> 保留不改名不迁移，月租合计不算按小时场地，主端一行未改；反向控制三组全红，全套 33/33。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-104</td>
+              <td><b>P-103 ② 教室加「用途」（课室 / 办事处）</b><br><span style="color:#8899aa;font-size:12px">「可能有些房间用来做办事处，而不是课室了」· 四步里的第 ② 步</span></td>
+              <td class="nw">业务部 · 教室 / 主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-05</td>
+              <td class="mono nw">11-05</td>
+              <td>业务部教室表单与表格加「用途」，办事处不进学生「指定教室」下拉；主端区域供给视图只数课室（整层 5 间、2 间办事处 → 显示 3 间），老数据没标用途一律当课室、不迁移；挂在办事处的班会提示「未挂教室」；反向控制四组全红，全套 34/34。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 2026-11-02 ============ -->
-  <div class="day-panel on" data-day="2026-11-02">
+  <div class="day-panel" data-day="2026-11-02">
     <div class="card">
       <h2>2026-11-02 · 打磨记录<span class="n">13 行 · 已打磨 13 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
