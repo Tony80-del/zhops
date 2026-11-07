@@ -1387,7 +1387,7 @@
             <div class="rsi-row"><b>管哪一页</b>　<code>docs/finance.html</code> · 存盘 <code>zhops.fin.v1</code>。</div>
             <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑财务探针 → 改财务页 → 复跑 → 记账；金额显示走 <code>VND_SEP</code>、输入走 <code>parseVND()</code>、存盘整数盾。</div>
             <div class="rsi-row"><b>绝对不碰</b>　<code>--ink</code> 是白色不是文字色，正文用 <code>--tx</code>；不碰另三端存盘；不发布、不推云。</div>
-            <div class="rsi-row"><b>怎么自证</b>　<code>run.sh</code> 已补<b class="yes">财务部独立段</b>：<code>check-fin-expense.js</code>（32 项）/ <code>check-fin-approve.js</code>（51 项）。<span class="plan">原先 47/2 两条红已由 P-131 校准（探针切月的 option 与重画顺序），配了两路反向控制。</span></div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>run.sh</code> 已补<b class="yes">财务部独立段</b>：<code>check-fin-expense.js</code>（32 项）/ <code>check-fin-approve.js</code>（53 项）。<span class="plan">原先 47/2 两条红已由 P-131 校准（探针切月的 option 与重画顺序），配了两路反向控制；P-132 又补两条「切月卡片自己跟着换」的守卫断言。</span></div>
           </div>
         </div>
         <div class="rsi-chief-note">
@@ -1437,7 +1437,7 @@
       <div class="field-label">数据流向（规划）</div>
       <div class="field-value">
         <span class="plan">规划：本端技能 → 跑 <code>check-*.js</code> 探针 → 红项定位 → 逐次确认后改本端文件 → 复跑 → 回填工作台账；发布与推云永远 Tony 手点。</span><br>
-        现在：<b class="yes">4 端 + 总管全部已落地</b> —— 业务部 <code>zhops-sales</code>（P-116）、总管 <code>zhops-chief</code>（P-120）、主端 <code>zhops-admin</code> / 人事端 <code>zhops-hr</code> / 财务端 <code>zhops-finance</code>（P-118）。<code>run.sh</code> 人事部（3 条）与财务部（2 条）独立段都已补齐。<b class="yes">两条历史红探针已全部校准接入：<code>check-hr-salary.js</code>（P-130）、<code>check-fin-approve.js</code>（P-131），都配了反向控制</b>。<b class="plan">待 Tony 定一件事：<code>hr.html</code> 切月时只重画汇总表、不重画财务结果条，人眼切月后那张卡不跟着换</b>（见上方财务说明卡的「怎么自证」）。
+        现在：<b class="yes">4 端 + 总管全部已落地</b> —— 业务部 <code>zhops-sales</code>（P-116）、总管 <code>zhops-chief</code>（P-120）、主端 <code>zhops-admin</code> / 人事端 <code>zhops-hr</code> / 财务端 <code>zhops-finance</code>（P-118）。<code>run.sh</code> 人事部（3 条）与财务部（2 条）独立段都已补齐。<b class="yes">两条历史红探针已全部校准接入：<code>check-hr-salary.js</code>（P-130）、<code>check-fin-approve.js</code>（P-131），都配了反向控制</b>。<b class="plan">原先以为「<code>hr.html</code> 切月不重画财务结果条」，P-132 查证是看漏了：<code>renderSum()</code> 末尾本来就有 <code>renderFsBox()</code>，产品零改动，并补了两条守卫断言锁住这个行为</b>（见上方财务说明卡的「怎么自证」）。
       </div>
     </div>
     <div class="field">

@@ -250,7 +250,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-08 ============ -->
   <div class="day-panel on" data-day="2026-11-08">
     <div class="card">
-      <h2>2026-11-08 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-08 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -276,6 +276,16 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-08</td>
               <td class="mono nw">11-08</td>
               <td>真因是探针自己顺序错了、不是产品坏了：给 <span class="mono">#sumMonth</span> 赋 <span class="mono">'2026-10'</span> 时那个 option 不存在（页面只渲染当前月），<span class="mono">&lt;select&gt;</span> 赋不存在的 value 会静默变空串，切月处理器把 <span class="mono">SUM_MONTH</span> 设成空 → <span class="mono">renderFsBox()</span> 拿不到单据就清空卡片。校准只动探针：切月前补 option、先按 10 月读一次卡面、切 9 月后补一次重画；产品零改动，只加了一个只读出口 <span class="mono">getSumMonth</span>。单跑 <b>51 通过 / 0 失败、rc=0</b>；反向控制两路都报红（改坏「已付」分支 → 2 红；卡片固定画 11 月 → 4 红），跑完产品 sha 与改前逐字一致、残留清零。已接回 run.sh 财务段，整套复跑全绿。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-132</td>
+              <td><b>人事页切月是否重画「财务已付款 / 已驳回」卡片</b><br><span style="color:#8899aa;font-size:12px">查证结果：不用改</span></td>
+              <td class="nw">产品 · 查证</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-08</td>
+              <td class="mono nw">11-08</td>
+              <td>查证：<b>产品本来就会重画</b>。切月只调 <span class="mono">renderSum()</span>，但 <span class="mono">renderSum()</span> 末尾第 1668 行就有 <span class="mono">renderFsBox()</span> —— 之前说的「切月不重画」是我看漏了，不存在这个毛病。给 change 处理器补的那行 <span class="mono">renderFsBox()</span> 属冗余，反向控制（删掉后跑探针）<b>53/53 全过、零红</b>，证明它没有行为约束力，已整段撤回。<b>产品零改动</b>，本地 / 备份 / 线上三者 sha 逐字一致 <span class="mono">f601e270…</span>。探针补了两条守卫断言（切 9 月卡片自己换、切回 10 月自己换回），53 项。</td>
             </tr>
           </tbody>
         </table>
