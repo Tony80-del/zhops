@@ -3723,6 +3723,9 @@ if (typeof window !== 'undefined'){
     /* ★ 2026-11-01（P-81）：语言探针要重渲染页面看效果 */
     renderAll: renderAll,
     save: save,
+    /* ★ 2026-11-08（工作台账 P-131）：只读，给探针确认月份选择器真的切过去了。
+       renderFsBox 读的是模块内 SUM_MONTH，探针看不到 → 给一个纯读的出口。 */
+    getSumMonth: function(){ return SUM_MONTH; },
   };
 }
 })();

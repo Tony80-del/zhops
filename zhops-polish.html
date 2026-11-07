@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-07">2026-11-07 · 今天<span class="c">22</span></button>
+    <button class="on" data-day="2026-11-08">2026-11-08 · 今天<span class="c">2</span></button>
+    <button data-day="2026-11-07">2026-11-07<span class="c">22</span></button>
     <button data-day="2026-11-05">2026-11-05<span class="c">5</span></button>
     <button data-day="2026-11-02">2026-11-02<span class="c">13</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
@@ -246,8 +247,44 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     </div>
   </div>
 
+  <!-- ============ 2026-11-08 ============ -->
+  <div class="day-panel on" data-day="2026-11-08">
+    <div class="card">
+      <h2>2026-11-08 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-130</td>
+              <td><b>校准 check-hr-salary.js（28/3）</b><br><span style="color:#8899aa;font-size:12px">只改探针 · 配反向控制 · 一次一个</span></td>
+              <td class="nw">探针 · 校准</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-08</td>
+              <td class="mono nw">11-08</td>
+              <td>三条红同因：探针写于 10-31、硬编码 2026-10，产品按当前月 SUM_MONTH 走，跨月后 pushSum 读不到那张单据。<b>只改探针</b>：把 <span class="mono">#sumMonth</span> 真正切到 2026-10（缺 option 就补）并加一条「月切成功」断言，产品零改动 → 单跑 <b>39 通过 / 0 失败</b>（原来被 <span class="mono">appr.length===0</span> 跳过的 7 条单据载荷断言也真跑到了）。<b>反向控制</b>：把产品缺 tid 拦截短路 → 报 2 红、rc=1，随后恢复并核 sha 与备份、线上逐字一致。接入 <span class="mono">run.sh</span> 人事段 ③，整套复跑 <b>41 通过 / 0 失败、rc=0</b>，人事三条全绿、零 ✗、端口无残留；生态地图与 <span class="mono">zhops-hr</span> 技能同步翻成已校准。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-131</td>
+              <td><b>校准 check-fin-approve.js（47/2）</b><br><span style="color:#8899aa;font-size:12px">只改探针 · 配反向控制 · 一次一个</span></td>
+              <td class="nw">探针 · 校准</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-08</td>
+              <td class="mono nw">11-08</td>
+              <td>真因是探针自己顺序错了、不是产品坏了：给 <span class="mono">#sumMonth</span> 赋 <span class="mono">'2026-10'</span> 时那个 option 不存在（页面只渲染当前月），<span class="mono">&lt;select&gt;</span> 赋不存在的 value 会静默变空串，切月处理器把 <span class="mono">SUM_MONTH</span> 设成空 → <span class="mono">renderFsBox()</span> 拿不到单据就清空卡片。校准只动探针：切月前补 option、先按 10 月读一次卡面、切 9 月后补一次重画；产品零改动，只加了一个只读出口 <span class="mono">getSumMonth</span>。单跑 <b>51 通过 / 0 失败、rc=0</b>；反向控制两路都报红（改坏「已付」分支 → 2 红；卡片固定画 11 月 → 4 红），跑完产品 sha 与改前逐字一致、残留清零。已接回 run.sh 财务段，整套复跑全绿。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 2026-11-07 ============ -->
-  <div class="day-panel on" data-day="2026-11-07">
+  <div class="day-panel" data-day="2026-11-07">
     <div class="card">
       <h2>2026-11-07 · 打磨记录<span class="n">22 行 · 已打磨 22 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
