@@ -1298,7 +1298,7 @@
       <span class="sys-name">技能层 · 4 端 + 总管</span>
       <span class="sys-sub">RSI · 岗位化 · 不碰生产存盘</span>
     </div>
-    <div class="right"><span class="status-badge s-wait">业务端 + 总管已落地 · 3 端未落地</span><span class="toggle">▶</span></div>
+    <div class="right"><span class="status-badge s-ok">4 端 + 总管全部已落地 · P-118</span><span class="toggle">▶</span></div>
   </div>
   <div class="sys-body">
     <!-- P-129 · 技能 ≠ 操作员 -->
@@ -1330,26 +1330,26 @@
               <div class="re-file">biz.html</div>
               <div class="re-st"><span class="status-badge s-ok">已落地 · P-116</span></div>
             </div>
-            <div class="rsi-end wait">
+            <div class="rsi-end live">
               <div class="re-n">② 主端</div>
               <div class="re-id">zhops-admin</div>
               <div class="re-role">Schedule AI Manager</div>
               <div class="re-file">zhops-admin.html</div>
-              <div class="re-st"><span class="status-badge s-wait">口径已定 · 未落地</span></div>
+              <div class="re-st"><span class="status-badge s-ok">已落地 · P-118</span></div>
             </div>
-            <div class="rsi-end wait">
+            <div class="rsi-end live">
               <div class="re-n">③ 人事端</div>
               <div class="re-id">zhops-hr</div>
               <div class="re-role">HR AI Manager</div>
               <div class="re-file">hr.html</div>
-              <div class="re-st"><span class="status-badge s-wait">口径已定 · 未落地</span></div>
+              <div class="re-st"><span class="status-badge s-ok">已落地 · P-118</span></div>
             </div>
-            <div class="rsi-end wait">
+            <div class="rsi-end live">
               <div class="re-n">④ 财务端</div>
               <div class="re-id">zhops-finance</div>
               <div class="re-role">Finance AI Manager</div>
               <div class="re-file">finance.html</div>
-              <div class="re-st"><span class="status-badge s-wait">口径已定 · 未落地</span></div>
+              <div class="re-st"><span class="status-badge s-ok">已落地 · P-118</span></div>
             </div>
           </div>
           <div class="rsi-down">↓<small>共用底座只有一套，不复制 4 份</small></div>
@@ -1368,26 +1368,26 @@
             <div class="rsi-row"><b>绝对不碰</b>　不写 <code>zhops.sched.v3</code> / <code>zhops.hr.v1</code> / <code>zhops.fin.v1</code>；主端拉学生只覆盖 <code>name / phone / mode / preferRoom</code>；不推 <code>zhops/master</code>；不发布。</div>
             <div class="rsi-row"><b>怎么自证</b>　<code>check-biz-*.js</code> 5 条 + <code>check-p103-*.js</code> 4 条 + <code>check-p107-vnd.js</code>；<code>run.sh</code> 有独立业务部段。</div>
           </div>
-          <div class="rsi-card wait">
-            <div class="rc-h"><span class="rc-id">zhops-admin</span><span class="rc-role">Schedule AI Manager · 主端</span><span class="status-badge s-wait">未落地</span></div>
+          <div class="rsi-card live">
+            <div class="rc-h"><span class="rc-id">zhops-admin</span><span class="rc-role">Schedule AI Manager · 主端</span><span class="status-badge s-ok">已落地</span></div>
             <div class="rsi-row"><b>管哪一页</b>　<code>docs/zhops-admin.html</code> · 存盘 <code>zhops.sched.v3</code>，<span class="no">与教师端共用一把钥匙</span>。</div>
             <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑主端探针 → 改主端 → 复跑 → 记账；写操作先过班级归属守卫。</div>
             <div class="rsi-row"><b>绝对不碰</b>　不改写业务部拉来的 6 个字段；课次 <code>roomCode</code> 存快照不现算；侧栏外跳带 <code>data-ext</code>、不带 <code>data-v</code>；不推整份、不发布。</div>
             <div class="rsi-row"><b>怎么自证</b>　<code>check-admin-core.js</code>（59 项）+ <code>check-admin-dept-links.js</code>；<code>run.sh</code> 主端段有独立 step。</div>
           </div>
-          <div class="rsi-card wait">
-            <div class="rc-h"><span class="rc-id">zhops-hr</span><span class="rc-role">HR AI Manager · 人事端</span><span class="status-badge s-wait">未落地</span></div>
+          <div class="rsi-card live">
+            <div class="rc-h"><span class="rc-id">zhops-hr</span><span class="rc-role">HR AI Manager · 人事端</span><span class="status-badge s-ok">已落地</span></div>
             <div class="rsi-row"><b>管哪一页</b>　<code>docs/hr.html</code> · 存盘 <code>zhops.hr.v1</code> · 附件走 IndexedDB <code>zhops_hr_files/files</code>。</div>
             <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑人事探针 → 改人事页 → 复跑 → 记账；删除走 <code>askPwd()</code>，删前 <code>snapshot()</code>。</div>
             <div class="rsi-row"><b>绝对不碰</b>　二进制永不塞 localStorage；<code>undoDelete()</code> 是交换不是单向恢复；不碰另三端存盘。</div>
-            <div class="rsi-row"><b>怎么自证</b>　<code>check-hr-contract.js</code> / <code>check-hr-file.js</code> / <code>check-hr-salary.js</code>。<span class="plan">缺口：探针文件在，但 run.sh 没有独立 step。</span></div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>run.sh</code> 已补<b class="yes">人事部独立段</b>：<code>check-hr-contract.js</code>（48 项）/ <code>check-hr-file.js</code>（67 项）。<span class="plan">缺口：<code>check-hr-salary.js</code> 单跑 28/3、发布版同样红，暂未接入，待校准。</span></div>
           </div>
-          <div class="rsi-card wait">
-            <div class="rc-h"><span class="rc-id">zhops-finance</span><span class="rc-role">Finance AI Manager · 财务端</span><span class="status-badge s-wait">未落地</span></div>
+          <div class="rsi-card live">
+            <div class="rc-h"><span class="rc-id">zhops-finance</span><span class="rc-role">Finance AI Manager · 财务端</span><span class="status-badge s-ok">已落地</span></div>
             <div class="rsi-row"><b>管哪一页</b>　<code>docs/finance.html</code> · 存盘 <code>zhops.fin.v1</code>。</div>
             <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑财务探针 → 改财务页 → 复跑 → 记账；金额显示走 <code>VND_SEP</code>、输入走 <code>parseVND()</code>、存盘整数盾。</div>
             <div class="rsi-row"><b>绝对不碰</b>　<code>--ink</code> 是白色不是文字色，正文用 <code>--tx</code>；不碰另三端存盘；不发布、不推云。</div>
-            <div class="rsi-row"><b>怎么自证</b>　<code>check-fin-approve.js</code> / <code>check-fin-expense.js</code>。<span class="plan">缺口：探针文件在，但 run.sh 没有独立 step。</span></div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>run.sh</code> 已补<b class="yes">财务部独立段</b>：<code>check-fin-expense.js</code>（32 项）。<span class="plan">缺口：<code>check-fin-approve.js</code> 单跑 47/2、发布版同样红，暂未接入，待校准。</span></div>
           </div>
         </div>
         <div class="rsi-chief-note">
@@ -1398,7 +1398,7 @@
     <div class="field">
       <div class="field-label">位置（现状）</div>
       <div class="field-value multi">
-        <div><b>正式版</b>　<span class="loc">~/.workbuddy-ai/skills/</span>（用户级；Tony 2026-11-07 授权跨界写入）—— <b class="yes">zhops-sales 已落地</b>（工作台账 P-116），总管 <b class="yes">zhops-chief 已落地</b>（工作台账 P-120），其余 3 端 <b class="plan">未落地</b></div>
+        <div><b>正式版</b>　<span class="loc">~/.workbuddy-ai/skills/</span>（用户级；Tony 2026-11-07 授权跨界写入）—— <b class="yes">zhops-sales 已落地</b>（工作台账 P-116），总管 <b class="yes">zhops-chief 已落地</b>（工作台账 P-120），主端 <b class="yes">zhops-admin 已落地</b>、人事端 <b class="yes">zhops-hr 已落地</b>、财务端 <b class="yes">zhops-finance 已落地</b>（工作台账 P-118）—— <b class="yes">4 端 + 总管全部已落地</b></div>
         <div><b>草稿</b>　<span class="loc">docs/zhops-skill-sales-draft.md</span>（业务部样板，正式版以其为准；草稿本身不是安装版）</div>
         <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">无</span> <span style="color:var(--hint);">技能是本地 AI 岗位，不随 publish-zhops.sh 上线</span></div>
       </div>
@@ -1437,7 +1437,7 @@
       <div class="field-label">数据流向（规划）</div>
       <div class="field-value">
         <span class="plan">规划：本端技能 → 跑 <code>check-*.js</code> 探针 → 红项定位 → 逐次确认后改本端文件 → 复跑 → 回填工作台账；发布与推云永远 Tony 手点。</span><br>
-        现在：业务部正式版 <code>zhops-sales</code> 已落地（P-116）；总管 <code>zhops-chief</code> 已落地（P-120），其余 3 端技能未落地。<code>run.sh</code> 里人事 / 财务探针文件都在，但<b class="plan">缺独立 step</b>（见上方每端说明卡的「怎么自证」）。
+        现在：<b class="yes">4 端 + 总管全部已落地</b> —— 业务部 <code>zhops-sales</code>（P-116）、总管 <code>zhops-chief</code>（P-120）、主端 <code>zhops-admin</code> / 人事端 <code>zhops-hr</code> / 财务端 <code>zhops-finance</code>（P-118）。<code>run.sh</code> 人事部（2 条）与财务部（1 条）独立段都已补齐。<b class="plan">剩余缺口：<code>check-hr-salary.js</code>（28/3）与 <code>check-fin-approve.js</code>（47/2）两条发布版同样红的历史探针未接入，待 Tony 定是否校准断言</b>（见上方每端说明卡的「怎么自证」）。
       </div>
     </div>
     <div class="field">

@@ -249,7 +249,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-07 ============ -->
   <div class="day-panel on" data-day="2026-11-07">
     <div class="card">
-      <h2>2026-11-07 · 打磨记录<span class="n">22 行 · 已打磨 21 · 待打磨 1</span><span class="sp"></span>
+      <h2>2026-11-07 · 打磨记录<span class="n">22 行 · 已打磨 22 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -361,10 +361,10 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-118</td>
               <td><b>其余三个端技能（admin / hr / finance），一次一个</b></td>
               <td class="nw">技能 · 落地</td>
-              <td><span class="b todo">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-07</td>
-              <td class="mono nw">—</td>
-              <td>照业务部样板铺开，一个通了再做下一个；人事端、财务端目前没有独立测试段，要先补。</td>
+              <td class="mono nw">11-08</td>
+              <td>照业务部样板铺开，一个通了再做下一个；人事端、财务端目前没有独立测试段，要先补。<br><span style="color:#8899aa;font-size:12px">11-07 · 第 1 个端完成</span>　主端 <span class="mono">zhops-admin</span> 照业务部样板落地（六节岗位格式），生态地图 <b>5 处</b>主端口径翻成已落地、总管技能里「尚未落地的端」同步改成 2 端；<span class="mono">Skill(zhops-admin)</span> 直接调起，2 个生成脚本 + 4 条探针全过。人事端 / 财务端与 <span class="mono">run.sh</span> 都没动，产品代码零改动；按「一次一个」停住等 Tony 点头。改前备份 <span class="mono">build/backup/p118-20261107-231718/</span>。本行<b>仍待打磨</b>：3 个端只做完 1 个，不虚报 ✅。<br><span style="color:#8899aa;font-size:12px">11-07 · 第 2 个端完成</span>　人事端 <span class="mono">zhops-hr</span> 照样板落地（六节岗位格式）；<span class="mono">run.sh</span> 首次补出「人事部」独立段，接 <span class="mono">check-hr-contract.js</span>（48/0）与 <span class="mono">check-hr-file.js</span>（67/0）；生态地图 <b>6 处</b>人事口径同步，总管技能「未落地端数」改成 1 端。<span class="mono">check-hr-salary.js</span> 单跑 <b>28/3</b>、本地与线上 <span class="mono">hr.html</span> sha 相同 = 发布版本来就红，<b>未接入、未改探针、未改产品</b>，红因写进 run.sh 注释 / 技能 / 生态地图待 Tony 定。产品代码零改动。上面「只做完 1 个」是第 1 阶段原话，按「只追加、不改旧账」保留；<b>此时 3 端已完成 2 端，仍待打磨：财务端</b>。改前备份 <span class="mono">build/backup/p118-hr-20261107-235331/</span>。<br><span style="color:#8899aa;font-size:12px">11-08 · 第 3 个端完成</span>　财务端 <span class="mono">zhops-finance</span> 照样板落地（六节岗位格式、11349 bytes，已直接调起）；<span class="mono">run.sh</span> 首次补出「财务部」独立段接 <span class="mono">check-fin-expense.js</span>（32/0）；生态地图 <b>6 处</b>财务口径同步、卡头徽章改成「4 端 + 总管全部已落地 · P-118」，总管技能第 5 节改成全部已落地。<span class="mono">check-fin-approve.js</span> 单跑 <b>47/2</b>、本地与线上 <span class="mono">finance.html</span> sha 相同 = 发布版本来就红（人事读回的渲染层文案定位失修），<b>未接入、未改探针、未改产品</b>，红因写进 run.sh 注释 / 技能 / 生态地图待 Tony 定。整套 <span class="mono">sh build/zhops-probe/run.sh</span> <b>40 通过 / 0 失败、rc=0</b>，四个分段标题齐、零 ✗；2 个生成脚本重跑过，产品代码零改动。上面「仍待打磨：财务端」是第 2 阶段原话，按「只追加、不改旧账」保留；<b>此时 3 个端全做完，本行翻 ✅，完成日期按实际跨零点记 11-08</b>。改前备份 <span class="mono">build/backup/p118-fin-20261108-000126/</span>，收尾另备 <span class="mono">p118-fin-wrap-20261108-001010/</span>。<b>剩余缺口不在本行</b>：<span class="mono">check-hr-salary.js</span>（28/3）与 <span class="mono">check-fin-approve.js</span>（47/2）两条历史红探针待 Tony 定是否校准，另起一轮、不混进 P-118。</td>
             </tr>
 
             <tr>
