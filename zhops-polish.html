@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-05">2026-11-05 · 今天<span class="c">4</span></button>
+    <button class="on" data-day="2026-11-07">2026-11-07 · 今天<span class="c">22</span></button>
+    <button data-day="2026-11-05">2026-11-05<span class="c">5</span></button>
     <button data-day="2026-11-02">2026-11-02<span class="c">13</span></button>
     <button data-day="2026-11-01">2026-11-01<span class="c">14</span></button>
     <button data-day="2026-10-31">2026-10-31<span class="c">13</span></button>
@@ -180,9 +181,9 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   </div>
 
   <!-- ============ 2026-11-05 ============ -->
-  <div class="day-panel on" data-day="2026-11-05">
+  <div class="day-panel" data-day="2026-11-05">
     <div class="card">
-      <h2>2026-11-05 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-05 · 打磨记录<span class="n">5 行 · 已打磨 5 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -228,6 +229,252 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-05</td>
               <td class="mono nw">11-05</td>
               <td>主端与教师端共用「上完课」写口，只为按小时场地产一条使用记录（教室取课次快照、断网也留痕、退回只冲销不撕账、两端不双算）；业务部拉记录后<b>手填请款金额</b>提交单据，财务单独批准 / 驳回 / 付款并回读状态，金额由业务部定、工资表与报表口径一字未动；反向控制六组全红，全套 36/36。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-107</td>
+              <td><b>业务部 VND 金额显示 / 输入口径统一</b><br><span style="color:#8899aa;font-size:12px">「已缴（VND）… exp , 1,000,000 vnd」· 含「顺手做」把课程包 / 收费 / 教室租金一起对齐、「加」联动行</span></td>
+              <td class="nw">业务部 · 金额</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-05</td>
+              <td class="mono nw">11-05</td>
+              <td>业务部所有 VND 金额显示统一用<b>逗号</b>（一个 VND_SEP 常量管课程包 / 学员 / 收费 / 教室租金 / 场地 / 请款单），输入侧点、逗号、空格、VND、₫ 全收、存盘前洗成整数盾，<b>1,000,000 不会存成 1</b>、老数据不迁移不换算；金额框改成文本框，粘 1,000,000 不再失效；「+ 新学员」表单加「课程包 · 已缴 · 待缴」联动行（超出 / 结清也讲清楚）；旧探针写死点号的 11 处改成符号无关，新探针 102 项，反向控制六组全红，全套 37/37。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-11-07 ============ -->
+  <div class="day-panel on" data-day="2026-11-07">
+    <div class="card">
+      <h2>2026-11-07 · 打磨记录<span class="n">22 行 · 已打磨 21 · 待打磨 1</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-108</td>
+              <td><b>RSI 技能体系 · 定名、工作台账口径与记账规矩</b><br><span style="color:#8899aa;font-size:12px">「系统 → 发现问题 → 改进自身」· <span class="mono">zhops-sales / zhops-admin / zhops-hr / zhops-finance / zhops-chief</span></span></td>
+              <td class="nw">体系 · 技能</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>定下五个技能名与总管名，账台正式叫<b>工作台账</b>、授权跨界写用户级技能；往后<b>一轮记一行</b>、只追加不改旧行、记账不发布；生态地图管工作范围与口径决策、不拿来记账；样板先看后写、一次一个，总管先查现成方案再定怎么改；<span class="mono">tony-1</span> 连根拔起与旧记忆分工说法改写，留后续轮次。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-109</td>
+              <td><b>工作台账改「先记后做」：讨论定下的项一次记齐，再逐行执行</b><br><span style="color:#8899aa;font-size:12px">「不要做一个记一个，这样不对 · 先记，然后我们一行一行的做」</span></td>
+              <td class="nw">工作台账 · 规矩</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>把 RSI 技能体系全套待办一次登记为 <span class="mono">P-110～P-120</span>，往后按行推进、做完一行回填一行；<span class="mono">P-108</span> 里「一轮一行」的旧说法以此行为准，旧行不改。生态地图三条口径一并定下：结构不动、技能 ID 不进编号字典、记账不发布。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-110</td>
+              <td><b>生态地图 · 决策台账新增「RSI 技能体系 · 5 个岗位与权限」卡</b><br><span style="color:#8899aa;font-size:12px">绿边 = 已定 · 写清五个技能名、分工、禁区、权限闸门</span></td>
+              <td class="nw">生态地图 · 决策台账</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>决策台账 B 组末尾加 <span class="mono">⑬</span> 绿边「已定」卡：五个技能名与岗位名、共用底座 + 薄入口、六条格式、权限闸门、共用存盘与云端两路禁区、范围来源；头部计数同步 12→13 条、更新日改 11-07。结构自检：<span class="mono">.sec</span> 7 个、<span class="mono">dec-grid</span> 3 个、编号字典起到文末 17112 字节逐字未动，div 配对差值不变；备份 <span class="mono">build/backup/system-ecosystem-map-p110-20261107-201731.html</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-111</td>
+              <td><b>生态地图 · 第二层加「技能层」卡（4 端 + 总管关系）</b></td>
+              <td class="nw">生态地图 · 系统卡片</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>第二层末尾加 <span class="mono">⑦ 技能层 · 4 端 + 总管</span> 黄边卡，7 个字段：位置 / 这一层是什么 / 4 端+总管关系 / 共用底座 / 数据流向现状与规划 / 边界禁区。<span class="mono">sys-card</span> 6→7、<span class="mono">.sec</span> 7 个不变、div 配对差值不变、编号字典起到文末 17112 字节逐字未动、<span class="mono">P-110</span> 的 ⑬ 卡未动、<span class="mono">toggleCard('skills')</span> 的 id 唯一；备份 <span class="mono">build/backup/system-ecosystem-map-p111-20261107-202649.html</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-112</td>
+              <td><b>生态地图 · 改完重跑 2 个脚本 + 2 条探针</b></td>
+              <td class="nw">生态地图 · 验证</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>按 <b>A 案只重跑、不改脚本</b>：<span class="mono">14_build_worktable.py</span> 与 <span class="mono">23_build_zh_doc_index.py</span> 都跑通，<span class="mono">check-p101-idmap.js</span> 38/38、<span class="mono">check-p102-ecofold.js</span> 36/36 全过（真 Chrome 跑完无残留）；产物按脚本现状刷新，索引里生态地图描述被脚本写死的旧文案盖回去，留 <span class="mono">P-126</span> 修脚本后重跑；改前整份备份 <span class="mono">build/backup/p112-20261107-210244/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-113</td>
+              <td><b>拔除 tony-1 技能（界外目录 + 工作区软链接）</b><br><span style="color:#8899aa;font-size:12px">「这个直接把它删掉，不管了」</span></td>
+              <td class="nw">技能 · 清理</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>界外目录与工作区软链接一起清掉，先整份备份、再移进废纸篓可恢复；两处原位置都核过已不在，软链接没留死链。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-114</td>
+              <td><b>改写 MEMORY.md 里「progress=台账 / polish=打磨台」旧分工说法</b></td>
+              <td class="nw">记忆 · 口径</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>改项目 <span class="mono">.workbuddy-ai/memory/MEMORY.md</span> 三处：标题「打磨台标准流程」→「工作台账标准流程」、载体行删「台账」、分工句改成 <span class="mono">zhops-polish.html</span> = 工作台账（唯一现行进度来源）/ <span class="mono">zhops-progress.html</span> 已作废只读、不拿来记账；流程条款 9–13 行与 16 行起逐字未动，用户级 <span class="mono">MEMORY.md</span> 那句「台账只写一句话」不涉及分工、未动；改前备份 <span class="mono">build/backup/p114-20261107-212758/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-115</td>
+              <td><b>写业务部技能样板 zhops-sales 并打开给 Tony 看</b><br><span style="color:#8899aa;font-size:12px">「好的，开始做」</span></td>
+              <td class="nw">技能 · 样板</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>六条固定格式的样板写成草稿给 Tony 看，格式照现有技能核过（说明文件 + 参考目录）；正式版等点头后再装。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-116</td>
+              <td><b>正式写 zhops-sales 技能文件</b></td>
+              <td class="nw">技能 · 落地</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>样板落成用户级 <span class="mono">~/.workbuddy-ai/skills/zhops-sales/SKILL.md</span>（frontmatter + 六条固定格式）；写前核过现有技能格式、旧的 <span class="mono">zhops</span> 技能与注册表都不冲突。<span class="mono">2/3/4/6</span> 节与样板逐字相同，只校准第 1、5 节（工作台账正式叫法、progress 已作废、技能 ID 不进编号字典、总管口径已定但技能未落地）；10 条本端探针逐个核过存在；草稿留在 <span class="mono">docs/zhops-skill-sales-draft.md</span> 不动。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-117</td>
+              <td><b>试跑业务部测试，确认叫得动 + 跑得通</b></td>
+              <td class="nw">技能 · 验证</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td><span class="mono">zhops-sales</span> 在当前会话能直接调起（六节完整加载）= <b>叫得动</b>；<span class="mono">sh build/zhops-probe/run.sh</span> 整套 <b>37 通过 / 0 失败、rc=0</b>，业务部 10 条探针全绿，单跑 <span class="mono">check-biz-core.js</span> 36/36 也过 = <b>跑得通</b>；核实 <span class="mono">run.sh</span> 第 24 行在子进程层 <span class="mono">env $FS_HOOK_OFF "$@"</span>、第 54 行两个开关一起给 0。纯试跑没改产品文件，改前备份 <span class="mono">build/backup/p117-20261107-220902/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-118</td>
+              <td><b>其余三个端技能（admin / hr / finance），一次一个</b></td>
+              <td class="nw">技能 · 落地</td>
+              <td><span class="b todo">⬜待打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">—</td>
+              <td>照业务部样板铺开，一个通了再做下一个；人事端、财务端目前没有独立测试段，要先补。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-119</td>
+              <td><b>总管上 GitHub 查现成方案并回报</b><br><span style="color:#8899aa;font-size:12px">「上面的做完再执行这一条」</span></td>
+              <td class="nw">总管 · 查证</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>Tony 指定先做（<span class="mono">P-118</span> 仍待）。上 GitHub 逐个核了 20 个仓库的元数据 + README：<b>有现成方案，但没有一个正好是「总管 + 4 端 + 工作台账 + 探针闸门」</b>。编排 <span class="mono">langgraph / openai-agents-python / crewAI / MetaGPT</span>、审批闸门 <span class="mono">LangGraph interrupt / Agents SDK guardrails</span>、自改进闭环 <span class="mono">SICA / DGM / ADAS</span>、评估 <span class="mono">SWE-agent / promptfoo</span>、技能规范 <span class="mono">anthropics/skills</span>。结论：<b>都能装但不建议装</b> —— 全是常驻 Python / Node 框架，与刚写进生态地图的「技能 ≠ 操作员」冲突；只借四条设计套路，<span class="mono">P-120</span> 写一份 <span class="mono">zhops-chief/SKILL.md</span> 即够。本轮<b>不装不改</b>，产品文件零改动；改前备份 <span class="mono">build/backup/p119-20261107-224712/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-120</td>
+              <td><b>总管 zhops-chief 落地</b></td>
+              <td class="nw">总管 · 落地</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>按 P-119 认可的 4 处改：新建 <span class="mono">~/.workbuddy-ai/skills/zhops-chief/SKILL.md</span>（六节岗位格式，只借四条设计套路、不装框架），生态地图技能层卡徽章 + 架构图顶部节点 + 3 处旧口径同步翻成已落地，<span class="mono">zhops-sales/SKILL.md</span> 第 1、5 节两句旧口径校准，本行回填；产品代码 / 依赖 / <span class="mono">run.sh</span> 没动，人事财务缺独立 step 另记，改前备份 <span class="mono">build/backup/p120-20261107-230301/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-121</td>
+              <td><b>排查 tony-1 删除后的死链，已把技能拿回来</b><br><span style="color:#8899aa;font-size:12px">「必须马上帮我排查，如果真的是有这样的问题，就把技能拿回来」</span></td>
+              <td class="nw">技能 · 排查 / 恢复</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>查到 WorkBuddy 技能安装注册表里还挂着 <span class="mono">tony-1</span> 的文件路径，目录一移走就成了死链；从废纸篓把技能目录与工作区软链接一起移回原位，逐项核过都能打开。这个技能只有一个功能（架构审阅模式），但带四份附件，外部没有别处引用它；<span class="mono">P-113</span> 旧行不改，只追加本行。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-122</td>
+              <td><b>帮我打开：确认 tony-1 在 WorkBuddy 里还在、能点开</b><br><span style="color:#8899aa;font-size:12px">「帮我打开」</span></td>
+              <td class="nw">技能 · 可用性</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>实体目录、工作区软链接、安装注册表两条 <span class="mono">filePath</span> 都在且都指得到；实际调用 <span class="mono">tony-1</span> 成功加载全文，读到的还是改后的新路径，技能能点开；已用 TextEdit 打开 <span class="mono">SKILL.md</span>。本轮只验证可用性，没进审阅模式。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-123</td>
+              <td><b>修 tony-1 里那条不存在的 P0 引用</b><br><span style="color:#8899aa;font-size:12px">「要修」</span></td>
+              <td class="nw">技能 · 修死链</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>按 <span class="mono">zh-doc-index.html</span> 的现行口径，把不存在的 <span class="mono">docs/P0-系统架构.html</span> 改指 <span class="mono">docs/HSK1-研发-P0-P19.html</span>；<span class="mono">diff</span> 只有一行、只换路径，其余文案一字未动，全目录无旧串残留；改前备份 <span class="mono">SKILL.md.bak-20261107-195634</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-124</td>
+              <td><b>tony-1 口径对齐到现行 P0–P19</b><br><span style="color:#8899aa;font-size:12px">「那就改」</span></td>
+              <td class="nw">技能 · 口径对齐</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>把 <span class="mono">SKILL.md</span> 的范围声明切到 P0–P19、文件表加现行文档，并给当前进度、<span class="mono">pages.md</span>、<span class="mono">p0.md</span> 各加一段历史注记；不编新页，旧 15 行清单、十一段骨架、11 条结论、进度四行逐字未动，<span class="mono">terms.md</span> 未碰。改前备份 <span class="mono">build/backup/tony-1-p019-20261107-200845/</span>，技能重载成功。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-125</td>
+              <td><b>两处保留定案，不再动</b><br><span style="color:#8899aa;font-size:12px">「同意就这样定」</span></td>
+              <td class="nw">技能 · 口径定案</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>Tony 同意 <span class="mono">P-124</span> 留下的两处照现状定死：<span class="mono">terms.md</span> 的 16 条不补 <span class="mono">quiz / read / MediaRecorder</span> 等新词（补表须他同意），旧 11 条结论、挂起 2 条、下一步「P10 最佳存放」不搬进新页序、留存档加注记；两个文件都不再动。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-126</td>
+              <td><b>修 23_build_zh_doc_index.py 里生态地图的过期描述</b><br><span style="color:#8899aa;font-size:12px">P-112 选 A 案留下的待办</span></td>
+              <td class="nw">文档索引 · 口径同步</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>把 <span class="mono">23_build_zh_doc_index.py</span> 第 53 行的 <span class="mono">12 条决策台账 + S1.0–S1.7</span> 改成现行 <span class="mono">13 条决策台账 + S1.0–S1.8</span>，重跑索引后产物描述对上生态地图头部；脚本 diff 只 1 行、产物 diff 3 块（描述 / 账台 mtime / 生成时间），改前备份 <span class="mono">build/backup/p126-20261107-212312/</span>。另发现 <span class="mono">14_build_worktable.py</span> 第 247 行同句仍写旧口径，不在本行范围、未改，留 Tony 定。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-127</td>
+              <td><b>补 14_build_worktable.py 里生态地图的过期口径</b><br><span style="color:#8899aa;font-size:12px">P-126 记录里留痕 · Tony 指定先补</span></td>
+              <td class="nw">总控台 · 口径同步</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>把 <span class="mono">14_build_worktable.py</span> 第 247 行「系统生态地图」卡片的 <span class="mono">12 条 + S1.0–S1.7</span> 改成 <span class="mono">13 条 + S1.0–S1.8</span>，与 <span class="mono">P-126</span> 的 23 号脚本同口径；重跑 <span class="mono">~/work.html</span> 后脚本 diff 1 行、产物 diff 2 处（描述 + 一处 mtime 自动刷新）、软链完好，改前备份 <span class="mono">build/backup/p127-20261107-213255/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-128</td>
+              <td><b>系统生态地图加「5 个岗位架构图 + 每端说明卡」</b><br><span style="color:#8899aa;font-size:12px">P-117 之前先看清楚每一端能做什么</span></td>
+              <td class="nw">生态地图 · 架构图</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>加进第二层 <span class="mono">id="skills"</span>「⑦ 技能层」卡 body：上半关系图（总管在上 / 4 端平级 / 共用底座闭环），下半 4 张端说明卡（管哪一页 / 每天做什么 / 绝对不碰 / 怎么自证）；<span class="mono">zhops-sales</span> 标已落地、其余 4 个标未落地，命名不改名；顺手同步卡里 3 处「尚未落地」旧口径，并标出人事 / 财务探针在 <span class="mono">run.sh</span> 缺独立 step。不新增 <span class="mono">.sec</span>、编号字典逐字未动；重跑 2 脚本 + 2 探针，<span class="mono">check-p101-idmap.js</span> 38/38、<span class="mono">check-p102-ecofold.js</span> 36/36 全过（真 Chrome 零异常无残留），两份产物只有 mtime / size 自动刷新；改前备份 <span class="mono">build/backup/p128-20261107-215936/</span>。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-129</td>
+              <td><b>生态地图写明「技能 ≠ 操作员」</b><br><span style="color:#8899aa;font-size:12px">Tony 认同 · 免得以后再误会</span></td>
+              <td class="nw">生态地图 · 口径</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-07</td>
+              <td class="mono nw">11-07</td>
+              <td>加进第二层 <span class="mono">id="skills"</span> 卡 body 最前面，做成黄边提示块，放在 <span class="mono">P-128</span> 架构图之前：技能是「岗位规矩 + 自检清单」、只在会话里被叫到才活；不会自己定时跑 / 填表保存 / 跨端通知推云；三层分工（Code 规矩 / Harness 调度 / 产品功能）；AI 负责准备核对建议测试记账、Tony 按最后一下；<span class="mono">P-117</span> 只验叫得动 + 跑得通。<span class="mono">zhops-sales</span> 技能文件没动、编号字典逐字未动；重跑 2 脚本 + 2 探针，<span class="mono">check-p101-idmap.js</span> 38/38、<span class="mono">check-p102-ecofold.js</span> 36/36 全过（真 Chrome 零异常无残留），两份产物只有 mtime / size 自动刷新；改前备份 <span class="mono">build/backup/p129-20261107-223742/</span>。</td>
             </tr>
           </tbody>
         </table>

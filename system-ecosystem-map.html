@@ -170,6 +170,55 @@
   .yes{color:var(--ok);}
   .plan{color:var(--warn);}
 
+  /* ===== 技能层 · 5 岗位架构图（P-128） ===== */
+  .rsi-map{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 14px; margin:6px 0 12px;}
+  .rsi-chief{max-width:430px; margin:0 auto; border:1px dashed var(--warn); border-radius:10px; background:var(--card); padding:11px 14px; text-align:center;}
+  .rsi-chief .rr-role{font-size:10px; letter-spacing:1px; color:var(--hint); margin-bottom:3px;}
+  .rsi-chief .rr-id{font-family:"SF Mono",monospace; font-size:13px; font-weight:600; color:var(--warn);}
+  .rsi-chief .rr-name{font-size:11px; color:var(--muted); margin-top:2px;}
+  .rsi-chief .rr-duty{font-size:10.5px; color:var(--muted); margin-top:5px; line-height:1.6;}
+  .rsi-down{text-align:center; font-size:15px; color:var(--hint); line-height:1; margin:9px 0 5px;}
+  .rsi-down small{display:block; font-size:10px; color:var(--hint); letter-spacing:.5px; margin-top:4px;}
+  .rsi-ends{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  @media(max-width:820px){.rsi-ends{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.rsi-ends{grid-template-columns:1fr;}}
+  .rsi-end{border:1px solid var(--line); border-radius:9px; padding:10px 9px; background:var(--card); text-align:center;}
+  .rsi-end.live{border-color:var(--ok);}
+  .rsi-end.wait{border-color:var(--warn); border-style:dashed;}
+  .rsi-end .re-n{font-size:9.5px; color:var(--hint); letter-spacing:.5px;}
+  .rsi-end .re-id{font-family:"SF Mono",monospace; font-size:11.5px; font-weight:600; margin:3px 0 1px; word-break:break-all;}
+  .rsi-end.live .re-id{color:var(--ok);}
+  .rsi-end.wait .re-id{color:var(--warn);}
+  .rsi-end .re-role{font-size:10px; color:var(--muted);}
+  .rsi-end .re-file{font-family:"SF Mono",monospace; font-size:10px; color:var(--tag1); margin-top:4px; word-break:break-all;}
+  .rsi-end .re-st{font-size:10px; margin-top:5px;}
+  .rsi-base{border:1px solid var(--acc); background:var(--accb); border-radius:9px; padding:10px 12px; margin-top:10px; text-align:center;}
+  .rsi-base .rb-t{font-size:11px; font-weight:600; color:var(--acc);}
+  .rsi-base .rb-l{font-size:11px; color:var(--text); margin-top:4px; line-height:1.7;}
+  .rsi-cards{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:4px 0 10px;}
+  @media(max-width:680px){.rsi-cards{grid-template-columns:1fr;}}
+  .rsi-card{border:1px solid var(--line); border-radius:9px; padding:11px 13px; background:var(--card);}
+  .rsi-card.live{border-left:3px solid var(--ok);}
+  .rsi-card.wait{border-left:3px solid var(--warn);}
+  .rsi-card .rc-h{display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; margin-bottom:7px;}
+  .rsi-card .rc-id{font-family:"SF Mono",monospace; font-size:12px; font-weight:600;}
+  .rsi-card.live .rc-id{color:var(--ok);}
+  .rsi-card.wait .rc-id{color:var(--warn);}
+  .rsi-card .rc-role{font-size:10.5px; color:var(--muted);}
+  .rsi-row{font-size:11.5px; color:var(--muted); line-height:1.7; margin-bottom:4px;}
+  .rsi-row:last-child{margin-bottom:0;}
+  .rsi-row b{color:var(--text); font-weight:600; font-size:10.5px; letter-spacing:.5px;}
+  .rsi-row code{font-family:"SF Mono",monospace; font-size:10.5px; color:var(--tag2);}
+  .rsi-chief-note{font-size:11px; color:var(--muted); line-height:1.7; border-left:2px solid var(--warn); padding:2px 0 2px 10px; margin-top:2px;}
+
+  /* 技能层 · 边界提示（P-129） */
+  .skill-warn{background:var(--warnb); border:1px solid rgba(245,200,106,.35); border-left:3px solid var(--warn); border-radius:9px; padding:12px 14px; margin:6px 0 12px;}
+  .skill-warn .sw-t{font-size:12.5px; font-weight:600; color:var(--warn); margin-bottom:6px;}
+  .skill-warn .sw-r{font-size:11.5px; color:var(--text); line-height:1.8; margin-bottom:4px;}
+  .skill-warn .sw-r:last-child{margin-bottom:0;}
+  .skill-warn .sw-r b{color:var(--warn); font-weight:600;}
+  .skill-warn code{font-family:"SF Mono",monospace; font-size:10.5px; color:var(--tag2);}
+
   /* 三端子表 */
   .triple-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:8px;}
   @media(max-width:680px){.triple-grid{grid-template-columns:1fr;}}
@@ -412,7 +461,7 @@
 <div class="dec-box">
   <div class="dec-head">
     <span class="dh-t">决策台账</span>
-    <span class="dh-s">12 条 · 已定 9 · 暂缓 3 · 待定 0 · 更新 2026-10-30</span>
+    <span class="dh-s">13 条 · 已定 10 · 暂缓 3 · 待定 0 · 更新 2026-11-07</span>
     <span class="dh-s" style="margin-left:auto; color:var(--hint);">落实状态：<span class="dec-flag df-done">已落实</span> <span class="dec-flag df-part">已部分</span> <span class="dec-flag df-none">未落实</span></span>
   </div>
   <div class="dec-sub">A · 业务口径</div>
@@ -559,6 +608,20 @@
         <b>仍未做</b>：登录密码（方案 B 的门禁与账号）；<span class="key">master</span> 仍是全量一份（现在是「分片给教师端读」，不是「主端也只存分片」）。<br>
         <b>现状定性</b>：<b class="plan">软隔离</b> —— 教师端页面里根本没有别人的数据，但 API key 在页面里、「我是谁」还能改。挡君子，不挡技术人。试用期给 2–3 位可信老师可以。<br>
         <span style="color:var(--hint);">细节见 <a href="zhops-polish.html" class="loc">工作台账</a> P-57 / P-58 / P-59。这条原来在「已记暂缓」，2026-10-30 转「已定」并开始落地。</span>
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑬ RSI 技能体系 · 5 个岗位与权限 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-none">未落实</span></div>
+      <div class="dec-a">4 端各一个岗位 + 1 个总管 · 共用底座，薄入口</div>
+      <div class="dec-why">
+        <b>已定 2026-11-07</b>：技能不是说明文档，是<b>岗位</b>；正式版放用户级 <code>~/.workbuddy-ai/skills/</code>，每个技能有可调用名与岗位名两个名字。<br>
+        <b>五个名字</b>：<code>zhops-sales</code>（Sale AI Manager · 业务端）· <code>zhops-admin</code>（Schedule AI Manager · 主端）· <code>zhops-hr</code>（HR AI Manager · 人事端）· <code>zhops-finance</code>（Finance AI Manager · 财务端）· <code>zhops-chief</code>（OPS Chief · 总管）。<b>总管不是第五个部门</b>：管调度、跨端裁决、探针、工作台账、发布闸门，不下场做业务。<br>
+        <b>共用底座 + 薄入口</b>：不做 4 份复制的闭环。闭环只有一套 —— 跑探针 → 读红项 → 定位 → 改 → 复跑 → 不过就回滚 → 记工作台账；4 个薄入口只放本端页面路径、探针清单、禁区。<br>
+        <b>六条固定格式</b>：我是谁管哪页 / 每天替 Tony 做哪几件事 / 绝对不许碰什么 / 怎么证明自己做对了 / 出事找谁 / 拿不准先问 Tony。<br>
+        <b>权限闸门</b>：只读分析可自动；改文件逐次确认；发布与推云<b>永远手点</b>。<b>把关与操作不进同一个技能</b> —— 改得对不对由探针红绿判定，不由修改者自评；每条新断言都要做反向控制。<br>
+        <b>禁区</b>：<code>zhops.sched.v3</code> 主端与教师端共用，写操作先过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code> 四字段；云端两条路绝不合并 —— 整份 <code>zhops/master</code> 手点，增量 <code>zhops/done_*</code> 自动。<br>
+        <b>范围来源</b>：技能读 <span class="loc">system-ecosystem-map.html</span> 知道工作范围与口径决策，读 <a href="zhops-polish.html" class="loc">工作台账</a> 知道做到哪一步。<b>技能 ID 不进编号字典</b> —— 字典只收业务编号。
       </div>
     </div>
 
@@ -1223,6 +1286,165 @@
     <div class="field">
       <div class="field-label">搭建顺序</div>
       <div class="field-value">S4 —— 最独立，最后建。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ 技能层 -->
+<div class="sys-card todo" id="skills">
+  <div class="sys-head" onclick="toggleCard('skills')">
+    <div class="left">
+      <span class="sys-tag">AI 技能</span>
+      <span class="sys-name">技能层 · 4 端 + 总管</span>
+      <span class="sys-sub">RSI · 岗位化 · 不碰生产存盘</span>
+    </div>
+    <div class="right"><span class="status-badge s-wait">业务端 + 总管已落地 · 3 端未落地</span><span class="toggle">▶</span></div>
+  </div>
+  <div class="sys-body">
+    <!-- P-129 · 技能 ≠ 操作员 -->
+    <div class="skill-warn">
+      <div class="sw-t">先讲清楚：技能 ≠ 操作员</div>
+      <div class="sw-r">技能是<b>「岗位规矩 + 自检清单」</b>，是给 AI 读的文本；只在 Tony 开一个会话、叫到它时才活，<b>关了对话就停</b>。</div>
+      <div class="sw-r">它<b>不会</b>自己定时跑、不会自己点页面填表保存、不会跨端通知或推云 —— 后面两条在技能规矩里是<b>禁区</b>，不是「还没做」。</div>
+      <div class="sw-r"><b>分层</b>：技能在 Code 层（规矩文件）；要「自己会跑」靠 Harness 层（调度 / 触发）；要「系统自己会做」靠产品里的功能。</div>
+      <div class="sw-r"><b>分界线</b>：AI 负责准备 / 核对 / 建议 / 跑测试 / 记账；Tony 按最后一下 —— 写真实数据、推云、发布、跨端通知、教室编码。</div>
+      <div class="sw-r"><b>工作台账 P-117 只验了「叫得动 + 测试跑得通」</b>，没验「会替你录学生」。</div>
+    </div>
+    <!-- P-128 · 5 个岗位架构图 + 每端说明卡 -->
+    <div class="field">
+      <div class="field-label">5 个岗位架构图 · 4 端 + 总管（P-128）</div>
+      <div class="field-value">
+        <div class="rsi-map">
+          <div class="rsi-chief">
+            <div class="rr-role">总管 · 不是第五个部门，不下场做业务</div>
+            <div class="rr-id">zhops-chief</div>
+            <div class="rr-name">OPS Chief · <span class="status-badge s-ok">已落地 · P-120</span></div>
+            <div class="rr-duty">调度 / 跨端裁决 / 探针 / 工作台账 / 发布闸门</div>
+          </div>
+          <div class="rsi-down">↓<small>四个平级、各管一端、互不越界</small></div>
+          <div class="rsi-ends">
+            <div class="rsi-end live">
+              <div class="re-n">① 业务端</div>
+              <div class="re-id">zhops-sales</div>
+              <div class="re-role">Sale AI Manager</div>
+              <div class="re-file">biz.html</div>
+              <div class="re-st"><span class="status-badge s-ok">已落地 · P-116</span></div>
+            </div>
+            <div class="rsi-end wait">
+              <div class="re-n">② 主端</div>
+              <div class="re-id">zhops-admin</div>
+              <div class="re-role">Schedule AI Manager</div>
+              <div class="re-file">zhops-admin.html</div>
+              <div class="re-st"><span class="status-badge s-wait">口径已定 · 未落地</span></div>
+            </div>
+            <div class="rsi-end wait">
+              <div class="re-n">③ 人事端</div>
+              <div class="re-id">zhops-hr</div>
+              <div class="re-role">HR AI Manager</div>
+              <div class="re-file">hr.html</div>
+              <div class="re-st"><span class="status-badge s-wait">口径已定 · 未落地</span></div>
+            </div>
+            <div class="rsi-end wait">
+              <div class="re-n">④ 财务端</div>
+              <div class="re-id">zhops-finance</div>
+              <div class="re-role">Finance AI Manager</div>
+              <div class="re-file">finance.html</div>
+              <div class="re-st"><span class="status-badge s-wait">口径已定 · 未落地</span></div>
+            </div>
+          </div>
+          <div class="rsi-down">↓<small>共用底座只有一套，不复制 4 份</small></div>
+          <div class="rsi-base">
+            <div class="rb-t">共用底座 · RSI 闭环</div>
+            <div class="rb-l">跑探针 → 读红项 → 定位 → 逐次确认后改 → 复跑 → 不过就回滚 → 记工作台账</div>
+            <div class="rb-l" style="color:var(--muted);font-size:10.5px;">把关与操作分家：改得对不对由探针红绿判定，不由修改者自评；每条新断言都要反向控制。</div>
+          </div>
+        </div>
+
+        <div class="rsi-cards">
+          <div class="rsi-card live">
+            <div class="rc-h"><span class="rc-id">zhops-sales</span><span class="rc-role">Sale AI Manager · 业务端</span><span class="status-badge s-ok">已落地</span></div>
+            <div class="rsi-row"><b>管哪一页</b>　<code>docs/biz.html</code> · 存盘 <code>zhops.biz.v1</code> · 九个板块，教室在市场组下第 5 块。</div>
+            <div class="rsi-row"><b>每天做什么</b>　读生态地图口径与工作台账 → 跑本端探针 → 红项定位 → 逐次确认后改 → 复跑 → 回填工作台账；一次只做一块。</div>
+            <div class="rsi-row"><b>绝对不碰</b>　不写 <code>zhops.sched.v3</code> / <code>zhops.hr.v1</code> / <code>zhops.fin.v1</code>；主端拉学生只覆盖 <code>name / phone / mode / preferRoom</code>；不推 <code>zhops/master</code>；不发布。</div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>check-biz-*.js</code> 5 条 + <code>check-p103-*.js</code> 4 条 + <code>check-p107-vnd.js</code>；<code>run.sh</code> 有独立业务部段。</div>
+          </div>
+          <div class="rsi-card wait">
+            <div class="rc-h"><span class="rc-id">zhops-admin</span><span class="rc-role">Schedule AI Manager · 主端</span><span class="status-badge s-wait">未落地</span></div>
+            <div class="rsi-row"><b>管哪一页</b>　<code>docs/zhops-admin.html</code> · 存盘 <code>zhops.sched.v3</code>，<span class="no">与教师端共用一把钥匙</span>。</div>
+            <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑主端探针 → 改主端 → 复跑 → 记账；写操作先过班级归属守卫。</div>
+            <div class="rsi-row"><b>绝对不碰</b>　不改写业务部拉来的 6 个字段；课次 <code>roomCode</code> 存快照不现算；侧栏外跳带 <code>data-ext</code>、不带 <code>data-v</code>；不推整份、不发布。</div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>check-admin-core.js</code>（59 项）+ <code>check-admin-dept-links.js</code>；<code>run.sh</code> 主端段有独立 step。</div>
+          </div>
+          <div class="rsi-card wait">
+            <div class="rc-h"><span class="rc-id">zhops-hr</span><span class="rc-role">HR AI Manager · 人事端</span><span class="status-badge s-wait">未落地</span></div>
+            <div class="rsi-row"><b>管哪一页</b>　<code>docs/hr.html</code> · 存盘 <code>zhops.hr.v1</code> · 附件走 IndexedDB <code>zhops_hr_files/files</code>。</div>
+            <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑人事探针 → 改人事页 → 复跑 → 记账；删除走 <code>askPwd()</code>，删前 <code>snapshot()</code>。</div>
+            <div class="rsi-row"><b>绝对不碰</b>　二进制永不塞 localStorage；<code>undoDelete()</code> 是交换不是单向恢复；不碰另三端存盘。</div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>check-hr-contract.js</code> / <code>check-hr-file.js</code> / <code>check-hr-salary.js</code>。<span class="plan">缺口：探针文件在，但 run.sh 没有独立 step。</span></div>
+          </div>
+          <div class="rsi-card wait">
+            <div class="rc-h"><span class="rc-id">zhops-finance</span><span class="rc-role">Finance AI Manager · 财务端</span><span class="status-badge s-wait">未落地</span></div>
+            <div class="rsi-row"><b>管哪一页</b>　<code>docs/finance.html</code> · 存盘 <code>zhops.fin.v1</code>。</div>
+            <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑财务探针 → 改财务页 → 复跑 → 记账；金额显示走 <code>VND_SEP</code>、输入走 <code>parseVND()</code>、存盘整数盾。</div>
+            <div class="rsi-row"><b>绝对不碰</b>　<code>--ink</code> 是白色不是文字色，正文用 <code>--tx</code>；不碰另三端存盘；不发布、不推云。</div>
+            <div class="rsi-row"><b>怎么自证</b>　<code>check-fin-approve.js</code> / <code>check-fin-expense.js</code>。<span class="plan">缺口：探针文件在，但 run.sh 没有独立 step。</span></div>
+          </div>
+        </div>
+        <div class="rsi-chief-note">
+          <b>总管 zhops-chief</b> 不是第五个部门，不下场做业务，只管调度 / 跨端裁决 / 探针 / 工作台账 / 发布闸门。技能文件已落地（工作台账 P-120，<code>~/.workbuddy-ai/skills/zhops-chief/SKILL.md</code>）；跨端裁决叫总管，它不下场做业务、也不自动执行，拿不准仍问 Tony。<b>发布与推云永远 Tony 手点。</b>四端拿不准上交总管，总管也拿不准就问 Tony。
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">位置（现状）</div>
+      <div class="field-value multi">
+        <div><b>正式版</b>　<span class="loc">~/.workbuddy-ai/skills/</span>（用户级；Tony 2026-11-07 授权跨界写入）—— <b class="yes">zhops-sales 已落地</b>（工作台账 P-116），总管 <b class="yes">zhops-chief 已落地</b>（工作台账 P-120），其余 3 端 <b class="plan">未落地</b></div>
+        <div><b>草稿</b>　<span class="loc">docs/zhops-skill-sales-draft.md</span>（业务部样板，正式版以其为准；草稿本身不是安装版）</div>
+        <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">无</span> <span style="color:var(--hint);">技能是本地 AI 岗位，不随 publish-zhops.sh 上线</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">这一层是什么</div>
+      <div class="field-value">
+        不是第五个业务系统，是<b>盖在四端之上的 AI 岗位层</b>。技能不是说明文档，是岗位：每个技能有可调用名（小写英文连字符）与岗位名（给人看），记住自己管哪一页、怎么操作、什么不能碰。<b>口径见决策台账 ⑬</b>。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">4 端 + 总管关系</div>
+      <div class="field-value multi">
+        <div>① <code>zhops-sales</code> / Sale AI Manager → <b>业务端</b> <span class="loc">biz.html</span></div>
+        <div>② <code>zhops-admin</code> / Schedule AI Manager → <b>主端</b> <span class="loc">zhops-admin.html</span></div>
+        <div>③ <code>zhops-hr</code> / HR AI Manager → <b>人事端</b> <span class="loc">hr.html</span></div>
+        <div>④ <code>zhops-finance</code> / Finance AI Manager → <b>财务端</b> <span class="loc">finance.html</span></div>
+        <div style="margin-top:6px;">↑ 四个平级、各管一端、互不越界；上方一个 <code>zhops-chief</code> / OPS Chief <b>总管</b>：调度 / 跨端裁决 / 探针 / 工作台账 / 发布闸门。</div>
+        <div><b>总管不是第五个部门</b>，不下场做业务；四端拿不准或跨端的事上交总管，总管也拿不准就问 Tony。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">共用底座 + 薄入口</div>
+      <div class="field-value">
+        不做 4 份复制的闭环。<b>闭环只有一套</b>：跑探针 → 读红项 → 定位 → 改 → 复跑 → 不过就回滚 → 记工作台账。四个薄入口只放三样：本端页面路径、本端探针清单、本端禁区。<b>把关与操作分家</b>，改得对不对由探针红绿判定，不由修改者自评。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（现状）</div>
+      <div class="field-value multi">
+        <div>入：<span class="no">无生产数据</span> —— 技能只读 <span class="loc">system-ecosystem-map.html</span>（工作范围 / 口径）与 <a href="zhops-polish.html" class="loc">工作台账</a>（进度）。</div>
+        <div>出：<span class="no">无</span> —— 不写 <code>zhops.sched.v3</code> / <code>zhops.biz.v1</code> / <code>zhops.hr.v1</code> / <code>zhops.fin.v1</code>，不推云端，不进四端页面。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">数据流向（规划）</div>
+      <div class="field-value">
+        <span class="plan">规划：本端技能 → 跑 <code>check-*.js</code> 探针 → 红项定位 → 逐次确认后改本端文件 → 复跑 → 回填工作台账；发布与推云永远 Tony 手点。</span><br>
+        现在：业务部正式版 <code>zhops-sales</code> 已落地（P-116）；总管 <code>zhops-chief</code> 已落地（P-120），其余 3 端技能未落地。<code>run.sh</code> 里人事 / 财务探针文件都在，但<b class="plan">缺独立 step</b>（见上方每端说明卡的「怎么自证」）。
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">边界与禁区</div>
+      <div class="field-value">
+        <code>zhops.sched.v3</code> 主端与教师端共用，写前过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code>；云端两路绝不合并（<code>zhops/master</code> 手点 / <code>zhops/done_*</code> 自动）。<b>技能 ID 是工具名，不进编号字典</b>（6 列 / 5 分组 / 25 条保持原样）。
+      </div>
     </div>
   </div>
 </div>

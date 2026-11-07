@@ -613,7 +613,7 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
                 <th>等级</th>
                 <th>上课方式</th>
                 <th>报名日期</th>
-                <th>已缴</th>
+                <th>已缴（VND）</th>
                 <th>状态</th>
                 <th></th>
               </tr>
@@ -1056,9 +1056,25 @@ function esc(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
   });
 }
+/* ★ 2026-11-05（P-107）：业务部所有 VND 金额统一用「逗号」分组。
+   Tony 的写法是 1,000,000 vnd —— 课程包、收费、教室租金、场地、请款单全部对齐它。
+   想换回越南本地的点（1.000.000）只改 VND_SEP 这一个常量，不用逐处返工。
+   ⚠️ 输入侧另由 parseVND() 兜底：点 / 逗号 / 空格 / VND / ₫ 全都收，
+      存盘前剥干净只留整数盾，绝不把 1,000,000 存成 1。 */
+var VND_SEP = ',';
 function fmtVND(n){
-  if(!n) return '0';
-  return Math.round(n).toLocaleString('vi-VN');
+  var v = Math.round(Number(n) || 0);
+  var sign = v < 0 ? '-' : '';
+  return sign + String(Math.abs(v)).replace(/\B(?=(\d{3})+(?!\d))/g, VND_SEP);
+}
+/* 把用户手填的金额洗成整数（盾）。认 1,000,000 / 1.000.000 / 1 000 000 /
+   1000000 vnd / 1000000₫；不认也不炸，给 0。单位永远是「盾」，不换算。 */
+function parseVND(raw){
+  var s = String(raw == null ? '' : raw).trim()
+    .replace(/vnd|vnđ|đồng|₫|đ/gi, '')
+    .replace(/[\s.,]/g, '');
+  var n = parseInt(s, 10);
+  return isFinite(n) ? n : 0;
 }
 function fmtDate(d){
   if(!d) return '—';
@@ -1204,7 +1220,7 @@ function stuRow(s){
     /* ★ 2026-11-02（P-94）：上课方式 —— 线上走 .on（青），线下走 .off */
     '<td><span class="tg '+(online?'on':'off')+'">'+esc(roomText(s))+'</span></td>'+
     '<td class="m">'+esc(fmtDate(s.enrollDate))+'</td>'+
-    '<td class="num">'+fmtVND(s.paid)+'</td>'+
+    '<td class="num">'+fmtVND(s.paid)+'<small>VND</small></td>'+
     '<td>'+studentStatusTag(s.status)+'</td>'+
     '<td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td>'+
     '</tr>';
@@ -1464,11 +1480,13 @@ function delLead(id){
 /* ---- 学员表单 ---- */
 function addStudent(){
   openDrawer('新学员', studentForm());
+  paidHint();   /* ★ P-107：抽屉一打开就带出「课程包 / 已缴 / 待缴」，不等用户先打字 */
 }
 function editStudent(id){
   var s = S.students.find(function(x){return x.id===id;});
   if(!s) return;
   openDrawer('编辑学员 · '+s.name, studentForm(s));
+  paidHint();
 }
 function studentForm(s){
   s = s || {};
@@ -1498,15 +1516,42 @@ function studentForm(s){
       '</select></div>'+
     '</div>'+
     '<div id="room-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
-    '<div class="fld"><label>课程包</label><select id="f-pkg">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
-    '<div class="fld-row"><div class="fld"><label>已缴（VND）</label><input type="number" id="f-paid" value="'+(s.paid||0)+'"></div>'+
+    '<div class="fld"><label>课程包</label><select id="f-pkg" onchange="paidHint()">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
+    /* ★ 2026-11-05（P-107）：已缴改成「认千分位」的文本框。
+       原来是 type=number，粘 1,000,000 会被浏览器判成无效值直接变空。 */
+    '<div class="fld-row"><div class="fld"><label>已缴（VND）</label><input type="text" inputmode="numeric" id="f-paid" value="'+fmtVND(s.paid||0)+'" oninput="paidHint()" onblur="fmtPaidInput(this)" placeholder="如：1,000,000"></div>'+
     '<div class="fld"><label>状态</label><select id="f-status">'+['在读','结业','暂停','退学'].map(function(t){return '<option '+(s.status===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
+    '<div id="paid-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
       '<button class="btn pri" onclick="saveStudent('+(s.id?"'"+s.id+"'":"null")+')">保存</button>'+
       (s.id?'<button class="btn danger" onclick="delStudent(\''+s.id+'\')">删除</button>':'')+
       '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
     '</div>';
 }
+/* ★ 2026-11-05（P-107）：「课程包 / 已缴 / 待缴」联动行 + 失焦格式化。
+   - 只显示，不改任何存盘口径；钱的单位永远是「盾」。
+   - 失焦才格式化（输入过程中不动光标，否则打一个数字就跳一次）。
+   - 待缴 = 课程包参考价 - 已缴；超出 / 结清都讲清楚，不显示负数吓人。 */
+function paidHint(){
+  var pEl = document.getElementById('f-pkg');
+  var aEl = document.getElementById('f-paid');
+  var hEl = document.getElementById('paid-hint');
+  if(!pEl || !aEl || !hEl) return;
+  var pkg = PACKAGES.find(function(p){ return p.id === pEl.value; });
+  var price = pkg ? pkg.price : 0;
+  var paid = parseVND(aEl.value);
+  var due  = price - paid;
+  hEl.textContent = '课程包 ' + fmtVND(price) + ' VND · 已缴 ' + fmtVND(paid) + ' VND · ' +
+    (due > 0 ? '待缴 ' + fmtVND(due) + ' VND'
+             : due < 0 ? '已缴超出 ' + fmtVND(-due) + ' VND'
+                       : '已结清');
+}
+function fmtPaidInput(el){
+  if(!el) return;
+  el.value = fmtVND(parseVND(el.value));
+  paidHint();
+}
+
 /* ★ 2026-11-02（P-94）：表单里「上课方式 / 指定教室」的联动提示。
    - 选线上 → 教室下拉置灰（线上不占教室），并说明「不占教室，只占老师时段」
    - 选线下但没指定教室 → 提示「主端编班时要再选」
@@ -1544,7 +1589,9 @@ function saveStudent(id){
   var pkg = PACKAGES.find(function(p){return p.id===pkgId;});
   var data = {
     name: val('f-name'), type: val('f-type'), source: val('f-source'), contact: val('f-contact'),
-    level: val('f-level'), enrollDate: val('f-enrollDate'), pkg: pkgId, paid: parseInt(val('f-paid')||'0'),
+    /* ★ P-107：手填的 1,000,000 / 1.000.000 / 1000000 vnd 都洗成整数盾 1000000 再存，
+       绝不把带分隔符的字符串塞进 paid（parseInt('1.000.000') 会存成 1）。 */
+    level: val('f-level'), enrollDate: val('f-enrollDate'), pkg: pkgId, paid: parseVND(val('f-paid')),
     status: val('f-status'),
     /* ★ 2026-11-02（P-94）：上课方式 + 指定教室 */
     mode: val('f-mode') || 'offline',
@@ -1666,8 +1713,8 @@ function billingForm(b, stuOpts){
   b = b || {};
   return '<div class="fld"><label>学员</label><select id="f-sid">'+stuOpts+'</select></div>'+
     '<div class="fld"><label>课程包</label><select id="f-pkg" onchange="autoPrice()">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" data-price="'+p.price+'" '+(b.pkg&&b.pkg.includes(p.name.split('（')[0])?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
-    '<div class="fld-row"><div class="fld"><label>总金额（VND）</label><input type="number" id="f-total" value="'+(b.total||0)+'"></div>'+
-    '<div class="fld"><label>已缴（VND）</label><input type="number" id="f-paid" value="'+(b.paid||0)+'"></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>总金额（VND）</label><input type="text" inputmode="numeric" id="f-total" value="'+fmtVND(b.total||0)+'" onblur="fmtPaidInput(this)" placeholder="如：8,000,000"></div>'+
+    '<div class="fld"><label>已缴（VND）</label><input type="text" inputmode="numeric" id="f-paid" value="'+fmtVND(b.paid||0)+'" onblur="fmtPaidInput(this)" placeholder="如：1,000,000"></div></div>'+
     '<div class="fld-row"><div class="fld"><label>缴费方式</label><select id="f-method"><option '+(b.method==='一次性'?'selected':'')+'>一次性</option><option '+(b.method==='分期'?'selected':'')+'>分期</option></select></div>'+
     '<div class="fld"><label>下次应收日期</label><input type="date" id="f-dueDate" value="'+(b.dueDate||'')+'"></div></div>'+
     '<div class="fld"><label>分期计划</label><input id="f-plan" value="'+(b.plan||'')+'" placeholder="如：分2期：5M + 5M"></div>'+
@@ -1680,9 +1727,9 @@ function billingForm(b, stuOpts){
 }
 function autoPrice(){
   var sel = document.getElementById('f-pkg');
-  var opt = sel.options[sel.selectedIndex];
-  if(opt && opt.dataset.price){
-    document.getElementById('f-total').value = opt.dataset.price;
+  var opt = sel && sel.options ? sel.options[sel.selectedIndex] : null;
+  if(opt && opt.dataset && opt.dataset.price){
+    document.getElementById('f-total').value = fmtVND(opt.dataset.price);
   }
 }
 function saveBilling(id){
@@ -1692,7 +1739,7 @@ function saveBilling(id){
   var pkgObj = PACKAGES.find(function(p){return p.id===pkgId;});
   var data = {
     sid: sid, sname: stu?stu.name:'—', pkg: pkgObj?pkgObj.name:val('f-pkg'),
-    total: parseInt(val('f-total')||'0'), paid: parseInt(val('f-paid')||'0'),
+    total: parseVND(val('f-total')), paid: parseVND(val('f-paid')),
     method: val('f-method'), plan: val('f-plan'), dueDate: val('f-dueDate'), status: val('f-status')
   };
   if(id){
@@ -1712,10 +1759,10 @@ function delBilling(id){
 function recordPayment(id){
   var b = S.billing.find(function(x){return x.id===id;});
   if(!b) return;
-  var amt = prompt('本次收款金额（VND）：', String(b.total - b.paid));
+  var amt = prompt('本次收款金额（VND）：', fmtVND(b.total - b.paid));
   if(!amt) return;
-  amt = parseInt(amt);
-  if(isNaN(amt) || amt<=0){ toast('金额不对', true); return; }
+  amt = parseVND(amt);
+  if(amt<=0){ toast('金额不对', true); return; }
   b.paid += amt;
   if(b.paid >= b.total){ b.status = '已结清'; }
   save(); render('billing'); toast('已登记收款 '+fmtVND(amt)+' VND');
@@ -2315,11 +2362,12 @@ function usagePending(m){
 }
 function setUsageAmt(lid, amt){
   S.usageAmt = S.usageAmt || {};
-  S.usageAmt[lid] = amt;
+  /* ★ P-107：手填金额同样洗成整数盾，点/逗号/单位都收 */
+  S.usageAmt[lid] = parseVND(amt);
 }
 function usageAmtOf(u){
-  var a = Number((S.usageAmt||{})[u.lid]);
-  if(isFinite(a) && a > 0) return a;
+  var a = parseVND((S.usageAmt||{})[u.lid]);
+  if(a > 0) return a;
   return Number(u.hourly) || 0;
 }
 function newVoucherId(m){
@@ -2474,7 +2522,7 @@ function renderUsage(){
           '<td class="mono">'+esc(u.roomCode||'—')+'</td>'+
           '<td>'+esc(u.placeName||'—')+'</td>'+
           '<td class="num">'+(u.hourly?fmtVND(u.hourly):'—')+'</td>'+
-          '<td class="num"><input type="number" style="width:auto;min-width:110px" data-usage-amt="'+esc(u.lid)+'" value="'+(usageAmtOf(u)||'')+'" placeholder="手填"></td>'+
+          '<td class="num"><input type="text" inputmode="numeric" style="width:auto;min-width:110px" data-usage-amt="'+esc(u.lid)+'" value="'+(usageAmtOf(u)?fmtVND(usageAmtOf(u)):'')+'" placeholder="手填"></td>'+
           '</tr>';
       }).join('')+
       '</tbody></table></div>'+
