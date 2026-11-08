@@ -699,6 +699,10 @@ tr[data-open]:hover td{background:var(--brand-soft);}
       <span id="stCloud"></span><br>
       <button type="button" class="sf-btn" id="btnCloudPush">☁︎ 推送到云端</button>
       <button type="button" class="sf-btn" id="btnCloudPull">☁︎ 从云端拉取</button><br>
+      <!-- ★ 2026-11-08（P-136）：实时接收灯。
+           只收不推 —— 本机仍然只有点「推送到云端」才推（Tony 10-17 定的全手动不变）。
+           这里只管「别的设备推上去了，我这边自动收到」。点一下可重连。 -->
+      <span id="stLive" role="button" tabindex="0" style="font-size:10px;opacity:.75;cursor:pointer" title="点一下重连">☁︎ 实时接收：正在连接…</span><br>
       <!-- ★ 2026-11-02（P-97）：业务部 → 主端 的入口。
            跟上面两个不是一回事：上面拉的是 zhops/master（整份排课），
            这个拉的是 zhops/bizstudents（业务部登记的学生）。 -->
@@ -6269,6 +6273,122 @@ function cloudBootPull(){
 
 /* ⚠️ 2026-10-17（全手动）：切回标签页**不再自动拉云端**。
    原来这里挂了 visibilitychange → cloudBootPull()，会把本地测试数据冲掉。已停用。 */
+
+/* ★ 2026-11-08（P-136）：实时接收口，给下面的 module 调用。
+   ★ 只收不推 —— 这里绝不调 fsPush / doPush，本机推不推由人点按钮决定。
+   返回：applied（已套用）/ self（云端就是本机刚推的）/ dirty（本机有改动，不覆盖）
+        / stale（云端比本机旧）/ bad（数据不认识） */
+window.__ADMIN_LIVE_ARRIVE__ = function(payloadStr, at){
+  if (!payloadStr) return 'bad';
+  let o = null;
+  try { o = JSON.parse(payloadStr); } catch(e){ return 'bad'; }
+  if (!o || typeof o !== 'object' || !appTagOk(o)) return 'bad';
+
+  const remoteAt = at || o.__at || '';
+  /* ① 云端就是本机刚推的那份 → 不用套（否则每次推完都会自己"收到"一次） */
+  if (remoteAt && lastSavedAt && remoteAt === lastSavedAt) return 'self';
+  /* ② 云端比本机旧 → 不动 */
+  if (remoteAt && lastSavedAt && remoteAt < lastSavedAt) return 'stale';
+  /* ③ 本机有未推送的改动 → 绝不静默覆盖（这是 Tony 10-17 那条规矩的核心） */
+  if (cloudDirty) return 'dirty';
+
+  /* ④ 套用：跟「从云端拉取」同一条路，口径不漂 */
+  try {
+    DB = normalizeDB(o);
+    buildFacts();
+    lastSavedAt = o.__at || remoteAt || new Date().toISOString();
+    try { localStorage.setItem(KEY, payloadStr); } catch(e){}
+    loadedFromStore = true;
+    cloudDirty = false;
+    cloudAt = remoteAt;
+    markSaved('loaded');
+    markCloud('ok', remoteAt);
+    render();
+    return 'applied';
+  } catch(e){ return 'bad'; }
+};
+</script>
+
+<!-- ============================================================
+     实时接收（2026-11-08 · P-136）
+     ------------------------------------------------------------
+     ★ 口径（Tony 2026-11-08 拍板 · B 方案，且只收不推）：
+         · 本机【绝不自动推】—— 仍然只有点「☁︎ 推送到云端」才推
+         · 本机【绝不自动拉】—— 打开 / 切回标签页不碰云端数据
+         · 这里只做一件事：别的设备推上去之后，本机自动收到并重画
+       所以 2026-10-17 定的「全手动」底线一个字没破，只是把
+       「别的设备改了 → 我要看得到」这条补上。
+
+     ★ 什么时候才肯接收？两条都满足：
+         ① 云端 __at 比本机 lastSavedAt 新（不会拿旧的盖新的）
+         ② 本机没有未推送的改动（cloudDirty = false）
+            —— 本机有改动时绝不静默覆盖，改成提示「云端有更新，
+               本机也有改动，请手动点从云端拉取」由人决定。
+     ============================================================ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const FB = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', coll:'zhops' };
+const DOC = 'master';
+const TAG = 'zhops.admin';
+
+function mark(text, cls){
+  const el = document.getElementById('stLive');
+  if (!el) return;
+  el.textContent = '☁︎ ' + text;
+  el.style.color = cls === 'bad' ? '#fca5a5' : (cls === 'ok' ? '#5eead4' : '');
+}
+
+function hhmmNow(iso){
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+let db = null, unsub = null;
+
+function boot(){
+  try {
+    const app = initializeApp({ projectId: FB.pid, apiKey: FB.key, authDomain: FB.pid + '.firebaseapp.com' }, 'admin-live');
+    db = getFirestore(app);
+  } catch(e){
+    mark('实时接收没起来（本机照常用）', 'bad');
+    return;
+  }
+  subscribe();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) subscribe(); });
+  const el = document.getElementById('stLive');
+  if (el){
+    el.addEventListener('click', subscribe);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); subscribe(); } });
+  }
+}
+
+function subscribe(){
+  if (!db) return;
+  if (unsub){ try { unsub(); } catch(e){} unsub = null; }
+  mark('实时接收：正在连接…');
+  unsub = onSnapshot(doc(db, FB.coll, DOC), snap => {
+    if (!snap.exists()){ mark('实时接收：云端还没有数据'); return; }
+    const d = snap.data() || {};
+    if (d.app && d.app !== TAG){ mark('实时接收：云端那份不是排课数据', 'bad'); return; }
+
+    /* 把决策交给主脚本（它才知道 DB / lastSavedAt / cloudDirty / normalizeDB） */
+    if (typeof window.__ADMIN_LIVE_ARRIVE__ !== 'function'){ mark('实时接收：主脚本还没就绪'); return; }
+    const r = window.__ADMIN_LIVE_ARRIVE__(d.payload || '', d.at || '');
+    if (r === 'applied')      mark('已收到更新 · ' + hhmmNow(d.at || ''), 'ok');
+    else if (r === 'self')    mark('实时接收中 · ' + hhmmNow(new Date().toISOString()), 'ok');
+    else if (r === 'dirty')   mark('云端有更新，本机也有改动 → 请手动点「从云端拉取」', 'bad');
+    else if (r === 'stale')   mark('实时接收中 · ' + hhmmNow(new Date().toISOString()), 'ok');
+    else                      mark('实时接收中', 'ok');
+  }, err => {
+    mark('已断开（' + (err && err.code ? err.code : '网络') + '），点一下重连', 'bad');
+  });
+}
+
+boot();
 </script>
 </body>
 </html>

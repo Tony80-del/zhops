@@ -443,10 +443,13 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
     <span class="bizcld idle" id="bizCld">☁︎ 还没推送过</span>
     <button type="button" class="sf-btn" id="btnBizPush" title="只推学员的 5 个字段，给主端候选池看">☁︎ 推学生给主端</button>
     <!-- ★ 2026-11-08（P-133）：整份云备份 —— 换设备 / 换网址靠它。
-         ⚠️ 跟上面那颗是两件事，文案刻意写死，别让人误点。 -->
+         ⚠️ 跟上面那颗是两件事，文案刻意写死，别让人误点。
+         ★ 2026-11-08（P-136）：这两颗现在退成「手动保险」，常态是自动同步（见下面 #syncBox）。 -->
     <span class="bizcld idle" id="bizBak">☁︎ 还没备份过</span>
     <button type="button" class="sf-btn" id="btnBizBakPush" title="整份业务部数据（线索/学员/收费/教室…）备份到云端">☁︎ 备份到云端</button>
     <button type="button" class="sf-btn" id="btnBizBakPull" title="用云端备份整份覆盖本机（会丢本机未备份的改动）">☁︎ 从云端恢复</button>
+    <!-- ★ 2026-11-08（P-136）：实时同步状态灯。按一下 = 立即重连 / 重订阅。 -->
+    <span class="bizcld idle" id="syncBox" role="button" tabindex="0" title="点一下立即重连云端">☁︎ 实时同步：正在连接…</span>
   </div>
 </aside>
 
@@ -1122,6 +1125,10 @@ function load(){
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); toast('已保存'); }
   catch(e){ toast('保存失败', true); }
+  /* ★ 2026-11-08（P-136）：存完就地自动推云端（防抖 1.2s）。
+     挂 window 上是因为推送函数在下面的 module 脚本里（要 import SDK）。
+     没接上（断网 / SDK 没加载）就静默跳过 —— 存盘本身绝不能因为云端挂掉而失败。 */
+  try{ if (typeof window.__BIZ_AUTOPUSH__ === 'function') window.__BIZ_AUTOPUSH__(); }catch(e){}
 }
 function seed(){
   /* 种几条示例数据让页面不是空的 */
@@ -2811,6 +2818,203 @@ nav('overview');
 backMainFix();
 cldMark('idle');
 bakMark('idle');
+
+/* ★ 2026-11-08（P-136）：给下面的实时同步 module 留三个口子。
+   主脚本是普通 <script>（全局作用域），module 看不到它的 var/function，
+   必须显式挂到 window 上。三个都是「已有能力的转接」，不下新逻辑。 */
+window.__BIZ_KEY__ = KEY;                                  /* 存盘键，module 落盘用 */
+window.__BIZ_RERENDER__ = function(){                      /* 云端数据到了 → 重画 */
+  try { render(currentView()); } catch(e){}
+};
+window.__BIZ_PUSH_MAIN__ = function(){                     /* 保底把 5 字段桥也推一遍 */
+  try { bizPush(); } catch(e){}
+};
+</script>
+
+<!-- ============================================================
+     实时同步（2026-11-08 · P-136）
+     ------------------------------------------------------------
+     ★ 为什么单开一个 module 脚本：Firestore SDK 是 ES module，
+       现有主脚本是普通 <script>（全局作用域），混不进 import。
+       这里 import 完就把能力挂到 window，主脚本的 save() 只管调用。
+
+     ★ 方向（Tony 定）：本地为主。
+       本地 save() → 防抖 1.2s → 写 zhops/bizmaster
+       其余设备 onSnapshot 收到 → 覆盖本机 + 重画
+       ＝「本地推，别处拉」，本地永远是源头。
+
+     ★ 冲突（Tony 已拍：后推盖先推）。
+       不做逐条 merge，整份比 __at 时间戳，晚的赢。
+       加一道保险：本机有未同步改动、云端又更新了 → 弹窗问一次。
+
+     ★ 为什么不用原来的 fetch：REST 只能主动问，3 台同时开时
+       谁也不知道谁改了。SDK 的 onSnapshot 一改就到，毫秒级。
+     ============================================================ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+/* 跟主脚本同一套项目配置（业务端本来就是这套） */
+const FB = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', coll:'zhops' };
+const DOC = 'bizmaster';
+const TAG = 'zhops.biz';
+const PUSH_DELAY = 1200;      /* 防抖：连打几个字也只推一次 */
+
+const MARK = {
+  el: null,
+  set(state, msg){
+    if (!MARK.el) MARK.el = document.getElementById('syncBox');
+    if (!MARK.el) return;
+    if (state === 'ok'){ MARK.el.className = 'bizcld ok'; MARK.el.textContent = '☁︎ 实时同步 · ' + msg; return; }
+    if (state === 'wait'){ MARK.el.className = 'bizcld wait'; MARK.el.textContent = '☁︎ ' + msg; return; }
+    if (state === 'bad'){ MARK.el.className = 'bizcld bad'; MARK.el.textContent = '☁︎ ' + msg; return; }
+    MARK.el.className = 'bizcld idle'; MARK.el.textContent = '☁︎ ' + msg;
+  }
+};
+
+let db = null, app = null, unsub = null;
+let applyingRemote = false;    /* 正在套用云端数据 → 别回推，否则死循环 */
+let pushTimer = null;
+let lastPushedAt = 0;          /* 本机最近一次成功推送的时间戳（ms） */
+let lastRemoteAt = 0;          /* 云端见过的最大 __at（ms） */
+let pendingLocalAt = 0;        /* 本机有改动但还没推出去的标记时间 */
+
+/* 把 ISO 时间切成 HH:MM，**按本地时区**（不是切字符串）
+   —— UTC 10:08 在越南是 17:08，直接 slice 会少 7 小时。 */
+function hhmm(iso){
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+/* 取一份「要推的」整份快照 */function snapshotForPush(){
+  const S = window.__BIZ_TEST__ && window.__BIZ_TEST__.snapshot ? window.__BIZ_TEST__.snapshot() : null;
+  if (!S) return null;
+  const iso = new Date().toISOString();
+  S.__app = TAG; S.__v = 1; S.__at = iso;
+  return { data: S, iso };
+}
+
+/* 真正写云端 */
+async function pushNow(){
+  if (!db) return;
+  const pack = snapshotForPush();
+  if (!pack) return;
+  const ref = doc(db, FB.coll, DOC);
+  try {
+    await setDoc(ref, { payload: JSON.stringify(pack.data), at: pack.iso, app: TAG });
+    lastPushedAt = Date.parse(pack.iso);
+    pendingLocalAt = 0;
+    MARK.set('ok', new Date().toLocaleTimeString('zh-CN', {hour12:false}).slice(0,5));
+    /* 顺手把「推给主端」的 5 字段桥也推一遍（保持原来的候选池通道不断） */
+    try { if (typeof window.__BIZ_PUSH_MAIN__ === 'function') window.__BIZ_PUSH_MAIN__(); } catch(e){}
+  } catch (e){
+    MARK.set('bad', '推送失败，稍后自动重试');
+    /* 失败就留着标记，等下次 save 或重连时补推 */
+    pendingLocalAt = Date.now();
+  }
+}
+
+/* 防抖入口 —— 主脚本 save() 每次都会调它 */
+window.__BIZ_AUTOPUSH__ = function(){
+  pendingLocalAt = Date.now();
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { pushTimer = null; pushNow(); }, PUSH_DELAY);
+};
+
+/* 把云端数据套进本机（跟原来「从云端恢复」同一套 normalize 口径） */
+function applyRemote(raw){
+  const T = window.__BIZ_TEST__;
+  if (!T || !T.normalize) return false;
+  let o = null;
+  try { o = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e){ return false; }
+  if (!o || o.__app !== TAG) return false;
+  const d = T.normalize(o);
+  if (!d) return false;
+
+  const remoteAt = Date.parse(o.__at || '') || 0;
+  /* 比本机刚推的还旧 → 是我们自己刚写下去的，忽略（避免回声） */
+  if (remoteAt && remoteAt <= lastPushedAt) return false;
+
+  /* ★ 冲突保险：本机有改动没推出去，云端又更新了 → 问一次 */
+  if (pendingLocalAt && remoteAt > lastPushedAt){
+    const ok = window.confirm(
+      '云端有更新的数据（' + String(o.__at||'').slice(0,16).replace('T',' ') + '），' +
+      '本机也有还没推上去的改动。\n\n' +
+      '点「确定」= 用云端覆盖本机（本机改动会丢）\n' +
+      '点「取消」= 保留本机，稍后本机会把它推上去'
+    );
+    if (!ok){
+      /* 用户要保本机 → 立刻推上去，谁推得晚谁赢 */
+      pushNow();
+      return false;
+    }
+  }
+
+  applyingRemote = true;
+  try {
+    /* 走主脚本的替换路径：先换内存 → 落盘 → 重画 */
+    if (!T._seed(d)) return false;
+    try { localStorage.setItem(window.__BIZ_KEY__ || 'zhops.biz.v1', JSON.stringify(d)); } catch(e){}
+    lastRemoteAt = Math.max(lastRemoteAt, remoteAt);
+    pendingLocalAt = 0;
+    if (typeof window.__BIZ_RERENDER__ === 'function') window.__BIZ_RERENDER__();
+    /* ★ 2026-11-08（P-136）：时间按【本地时区】显示。
+       原来切片 __at（UTC ISO）会少 7 小时 —— 越南 UTC+7，用户看到的是 UTC 时间。 */
+    MARK.set('ok', '已同步 ' + hhmm(o.__at));
+    return true;
+  } finally {
+    applyingRemote = false;
+  }
+}
+
+/* 订阅云端。任何一台设备一改，这里毫秒级收到。 */
+function subscribe(){
+  if (!db) return;
+  if (unsub){ try { unsub(); } catch(e){} unsub = null; }
+  MARK.set('wait', '正在连接…');
+  unsub = onSnapshot(doc(db, FB.coll, DOC), (snap) => {
+    if (!snap.exists()){ MARK.set('idle', '云端还没有数据（本机一改就自动推上去）'); return; }
+    const d = snap.data() || {};
+    if (d.app && d.app !== TAG) { MARK.set('bad', '云端那份不是业务部数据，已忽略'); return; }
+    const ok = applyRemote(d.payload || '');
+    if (!ok) MARK.set('ok', '实时同步中');
+  }, (err) => {
+    MARK.set('bad', '连接断开（' + (err && err.code ? err.code : '网络') + '），点一下重连');
+  });
+}
+
+function boot(){
+  try {
+    app = initializeApp({ projectId: FB.pid, apiKey: FB.key, authDomain: FB.pid + '.firebaseapp.com' }, 'biz-sync');
+    db = getFirestore(app);
+  } catch(e){
+    MARK.set('bad', '云端没起来（SDK 加载失败），本机照常可用');
+    return;
+  }
+  subscribe();
+  /* 切回标签页 → 立刻重订阅一次（手机锁屏久了连接会断） */
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) subscribe();
+  });
+  /* 点状态灯 → 断线重连 */
+  const box = document.getElementById('syncBox');
+  if (box){
+    box.addEventListener('click', () => { pendingLocalAt = 0; subscribe(); });
+    box.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); subscribe(); } });
+  }
+  /* 本机一打开、云端若比本机新 → 首屏就对上。等主脚本 load() 跑完再订阅（上面已 load）。 */
+}
+
+boot();
+
+/* 探针出口（只读） */
+window.__BIZ_SYNC__ = {
+  state: () => ({ hasDb: !!db, hasSub: !!unsub, lastPushedAt, lastRemoteAt, pending: !!pendingLocalAt }),
+  docName: () => DOC,
+  resub: subscribe
+};
 </script>
 </body>
 </html>
