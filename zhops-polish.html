@@ -250,7 +250,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-08 ============ -->
   <div class="day-panel on" data-day="2026-11-08">
     <div class="card">
-      <h2>2026-11-08 · 打磨记录<span class="n">5 行 · 已打磨 5 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-08 · 打磨记录<span class="n">6 行 · 已打磨 6 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -306,6 +306,16 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-08</td>
               <td class="mono nw">11-08</td>
               <td><span class="mono">schedule.html</span> 已作废（<span class="mono">zhops-admin.html</span> 第 751 行自注「老的真系统 schedule.html 放弃」），却还占着线上根地址 <span class="mono">index.html</span>，<span class="mono">zh-doc-index.html</span> 也仍标它「现行」。<b>按方案 C 连根拔掉</b>：① 移出发布清单，归档到 <span class="mono">build/legacy/</span>（连两个老测试脚本一起，附 README 自解释）；② <b>线上根地址改指主端</b> —— <span class="mono">index.html</span> 现在与 <span class="mono">admin.html</span> 同一份 sha；③ <b>发布保险丝反向</b>：旧的「index 必须是 schedule」改成「index 必须 = 主端、不许出现 <span class="mono">zhops.sched.v2</span>」；④ <span class="mono">verify.sh</span> 的 <span class="mono">PAIRS</span> 同步改；⑤ <span class="mono">zh-doc-index</span> 标「已退役」、主端那行补「同时发布成 index.html」；⑥ 生态地图四处口径全改（地址表 / 门槛记录 / 术语警告 / 死代码说明）。新探针 <span class="mono">check-p134-retire.js</span> <b>38 项全过</b>，<b>反向控制三路全红</b>（保险丝改回旧方向 → 3 红 / 老文件放回 docs → 1 红 / zh-doc-index 改回「现行」→ 2 红），跑完三处逐字还原。发布后：线上 <span class="mono">/zhops/schedule.html</span> 返回 <b>404</b>（彻底下架），根地址标题变「MGD 排课系统 · 主端」、含 v3 不含 v2；整套 <b>44 通过 / 0 失败</b>；线上五页原文 14/14；无头 Chrome 四页零报错；<span class="mono">verify.sh</span> 全绿。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-135</td>
+              <td><b>老排课系统连根拔起（全项目零痕迹）</b><br><span style="color:#8899aa;font-size:12px">「不要再留任何的痕迹，包括在系统生态地图里，都把它拿走」· 承接 P-134 的补刀</span></td>
+              <td class="nw">文档 · 清理</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-08</td>
+              <td class="mono nw">11-08</td>
+              <td>P-134 只做到「归档 + 标已退役」，墓碑还立在生态地图和索引上。这次<b>连根拔</b>：① <span class="mono">build/legacy/</span> 整个目录删除（<span class="mono">schedule.html</span> / README / 两个老测试脚本）；② 生态地图<b>零提及</b>（老排课系统 / <span class="mono">build/legacy</span> / <span class="mono">schedule.html</span> / <span class="mono">zhops.sched.v2</span> / <span class="mono">CURRI_FALLBACK</span> / <span class="mono">curriSync</span> / 「已退役」全部清零）；③ 顺手修两个<b>内容错</b>：主端存盘键 <span class="mono">v2→v3</span>、「三把互不相通」→「两把」（教师端 2026-10-30 已拆出用 <span class="mono">zhops.teacher.v1</span>，原写「主端与教师端共用」是错的）；④ 整块删掉「通道一 · 课程目录」—— <span class="mono">curriSync</span> 是老系统独有的，实测主端 / 教师端 <b>各 0 处</b>，改归属等于画一条不存在的流向；⑤ 文档索引：退役表格行整行删、开班门槛那条冲突删、已知冲突 <b>4 处 → 3 处</b>；⑥ <span class="mono">404.html</span> 注释举例与导航「排课系统」链接、<span class="mono">ops-system-map</span> 的 <span class="mono">schedule.html</span> 一并改；⑦ 台账本身<b>一字未动</b>（历史事实来源），只加本行。新探针 <span class="mono">check-p135-eradicate.js</span> <b>66 项全过</b>（旧 <span class="mono">check-p134-retire.js</span> 作废删除 —— 它断言「legacy 存在」，归档一删就必红）；<b>反向控制三路全红</b>（生态地图放回「老排课系统」→ 2 红 / 索引放回退役行 → 3 红 / 重建 <span class="mono">build/legacy</span> → 3 红），跑完逐字还原、sha 一致。⑧ 再往下挖一层发现<b>生成器也会写回痕迹</b>：<span class="mono">14_build_worktable.py</span> / <span class="mono">23_build_zh_doc_index.py</span> 的模板里还列着老系统页和「开班门槛」冲突，一并清掉后重跑生成（<span class="mono">work.html</span> / 索引重新产出，仍是零提及）；发布脚本与 <span class="mono">verify.sh</span> 的注释、结尾提示同步去掉老系统字样（<b>保险丝本身留着</b>，只改措辞）。⑨ <span class="mono">docs/schedule.bak-*.html</span> 5 个老系统备份副本一并删（Tony 确认；git 历史仍可找回）。发布口径（<span class="mono">index.html</span> = 主端、无 <span class="mono">SRC_SCHED</span>、保险丝）确认未被本次清理误伤。</td>
             </tr>
           </tbody>
         </table>

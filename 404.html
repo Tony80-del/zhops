@@ -32,7 +32,7 @@
   <nav>
     <a href="/zhops/teacher.html">教师端</a>
     <a href="/zhops/admin.html">主端</a>
-    <a href="/zhops/">排课系统</a>
+    <a href="/zhops/">首页</a>
   </nav>
   <p class="small">如果上面三个都能打开、只是你敲的那条不行 —— 把地址栏末尾的 <code>/</code> 删掉再回车即可。</p>
 </main>
@@ -50,7 +50,7 @@
       setTimeout(function(){ location.replace(target); }, 600);
       return;
     }
-    // 其他 .html 末尾带斜杠：直接去掉斜杠重试（例如 schedule.html/）
+    // 其他 .html 末尾带斜杠：直接去掉斜杠重试（例如 admin.html/）
     if (/\.html\/?$/i.test(p)) {
       location.replace(p.replace(/\.html\/?$/i, '.html'));
       return;

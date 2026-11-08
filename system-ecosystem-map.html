@@ -516,8 +516,7 @@
       <div class="dec-why">
         <b>已定 2026-10-29</b>：<span class="key">minOpen:4</span> / <span class="key">capMax:13</span>，三端统一。<br>
         原主端 6–10、教师/管理端 8–12 <b class="no">全部作废</b>。<br>
-        <b class="yes">已落实 2026-10-30</b>（当时三端都改完；老系统已于 2026-11-08 P-134 退役）：
-        <s><span class="loc">schedule.html</span> <span class="key">blank()</span> 默认值 6/10 → 4/13</s>（已退役，不再发布）·
+        <b class="yes">已落实 2026-10-30</b>（当时三端都改完）：
         <span class="loc">zhops-teacher.html</span> 申请校验 <span class="key">n &lt; 1</span> → <span class="key">n &lt; 4</span> ·
         <span class="loc">zhops-admin.html</span> <span class="key">DB.set</span> 8/12 → 4/13，新建班容量回退 <span class="key">DB.set.capMax</span> 自动跟 13。<br>
         <b>边界（Tony 定的口径）</b>：教师端<b>只拦下限 4、不拦上限 13</b> —— 申请阶段卡太死反而堵住并课/拆分的判断；
@@ -620,7 +619,7 @@
         <b>共用底座 + 薄入口</b>：不做 4 份复制的闭环。闭环只有一套 —— 跑探针 → 读红项 → 定位 → 改 → 复跑 → 不过就回滚 → 记工作台账；4 个薄入口只放本端页面路径、探针清单、禁区。<br>
         <b>六条固定格式</b>：我是谁管哪页 / 每天替 Tony 做哪几件事 / 绝对不许碰什么 / 怎么证明自己做对了 / 出事找谁 / 拿不准先问 Tony。<br>
         <b>权限闸门</b>：只读分析可自动；改文件逐次确认；发布与推云<b>永远手点</b>。<b>把关与操作不进同一个技能</b> —— 改得对不对由探针红绿判定，不由修改者自评；每条新断言都要做反向控制。<br>
-        <b>禁区</b>：<code>zhops.sched.v3</code> 主端与教师端共用，写操作先过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code> 四字段；云端两条路绝不合并 —— 整份 <code>zhops/master</code> 手点，增量 <code>zhops/done_*</code> 自动。<br>
+        <b>禁区</b>：<code>zhops.sched.v3</code> 主端与管理端共用（教师端独立用 <code>zhops.teacher.v1</code>），写操作先过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code> 四字段；云端两条路绝不合并 —— 整份 <code>zhops/master</code> 手点，增量 <code>zhops/done_*</code> 自动。<br>
         <b>范围来源</b>：技能读 <span class="loc">system-ecosystem-map.html</span> 知道工作范围与口径决策，读 <a href="zhops-polish.html" class="loc">工作台账</a> 知道做到哪一步。<b>技能 ID 不进编号字典</b> —— 字典只收业务编号。
       </div>
     </div>
@@ -724,7 +723,7 @@
   <div class="ov-row3">
     <div class="cloud-chip">
       <div class="c-n">meta/curriculum</div>
-      <div class="c-d">课次目录（级别 / 阶段 / 课次）<br>主端<b>只读</b> · 仓库里<b>没有写入方</b></div>
+      <div class="c-d">课次目录（级别 / 阶段 / 课次）<br><b>当前无读者</b> · 仓库里也没有写入方</div>
     </div>
     <div class="cloud-chip">
       <div class="c-n">zhops/master</div>
@@ -852,17 +851,15 @@
     <div class="field">
       <div class="field-label">数据流向（现状）</div>
       <div class="field-value multi">
-        <div>出：<span class="yes">→ 排课主端 index.html</span> —— 课次目录以 <span class="loc">CURRI_FALLBACK</span> 常量形式<b>内嵌复制</b>进排课系统</div>
-        <div>出：<span class="yes">→ Firestore meta/curriculum</span> —— 排课主端启动时从这里拉目录</div>
+        <div>出：<span class="no">无</span> —— 现行主端不内置课次目录，课名在班级上直接填</div>
         <div>入：<span class="no">无</span></div>
       </div>
     </div>
     <div class="field">
       <div class="field-label">这条流的断点</div>
       <div class="field-value">
-        排课系统第 513 行写着「由 <span class="loc">build/sync-curriculum.mjs</span> 生成，请勿手改」。<br>
-        <b class="no">但 ~/zhops 里没有 build/ 目录，也没有任何 .mjs 文件</b> —— 脚本不存在。<br>
-        结果：hsk.html 改了课程 → 排课系统里的课次目录<b>不会自动更新</b>，云端的 <span class="key">meta/curriculum</span> 也没人写。
+        hsk.html 增删课次后，<b class="no">没有任何自动转换脚本</b>把它变成排课可用的目录（<span class="loc">~/zhops</span> 里没有 build/、没有 .mjs）。<br>
+        结果：hsk.html 改了课程 → 排课这边<b>不会自动跟着改</b>，只能人工在班级上填课名。
       </div>
     </div>
     <div class="field">
@@ -871,7 +868,7 @@
     </div>
     <div class="field">
       <div class="field-label">搭建顺序</div>
-      <div class="field-value">已建。HSK2/3 继续写。建议顺手把 <span class="loc">sync-curriculum.mjs</span> 补上，否则课程一改排课就错位。</div>
+      <div class="field-value">已建。HSK2/3 继续写。建议顺手补一个转换脚本，否则课程一改排课就对不上。</div>
     </div>
   </div>
 </div>
@@ -898,15 +895,13 @@
         <div><b>主端</b>（排课引擎 · 现行）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">docs/zhops-admin.html</span></a></div>
         <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a></div>
-        <div style="padding-left:14px; color:var(--hint);">⚠️ 同一份源文件发布成<b>两个</b>线上文件名：<span class="loc">admin.html</span> 和根地址 <span class="loc">index.html</span>（2026-11-08 P-134 起，老系统退役后接棒）。</div>
+        <div style="padding-left:14px; color:var(--hint);">⚠️ 同一份源文件发布成<b>两个</b>线上文件名：<span class="loc">admin.html</span> 和根地址 <span class="loc">index.html</span>。</div>
         <div style="margin-top:8px;"><b>教师端</b>（老师手机上开的就是这个）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html</span></a></div>
         <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/teacher.html"><span class="loc">https://tony80-del.github.io/zhops/teacher.html</span></a></div>
         <div style="margin-top:8px;"><b>管理端</b>（主控 · 审批 / 配置 / 结算）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html</span></a></div>
         <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a></div>
-        <div style="margin-top:8px;"><b class="yes">老排课系统 · 已退役</b>（2026-11-08 · P-134）</div>
-        <div style="padding-left:14px; color:var(--hint);">原 <span class="loc">docs/schedule.html</span> → 已归档到 <span class="loc">build/legacy/schedule.html</span>，<b>不再发布、线上已无此文件</b>。它的存盘键 <span class="key">zhops.sched.v2</span> 与主端 <span class="key">zhops.sched.v3</span> 隔离，退役不碰任何数据。</div>
         <div style="margin-top:8px; color:var(--hint);">
           <b>「已同步」怎么核的</b>：跑 <span class="loc">sh build/verify.sh</span>，把线上页面下载回来逐个比对 sha256 —— 与本地<b>完全一致</b>才算过（不是看 push 成功）。
         </div>
@@ -918,7 +913,7 @@
         <div class="triple-item">
           <div class="ti-label">主端 · 已连云</div>
           <div class="ti-name">index.html</div>
-          <div class="ti-path">本机 zhops.sched.v2</div>
+          <div class="ti-path">本机 zhops.sched.v3</div>
           <div class="ti-tag synced">fsPullMain / fsPushMain ⇄ zhops/master</div>
           <div class="ti-path" style="margin-top:4px; color:var(--hint);">171 KB · 排课 / 数据 / 结算 / 成员</div>
         </div>
@@ -944,9 +939,9 @@
       <div class="field-value multi">
         <div>· 教师端与管理端共用云端文档 <span class="key">zhops/master</span>（<span class="loc">teacher.html:730</span> / <span class="loc">admin.html:904</span>，coll 都是 <span class="loc">'zhops'</span>、doc 都是 <span class="loc">'master'</span>）</div>
         <div>· 教师端提交开班申请后<b>直接进管理端「待审批」队列</b>（<span class="loc">teacher.html:378</span> 页面自述 + 共用同一份存储）</div>
-        <div>· 主端 <span class="loc">index.html</span> <b class="yes">已接云（2026-10-30 · S1.3）</b>：启动 <span class="loc">fsPullMain()</span> 拉一次（云端 <span class="key">at</span> 较新才合并，只补空），存盘后 <span class="loc">fsPushMain()</span> 延迟 1.5s 推（白名单 + at 防冲撞 + 空库不推）。原先唯一的 <span class="loc">fetch()</span> 只读 <span class="key">meta/curriculum</span></div>
+        <div>· 主端 <span class="loc">index.html</span> <b class="yes">已接云（2026-10-30 · S1.3）</b>：启动 <span class="loc">fsPullMain()</span> 拉一次（云端 <span class="key">at</span> 较新才合并，只补空），存盘后 <span class="loc">fsPushMain()</span> 延迟 1.5s 推（白名单 + at 防冲撞 + 空库不推）。</div>
         <div>· 云端认领标记已放宽为<b>多来源</b>：<span class="loc">APP_TAGS_OK</span> 认 <span class="key">zhops.admin</span> / <span class="key">zhops.teacher</span> / <span class="key">zhops.sched</span>。改之前只认 admin，主端一推就被整份忽略，三端互相覆盖</div>
-        <div>· 本机键<b>三把互不相通</b>：主端 <span class="key">zhops.sched.v2</span>（<span class="loc">:327</span>）· 管理端 <span class="key">zhops.sched.v3</span>（<span class="loc">admin:751</span>）· 教师端 <span class="key">zhops.teacher.v1</span>（<span class="loc">teacher:517</span>，2026-10-30 拆开 —— 不拆教师端会把分片写进主端那把钥匙）</div>
+        <div>· 本机键<b>两把互不相通</b>：主端 / 管理端 <span class="key">zhops.sched.v3</span>（<span class="loc">admin:751</span>）· 教师端 <span class="key">zhops.teacher.v1</span>（<span class="loc">teacher:517</span>，2026-10-30 拆开 —— 不拆教师端会把分片写进主端那把钥匙）</div>
         <div>· 云端<b>三个文档</b>（2026-10-30 新增后两个）：<span class="key">zhops/master</span> 全量 · <span class="key">zhops/public</span> 公共只读（时段 / 课名 / 教室 / 门槛）· <span class="key">zhops/t1…t5</span> 每位教师一份分片。<b>主端写全部；教师端只读 public + 自己那份，写回只动自己班的 lessons / absences</b></div>
         <div>· 时段表是<b>全局</b>的（早班 / 午间 / 晚班 / 周末），班级挂一个时段，教师能授多个 —— <b>没有按教师独立配时段的机制</b></div>
       </div>
@@ -984,10 +979,10 @@
         <div>教师端 ⇄ 管理端：<span class="yes">已通</span>（Firestore zhops/master，双向）</div>
         <div>主端 ⇄ 教师端 / 管理端：<span class="yes">已通（2026-10-30 · S1.3）</span>（同一份 zhops/master，主端 fsPullMain / fsPushMain）</div>
         <div>三端 → 人事部：<span class="yes">已通（2026-10-31）</span> 课次标 done 就写 <span class="key">zhops/done_&lt;课次ID&gt;</span>；改回待上 / 取消 = 同一条覆盖（撤回）</div>
-        <div style="color:var(--hint);">旧的申请码通道（<span class="loc">ZHA1.</span>）<b class="yes">已成死路，但不再是断点</b>（2026-11-01 结案）—— 主端 / 教师端两端都已无此功能，只剩老排课系统 <span class="loc">schedule.html</span> 里一段永远不会执行的解析代码。<b class="yes">2026-11-08（P-134）：老系统已退役归档到 <span class="loc">build/legacy/</span>，线上不再有这段代码</b> —— 死代码随之退出线上。</div>
+        <div style="color:var(--hint);">旧的申请码通道（<span class="loc">ZHA1.</span>）<b class="yes">已成死路，但不再是断点</b>（2026-11-01 结案）—— 主端 / 教师端两端都已无此功能，代码已随旧系统彻底删除，线上全无残留。</div>
         <div style="margin-top:6px;"><b class="yes">记账模型已统一（2026-10-29 · S1.2）</b>：主端也有 <span class="key">lessons[]</span> + <span class="key">absences[]</span>，字段形状对齐管理端。推进课次时 log 与 lessons <b>双写</b>；<span class="loc">load()</span> 里做了旧数据迁移（有 log 没 lessons 逐条展开，log 一条不删）；<span class="loc">settleWindow()</span> 优先读 lessons、没有才退回 log。<b>仍差</b>：主端缺勤只有容器、没有登记入口（入口在教师端）；双写收口等 log 退休。</div>
-        <div style="margin-top:6px;"><b class="yes">主端已在同步链上（2026-10-30 · S1.3）</b>：本机 <span class="key">zhops.sched.v2</span>。<span style="color:var(--warn);">⚠️ 这里的「主端」指<b>老排课系统</b>（已退役，P-134）；现行主端 <span class="loc">zhops-admin.html</span> 用 <span class="key">zhops.sched.v3</span>。</span> 拉 = 启动读一次、云端较新才合并；推 = 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推。字段映射 <span class="loc">level↔lv / classId↔cls / slotId↔slot / teacherId↔teacher / applications↔apps</span>。<br>
-        <b class="no">仍存的限制</b>：① 本机键故意留在 v2（v3 是管理端、v1 是教师端，同源同键会串数据）。② <b>管理端推送没有 at 防冲撞</b>，仍是后写覆盖；主端有防冲撞，教师端已改成「读-改-写」（S1.9）。</div>
+        <div style="margin-top:6px;"><b class="yes">主端已在同步链上（2026-10-30 · S1.3）</b>：本机 <span class="key">zhops.sched.v3</span>。拉 = 启动读一次、云端较新才合并；推 = 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推。字段映射 <span class="loc">level↔lv / classId↔cls / slotId↔slot / teacherId↔teacher / applications↔apps</span>。<br>
+        <b class="no">仍存的限制</b>：① 主端与管理端共用 v3、教师端独立用 v1（同源同键会串数据）。② <b>管理端推送没有 at 防冲撞</b>，仍是后写覆盖；主端有防冲撞，教师端已改成「读-改-写」（S1.9）。</div>
       </div>
     </div>
 
@@ -1017,9 +1012,9 @@
 
       <div class="pending-item">
         <div class="pi-head"><span class="pi-num">断点 4</span><span class="pi-name">课次目录无人更新</span><span class="status-badge s-wait">已推迟</span></div>
-        <div class="pi-row"><b>现象</b>：<span class="loc">CURRI_FALLBACK</span> 注释说由 <span class="loc">build/sync-curriculum.mjs</span> 生成。</div>
-        <div class="pi-row"><b>事实</b>：<span class="no">该脚本不存在</span>（<span class="loc">~/zhops</span> 下无 build/、无 .mjs）。云端 <span class="key">meta/curriculum</span> 也无写入代码。</div>
-        <div class="pi-row"><b>后果</b>：hsk.html 增删课次后，排课系统仍按旧目录排 —— 不报错，只是排错。</div>
+        <div class="pi-row"><b>现象</b>：hsk.html 的课次目录没有任何脚本转换给排课系统用。</div>
+        <div class="pi-row"><b>事实</b>：<span class="no">转换脚本不存在</span>（<span class="loc">~/zhops</span> 下无 build/、无 .mjs）。</div>
+        <div class="pi-row"><b>后果</b>：hsk.html 增删课次后，排课这边不会跟着改 —— 不报错，只是排错。</div>
         <div class="pi-row"><b>已定处理方式（2026-10-29）</b>：<b class="plan">推迟</b>。教课体系研发还没完成，目录本来就要变，现在补脚本等于白写。<b>等 Tony 完成教课体系后再做。</b></div>
       </div>
     </div>
@@ -1368,7 +1363,7 @@
           </div>
           <div class="rsi-card live">
             <div class="rc-h"><span class="rc-id">zhops-admin</span><span class="rc-role">Schedule AI Manager · 主端</span><span class="status-badge s-ok">已落地</span></div>
-            <div class="rsi-row"><b>管哪一页</b>　<code>docs/zhops-admin.html</code> · 存盘 <code>zhops.sched.v3</code>，<span class="no">与教师端共用一把钥匙</span>。</div>
+            <div class="rsi-row"><b>管哪一页</b>　<code>docs/zhops-admin.html</code> · 存盘 <code>zhops.sched.v3</code>，<span class="no">与管理端共用一把；教师端独立用 v1</span>。</div>
             <div class="rsi-row"><b>每天做什么</b>　读口径与工作台账 → 跑主端探针 → 改主端 → 复跑 → 记账；写操作先过班级归属守卫。</div>
             <div class="rsi-row"><b>绝对不碰</b>　不改写业务部拉来的 6 个字段；课次 <code>roomCode</code> 存快照不现算；侧栏外跳带 <code>data-ext</code>、不带 <code>data-v</code>；不推整份、不发布。</div>
             <div class="rsi-row"><b>怎么自证</b>　<code>check-admin-core.js</code>（59 项）+ <code>check-admin-dept-links.js</code>；<code>run.sh</code> 主端段有独立 step。</div>
@@ -1441,9 +1436,9 @@
     <div class="field">
       <div class="field-label">边界与禁区</div>
       <div class="field-value">
-        <code>zhops.sched.v3</code> 主端与教师端共用，写前过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code>；云端两路绝不合并（<code>zhops/master</code> 手点 / <code>zhops/done_*</code> 自动）。<b>技能 ID 是工具名，不进编号字典</b>（6 列 / 5 分组 / 25 条保持原样）。
+        <code>zhops.sched.v3</code> 主端与管理端共用（教师端已拆出独立用 <code>zhops.teacher.v1</code>），写前过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code>；云端两路绝不合并（<code>zhops/master</code> 手点 / <code>zhops/done_*</code> 自动）。<b>技能 ID 是工具名，不进编号字典</b>（6 列 / 5 分组 / 25 条保持原样）。
         <br><b class="yes">业务端两条云端路也绝不合并</b>（P-133）：<code>zhops/bizstudents</code> = 只带 5 个字段的对外桥，单向给主端候选池，<b>业务端自己不回读</b>；<code>zhops/bizmaster</code> = 整份 <code>zhops.biz.v1</code> 的自用备份，侧栏「☁︎ 备份到云端 / 从云端恢复」，与推主端<b>完全独立</b>。冲突策略 = 整份覆盖、谁推得晚谁赢（不做逐条 merge）。
-        <br><b class="yes">老排课系统 <code>schedule.html</code> 已退役</b>（P-134 · 2026-11-08）：已从 <code>docs/</code> 归档到 <code>build/legacy/</code>，不再发布。线上根地址 <code>index.html</code> 改为复制<b>主端 <code>zhops-admin.html</code></b>（与 <code>admin.html</code> 同一份内容）。发布脚本的保险丝已反向：<b>根地址必须 = 主端、不许出现老系统的 <code>zhops.sched.v2</code></b>。
+        <br><b class="yes">线上根地址 <code>index.html</code> = 主端</b>：复制自 <b>主端 <code>zhops-admin.html</code></b>（与 <code>admin.html</code> 同一份内容）。发布脚本的保险丝：<b>根地址必须 = 主端、且必须含 <code>publicPayload</code></b>。
       </div>
     </div>
   </div>
@@ -1460,32 +1455,6 @@
 </div>
 
 <div class="flow-box">
-
-  <!-- 块 1 -->
-  <div class="flow-block">
-    <div class="flow-h">
-      【通道一】课程目录 · 已通
-      <span class="fh-tag fh-ok">GET 只读</span>
-    </div>
-    <div class="flow-why">
-      <b class="yes">✅ 2026-11-08（P-134）起术语不再混：老排课系统 <span class="loc">schedule.html</span> 已退役归档到 <span class="loc">build/legacy/</span>，线上根地址 <span class="loc">index.html</span> 现在就是<b>主端 <span class="loc">zhops-admin.html</span></b>（与 <span class="loc">admin.html</span> 同一份）。</b><br>
-      <span style="color:var(--hint);">下面这段「通道一 · 课程目录」记录的是<b>老排课系统当年</b>的行为，作为历史保留 —— 它启动时向云端要一份课次目录，失败就用内嵌的 <span class="loc">CURRI_FALLBACK</span> 兜底。老系统已不发布，这条通道在线上不再产生流量。</span>
-      <span style="color:var(--hint);">（原文写「三端里唯一跑通的自动流」—— 2026-11-01 已不成立：主端 ⇄ 教师端、三端 → 人事 都已通。）</span>
-    </div>
-    <div class="flow-line"><span class="src">老排课系统（已退役）</span>
-   │
-   │  <span class="lbl">curriSync()</span>   <span class="note">index.html:720</span>
-   ▼
-<span class="dst">Firestore  hsk-class-v1 / meta/curriculum</span>      <span class="note">实测 HTTP 200</span>
-   │
-   ├──▶ <span class="dst">CURRI</span> = 云端目录                            <span class="note">成功 · CURRI_SRC='cloud'</span>
-   │
-   └──▶ <span class="act">CURRI_FALLBACK</span>（内嵌常量）                    <span class="note">失败兜底 · 静默，不报错</span>
-              │
-              ▼
-        <span class="dst">排课界面课次下拉 / 进度计算</span>
-</div>
-  </div>
 
   <!-- 块 2 -->
   <div class="flow-block">
@@ -1525,8 +1494,7 @@
     </div>
     <div class="flow-line"><span class="src">主端 zhops-admin.html</span>
    │
-   ├── 本机 <span class="key">zhops.sched.v3</span>            <span class="note">v3（原 v2 已升；v3 曾被教师端占用，现已分开）</span>
-   ├── <span class="dst">GET meta/curriculum</span>              <span class="note">课次目录（通道一，未变）</span>
+   ├── 本机 <span class="key">zhops.sched.v3</span>            <span class="note">主端 + 管理端共用；教师端独立用 v1</span>
    ├── <span class="act">fsPull()</span> 自动 · <span class="act">fsPush()</span> <b>手动</b>  <span class="note">zhops-admin.html:1134 / :1150</span>
    ├── <span class="note">⚠️ 推送是「手点 ☁︎ 推送到云端」（Tony 2026-10-17 定：全手动）。<span class="loc">fsSchedulePush()</span> 保留但 save() 不再调用 = 死代码。只有<b>拉取</b>是开机自动。</span>
    ├── <span class="dst">zhops/public</span>                    <span class="note">时段表 / 课程目录 / 阶段名 / 教室省市 / 门槛 —— 公共那份</span>
@@ -1536,27 +1504,7 @@
 <span class="src">主端排好的课</span>          <span class="yes">──▶</span>  <span class="dst">教师端今日课程</span>      <span class="note">已通：教师端读自己那份 t&lt;id&gt;</span>
 <span class="src">教师端提交的申请</span>      <span class="yes">──▶</span>  <span class="dst">主端申请管理</span>        <span class="note">已通：主端启动 fsPull 合并</span>
 
-<span class="note">申请码通路：</span><span class="dead">✕ 已彻底作废</span> <span class="note">两端都已无此功能（2026-11-01 结案），只剩老排课系统一段不执行的解析代码</span>
-</div>
-  </div>
-
-  <!-- 块 4 -->
-  <div class="flow-block">
-    <div class="flow-h">
-      【课程】hsk.html → 排课 · 半通
-      <span class="fh-tag fh-warn">转换脚本缺失</span>
-    </div>
-    <div class="flow-why">
-      生态地图原来写「课程研发无对外数据流、课程内容自包含」—— <b>这是错的</b>。排课系统的课次目录就是从 hsk.html 的 <span class="loc">DATA</span> 来的。问题是转换脚本不在仓库里，所以这条路只能靠手工同步。
-    </div>
-    <div class="flow-line"><span class="src">hsk.html</span>  <span class="lbl">const DATA</span>                    <span class="note">hsk.html:241 · stages / stageLessons</span>
-   │
-   │  <span class="dead">build/sync-curriculum.mjs</span>        <span class="note">注释承诺存在 · 实际不存在</span>
-   ▼
-<span class="dst">index.html</span>  <span class="lbl">CURRI_FALLBACK</span>               <span class="note">index.html:513 · 内嵌常量，手改会被覆盖</span>
-   │
-   ▼
-<span class="dst">排课主端课次目录</span>                        <span class="note">课程一改，这里不跟着改 → 静默错位</span>
+<span class="note">申请码通路：</span><span class="dead">✕ 已彻底作废</span> <span class="note">两端都已无此功能（2026-11-01 结案），代码已彻底删除</span>
 </div>
   </div>
 
@@ -1617,7 +1565,7 @@
   <div class="brk-item">
     <div class="brk-h"><span class="brk-n">B1</span><span class="brk-t">主端不在同步链上</span><span class="status-badge s-ok">已通 2026-10-30</span></div>
     <div class="brk-r">
-      <b>原证据</b>：<span class="loc">index.html</span> 只有 1 处 <span class="loc">fetch()</span>（GET 目录）；无 <span class="loc">method:'PATCH'</span>；本机键 <span class="key">zhops.sched.v2</span>。<br>
+      <b>原证据</b>：<span class="loc">index.html</span> 只有 1 处 <span class="loc">fetch()</span>（GET 目录）；无 <span class="loc">method:'PATCH'</span>。<br>
       <b>已修（2026-10-30 · S1.3）</b>：新增 <span class="loc">fsGetDoc / fsGetMaster / cloudPreview</span> 读，<span class="loc">fsPullMain / fsPushMain</span> 读写双向 —— 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推 + 逐表按 id 合并。<br>
       <b>实测发现</b>：云端只有 <span class="key">teachers 5 / students 19</span>，<b class="no">classes / apps / lessons 全 0，absences 字段都没有</b>。所以 S1.2 不是「合并两套数据」，是「主端单方面改模型」。<br>
       <b class="yes">已改（2026-10-30 · S1.9）</b>：<b>教师端</b>推的时候不再整份覆盖 —— 先 GET 整份，别人的班原样留，只替换自己班的 <span class="loc">lessons / absences</span>，再整份写回；云端没有主数据时拒绝推。<br>
@@ -1636,9 +1584,9 @@
   <div class="brk-item">
     <div class="brk-h"><span class="brk-n">B3</span><span class="brk-t">课次目录无人更新</span><span class="status-badge s-warn">静默错位</span></div>
     <div class="brk-r">
-      <b>证据</b>：<span class="loc">CURRI_FALLBACK</span> 注释称由 <span class="loc">build/sync-curriculum.mjs</span> 生成（:503/:513）；<span class="loc">~/zhops</span> 无 build/、无任何 .mjs。<br>
-      <b>影响</b>：hsk.html 改课次 → 排课按旧目录排，不报错、只排错。<br>
-      <b>修法</b>：补一个脚本，读 hsk.html 的 DATA → 生成 CURRI_FALLBACK → PATCH <span class="key">meta/curriculum</span>。
+      <b>证据</b>：<span class="loc">~/zhops</span> 无 build/、无任何 .mjs —— 从 hsk.html 到排课的转换脚本从来不存在。<br>
+      <b>影响</b>：hsk.html 改课次 → 排课这边不跟着改，不报错、只排错。<br>
+      <b>修法</b>：补一个脚本，读 hsk.html 的 DATA，生成排课能用的课次目录。
     </div>
   </div>
 </div>
@@ -1700,14 +1648,14 @@
     </tr>
     <tr class="hl">
       <td class="step">S1.4</td>
-      <td>~~删主端申请码导入框（修断点 3）~~<br><span class="sm"><b class="yes">已结案（2026-11-01）</b>：主端与教师端两端都已无此功能（<span class="loc">CODE_PREFIX</span> / <span class="loc">importCode</span> 在主端 0 处、教师端 <span class="loc">btoa</span> 0 处）。只剩老排课系统 <span class="loc">schedule.html:1134</span> 一段不会被调用的解析代码。<b>决定：不单独修</b> —— 它不是 bug，是死代码；等老排课系统本身要改时顺手清理。</span></td>
+      <td>~~删主端申请码导入框（修断点 3）~~<br><span class="sm"><b class="yes">已结案（2026-11-01）</b>：主端与教师端两端都已无此功能（<span class="loc">CODE_PREFIX</span> / <span class="loc">importCode</span> 在主端 0 处、教师端 <span class="loc">btoa</span> 0 处）。<b>残留代码已随旧系统删除一并清除，全项目 0 处。</b></span></td>
       <td><span class="status-badge s-ok">已结案</span></td>
       <td>S1.2</td>
       <td class="sm">不单独做</td>
     </tr>
     <tr>
       <td class="step">S1.5</td>
-      <td>补课程目录同步脚本（修断点 4）<br><span class="sm">build/sync-curriculum.mjs：hsk.html DATA → CURRI_FALLBACK + meta/curriculum</span></td>
+      <td>补课程目录同步脚本（修断点 4）<br><span class="sm">读 hsk.html 的 DATA，生成排课能用的课次目录</span></td>
       <td><span class="status-badge s-wait">已推迟</span></td>
       <td>无</td>
       <td class="sm"><b class="plan">等教课体系研发完成</b>（目录本来要变，现在写等于白写）</td>
@@ -1728,7 +1676,7 @@
     </tr>
     <tr>
       <td class="step">S1.8</td>
-      <td>文档状态索引<br><span class="sm">33 份文档标「现行 / 历史 / 草稿 / 已作废」+ 取代关系 + 4 处已知冲突</span></td>
+      <td>文档状态索引<br><span class="sm">32 份文档标「现行 / 历史 / 草稿 / 已作废」+ 取代关系 + 3 处已知冲突</span></td>
       <td><span class="status-badge s-ok">已做</span></td>
       <td>无</td>
       <td class="sm"><b class="yes">已交付</b>：<a class="loc" href="zh-doc-index.html">docs/zh-doc-index.html</a><br>由 <span class="loc">build/23_build_zh_doc_index.py</span> 生成</td>
@@ -1855,9 +1803,9 @@
   0. <b>决策台账</b>：顶部四张卡，绿边 = 已定（照这个建），黄边 = 待定（别按它动手）。定一条就改一处。<br>
   1. <b>第一层</b>：看哪个建了、哪个没建。<b>虚线框 = 只有计划</b>，别当成已有能力。<br>
   2. <b>第二层</b>：点标题展开。每张卡的「数据流向」分成「现状」和「规划」两栏，别混着读。<br>
-  3. <b>第三层</b>：六块分开看 —— 通道一（课程目录）、通道二（教师⇄管理）、断点（主端孤立）、课程（半通）、未通功能、规划。<b>先看断点那一块</b>，那是现在真正卡住的地方。<br>
+  3. <b>第三层</b>：分块看 —— 通道（教师⇄管理）、断点（主端孤立）、未通功能、规划。<b>先看断点那一块</b>，那是现在真正卡住的地方。<br>
   4. <b>第四层</b>：S1.0 已定 · <b>S1.1 / S1.2 已做（2026-10-29）</b>。S1.3 起不用等外部决定，可以接着做。<br>
-  5. 全部结论按源码核对，不是按计划写。核对日期 2026-10-29，涉及文件：<span class="loc">ops-index.html</span> · <span class="loc">zhops/index.html</span> · <span class="loc">zhops/teacher.html</span> · <span class="loc">zhops/admin.html</span> · <span class="loc">hsk.html</span>。<br>
+  5. 全部结论按源码核对，不是按计划写。核对日期 2026-10-29，涉及文件：<span class="loc">ops-index.html</span> · <span class="loc">zhops-admin.html</span> · <span class="loc">zhops-teacher.html</span> · <span class="loc">hsk.html</span>。<br>
   6. 云端两条路径已实测：<span class="key">meta/curriculum</span> 与 <span class="key">zhops/master</span> 均返回 HTTP 200。后者载荷实测：<b>teachers 5 / students 19 / classes 0 / apps 0 / lessons 0 / absences 无此字段</b>，推送时间 <span class="key">2026-10-25T16:16:55Z</span>，来源 <span class="key">zhops.admin</span>。<br>
   7. <b>口径变更记录 · 2026-10-29</b><br>
   &nbsp;&nbsp;&nbsp;<b class="yes">已定 8</b>：① <b>薪酬由人事算、财务只付</b>（2026-11-01 改，原「由财务算」作废）· ④ 主页端转动态应用加后端 · ⑤ 角色分层四层（工资表/股东账面只有老板看）· ⑥ 数据库分 2 库（业务库 / 敏感库）· ⑦ 认证暂缓 · ⑧ 记账用事实表（主端升级，两头都记）· ⑨ 开班门槛 4–13 · ⑩ 晚班以主端为准 18:30–19:15<br>
@@ -1868,18 +1816,8 @@
   &nbsp;&nbsp;&nbsp;<span class="loc">work.html</span> —— 上一层，跨 <b>8 个系统</b>的总控台（含财务、BMS v1/v2、Material Book、MGD Live）<br>
   &nbsp;&nbsp;&nbsp;<b>本页</b> —— 系统地图，讲「<b>系统怎么建</b>」：模块 / 断点 / 决策台账 / S1.0–S1.8<br>
   &nbsp;&nbsp;&nbsp;<a class="loc" href="zhops-polish.html">zhops-polish.html</a> —— <b>工作台账</b>，讲「<b>做了什么 / 没做什么</b>」：唯一进度来源，按日期归档，全系统共用<br>
-  &nbsp;&nbsp;&nbsp;<a class="loc" href="zh-doc-index.html">zh-doc-index.html</a> —— 文档索引，讲「<b>33 份文档哪份算数</b>」：状态 / 取代关系 / 4 处已知冲突<br>
+  &nbsp;&nbsp;&nbsp;<a class="loc" href="zh-doc-index.html">zh-doc-index.html</a> —— 文档索引，讲「<b>32 份文档哪份算数</b>」：状态 / 取代关系 / 3 处已知冲突<br>
   &nbsp;&nbsp;&nbsp;<span style="color:var(--hint);">改文档后，两个脚本都要重跑：<span class="loc">build/14_build_worktable.py</span> · <span class="loc">build/23_build_zh_doc_index.py</span></span><br>
-  10. <b class="yes">代码变更清单 · 2026-10-29（第一段生产代码）</b><br>
-  &nbsp;&nbsp;&nbsp;<b>S1.1</b> <span class="loc">~/zhops/index.html</span> 150,498 → 157,773 B<br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;新增 <span class="loc">CLOUD_DOC / fsGetDoc() / fsGetMaster() / cvN / cvTxt / cvSlotTime / cloudPreview()</span>；参数页加「云端只读预览」按钮。<br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>写入方法 PATCH/POST/PUT/DELETE 全为 0</b>（断言实测，含 admin 反向对照）。<br>
-  &nbsp;&nbsp;&nbsp;<b>S1.2</b> <span class="loc">~/zhops/index.html</span> 157,773 → 161,046 B<br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="loc">blank()</span> 加 <span class="key">lessons[]</span> / <span class="key">absences[]</span>；新增 <span class="loc">lessonFromLog()</span>；<span class="loc">logLesson()</span> 双写；<span class="loc">settleWindow()</span> 优先事实表、无则退回 log；<span class="loc">load()</span> 加 log→lessons 迁移；数据页显示课次事实 / 缺勤条数。<br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b class="no">决定不改本机键名</b>（仍 <span class="key">zhops.sched.v2</span>）：改键没有业务收益，却要在他读不到的 localStorage 上冒一次迁移风险。新增字段靠 <span class="loc">Object.assign</span> 自动补齐，零迁移成本。<br>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>实测</b>：迁移 3 条 log → 3 条 lessons，id 唯一；结算两条路径输出完全一致（inc 150,000 / cst 400,000 / n 3）；时间窗筛选正确。<br>
-  &nbsp;&nbsp;&nbsp;<b>备份</b>：<span class="loc">index.html.bak-20261029-2145-before-s11</span> · <span class="loc">index.html.bak-20261029-2155-before-s12</span><br>
-  &nbsp;&nbsp;&nbsp;<b>回滚</b>：<span class="loc">cp ~/zhops/index.html.bak-20261029-2155-before-s12 ~/zhops/index.html</span> —— 但注意：v2 里已有的 lessons 字段旧代码不读，数据不会丢。
 </div>
 </div><!-- /sec-foot -->
 
