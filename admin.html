@@ -6307,6 +6307,45 @@ window.__ADMIN_LIVE_ARRIVE__ = function(payloadStr, at){
     return 'applied';
   } catch(e){ return 'bad'; }
 };
+
+/* ★ 2026-11-08（P-137）：业务部 → 主端候选池，自动收。
+   --------------------------------------------------------------------------
+   ★ 分工一个字不改：业务部只管「候选池有谁」，主端只管「怎么安排」。
+     这里只做「补人 + 改 4 个字段」，mergeBizStudents 本来就不碰
+     cls / teacherId / exam —— 编班权始终在主端。
+   ★ 跟 zhops/master 完全无关：不读它、不写它、不触发它。
+     master 是主端自己的整份备份，走另一条路，本函数一行都不碰。
+   ★ 只收不推：主端绝不写 zhops/bizstudents（那是业务部的文档）。
+   ★ 打开页面时 onSnapshot 会推一份当前快照 → 不用手点，候选池自己有人。
+   返回：added / updated / same / bad —— 给 module 判重用。 */
+var lastBizLiveAt = '';
+window.__ADMIN_BIZ_ARRIVE__ = function(payloadStr, at){
+  if (!payloadStr) return 'bad';
+  let o = null;
+  try { o = JSON.parse(payloadStr); } catch(e){ return 'bad'; }
+  /* 跟手点「拉取业务部学生」用的是同一道来源校验 */
+  if (!o || o.__app !== BIZ_SRC_TAG || !Array.isArray(o.students)) return 'bad';
+  const stamp = at || o.at || '';
+  if (stamp && stamp === lastBizLiveAt) return 'same';   /* 同一份不重复合 */
+
+  const stat = mergeBizStudents(o.students);
+  lastBizLiveAt = stamp;
+  /* 跟按钮回调走完全同一套：重建派生层 → 落盘 → 重画 */
+  const dirtyBefore = cloudDirty;
+  buildFacts();
+  save();
+  render();
+  /* ★ 业务部自动补人是「交上来的名单」，不是主端操作员改了排课 ——
+     不能因为这一次落盘就把 cloudDirty 顶成 true，否则主端会一直
+     拿「本机有未推改动」挡掉 master 的实时接收（P-136 探针实测会红）。
+     合流前本来就有未推改动的，原样保留，那道守卫照常生效。 */
+  cloudDirty = dirtyBefore;
+  const st = document.getElementById('stBiz');
+  if (st) st.textContent = '☁︎ 自动收到 · 新增 ' + stat.added + ' · 更新 ' + stat.updated +
+                           (stat.gone ? ' · 业务部已删除 ' + stat.gone : '') +
+                           (stamp ? ' · ' + String(stamp).slice(5,16).replace('T',' ') : '');
+  return stat.added ? 'added' : 'updated';
+};
 </script>
 
 <!-- ============================================================
@@ -6349,6 +6388,32 @@ function hhmmNow(iso){
 
 let db = null, unsub = null;
 
+/* ★ 2026-11-08（P-137）：业务部 → 主端候选池，自动收。
+   --------------------------------------------------------------------------
+   ★ 只新增这一条订阅；上面 master 那条 subscribe() 一个字不动。
+   ★ 分工：业务部写 zhops/bizstudents → 主端只读、合进候选池。
+     主端不写这个文档，也不碰 master。
+   ★ 离线开关：探针带 ?nocloud=1 / __NO_CLOUD__ 时不订阅，
+     免得云端真实数据被拉进断言、探针数据被推上去污染云端（P-136 踩过）。 */
+const BIZ_DOC = 'bizstudents';
+const BIZ_TAG = 'zhops.biz';
+let unsubBiz = null, bizSeenAt = '';
+function subscribeBiz(){
+  if (!db) return;
+  if (window.__NO_CLOUD__ || /[?&]nocloud=1/.test(location.search)) return;
+  if (unsubBiz){ try { unsubBiz(); } catch(e){} unsubBiz = null; }
+  unsubBiz = onSnapshot(doc(db, FB.coll, BIZ_DOC), snap => {
+    if (!snap.exists()) return;
+    const d = snap.data() || {};
+    if (d.app && d.app !== BIZ_TAG) return;       /* 不是业务部推的，不认 */
+    if (d.at && d.at === bizSeenAt) return;       /* 同一份不重复合 */
+    if (typeof window.__ADMIN_BIZ_ARRIVE__ !== 'function') return;
+    const r = window.__ADMIN_BIZ_ARRIVE__(d.payload || '', d.at || '');
+    if (r === 'bad' || r === 'same') return;
+    bizSeenAt = d.at || '';
+  }, () => { /* 断线由 visibilitychange 重连，不惊动界面 */ });
+}
+
 function boot(){
   try {
     const app = initializeApp({ projectId: FB.pid, apiKey: FB.key, authDomain: FB.pid + '.firebaseapp.com' }, 'admin-live');
@@ -6358,7 +6423,9 @@ function boot(){
     return;
   }
   subscribe();
+  subscribeBiz();                                    /* P-137：业务部一推，候选池自动有人 */
   document.addEventListener('visibilitychange', () => { if (!document.hidden) subscribe(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) subscribeBiz(); });
   const el = document.getElementById('stLive');
   if (el){
     el.addEventListener('click', subscribe);
