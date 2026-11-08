@@ -516,8 +516,8 @@
       <div class="dec-why">
         <b>已定 2026-10-29</b>：<span class="key">minOpen:4</span> / <span class="key">capMax:13</span>，三端统一。<br>
         原主端 6–10、教师/管理端 8–12 <b class="no">全部作废</b>。<br>
-        <b class="yes">已落实 2026-10-30</b>（三端改完）：
-        <span class="loc">schedule.html</span> <span class="key">blank()</span> 默认值 6/10 → 4/13 ·
+        <b class="yes">已落实 2026-10-30</b>（当时三端都改完；老系统已于 2026-11-08 P-134 退役）：
+        <s><span class="loc">schedule.html</span> <span class="key">blank()</span> 默认值 6/10 → 4/13</s>（已退役，不再发布）·
         <span class="loc">zhops-teacher.html</span> 申请校验 <span class="key">n &lt; 1</span> → <span class="key">n &lt; 4</span> ·
         <span class="loc">zhops-admin.html</span> <span class="key">DB.set</span> 8/12 → 4/13，新建班容量回退 <span class="key">DB.set.capMax</span> 自动跟 13。<br>
         <b>边界（Tony 定的口径）</b>：教师端<b>只拦下限 4、不拦上限 13</b> —— 申请阶段卡太死反而堵住并课/拆分的判断；
@@ -893,24 +893,22 @@
   </div>
   <div class="sys-body">
     <div class="field">
-      <div class="field-label">位置（三端 · 本地与线上是两份不同的文件）</div>
+      <div class="field-label">位置（本地与线上是两份不同的文件）</div>
       <div class="field-value multi" style="line-height:1.9;">
-        <div><b>主端</b>（排课引擎，线上文件名是 index.html）</div>
-        <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/schedule.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/schedule.html</span></a></div>
-        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/"><span class="loc">https://tony80-del.github.io/zhops/</span></a>
-          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
-        <div style="padding-left:14px; color:var(--hint);">⚠️ 本地叫 <span class="loc">schedule.html</span>，线上叫 <span class="loc">index.html</span> —— 发布脚本改成后者。</div>
+        <div><b>主端</b>（排课引擎 · 现行）</div>
+        <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">docs/zhops-admin.html</span></a></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a></div>
+        <div style="padding-left:14px; color:var(--hint);">⚠️ 同一份源文件发布成<b>两个</b>线上文件名：<span class="loc">admin.html</span> 和根地址 <span class="loc">index.html</span>（2026-11-08 P-134 起，老系统退役后接棒）。</div>
         <div style="margin-top:8px;"><b>教师端</b>（老师手机上开的就是这个）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html</span></a></div>
-        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/teacher.html"><span class="loc">https://tony80-del.github.io/zhops/teacher.html</span></a>
-          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/teacher.html"><span class="loc">https://tony80-del.github.io/zhops/teacher.html</span></a></div>
         <div style="margin-top:8px;"><b>管理端</b>（主控 · 审批 / 配置 / 结算）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html</span></a></div>
-        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a>
-          <span class="status-badge s-ok" style="font-size:10px;">已同步 10-31 16:16</span></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a></div>
+        <div style="margin-top:8px;"><b class="yes">老排课系统 · 已退役</b>（2026-11-08 · P-134）</div>
+        <div style="padding-left:14px; color:var(--hint);">原 <span class="loc">docs/schedule.html</span> → 已归档到 <span class="loc">build/legacy/schedule.html</span>，<b>不再发布、线上已无此文件</b>。它的存盘键 <span class="key">zhops.sched.v2</span> 与主端 <span class="key">zhops.sched.v3</span> 隔离，退役不碰任何数据。</div>
         <div style="margin-top:8px; color:var(--hint);">
-          <b>「已同步」怎么核的</b>：2026-10-31 16:16 跑 <span class="loc">sh build/publish-zhops.sh</span>，再把线上五个页面下载回来逐个比对 sha256 —— 五份与本地<b>完全一致</b>（不是看 push 成功）。<br>
-          <b>⚠️ 2026-10-30 那一轮曾在线上留旧版</b>（门槛 4–13、越南语补漏、推送防冲撞只改了本地），到 10-31 16:16 一并补齐。
+          <b>「已同步」怎么核的</b>：跑 <span class="loc">sh build/verify.sh</span>，把线上页面下载回来逐个比对 sha256 —— 与本地<b>完全一致</b>才算过（不是看 push 成功）。
         </div>
       </div>
     </div>
@@ -986,9 +984,9 @@
         <div>教师端 ⇄ 管理端：<span class="yes">已通</span>（Firestore zhops/master，双向）</div>
         <div>主端 ⇄ 教师端 / 管理端：<span class="yes">已通（2026-10-30 · S1.3）</span>（同一份 zhops/master，主端 fsPullMain / fsPushMain）</div>
         <div>三端 → 人事部：<span class="yes">已通（2026-10-31）</span> 课次标 done 就写 <span class="key">zhops/done_&lt;课次ID&gt;</span>；改回待上 / 取消 = 同一条覆盖（撤回）</div>
-        <div style="color:var(--hint);">旧的申请码通道（<span class="loc">ZHA1.</span>）<b class="yes">已成死路，但不再是断点</b>（2026-11-01 结案）—— 主端 / 教师端两端都已无此功能，只剩老排课系统 <span class="loc">schedule.html</span> 里一段永远不会执行的解析代码。不影响任何功能，不报错，不泄露。等老排课系统本身要改时顺手清理，不单独为三行死代码动线上系统。</div>
+        <div style="color:var(--hint);">旧的申请码通道（<span class="loc">ZHA1.</span>）<b class="yes">已成死路，但不再是断点</b>（2026-11-01 结案）—— 主端 / 教师端两端都已无此功能，只剩老排课系统 <span class="loc">schedule.html</span> 里一段永远不会执行的解析代码。<b class="yes">2026-11-08（P-134）：老系统已退役归档到 <span class="loc">build/legacy/</span>，线上不再有这段代码</b> —— 死代码随之退出线上。</div>
         <div style="margin-top:6px;"><b class="yes">记账模型已统一（2026-10-29 · S1.2）</b>：主端也有 <span class="key">lessons[]</span> + <span class="key">absences[]</span>，字段形状对齐管理端。推进课次时 log 与 lessons <b>双写</b>；<span class="loc">load()</span> 里做了旧数据迁移（有 log 没 lessons 逐条展开，log 一条不删）；<span class="loc">settleWindow()</span> 优先读 lessons、没有才退回 log。<b>仍差</b>：主端缺勤只有容器、没有登记入口（入口在教师端）；双写收口等 log 退休。</div>
-        <div style="margin-top:6px;"><b class="yes">主端已在同步链上（2026-10-30 · S1.3）</b>：本机 <span class="key">zhops.sched.v2</span>。拉 = 启动读一次、云端较新才合并；推 = 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推。字段映射 <span class="loc">level↔lv / classId↔cls / slotId↔slot / teacherId↔teacher / applications↔apps</span>。<br>
+        <div style="margin-top:6px;"><b class="yes">主端已在同步链上（2026-10-30 · S1.3）</b>：本机 <span class="key">zhops.sched.v2</span>。<span style="color:var(--warn);">⚠️ 这里的「主端」指<b>老排课系统</b>（已退役，P-134）；现行主端 <span class="loc">zhops-admin.html</span> 用 <span class="key">zhops.sched.v3</span>。</span> 拉 = 启动读一次、云端较新才合并；推 = 白名单键 + <span class="key">at</span> 防冲撞 + 空库不推。字段映射 <span class="loc">level↔lv / classId↔cls / slotId↔slot / teacherId↔teacher / applications↔apps</span>。<br>
         <b class="no">仍存的限制</b>：① 本机键故意留在 v2（v3 是管理端、v1 是教师端，同源同键会串数据）。② <b>管理端推送没有 at 防冲撞</b>，仍是后写覆盖；主端有防冲撞，教师端已改成「读-改-写」（S1.9）。</div>
       </div>
     </div>
@@ -1445,6 +1443,7 @@
       <div class="field-value">
         <code>zhops.sched.v3</code> 主端与教师端共用，写前过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code>；云端两路绝不合并（<code>zhops/master</code> 手点 / <code>zhops/done_*</code> 自动）。<b>技能 ID 是工具名，不进编号字典</b>（6 列 / 5 分组 / 25 条保持原样）。
         <br><b class="yes">业务端两条云端路也绝不合并</b>（P-133）：<code>zhops/bizstudents</code> = 只带 5 个字段的对外桥，单向给主端候选池，<b>业务端自己不回读</b>；<code>zhops/bizmaster</code> = 整份 <code>zhops.biz.v1</code> 的自用备份，侧栏「☁︎ 备份到云端 / 从云端恢复」，与推主端<b>完全独立</b>。冲突策略 = 整份覆盖、谁推得晚谁赢（不做逐条 merge）。
+        <br><b class="yes">老排课系统 <code>schedule.html</code> 已退役</b>（P-134 · 2026-11-08）：已从 <code>docs/</code> 归档到 <code>build/legacy/</code>，不再发布。线上根地址 <code>index.html</code> 改为复制<b>主端 <code>zhops-admin.html</code></b>（与 <code>admin.html</code> 同一份内容）。发布脚本的保险丝已反向：<b>根地址必须 = 主端、不许出现老系统的 <code>zhops.sched.v2</code></b>。
       </div>
     </div>
   </div>
@@ -1469,11 +1468,11 @@
       <span class="fh-tag fh-ok">GET 只读</span>
     </div>
     <div class="flow-why">
-      <b style="color:var(--warn)">⚠ 术语：这里的「排课主端 index.html」指<b>老的排课系统</b>（源文件 <span class="loc">docs/schedule.html</span>，发布成 <span class="loc">index.html</span>），<b>不是</b> MGD 主端 <span class="loc">zhops-admin.html</span>（发布成 <span class="loc">admin.html</span>）。两者是不同系统，别混。</b><br>
-      排课系统启动时向云端要一份课次目录；失败就用内嵌的 <span class="loc">CURRI_FALLBACK</span> 兜底，断网也能开。
+      <b class="yes">✅ 2026-11-08（P-134）起术语不再混：老排课系统 <span class="loc">schedule.html</span> 已退役归档到 <span class="loc">build/legacy/</span>，线上根地址 <span class="loc">index.html</span> 现在就是<b>主端 <span class="loc">zhops-admin.html</span></b>（与 <span class="loc">admin.html</span> 同一份）。</b><br>
+      <span style="color:var(--hint);">下面这段「通道一 · 课程目录」记录的是<b>老排课系统当年</b>的行为，作为历史保留 —— 它启动时向云端要一份课次目录，失败就用内嵌的 <span class="loc">CURRI_FALLBACK</span> 兜底。老系统已不发布，这条通道在线上不再产生流量。</span>
       <span style="color:var(--hint);">（原文写「三端里唯一跑通的自动流」—— 2026-11-01 已不成立：主端 ⇄ 教师端、三端 → 人事 都已通。）</span>
     </div>
-    <div class="flow-line"><span class="src">排课主端 index.html</span>
+    <div class="flow-line"><span class="src">老排课系统（已退役）</span>
    │
    │  <span class="lbl">curriSync()</span>   <span class="note">index.html:720</span>
    ▼
