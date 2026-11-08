@@ -250,7 +250,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-08 ============ -->
   <div class="day-panel on" data-day="2026-11-08">
     <div class="card">
-      <h2>2026-11-08 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-08 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -286,6 +286,16 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-08</td>
               <td class="mono nw">11-08</td>
               <td>查证：<b>产品本来就会重画</b>。切月只调 <span class="mono">renderSum()</span>，但 <span class="mono">renderSum()</span> 末尾第 1668 行就有 <span class="mono">renderFsBox()</span> —— 之前说的「切月不重画」是我看漏了，不存在这个毛病。给 change 处理器补的那行 <span class="mono">renderFsBox()</span> 属冗余，反向控制（删掉后跑探针）<b>53/53 全过、零红</b>，证明它没有行为约束力，已整段撤回。<b>产品零改动</b>，本地 / 备份 / 线上三者 sha 逐字一致 <span class="mono">f601e270…</span>。探针补了两条守卫断言（切 9 月卡片自己换、切回 10 月自己换回），53 项。</td>
+            </tr>
+
+            <tr>
+              <td class="mono nw">P-133</td>
+              <td><b>业务端整份云同步（换设备 / 换网址数据能对上）</b><br><span style="color:#8899aa;font-size:12px">「线上业务端不显示我本地那 12 个学生」· 方案 3 · 新文档 <span class="mono">zhops/bizmaster</span></span></td>
+              <td class="nw">业务部 · 云端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-08</td>
+              <td class="mono nw">11-08</td>
+              <td>根因：业务端学生只存本机 <span class="mono">localStorage['zhops.biz.v1']</span>，原云按钮是<b>单向桥</b>（只写 <span class="mono">bizstudents</span> 给主端，从不回读、也没备份导入）→ 换网址 = 空库，所以「本地 12 人、线上 0 人」。按 Tony 拍的板做<b>方案 3</b>：新开 <span class="mono">zhops/bizmaster</span> 存整份（<b>不复用 bizstudents</b> —— 那个 P-96 刻意只带 5 个字段，拿它当备份会丢线索 / 收费 / 教室 / 场地，界面还照样报「恢复成功」）；侧栏加<b>「☁︎ 备份到云端」/「☁︎ 从云端恢复」</b>两颗，与原「推学生给主端」<b>完全独立</b>、三颗文案两两不同防误点；冲突策略第一版 = <b>整份覆盖、谁推得晚谁赢</b>（不做逐条 merge）；恢复必弹确认框（报两边条数 + 警告会丢数据），取消一个字不动；来源校验 <span class="mono">__app</span> 不对就拒绝覆盖；补 <span class="mono">normalizeBiz()</span> 兜老存盘、<b>且不认识的字段不删</b>（往前兼容）。新探针 <span class="mono">check-biz-backup.js</span> <b>91 项全过</b>，<b>反向控制三路全红</b>（备份改写 bizstudents → 3 红 / 恢复不弹确认框 → 6 红 / 恢复只盖学生不盖整份 → 6 红），跑完 sha 与备份逐字一致、残留清零；顺手发现并修掉一条<b>装饰品断言</b>（原「按钮文案是推送到云端」命中的是代码注释，按钮改成什么都会绿）。整套复跑 <b>43 通过 / 0 失败、rc=0</b>，三个视口（1400 / 820 / 390）无头 Chrome 直开零报错。</td>
             </tr>
           </tbody>
         </table>

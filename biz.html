@@ -441,7 +441,12 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
     <!-- ★ 2026-11-02（P-96）：业务部 → 主端 的云端出口。
          手动推，不做自动同步 —— 自动同步一旦出错，两边会互相冲。 -->
     <span class="bizcld idle" id="bizCld">☁︎ 还没推送过</span>
-    <button type="button" class="sf-btn" id="btnBizPush">☁︎ 推送到云端</button>
+    <button type="button" class="sf-btn" id="btnBizPush" title="只推学员的 5 个字段，给主端候选池看">☁︎ 推学生给主端</button>
+    <!-- ★ 2026-11-08（P-133）：整份云备份 —— 换设备 / 换网址靠它。
+         ⚠️ 跟上面那颗是两件事，文案刻意写死，别让人误点。 -->
+    <span class="bizcld idle" id="bizBak">☁︎ 还没备份过</span>
+    <button type="button" class="sf-btn" id="btnBizBakPush" title="整份业务部数据（线索/学员/收费/教室…）备份到云端">☁︎ 备份到云端</button>
+    <button type="button" class="sf-btn" id="btnBizBakPull" title="用云端备份整份覆盖本机（会丢本机未备份的改动）">☁︎ 从云端恢复</button>
   </div>
 </aside>
 
@@ -939,6 +944,142 @@ function bizPush(){
   });
 }
 
+/* ============================================================
+   整份云备份（2026-11-08 · P-133）
+   ------------------------------------------------------------
+   ★ 跟上面那个 bizPush() 不是一回事，别混：
+       bizPush()  → 写 zhops/bizstudents，只带 5 个字段，给【主端候选池】看
+       这里       → 写 zhops/bizmaster，整份 S，给【业务部自己】换设备/换网址用
+
+   ★ 为什么不复用 bizstudents：那个文档刻意只放
+     name/phone/lv/mode/preferRoom（P-96 定：别把线索、收费、学生电话
+     全摊在公网上）。拿它当备份，拉回来会丢掉 90% 的字段。
+
+   ★ 冲突策略（Tony 2026-11-08 拍板）：第一版就是**整份覆盖**。
+       推 = 本机整份盖掉云端（谁推得晚谁赢）
+       拉 = 云端整份盖掉本机（必须弹确认框，会丢本机未推的改动）
+     不做逐条 merge —— S 里有 seq 水位、usageAmt 这种 map，逐条合容易出错。
+   ============================================================ */
+var BIZMASTER_DOC = 'bizmaster';
+var BAK = { state:'idle', at:null };
+
+/* 老存盘 / 云端旧版本 → 补齐必备集合。**只补不改**：不认识的字段一个都不删
+   （往前兼容：以后加了新集合，旧代码拉到也不炸）。 */
+function normalizeBiz(o){
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  /* 至少要有学员数组才算「像一份业务部数据」，否则当它坏了 */
+  if (!Array.isArray(o.students)) return null;
+  var d = {
+    leads:[], students:[], studentsDeleted:[], billing:[], research:[],
+    campaigns:[], assets:[], events:[], rooms:[], places:[],
+    usage:[], placeVouchers:[], usageAmt:{},
+    seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1},
+  };
+  /* ★ 先把来料整份抄过来（含以后可能新增、这里还不认识的字段），
+     再用默认值补「缺的」—— 顺序反了就会把未知字段吞掉（P-133 探针抓到的）。 */
+  for (var k in o){ if (Object.prototype.hasOwnProperty.call(o, k)) d[k] = o[k]; }
+  /* 再逐个补：缺的或类型不对的，才回落到默认值 */
+  if (!Array.isArray(d.leads)) d.leads = [];
+  if (!Array.isArray(d.students)) d.students = [];
+  if (!Array.isArray(d.studentsDeleted)) d.studentsDeleted = [];
+  if (!Array.isArray(d.billing)) d.billing = [];
+  if (!Array.isArray(d.research)) d.research = [];
+  if (!Array.isArray(d.campaigns)) d.campaigns = [];
+  if (!Array.isArray(d.assets)) d.assets = [];
+  if (!Array.isArray(d.events)) d.events = [];
+  if (!Array.isArray(d.rooms)) d.rooms = [];
+  if (!Array.isArray(d.places)) d.places = [];
+  if (!Array.isArray(d.usage)) d.usage = [];
+  if (!Array.isArray(d.placeVouchers)) d.placeVouchers = [];
+  if (!d.usageAmt || typeof d.usageAmt !== 'object') d.usageAmt = {};
+  if (!d.seq || typeof d.seq !== 'object') d.seq = {};
+  ['lead','stu','bill','res','cmp','ast','evt','room','place'].forEach(function(x){
+    if (!d.seq[x]) d.seq[x] = 1;
+  });
+  return d;
+}
+
+/* 备份状态小字（跟 bizCld 那颗分开，别让「推给主端」和「备份」混一句） */
+function bakMark(state, at, msg){
+  BAK.state = state;
+  if (at !== undefined) BAK.at = at;
+  var el = document.getElementById('bizBak');
+  if (!el) return;
+  if (state === 'syncing'){ el.className = 'bizcld wait'; el.textContent = '☁︎ 备份中…'; return; }
+  if (state === 'ok'){
+    el.className = 'bizcld ok';
+    el.textContent = '☁︎ 已备份' + (BAK.at ? ' · ' + String(BAK.at).slice(5,16).replace('T',' ') : '');
+    return;
+  }
+  if (state === 'bad'){ el.className = 'bizcld bad'; el.textContent = '☁︎ ' + (msg || '备份失败'); return; }
+  el.className = 'bizcld idle'; el.textContent = '☁︎ 还没备份过';
+}
+
+/* 备份：整份 S → zhops/bizmaster */
+function bizBakPush(){
+  if (typeof fetch !== 'function'){ bakMark('bad', undefined, '这个浏览器不支持联网'); toast('备份失败：浏览器不支持联网', true); return; }
+  var iso = new Date().toISOString();
+  var o = JSON.parse(JSON.stringify(S));     /* 深拷贝：别把运行时对象写进云端 */
+  o.__app = BIZ_CLOUD_TAG; o.__v = 1; o.__at = iso;
+  var body = { fields: {
+    payload: { stringValue: JSON.stringify(o) },
+    at:      { stringValue: iso },
+    app:     { stringValue: BIZ_CLOUD_TAG },
+  }};
+  bakMark('syncing');
+  fetch(fsUrlOf(BIZMASTER_DOC), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(){
+    bakMark('ok', iso);
+    toast('已把整份数据备份到云端（学员 ' + (S.students || []).length + ' 位）');
+  })
+  .catch(function(e){
+    bakMark('bad', undefined, '备份失败');
+    toast('备份失败：' + (e && e.message ? e.message : '连不上云端'), true);
+  });
+}
+
+/* 恢复：zhops/bizmaster → 整份覆盖本机。
+   ★ 必须确认 —— 会盖掉本机还没备份的改动。 */
+function bizBakPull(){
+  if (typeof fetch !== 'function'){ toast('恢复失败：浏览器不支持联网', true); return; }
+  bakMark('syncing');
+  fetch(fsUrlOf(BIZMASTER_DOC))
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(raw){
+      if (!raw || !raw.fields){ bakMark('idle'); toast('云端还没有备份 —— 先点「备份到云端」', true); return; }
+      var p = raw.fields.payload ? raw.fields.payload.stringValue : null;
+      var at = raw.fields.at ? raw.fields.at.stringValue : '';
+      if (!p){ bakMark('idle'); toast('云端备份是空的', true); return; }
+      var o = null;
+      try { o = JSON.parse(p); } catch(e){ o = null; }
+      /* 来源校验：只认业务部自己备份的，别把别人的东西当自己的数据 */
+      if (!o || o.__app !== BIZ_CLOUD_TAG){ bakMark('idle'); toast('云端那份不是业务部备份，拒绝覆盖', true); return; }
+      var d = normalizeBiz(o);
+      if (!d){ bakMark('idle'); toast('云端备份结构不认识，拒绝覆盖', true); return; }
+
+      var msg = '用云端备份覆盖本机？\n\n' +
+        '云端那份（' + String(at).slice(0,16).replace('T',' ') + '）：' +
+        '线索 ' + d.leads.length + ' / 学员 ' + d.students.length +
+        ' / 收费 ' + d.billing.length + ' / 教室 ' + d.rooms.length + '\n' +
+        '本机现有：' +
+        '线索 ' + (S.leads||[]).length + ' / 学员 ' + (S.students||[]).length +
+        ' / 收费 ' + (S.billing||[]).length + ' / 教室 ' + (S.rooms||[]).length + '\n\n' +
+        '⚠️ 本机还没备份的改动会丢失，且无法恢复。';
+      if (!window.confirm(msg)){ bakMark('idle'); return; }
+
+      S = d;
+      try { localStorage.setItem(KEY, JSON.stringify(S)); }
+      catch(e){ toast('已恢复，但存盘失败（可能超出容量）', true); }
+      bakMark('ok', at);
+      if (typeof render === 'function') render();
+      toast('已从云端恢复：学员 ' + S.students.length + ' 位');
+    })
+    .catch(function(){ bakMark('bad', undefined, '恢复失败'); toast('恢复失败：断网或云端被拦', true); });
+}
+
 /* ---- 主题色（来源分布用） ---- */
 var SRC_COLORS = {
   '朋友介绍':'#0e7490','Zalo':'#0068ff','Facebook':'#1877f2','TikTok':'#ff0050',
@@ -958,6 +1099,10 @@ var PACKAGES = [
 /* ---- 初始化 ---- */
 function load(){
   try{ var raw = localStorage.getItem(KEY); if(raw){ S = JSON.parse(raw); } }catch(e){}
+  /* ★ 2026-11-08（P-133）：读盘也走 normalizeBiz —— 跟「从云端恢复」同一条口径，
+     补字段的逻辑只写一份，两边不会漂。存盘坏了（没 students）就当没存过。 */
+  var _n = normalizeBiz(S);
+  if (_n) S = _n;
   if(!S.leads || !S.leads.length){ seed(); }
   /* ★ 2026-11-02（P-96）：老数据没有这两个集合，补上空数组，别让渲染炸 */
   if(!Array.isArray(S.studentsDeleted)) S.studentsDeleted = [];
@@ -2604,6 +2749,21 @@ function backMainFix(){
   });
 })();
 
+/* ---- 整份云备份 / 恢复按钮（2026-11-08 · P-133）----
+   ⚠️ 跟上面那颗「推学生给主端」是两件事：这里动的是整份 bizmaster。 */
+(function(){
+  var bp = document.getElementById('btnBizBakPush');
+  if (bp) bp.addEventListener('click', function(){
+    bp.disabled = true;
+    try { bizBakPush(); } finally { setTimeout(function(){ bp.disabled = false; }, 1500); }
+  });
+  var bl = document.getElementById('btnBizBakPull');
+  if (bl) bl.addEventListener('click', function(){
+    bl.disabled = true;
+    try { bizBakPull(); } finally { setTimeout(function(){ bl.disabled = false; }, 1500); }
+  });
+})();
+
 /* ---- 场地使用：请款金额手填（2026-11-05 · P-103 ④）----
    用事件委托：表格每次重画，把监听绑在单格上会丢。 */
 (function(){
@@ -2616,11 +2776,41 @@ function backMainFix(){
   });
 })();
 
+/* ============================================================
+   探针出口（2026-11-08 · P-133）
+   ------------------------------------------------------------
+   ★ 整个文件包在 IIFE 里，探针注入的脚本看不到内部符号。
+     这里只开【只读 + 纯函数】，不给写口 —— 探针要验整份备份对不对，
+     需要能读 S、读两个文档名、能用 normalizeBiz 造/校验数据。
+   ⚠️ 别在这里加「会改数据」的函数，否则探针会变成第二个操作员。
+   ============================================================ */
+window.__BIZ_TEST__ = {
+  /* 只读当前内存里的整份数据（深拷贝，探针改了不影响页面） */
+  snapshot: function(){ try { return JSON.parse(JSON.stringify(S)); } catch(e){ return null; } },
+  /* 探针专用：把内存换成给定的一份（**只给探针造场景用**，不绑任何按钮）。
+     ⚠️ 这是唯一的写口，只改内存不落盘 —— 探针造完场景自己负责收尾。 */
+  _seed: function(o){ var d = normalizeBiz(o); if (d) S = d; return !!d; },
+  /* 备份状态（探针断言 bakMark 有没有真的变） */
+  bak: function(){ return { state: BAK.state, at: BAK.at }; },
+  /* 两个云端文档名 —— 断言「推主端」和「备份」不是同一个 */
+  docs: function(){ return { students: BIZSTU_DOC, master: BIZMASTER_DOC, app: BIZ_CLOUD_TAG }; },
+  /* 补字段口径（纯函数，不改 S） */
+  normalize: function(o){ return normalizeBiz(o); },
+  /* 只推给主端的那份载荷（纯函数）—— 用来断言它只有 5 个字段 */
+  studentsPayload: function(){ return bizStudentsPayload(); },
+  /* 备份载荷的字段清单（纯函数）—— 断言整份没被裁 */
+  backupKeys: function(){
+    var o = JSON.parse(JSON.stringify(S));
+    return Object.keys(o).sort();
+  },
+};
+
 /* ---- 启动 ---- */
 load();
 nav('overview');
 backMainFix();
 cldMark('idle');
+bakMark('idle');
 </script>
 </body>
 </html>

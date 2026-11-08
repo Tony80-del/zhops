@@ -1444,6 +1444,7 @@
       <div class="field-label">边界与禁区</div>
       <div class="field-value">
         <code>zhops.sched.v3</code> 主端与教师端共用，写前过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code>；云端两路绝不合并（<code>zhops/master</code> 手点 / <code>zhops/done_*</code> 自动）。<b>技能 ID 是工具名，不进编号字典</b>（6 列 / 5 分组 / 25 条保持原样）。
+        <br><b class="yes">业务端两条云端路也绝不合并</b>（P-133）：<code>zhops/bizstudents</code> = 只带 5 个字段的对外桥，单向给主端候选池，<b>业务端自己不回读</b>；<code>zhops/bizmaster</code> = 整份 <code>zhops.biz.v1</code> 的自用备份，侧栏「☁︎ 备份到云端 / 从云端恢复」，与推主端<b>完全独立</b>。冲突策略 = 整份覆盖、谁推得晚谁赢（不做逐条 merge）。
       </div>
     </div>
   </div>
