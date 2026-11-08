@@ -250,7 +250,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-08 ============ -->
   <div class="day-panel on" data-day="2026-11-08">
     <div class="card">
-      <h2>2026-11-08 · 打磨记录<span class="n">7 行 · 已打磨 6 · 待打磨 1</span><span class="sp"></span>
+      <h2>2026-11-08 · 打磨记录<span class="n">7 行 · 已打磨 7 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -322,10 +322,10 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-136</td>
               <td><b>四端上 Firestore SDK 实时同步（本地为主）</b><br><span style="color:#8899aa;font-size:12px">「我本地的已经推上去了，但是网上的还没接收到」· 本地为主要从本地端开始 · 最多三台设备同时开 · 上 SDK 真·实时</span></td>
               <td class="nw">云端 · 同步</td>
-              <td><span class="b wait">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-08</td>
-              <td class="mono nw">—</td>
-              <td>现状：<span class="mono">zhops.biz.v1</span> / <span class="mono">zhops.fin.v1</span> / <span class="mono">zhops.hr.v1</span> 只存本机，四个端没有任何一处自动同步；云端只是几条点对点手动桥，所以本地改完线上看不到。要做：四端各持一份自己的云文档（主 <span class="mono">master</span> / 业务 <span class="mono">bizmaster</span> / 财务 <span class="mono">finmaster</span> / 人事 <span class="mono">hrmaster</span>），接入 Firestore JS SDK 用 <span class="mono">onSnapshot</span> 真·实时，本地 <span class="mono">save()</span> 后防抖推、其余端订阅即到；冲突整份后推盖先推（Tony 已拍），加弹窗守卫。P1 先做业务端。</td>
+              <td class="mono nw">11-08</td>
+              <td>现状是四端各自只存本机，云端只有几条点对点手动桥 —— 所以本地改完线上看不到。做完：四端各持一份云文档（主 <span class="mono">master</span> / 业务 <span class="mono">bizmaster</span> / 财务 <span class="mono">finmaster</span> / 人事 <span class="mono">hrmaster</span>），各页新增 <span class="mono">type="module"</span> 脚本接 Firestore SDK，用 <span class="mono">onSnapshot</span> 真实时订阅；本地 <span class="mono">save()</span> 后防抖 1.2s 自动推。★ <b>主端例外</b>：Tony 2026-10-17 定的「全手动」不破 —— <b>只收不推</b>，仍只有点「☁︎ 推送到云端」才推（探针专设一条断言盯它不许自动推）。冲突整份 <span class="mono">__at</span> 比、后推盖先推（Tony 已拍），本机有未推改动时弹确认；<span class="mono">applyingRemote</span> 期间推送改为 800ms 重试而不是丢弃（原来会永久丢一批改动）。侧栏/配置页各加状态灯，点一下重连。顺手修 <b>时区 bug</b>：原按 UTC 切片显示少 7 小时，改按本地时区。★ 探针体系连带修三处：<span class="mono">harness.js</span> 与 <span class="mono">run.sh</span> 语法步的贪婪正则会把两段 script 吞在一起（一接 SDK 就语法崩），改取第一个非 module 块；<span class="mono">click-p48</span> 与人事/财务 5 条探针依赖「空库空态」，自动同步一开就把云端数据拉进来、还把探针数据推上去污染云端 —— 产品侧加 <span class="mono">?nocloud=1</span> / <span class="mono">__NO_CLOUD__</span> 离线开关，探针侧逐条接上。新探针 <span class="mono">check-p136-realtime.js</span> 12 项 + <span class="mono">check-p136-ends.js</span> 22 项，<b>全部真开无头 Chrome、真读写 Firestore、跑完逐字还原云端原文</b>；整套 <b>46 通过 / 0 失败</b>。</td>
             </tr>
           </tbody>
         </table>

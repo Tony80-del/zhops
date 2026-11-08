@@ -2899,6 +2899,9 @@ function hhmm(iso){
 /* 真正写云端 */
 async function pushNow(){
   if (!db) return;
+  /* ★ 2026-11-08（P-136）：正在套用云端数据时先别推 —— 但**不丢弃**，
+     等 800ms 再试一次。原来直接 return 会把这批改动永久丢掉。 */
+  if (applyingRemote){ setTimeout(pushNow, 800); return; }
   const pack = snapshotForPush();
   if (!pack) return;
   const ref = doc(db, FB.coll, DOC);
@@ -2918,6 +2921,7 @@ async function pushNow(){
 
 /* 防抖入口 —— 主脚本 save() 每次都会调它 */
 window.__BIZ_AUTOPUSH__ = function(){
+  if (!db) return;    /* 没连上云端（含离线模式）→ 什么都不做 */
   pendingLocalAt = Date.now();
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => { pushTimer = null; pushNow(); }, PUSH_DELAY);
@@ -2986,6 +2990,12 @@ function subscribe(){
 }
 
 function boot(){
+  /* ★ 2026-11-08（P-136）：离线开关 —— 探针/调试用。
+     带 ?nocloud=1 或先设 window.__NO_CLOUD__ = true 就完全不碰云端。 */
+  if (window.__NO_CLOUD__ || /[?&]nocloud=1/.test(location.search)){
+    MARK.set('idle', '离线模式（不连云端）');
+    return;
+  }
   try {
     app = initializeApp({ projectId: FB.pid, apiKey: FB.key, authDomain: FB.pid + '.firebaseapp.com' }, 'biz-sync');
     db = getFirestore(app);

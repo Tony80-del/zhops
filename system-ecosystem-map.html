@@ -1438,6 +1438,10 @@
       <div class="field-value">
         <code>zhops.sched.v3</code> 主端与管理端共用（教师端已拆出独立用 <code>zhops.teacher.v1</code>），写前过班级归属守卫；主端拉业务部学生只覆盖 <code>name / phone / mode / preferRoom</code>；云端两路绝不合并（<code>zhops/master</code> 手点 / <code>zhops/done_*</code> 自动）。<b>技能 ID 是工具名，不进编号字典</b>（6 列 / 5 分组 / 25 条保持原样）。
         <br><b class="yes">业务端两条云端路也绝不合并</b>（P-133）：<code>zhops/bizstudents</code> = 只带 5 个字段的对外桥，单向给主端候选池，<b>业务端自己不回读</b>；<code>zhops/bizmaster</code> = 整份 <code>zhops.biz.v1</code> 的自用备份，侧栏「☁︎ 备份到云端 / 从云端恢复」，与推主端<b>完全独立</b>。冲突策略 = 整份覆盖、谁推得晚谁赢（不做逐条 merge）。
+        <br><b class="yes">四端实时同步（P-136）：本地为主，一条端一个云文档</b>
+        —— 各端本地 <code>save()</code> 后自动写自己的文档，其余设备用 Firestore SDK 的 <code>onSnapshot</code> 订阅，改完毫秒级到：主 <code>zhops/master</code>、业务 <code>zhops/bizmaster</code>、财务 <code>zhops/finmaster</code>、人事 <code>zhops/hrmaster</code>。
+        <b>主端是唯一例外</b>：Tony 2026-10-17 定的「全手动」不破 —— <b>只收不推</b>，仍只有点「☁︎ 推送到云端」才推。
+        冲突整份 <code>__at</code> 比、后推盖先推，本机有未推改动时弹确认。<b>这四份是「各端自己的整份」，不是跨端桥</b>；业务→主候选池仍走 <code>bizstudents</code> 的 4 字段合并，不混。
         <br><b class="yes">线上根地址 <code>index.html</code> = 主端</b>：复制自 <b>主端 <code>zhops-admin.html</code></b>（与 <code>admin.html</code> 同一份内容）。发布脚本的保险丝：<b>根地址必须 = 主端、且必须含 <code>publicPayload</code></b>。
       </div>
     </div>

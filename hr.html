@@ -1056,7 +1056,12 @@ table.fmt td.bad{color:var(--neg)}
       </div>
       <div class="card">
         <div class="card-h"><h3>数据</h3><span class="sp"></span><span class="tag pending">建设期工具</span></div>
-        <p class="sm mu" style="margin:0 0 10px">数据存在这台电脑的浏览器里（localStorage）。换浏览器、换电脑都看不到。</p>
+        <p class="sm mu" style="margin:0 0 10px">数据存在这台电脑的浏览器里（localStorage），同时自动同步到云端（别的设备打开就能看到）。</p>
+        <p class="sm" style="margin:0 0 12px">
+          <!-- ★ 2026-11-08（P-136）：实时同步状态灯。点一下 = 重连。
+               ⚠️ 合同 PDF 走 IndexedDB，不进云端同步（只同步结构化数据）。 -->
+          <span id="hrSync" role="button" tabindex="0" style="cursor:pointer;font-weight:600" title="点一下重连">☁︎ 实时同步：正在连接…</span>
+        </p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <button class="mini" id="expAll">导出全部数据（含合同 PDF）</button>
           <button class="mini" id="impAll">恢复备份…</button>
@@ -1957,6 +1962,10 @@ function syncEmpFromContract(i){
 /* ================= 持久化 ================= */
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); markSaved(); }catch(e){}
+  /* ★ 2026-11-08（P-136）：存完自动推云端（防抖 1.2s）。
+     没接上（断网 / SDK 没起来）就静默跳过 —— 存盘本身绝不能因云端失败。
+     ⚠️ 人事的 PDF 附件走 IndexedDB，不进这份同步（云端只同步结构化数据）。 */
+  try{ if (typeof window.__HR_AUTOPUSH__ === 'function') window.__HR_AUTOPUSH__(); }catch(e){}
 }
 function load(){
   try{
@@ -3728,7 +3737,194 @@ if (typeof window !== 'undefined'){
     getSumMonth: function(){ return SUM_MONTH; },
   };
 }
+
+/* ============================================================
+   实时同步接收口（2026-11-08 · P-136）
+   ------------------------------------------------------------
+   ★ 给下面那个 module 脚本用。规矩跟业务端一致：本地为主 ——
+       本地 save() → 自动推 zhops/hrmaster
+       其余设备 onSnapshot 收到 → 套进本机 + 重画
+   ★ 只同步结构化数据（人/合同/证件/社保/工资/培训/制度）；
+     PDF 附件在 IndexedDB（zhops_hr_files），**不进云端同步**。
+   ============================================================ */
+window.__HR_KEY__ = KEY;
+window.__HR_APP_TAG__ = 'zhops.hr';
+
+window.__HR_SNAPSHOT__ = function(){
+  try {
+    var o = JSON.parse(JSON.stringify(S));
+    return o;
+  } catch(e){ return null; }
+};
+window.__HR_APPLY__ = function(o){
+  try {
+    if (!o || typeof o !== 'object') return false;
+    var b = blank();
+    ['emp','contract','doc','social','leave','payroll','train','policy','summary','adjust'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    b.cfg = Object.assign(b.cfg, o.cfg || {});
+    b.emp = o.emp; b.contract = o.contract; b.doc = o.doc; b.social = o.social;
+    b.leave = o.leave; b.payroll = o.payroll; b.train = o.train; b.policy = o.policy;
+    b.summary = o.summary;
+    b.adjust = o.adjust;
+    b.contract.forEach(function(c){
+      if(!c.payType) c.payType = '月薪';
+      if(c.rate === undefined) c.rate = '';
+    });
+    S = b;
+    try { localStorage.setItem(KEY, JSON.stringify(b)); } catch(e){}
+    return true;
+  } catch(e){ return false; }
+};
+window.__HR_RERENDER__ = function(){
+  try { if (typeof renderAll === 'function') renderAll(); } catch(e){}
+};
 })();
+</script>
+
+<!-- ============================================================
+     实时同步（2026-11-08 · P-136）
+     ------------------------------------------------------------
+     ★ 人事端的规矩（跟业务端一致）：
+         · 本地 save() → 防抖 1.2s → 写 zhops/hrmaster
+         · 其余设备 onSnapshot 收到 → 套进本机 + 重画
+         · 整份比 __at，晚的赢；本机有未推改动时弹一次确认
+     ★ 三条通道别混：
+         zhops/master     = 主端排课（人事只读，pullMaster）
+         zhops/approvals  = 人事→财务的工资单据（只写单据，不写整份）
+         zhops/hrmaster   = 人事自己的整份（本文档）← 新增
+     ★ PDF 附件在 IndexedDB（zhops_hr_files），不进这份同步。
+     ============================================================ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const FB = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', coll:'zhops' };
+const DOC = 'hrmaster';
+const TAG = 'zhops.hr';
+const PUSH_DELAY = 1200;
+
+let db = null, unsub = null, applyingRemote = false, pushTimer = null;
+let lastPushedAt = 0, pendingLocalAt = 0;
+
+function hhmm(iso){
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function mark(text, cls){
+  const el = document.getElementById('hrSync');
+  if (!el) return;
+  el.textContent = '☁︎ ' + text;
+  el.style.color = cls === 'bad' ? '#c0392b' : (cls === 'ok' ? '#0f7b52' : '');
+}
+
+function snapshotForPush(){
+  const S = window.__HR_SNAPSHOT__ ? window.__HR_SNAPSHOT__() : null;
+  if (!S) return null;
+  const iso = new Date().toISOString();
+  S.__app = TAG; S.__v = 1; S.__at = iso;
+  return { data: S, iso };
+}
+
+async function pushNow(){
+  if (!db) return;
+  /* ★ 2026-11-08（P-136）：正在套用云端数据时先别推 —— 但**不丢弃**，
+     等 800ms 再试一次。原来直接 return 会把这批改动永久丢掉。 */
+  if (applyingRemote){ setTimeout(pushNow, 800); return; }
+  const pack = snapshotForPush();
+  if (!pack) return;
+  try {
+    await setDoc(doc(db, FB.coll, DOC), { payload: JSON.stringify(pack.data), at: pack.iso, app: TAG });
+    lastPushedAt = Date.parse(pack.iso);
+    pendingLocalAt = 0;
+    mark('已同步 · ' + hhmm(pack.iso), 'ok');
+  } catch(e){
+    mark('推送失败，稍后重试', 'bad');
+    pendingLocalAt = Date.now();
+  }
+}
+
+window.__HR_AUTOPUSH__ = function(){
+  if (!db) return;    /* 没连上云端（含离线模式）→ 什么都不做 */
+  pendingLocalAt = Date.now();
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { pushTimer = null; pushNow(); }, PUSH_DELAY);
+};
+
+function applyRemote(raw){
+  let o = null;
+  try { o = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e){ return false; }
+  if (!o || o.__app !== TAG) return false;
+  const remoteAt = Date.parse(o.__at || '') || 0;
+  if (remoteAt && remoteAt <= lastPushedAt) return false;
+
+  if (pendingLocalAt && remoteAt > lastPushedAt){
+    const ok = window.confirm(
+      '云端人事数据有更新（' + hhmm(o.__at) + '），本机也有还没推的改动。\n\n' +
+      '点「确定」= 用云端覆盖本机\n点「取消」= 保留本机，稍后本机推上去'
+    );
+    if (!ok){ pushNow(); return false; }
+  }
+
+  applyingRemote = true;
+  try {
+    if (!window.__HR_APPLY__ || !window.__HR_APPLY__(o)) return false;
+    if (window.__HR_RERENDER__) window.__HR_RERENDER__();
+    pendingLocalAt = 0;
+    mark('已同步 · ' + hhmm(o.__at), 'ok');
+    return true;
+  } finally {
+    applyingRemote = false;
+  }
+}
+
+function subscribe(){
+  if (!db) return;
+  if (unsub){ try { unsub(); } catch(e){} unsub = null; }
+  mark('正在连接…');
+  unsub = onSnapshot(doc(db, FB.coll, DOC), snap => {
+    if (!snap.exists()){ mark('云端还没有数据（本机一改就推上去）'); return; }
+    const d = snap.data() || {};
+    if (d.app && d.app !== TAG){ mark('云端那份不是人事数据，已忽略', 'bad'); return; }
+    if (!applyRemote(d.payload || '')) mark('实时同步中', 'ok');
+  }, err => {
+    mark('已断开（' + (err && err.code ? err.code : '网络') + '），点一下重连', 'bad');
+  });
+}
+
+function boot(){
+  /* ★ 2026-11-08（P-136）：离线开关 —— 探针/调试用。
+     带 ?nocloud=1 或先设 window.__NO_CLOUD__ = true 就完全不碰云端。
+     为什么要有：探针要测「全新空库的空态」，但实时同步一打开就会
+     把云端数据拉进来（而且探针改数据会自动推上去污染云端）。
+     有这条开关，探针加个参数就能在纯离线环境跑，产品行为不变。 */
+  if (window.__NO_CLOUD__ || /[?&]nocloud=1/.test(location.search)){
+    mark('离线模式（不连云端）');
+    return;
+  }
+  try {
+    const app = initializeApp({ projectId: FB.pid, apiKey: FB.key, authDomain: FB.pid + '.firebaseapp.com' }, 'hr-sync');
+    db = getFirestore(app);
+  } catch(e){
+    mark('实时同步没起来（本机照常用）', 'bad');
+    return;
+  }
+  subscribe();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) subscribe(); });
+  const el = document.getElementById('hrSync');
+  if (el){
+    el.addEventListener('click', subscribe);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); subscribe(); } });
+  }
+}
+boot();
+
+window.__HR_SYNC__ = {
+  state: () => ({ hasDb: !!db, hasSub: !!unsub, lastPushedAt, pending: !!pendingLocalAt }),
+  docName: () => DOC,
+  resub: subscribe
+};
 </script>
 </body>
 </html>
