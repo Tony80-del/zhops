@@ -250,7 +250,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-08 ============ -->
   <div class="day-panel on" data-day="2026-11-08">
     <div class="card">
-      <h2>2026-11-08 · 打磨记录<span class="n">5 行 · 已打磨 4 · 待打磨 1</span><span class="sp"></span>
+      <h2>2026-11-08 · 打磨记录<span class="n">5 行 · 已打磨 5 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -302,10 +302,10 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-134</td>
               <td><b>退役老排课系统 <span class="mono">schedule.html</span></b><br><span style="color:#8899aa;font-size:12px">「我所知这份已经是旧版了，为什么还在系统里？」· 方案 C · 连根拔掉</span></td>
               <td class="nw">发布 · 归档</td>
-              <td><span class="b wait">⬜待打磨</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-08</td>
-              <td class="mono nw">—</td>
-              <td>待做：<span class="mono">schedule.html</span> 已作废（<span class="mono">zhops-admin.html</span> 第 751 行自注「老的真系统 schedule.html 放弃」），但还占着线上根地址 <span class="mono">index.html</span>，且 <span class="mono">zh-doc-index.html</span> 仍标它「现行」。<b>方案 C</b>：移出发布清单 → 本地归档 <span class="mono">build/legacy/</span> → 线上根地址改指主端 → 拆掉「index.html 必须是 schedule.html」的保险丝 → 同步改 <span class="mono">verify.sh</span> 的 <span class="mono">PAIRS</span> 与三个 build 脚本 → <span class="mono">zh-doc-index</span> 标「已退役」→ 生态地图三处「两者别混」的口径改为「老系统已退役」。</td>
+              <td class="mono nw">11-08</td>
+              <td><span class="mono">schedule.html</span> 已作废（<span class="mono">zhops-admin.html</span> 第 751 行自注「老的真系统 schedule.html 放弃」），却还占着线上根地址 <span class="mono">index.html</span>，<span class="mono">zh-doc-index.html</span> 也仍标它「现行」。<b>按方案 C 连根拔掉</b>：① 移出发布清单，归档到 <span class="mono">build/legacy/</span>（连两个老测试脚本一起，附 README 自解释）；② <b>线上根地址改指主端</b> —— <span class="mono">index.html</span> 现在与 <span class="mono">admin.html</span> 同一份 sha；③ <b>发布保险丝反向</b>：旧的「index 必须是 schedule」改成「index 必须 = 主端、不许出现 <span class="mono">zhops.sched.v2</span>」；④ <span class="mono">verify.sh</span> 的 <span class="mono">PAIRS</span> 同步改；⑤ <span class="mono">zh-doc-index</span> 标「已退役」、主端那行补「同时发布成 index.html」；⑥ 生态地图四处口径全改（地址表 / 门槛记录 / 术语警告 / 死代码说明）。新探针 <span class="mono">check-p134-retire.js</span> <b>38 项全过</b>，<b>反向控制三路全红</b>（保险丝改回旧方向 → 3 红 / 老文件放回 docs → 1 红 / zh-doc-index 改回「现行」→ 2 红），跑完三处逐字还原。发布后：线上 <span class="mono">/zhops/schedule.html</span> 返回 <b>404</b>（彻底下架），根地址标题变「MGD 排课系统 · 主端」、含 v3 不含 v2；整套 <b>44 通过 / 0 失败</b>；线上五页原文 14/14；无头 Chrome 四页零报错；<span class="mono">verify.sh</span> 全绿。</td>
             </tr>
           </tbody>
         </table>
