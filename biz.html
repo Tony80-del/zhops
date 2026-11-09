@@ -1071,7 +1071,7 @@ function bizBakPull(){
         '线索 ' + (S.leads||[]).length + ' / 学员 ' + (S.students||[]).length +
         ' / 收费 ' + (S.billing||[]).length + ' / 教室 ' + (S.rooms||[]).length + '\n\n' +
         '⚠️ 本机还没备份的改动会丢失，且无法恢复。';
-      if (!window.confirm(msg)){ bakMark('idle'); return; }
+      if (!window.confirm(tr(msg))){ bakMark('idle'); return; }
 
       S = d;
       try { localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -1624,7 +1624,7 @@ function saveLead(id){
   save(); closeDrawer(); render('leads');
 }
 function delLead(id){
-  if(!confirm('删除这条线索？')) return;
+  if(!confirm(tr('删除这条线索？'))) return;
   S.leads = S.leads.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('leads');
 }
@@ -1836,7 +1836,7 @@ function migrateStudentIds(){
 }
 
 function delStudent(id){
-  if(!confirm('删除这个学员？')) return;
+  if(!confirm(tr('删除这个学员？'))) return;
   /* ★ 2026-11-02（P-96）：删人不删号，留一块墓碑。
      下次推送时带 deleted:true 上去 —— 主端看到后标「业务部已删除」但保留人，
      因为这个人可能已经编进班了，直接删掉会让历史出勤记录指向空气。 */
@@ -1904,7 +1904,7 @@ function saveBilling(id){
   save(); closeDrawer(); render('billing');
 }
 function delBilling(id){
-  if(!confirm('删除这条收费单？')) return;
+  if(!confirm(tr('删除这条收费单？'))) return;
   S.billing = S.billing.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('billing');
 }
@@ -1951,7 +1951,7 @@ function saveResearch(id){
   save(); closeDrawer(); render('research');
 }
 function delResearch(id){
-  if(!confirm('删除？')) return;
+  if(!confirm(tr('删除？'))) return;
   S.research = S.research.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('research');
 }
@@ -1986,7 +1986,7 @@ function saveCampaign(id){
   save(); closeDrawer(); render('campaigns');
 }
 function delCampaign(id){
-  if(!confirm('删除？')) return;
+  if(!confirm(tr('删除？'))) return;
   S.campaigns = S.campaigns.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('campaigns');
 }
@@ -2022,7 +2022,7 @@ function saveAsset(id){
   save(); closeDrawer(); render('assets');
 }
 function delAsset(id){
-  if(!confirm('删除？')) return;
+  if(!confirm(tr('删除？'))) return;
   S.assets = S.assets.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('assets');
 }
@@ -2063,7 +2063,7 @@ function saveEvent(id){
   save(); closeDrawer(); render('events');
 }
 function delEvent(id){
-  if(!confirm('删除？')) return;
+  if(!confirm(tr('删除？'))) return;
   S.events = S.events.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('events');
 }
@@ -2711,14 +2711,515 @@ function val(id){
   return el ? el.value.trim() : '';
 }
 
-/* ---- 语言切换（预留，暂只切换按钮状态） ---- */
-document.getElementById('btn-zh').onclick = function(){
-  this.classList.add('on'); document.getElementById('btn-vi').classList.remove('on');
-  toast('中文模式（越南语待补）');
+/* ============================================================
+   P-138 · 业务端越南语切换（2026-11-09）
+   ------------------------------------------------------------
+   口径：「系统里的中文一句不留全翻，演示数据不翻」。
+   机制照人事端 P-82：**整串命中才翻，绝不逐词拆**。
+     逐词拆会产出「Hợp đồng提前Nhắc nhở」这种夹生句（P-82 实测），
+     还会啃进演示数据。整串不在字典 → 原样中文，漏哪句一眼看得见。
+   带数字 / 带数据的整句走整句模板规则，数据原样当参数带过去。
+   语言状态共用 zhops.lang（与主端 / 教师端联动）。
+   ★ 切换只改 DOM 文本：不碰 S、不碰 zhops.biz.v1、不推云端。
+   ============================================================ */
+var BIZ_LANG_KEY = 'zhops.lang';
+var BIZ_LANG = (function(){ try { return localStorage.getItem(BIZ_LANG_KEY) === 'vi' ? 'vi' : 'zh'; } catch(e){ return 'zh'; } })();
+
+/* ---- 中文整串 → Tiếng Việt（只收界面骨架，不收演示数据） ---- */
+var BIZ_VI = {
+  /* 顶栏 / 侧栏 / 云灯 */
+  '业务部 · 中文教学运营':'Phòng Kinh doanh · Đào tạo tiếng Trung',
+  '业务部':'Phòng Kinh doanh', '总览':'Tổng quan', '业务':'Kinh doanh', '市场':'Thị trường',
+  '返回主端':'Về bảng chính', '← 主端':'← Bảng chính',
+  '☁︎ 还没推送过':'☁︎ Chưa đẩy lần nào',
+  '☁︎ 推学生给主端':'☁︎ Đẩy học viên sang bảng chính',
+  '☁︎ 还没备份过':'☁︎ Chưa sao lưu lần nào',
+  '☁︎ 备份到云端':'☁︎ Sao lưu lên đám mây',
+  '☁︎ 从云端恢复':'☁︎ Khôi phục từ đám mây',
+  '☁︎ 实时同步：正在连接…':'☁︎ Đồng bộ trực tiếp: đang kết nối…',
+  '只推学员的 5 个字段，给主端候选池看':'Chỉ đẩy 5 trường của học viên cho danh sách chờ của bảng chính',
+  '整份业务部数据（线索/学员/收费/教室…）备份到云端':'Sao lưu toàn bộ dữ liệu Kinh doanh (khách / học viên / thu phí / phòng…) lên đám mây',
+  '用云端备份整份覆盖本机（会丢本机未备份的改动）':'Ghi đè toàn bộ máy này bằng bản sao đám mây (mất thay đổi chưa sao lưu)',
+  '点一下立即重连云端':'Bấm để kết nối lại đám mây ngay',
+  /* 总览 */
+  '业务总览':'Tổng quan kinh doanh',
+  '市场 + 业务 一条龙：线索 → 学员 → 收费':'Thị trường + Kinh doanh một luồng: Khách tiềm năng → Học viên → Thu phí',
+  '+ 新线索':'+ Khách tiềm năng mới',
+  '本月新增线索':'Khách tiềm năng mới tháng này', '较上月':'So với tháng trước',
+  '在读学员':'Học viên đang học', '本月新增':'Thêm mới tháng này',
+  '本月应收':'Phải thu tháng này', '已收':'Đã thu', '逾期':'Quá hạn', '人':'người',
+  '招生漏斗':'Phễu tuyển sinh',
+  '线索 → 试听 → 报名 → 在读':'Khách tiềm năng → Học thử → Đăng ký → Đang học',
+  '线索来源分布':'Phân bổ nguồn khách', '各渠道占比':'Tỷ lệ theo kênh',
+  /* 线索池 */
+  '线索池':'Kho khách tiềm năng', '每一条可能成为学员的线索':'Mọi khách tiềm năng có thể thành học viên',
+  '搜索姓名/联系方式…':'Tìm tên / liên hệ…',
+  '全部状态':'Tất cả trạng thái', '新线索':'Khách mới', '已联系':'Đã liên hệ',
+  '已试听':'Đã học thử', '已报名':'Đã đăng ký', '已流失':'Đã mất',
+  '全部来源':'Tất cả nguồn', '朋友介绍':'Người quen giới thiệu', '讲座会':'Hội thảo', '其他':'Khác',
+  '姓名':'Họ tên', '类型':'Loại', '来源':'Nguồn', '介绍人':'Người giới thiệu',
+  '联系方式':'Liên hệ', '状态':'Trạng thái', '录入':'Ngày nhập',
+  '还没有线索。点「+ 新线索」开始。':'Chưa có khách tiềm năng. Bấm «+ Khách tiềm năng mới» để bắt đầu.',
+  '编辑':'Sửa', '删除':'Xóa', '取消':'Hủy', '保存':'Lưu', '新建':'Tạo mới',
+  '没有匹配的线索':'Không có khách tiềm năng khớp', '没有匹配':'Không có kết quả',
+  /* 学员档案 */
+  '学员档案':'Hồ sơ học viên', '正式报名的学员 · 长期记录':'Học viên đăng ký chính thức · Lưu dài hạn',
+  '+ 新学员':'+ Học viên mới', '搜索学号/姓名…':'Tìm mã / tên…', '全部类型':'Tất cả loại',
+  '学生':'Học sinh', '白领':'Nhân viên văn phòng',
+  '在读':'Đang học', '结业':'Đã tốt nghiệp', '暂停':'Tạm ngưng', '退学':'Đã nghỉ',
+  '学号':'Mã học viên', '等级':'Cấp độ', '上课方式':'Hình thức học',
+  '报名日期':'Ngày đăng ký', '已缴（VND）':'Đã nộp (VND)',
+  '线上':'Trực tuyến', '线下':'Trực tiếp',
+  '还没有学员。':'Chưa có học viên.', '没有匹配的学员。':'Không có học viên khớp.',
+  '没有这个类型的学员。':'Không có học viên thuộc loại này.',
+  '没有这个状态的学员。':'Không có học viên ở trạng thái này.',
+  /* 报价收费 */
+  '报价与收费':'Báo giá & Thu phí',
+  '每个学员该交多少、什么时候交、交了没':'Mỗi học viên phải nộp bao nhiêu, khi nào, đã nộp chưa',
+  '+ 新收费单':'+ Phiếu thu mới',
+  '本月已收':'Đã thu tháng này', '待收':'Chưa thu', '总合同额':'Tổng giá trị hợp đồng',
+  '在收':'Đang thu', '单':'phiếu', '已结清':'Đã thanh toán xong',
+  '收费单':'Phiếu thu', '0 单':'0 phiếu', '还没有收费单。':'Chưa có phiếu thu.',
+  '课程包':'Gói khóa học', '总金额':'Tổng tiền', '已缴':'Đã nộp',
+  '逾期 待缴':'Quá hạn · Còn nợ', '待缴':'Còn nợ', '下次应收':'Lần thu tiếp theo',
+  '登记收款':'Ghi nhận thu tiền', '分期':'Trả góp', '进行中':'Đang xử lý',
+  '一次性':'Trả một lần', '缴费方式':'Hình thức nộp tiền',
+  '下次应收日期':'Ngày thu tiếp theo', '分期计划':'Kế hoạch trả góp',
+  /* 市场调查 */
+  '市场调查':'Khảo sát thị trường', '对市场的判断和结论':'Nhận định và kết luận về thị trường',
+  '+ 新记录':'+ Bản ghi mới',
+  '越南中文教学市场 · 关键数据（2025–2026）':'Thị trường dạy tiếng Trung tại Việt Nam · Số liệu chính (2025–2026)',
+  '还没有记录。':'Chưa có bản ghi.', '主题':'Chủ đề',
+  '内容（你的判断和结论）':'Nội dung (nhận định và kết luận của bạn)',
+  '关键数据':'Số liệu chính', '标签（逗号分隔）':'Nhãn (phân cách bằng dấu phẩy)',
+  '请填主题':'Vui lòng nhập chủ đề', '删除？':'Xóa?',
+  /* 投放记录 */
+  '投放记录':'Hồ sơ chạy quảng cáo', '在哪里花了多少钱引来了多少人':'Chi bao nhiêu, ở đâu, mang về bao nhiêu khách',
+  '+ 新投放':'+ Chiến dịch mới', '总投放':'Tổng chi', '总线索':'Tổng khách tiềm năng',
+  '总转化':'Tổng chuyển đổi', '单线索成本':'Chi phí / khách',
+  '平台':'Nền tảng', '日期':'Ngày', '花费':'Chi phí', '线索':'Khách tiềm năng',
+  '转化':'Chuyển đổi', '单个学员':'Mỗi học viên', '评价':'Đánh giá',
+  '还没有投放。':'Chưa có chiến dịch.', '值':'Đáng', '一般':'Trung bình', '不值':'Không đáng',
+  '引来线索':'Khách mang về', '转化报名':'Đăng ký chuyển đổi', '花费（VND）':'Chi phí (VND)',
+  '广告':'Quảng cáo', '帖子':'Bài đăng', '私信群发':'Gửi tin hàng loạt', 'KOL合作':'Hợp tác KOL',
+  '请填标题':'Vui lòng nhập tiêu đề',
+  /* 宣传素材 */
+  '宣传素材':'Tài liệu quảng bá',
+  '文案 / 海报 / 视频 / 落地页':'Nội dung / Poster / Video / Landing page',
+  '+ 新素材':'+ Tài liệu mới',
+  '文案':'Nội dung', '海报':'Poster', '视频':'Video', '帖子模板':'Mẫu bài đăng', '落地页':'Landing page',
+  '草稿':'Bản nháp', '已发':'Đã đăng', '测试中':'Đang thử nghiệm', '退役':'Ngừng dùng',
+  '还没有素材。':'Chưa có tài liệu.', '标题':'Tiêu đề', '用途':'Mục đích',
+  '使用平台':'Nền tảng sử dụng', '招生':'Tuyển sinh', '品牌推广':'Quảng bá thương hiệu',
+  '讲座宣传':'Quảng bá hội thảo', '转介绍':'Giới thiệu lại',
+  /* 讲座活动 */
+  '讲座活动':'Hội thảo & Sự kiện',
+  '线下/线上活动 · 体验课 · 沙龙':'Sự kiện trực tiếp / trực tuyến · Lớp thử · Salon',
+  '+ 新活动':'+ Sự kiện mới', '本年活动':'Sự kiện năm nay',
+  '总报名':'Tổng đăng ký', '总到场':'Tổng tham dự', '现场转化':'Chuyển đổi tại chỗ',
+  '总成本':'Tổng chi phí', '单转化成本':'Chi phí / chuyển đổi',
+  '还没有活动。':'Chưa có sự kiện.',
+  '地点':'Địa điểm', '报名':'Đăng ký', '到场':'Tham dự', '成本':'Chi phí',
+  '活动名':'Tên sự kiện', '线下讲座':'Hội thảo trực tiếp', '线上直播':'Livestream',
+  '体验课':'Lớp học thử', '沙龙':'Salon',
+  '地点 / 线上链接':'Địa điểm / Link trực tuyến', '报名人数':'Số đăng ký',
+  '实到人数':'Số tham dự thực tế', '成本（VND）':'Chi phí (VND)',
+  '请填活动名':'Vui lòng nhập tên sự kiện',
+  /* 教室 / 场地 */
+  '教室':'Phòng học',
+  '市场部 / 业务部去不同地区找到的教学点 —— 编码 · 地址 · 费用 · 可用时段':'Điểm dạy do Thị trường / Kinh doanh tìm được —— Mã · Địa chỉ · Chi phí · Khung giờ',
+  '+ 新教室':'+ Phòng học mới', '教室总数':'Tổng phòng học', '在用':'Đang dùng',
+  '总座位':'Tổng chỗ ngồi', '月租金合计':'Tổng tiền thuê tháng',
+  '场地 · 整层租赁':'Mặt bằng · Thuê nguyên tầng',
+  '租金写一次，一次生成 N 间教室':'Nhập tiền thuê một lần, tạo hàng loạt phòng',
+  '+ 新场地':'+ Mặt bằng mới', '场地':'Mặt bằng',
+  '不能空、不能重复':'Không được để trống, không được trùng',
+  '场地使用 · 待开单':'Sử dụng mặt bằng · Chờ lập phiếu',
+  '按小时场地，上完课自动记一次':'Mặt bằng tính theo giờ, hết buổi học tự ghi một lần',
+  '☁︎ 拉取使用记录':'☁︎ Kéo bản ghi sử dụng',
+  '已提交请款单':'Đã nộp phiếu đề nghị thanh toán',
+  '财务批 / 付之后，点上面「☁︎ 拉取使用记录」回读状态':'Sau khi Tài chính duyệt / chi, bấm «☁︎ Kéo bản ghi sử dụng» ở trên để đọc lại trạng thái',
+  '谁产出、谁付钱':'Ai tạo ra, ai trả tiền', '按小时场地':'Mặt bằng tính giờ',
+  '请款金额由业务部填':'Số tiền đề nghị do Phòng Kinh doanh nhập',
+  '还没有教室。点右上角「+ 新教室」录入第一间 —— 编码、地址、费用、可用时段。':'Chưa có phòng học. Bấm «+ Phòng học mới» góc trên bên phải để nhập phòng đầu —— mã, địa chỉ, chi phí, khung giờ.',
+  '编码':'Mã', '名称':'Tên', '地区':'Khu vực', '地址':'Địa chỉ', '可用时段':'Khung giờ',
+  '容量':'Sức chứa', '计费方式':'Cách tính phí', '月租费':'Tiền thuê tháng',
+  '小时费':'Phí theo giờ', '电话':'Điện thoại',
+  '周':'Tuần', '按小时':'Theo giờ', '月租':'Thuê tháng', '场地统一付':'Mặt bằng trả chung',
+  '办事处':'Văn phòng', '课室':'Phòng dạy', '停用':'Ngừng dùng',
+  '还没有场地。整层租下来的教学点点「+ 新场地」—— 租金填一次、间数填 5 就生成 5 间教室。':'Chưa có mặt bằng. Với điểm dạy thuê nguyên tầng bấm «+ Mặt bằng mới» —— nhập tiền thuê một lần, điền 5 phòng là tạo 5 phòng.',
+  '编码前缀':'Tiền tố mã', '间数':'Số phòng', '整层月租':'Tiền thuê cả tầng',
+  '+ 补间数':'+ Thêm phòng', '新场地 · 整层租赁':'Mặt bằng mới · Thuê nguyên tầng',
+  '这里是':'Đây là', '整层':'nguyên tầng', '的租金，一个月写一次。':' , ghi mỗi tháng một lần.',
+  '不会摊到每间教室':'không chia ra từng phòng',
+  '；填了间数，教室按「地区码-01…N」一次建好，主端按地区就能数到几间。':'; điền số phòng là tạo hàng loạt theo «mã khu vực-01…N», bảng chính đếm được số phòng theo khu vực.',
+  '场地名称':'Tên mặt bằng',
+  '教室编码会是「前缀-01 / -02 …」。地区是中文时抽不出短码，请自己填一个字母或数字前缀。存了就锁住。':'Mã phòng sẽ là «tiền tố-01 / -02 …». Tên khu vực tiếng Trung không rút được mã ngắn, hãy tự điền một tiền tố chữ hoặc số. Lưu xong sẽ khóa.',
+  '整层月租（VND / 月）':'Tiền thuê cả tầng (VND / tháng)',
+  '小时费（VND / 小时）':'Phí theo giờ (VND / giờ)',
+  '这层有几间？':'Tầng này có mấy phòng?', '已建教室':'Phòng đã tạo',
+  '要加房间请点场地卡上的「+ 补间数」。改地区会同步到已建教室，编码不动。':'Muốn thêm phòng bấm «+ Thêm phòng» trên thẻ mặt bằng. Đổi khu vực sẽ cập nhật phòng đã tạo, mã không đổi.',
+  '保存并生成教室':'Lưu và tạo phòng',
+  '场地名称不能为空':'Tên mặt bằng không được để trống',
+  '地区不能为空 —— 主端靠它按地区数教室':'Khu vực không được để trống —— bảng chính dựa vào đó để đếm phòng',
+  '编码前缀要以字母或数字开头，例：D7':'Tiền tố mã phải bắt đầu bằng chữ hoặc số, ví dụ: D7',
+  '间数填 1–50 之间':'Số phòng nhập từ 1 đến 50',
+  '租金不用再填 —— 整层租金一直挂在这条场地上。':'Không cần nhập lại tiền thuê —— tiền cả tầng luôn gắn trên mặt bằng này.',
+  '加房间不重复算钱。':'Thêm phòng không tính tiền lần hai.',
+  '再补几间？':'Thêm mấy phòng nữa?', '生成':'Tạo',
+  '编码排满了，换一个前缀':'Hết mã rồi, đổi tiền tố khác',
+  '新教室':'Phòng học mới', '教室编码':'Mã phòng',
+  '不能为空、不能跟已有重复。存下去就锁住，以后不能改。':'Không được để trống, không được trùng. Lưu xong sẽ khóa, không đổi được nữa.',
+  '教室编码（已锁定）':'Mã phòng (đã khóa)',
+  '要换编码 → 停用这间，另建一间。':'Đổi mã → ngừng dùng phòng này, tạo phòng khác.',
+  '教室名称':'Tên phòng', '容量（人）':'Sức chứa (người)',
+  '可用时段（周几）':'Khung giờ (thứ mấy)', '可用时段（几点）':'Khung giờ (mấy giờ)',
+  '房间用途':'Mục đích phòng',
+  '课室（主端可排课）':'Phòng dạy (bảng chính xếp được)',
+  '办事处（主端不显示、不排课）':'Văn phòng (bảng chính không hiện, không xếp)',
+  '整层租 5 间、其中 2 间做办事处 —— 在这里改，主端按地区只数「课室」。':'Thuê 5 phòng nguyên tầng, 2 phòng làm văn phòng —— đổi ở đây, bảng chính chỉ đếm «phòng dạy» theo khu vực.',
+  '租金在场地那一条里付':'tiền thuê trả trên thẻ mặt bằng',
+  '，这里不填钱 —— 填了会把整层租金算第二遍。':', không nhập tiền ở đây —— nhập sẽ tính tiền cả tầng lần hai.',
+  '月租费（VND / 月）':'Tiền thuê tháng (VND / tháng)',
+  '教室编码不能为空':'Mã phòng không được để trống',
+  /* 抽屉表单 */
+  '介绍人（朋友介绍时填，可填学员编号）':'Người giới thiệu (điền khi được người quen giới thiệu, có thể điền mã học viên)',
+  '录入日期':'Ngày nhập', '备注':'Ghi chú',
+  '请填姓名':'Vui lòng nhập họ tên',
+  '删除这条线索？':'Xóa khách tiềm năng này?',
+  '新线索':'Khách tiềm năng mới',
+  '指定教室':'Phòng học chỉ định', '（未指定）':'(Chưa chỉ định)',
+  '线上课不占教室，只占老师的时段。':'Lớp trực tuyến không chiếm phòng, chỉ chiếm khung giờ của giáo viên.',
+  '还没有录入教室 —— 先去「市场 › 教室」录一间，这里才能选。':'Chưa nhập phòng học —— vào «Thị trường › Phòng học» nhập một phòng trước thì mới chọn được ở đây.',
+  '线下课建议指定教室；不选也行，主端编班时再定。':'Lớp trực tiếp nên chỉ định phòng; không chọn cũng được, bảng chính sẽ định khi xếp lớp.',
+  '删除这个学员？':'Xóa học viên này?', '请先添加学员':'Vui lòng thêm học viên trước',
+  '新收费单':'Phiếu thu mới', '学员':'Học viên', '总金额（VND）':'Tổng tiền (VND)',
+  '删除这条收费单？':'Xóa phiếu thu này?',
+  '本次收款金额（VND）：':'Số tiền thu lần này (VND):', '金额不对':'Số tiền không đúng',
+  '新市场调查':'Khảo sát thị trường mới', '新投放':'Chiến dịch mới',
+  '新素材':'Tài liệu mới', '新活动':'Sự kiện mới',
+  /* 请款 / 状态 */
+  '已提交':'Đã nộp', '待审批':'Chờ duyệt', '已批':'Đã duyệt', '已批准':'Đã phê duyệt',
+  '已驳':'Đã từ chối', '已驳回':'Đã từ chối', '已付':'Đã chi', '已付款':'Đã thanh toán',
+  '这个月没有待开单的使用记录':'Tháng này không có bản ghi sử dụng chờ lập phiếu',
+  '有使用记录没填请款金额（小时费参考为 0 时要手填）':'Có bản ghi chưa nhập số tiền đề nghị (phí giờ tham khảo bằng 0 thì phải nhập tay)',
+  '按小时场地费':'Phí mặt bằng theo giờ', '这个环境不支持网络':'Môi trường này không hỗ trợ mạng',
+  '云端那份不是 JSON，拒绝覆盖':'Bản trên đám mây không phải JSON, từ chối ghi đè',
+  '云端文档结构不认识，拒绝覆盖':'Không nhận dạng được cấu trúc tài liệu đám mây, từ chối ghi đè',
+  '断网或云端被拦':'Mất mạng hoặc đám mây bị chặn',
+  '拉取失败（断网或云端被拦）':'Kéo thất bại (mất mạng hoặc đám mây bị chặn)',
+  '班级':'Lớp', '课次':'Buổi học', '小时费参考':'Phí giờ tham khảo',
+  '请款金额':'Số tiền đề nghị', '手填':'Nhập tay',
+  '金额由业务部确认；默认只带出小时费参考，不会替你自动算。':'Số tiền do Phòng Kinh doanh xác nhận; mặc định chỉ lấy phí giờ tham khảo, hệ thống không tự tính thay.',
+  '还没提交过请款单。':'Chưa nộp phiếu đề nghị thanh toán lần nào.',
+  '单据号':'Số phiếu', '月份':'Tháng', '条数':'Số bản ghi', '金额':'Số tiền',
+  /* 云端 / 同步提示 */
+  '☁︎ 推送中…':'☁︎ Đang đẩy…', '☁︎ 已推送':'☁︎ Đã đẩy',
+  '推送失败':'Đẩy thất bại', '☁︎ 推送失败':'☁︎ Đẩy thất bại',
+  '这个浏览器不支持联网':'Trình duyệt này không hỗ trợ kết nối mạng',
+  '推送失败：浏览器不支持联网':'Đẩy thất bại: trình duyệt không hỗ trợ mạng',
+  '连不上云端':'Không kết nối được đám mây',
+  '☁︎ 备份中…':'☁︎ Đang sao lưu…', '☁︎ 已备份':'☁︎ Đã sao lưu',
+  '备份失败':'Sao lưu thất bại', '☁︎ 备份失败':'☁︎ Sao lưu thất bại',
+  '备份失败：浏览器不支持联网':'Sao lưu thất bại: trình duyệt không hỗ trợ mạng',
+  '恢复失败：浏览器不支持联网':'Khôi phục thất bại: trình duyệt không hỗ trợ mạng',
+  '云端还没有备份 —— 先点「备份到云端」':'Đám mây chưa có bản sao —— bấm «Sao lưu lên đám mây» trước',
+  '云端备份是空的':'Bản sao trên đám mây rỗng',
+  '云端那份不是业务部备份，拒绝覆盖':'Bản trên đám mây không phải bản sao của Phòng Kinh doanh, từ chối ghi đè',
+  '云端备份结构不认识，拒绝覆盖':'Không nhận dạng được cấu trúc bản sao, từ chối ghi đè',
+  '已恢复，但存盘失败（可能超出容量）':'Đã khôi phục nhưng lưu thất bại (có thể vượt dung lượng)',
+  '恢复失败':'Khôi phục thất bại', '☁︎ 恢复失败':'☁︎ Khôi phục thất bại',
+  '恢复失败：断网或云端被拦':'Khôi phục thất bại: mất mạng hoặc đám mây bị chặn',
+  '已保存':'Đã lưu', '保存失败':'Lưu thất bại',
+  '推送失败，稍后自动重试':'Đẩy thất bại, sẽ tự thử lại sau',
+  '正在连接…':'Đang kết nối…', '☁︎ 正在连接…':'☁︎ Đang kết nối…',
+  '云端还没有数据（本机一改就自动推上去）':'Đám mây chưa có dữ liệu (đổi ở máy này là tự đẩy lên)',
+  '☁︎ 云端还没有数据（本机一改就自动推上去）':'☁︎ Đám mây chưa có dữ liệu (đổi ở máy này là tự đẩy lên)',
+  '云端那份不是业务部数据，已忽略':'Bản trên đám mây không phải dữ liệu Phòng Kinh doanh, đã bỏ qua',
+  '☁︎ 云端那份不是业务部数据，已忽略':'☁︎ Bản trên đám mây không phải dữ liệu Phòng Kinh doanh, đã bỏ qua',
+  '实时同步中':'Đang đồng bộ trực tiếp', '☁︎ 实时同步中':'☁︎ Đang đồng bộ trực tiếp',
+  '离线模式（不连云端）':'Chế độ ngoại tuyến (không nối đám mây)',
+  '☁︎ 离线模式（不连云端）':'☁︎ Chế độ ngoại tuyến (không nối đám mây)',
+  '云端没起来（SDK 加载失败），本机照常可用':'Đám mây chưa chạy (tải SDK thất bại), máy này vẫn dùng được',
+  '☁︎ 云端没起来（SDK 加载失败），本机照常可用':'☁︎ Đám mây chưa chạy (tải SDK thất bại), máy này vẫn dùng được',
+  '网络':'Mạng',
+  /* 第二轮扫描补：被 <b> 拆开的静态说明 / 抽屉等级 / 课程等级 */
+  '新学员':'Học viên mới', '入门':'Nhập môn', '初级':'Sơ cấp', '中级':'Trung cấp',
+  '（摊开会被算成付了 N 次）。':'(chia ra sẽ bị tính là trả N lần).',
+  '：主端 / 教师端把课次标「已上完」时，系统只对':': khi bảng chính / cổng giáo viên đánh dấu buổi «Đã dạy xong», hệ thống chỉ với ',
+  '自动记一次使用 ——':'tự ghi một lần sử dụng —— ',
+  '月租场地整层已经付过，不会重复记；线上班、办事处、没挂教室的课也不记。':'Mặt bằng thuê tháng đã trả cả tầng nên không ghi trùng; lớp trực tuyến, văn phòng, lớp không gắn phòng cũng không ghi.',
+  '（默认带出场地小时费作参考，系统不替你换算课时 / 时长）；':'(mặc định lấy phí giờ mặt bằng làm tham khảo, hệ thống không quy đổi sang tiết / thời lượng);',
+  '点「提交财务请款」写成一张单据送到云端':'bấm «Nộp đề nghị thanh toán» để lập một phiếu gửi lên đám mây',
+  '，财务在「审批」页核对、批准、付款。':', Tài chính kiểm tra, duyệt, chi ở trang «Phê duyệt».',
+  '同一节课退回「待上 / 已取消」会记一条冲销，不会再出现在待开单里。':'Nếu buổi học đó đổi lại thành «Chưa dạy / Đã hủy» sẽ ghi một bút toán bù trừ, không còn xuất hiện trong danh sách chờ lập phiếu.',
+  '以后房间多了，用场地卡上的「+ 补间数」加，租金不用重填。':'Sau này thêm phòng thì bấm «+ Thêm phòng» trên thẻ mặt bằng, không cần nhập lại tiền thuê.',
+  'HSK 考生 14.6 万（全球第一） · 中文岗薪资溢价 10–40% · 500+ 家培训机构 · HSK3 备考 <1000 万 VND · Zalo 触达率 40%（Facebook 的 4–8 倍）':'14,6 vạn thí sinh HSK (đứng đầu thế giới) · Việc làm tiếng Trung lương cao hơn 10–40% · 500+ trung tâm đào tạo · Luyện thi HSK3 <10 triệu VND · Tỷ lệ tiếp cận Zalo 40% (gấp 4–8 lần Facebook)',
+  /* 第三轮：被 <b> 拆开的「场地 / 教室」说明，逐行整串命中 */
+  '是付钱的单位：整层月租只写在场地一条里，':'Là đơn vị trả tiền: tiền thuê cả tầng chỉ ghi trên một thẻ mặt bằng,',
+  '不摊到每间教室':'không chia ra từng phòng',
+  '是排课的单位：填 5 间就生成 5 条教室记录，主端按地区就能数到同一个地点有 5 间；':'Là đơn vị xếp lớp: điền 5 phòng là tạo 5 bản ghi phòng học, bảng chính đếm được 5 phòng cùng một địa điểm theo khu vực;',
+  '改成「办事处」的那几间，主端不数。编码由你定，系统只查两件事：':'Những phòng đổi thành «Văn phòng» thì bảng chính không đếm. Mã do bạn đặt, hệ thống chỉ kiểm tra hai việc:',
+  '。存下去就锁住 —— 要换只能停用旧的、再建新的，':'. Lưu xong là khóa —— muốn đổi phải ngừng dùng cái cũ, tạo cái mới,',
+  '历史记录不会被改':'lịch sử không bị đổi',
+  /* 输入框示例文字 = 界面提示，不是业务数据；整句翻 */
+  '如：1,000,000':'Ví dụ: 1,000,000',
+  '如：8,000,000':'Ví dụ: 8,000,000',
+  '如：分2期：5M + 5M':'Ví dụ: trả 2 đợt: 5M + 5M',
+  '如：14.6 万考生 / 薪资溢价 10-40%':'Ví dụ: 14,6 vạn thí sinh / lương cao hơn 10-40%',
+  '如：趋势,定价,渠道':'Ví dụ: Xu hướng, Giá, Kênh',
+  '例：富美兴整层 / 第七郡教学点':'Ví dụ: Phú Mỹ Hưng nguyên tầng / Điểm dạy Quận 7',
+  '例：D7 / 第七郡':'Ví dụ: D7 / Quận 7',
+  '留空自动取地区，例：D7':'Để trống sẽ tự lấy khu vực, ví dụ: D7',
+  '门牌 + 街道 + 郡':'Số nhà + Đường + Quận',
+  '房东 / 管理员':'Chủ nhà / Quản lý',
+  '5 / 6 / 7 / 8 —— 看店铺多大':'5 / 6 / 7 / 8 —— tùy diện tích mặt bằng',
+  '合同、押金、起租日…':'Hợp đồng, tiền cọc, ngày bắt đầu thuê…',
+  '你自己定，例：Q7-01 / PML-01':'Bạn tự đặt, ví dụ: Q7-01 / PML-01',
+  '例：富美兴教学点':'Ví dụ: Điểm dạy Phú Mỹ Hưng',
+  '你自己填，例：D7 / 第七郡':'Bạn tự điền, ví dụ: D7 / Quận 7',
+  '例：18:00-21:00 / 全天':'Ví dụ: 18:00-21:00 / Cả ngày',
+  '停车、电梯、门禁、限制…':'Chỗ đậu xe, thang máy, cửa ra vào, hạn chế…',
 };
-document.getElementById('btn-vi').onclick = function(){
-  this.classList.add('on'); document.getElementById('btn-zh').classList.remove('on');
-  toast('Tiếng Việt（chưa hoàn thiện）');
+
+/* ---- 带数字 / 带数据的整句规则：整串命中，数据原样带回 ---- */
+var BIZ_VI_RE = [
+  { re:/^已推送 (\d+) 位学员到云端$/, to:function(m){ return 'Đã đẩy ' + m[1] + ' học viên lên đám mây'; } },
+  { re:/^已把整份数据备份到云端（学员 (\d+) 位）$/, to:function(m){ return 'Đã sao lưu toàn bộ dữ liệu lên đám mây (' + m[1] + ' học viên)'; } },
+  { re:/^已从云端恢复：学员 (\d+) 位$/, to:function(m){ return 'Đã khôi phục từ đám mây: ' + m[1] + ' học viên'; } },
+  { re:/^推送失败：(.*)$/, to:function(m){ return 'Đẩy thất bại: ' + m[1]; } },
+  { re:/^备份失败：(.*)$/, to:function(m){ return 'Sao lưu thất bại: ' + m[1]; } },
+  { re:/^提交失败：(.*)$/, to:function(m){ return 'Nộp thất bại: ' + m[1]; } },
+  { re:/^☁︎ 已推送 · (.+)$/, to:function(m){ return '☁︎ Đã đẩy · ' + m[1]; } },
+  { re:/^☁︎ 已备份 · (.+)$/, to:function(m){ return '☁︎ Đã sao lưu · ' + m[1]; } },
+  { re:/^☁︎ 实时同步 · (.+)$/, to:function(m){ return '☁︎ Đồng bộ trực tiếp · ' + trText(m[1]); } },
+  { re:/^已同步 (\d{2}:\d{2})$/, to:function(m){ return 'Đã đồng bộ ' + m[1]; } },
+  { re:/^连接断开（(.+)），点一下重连$/, to:function(m){ return 'Mất kết nối (' + m[1] + '), bấm để kết nối lại'; } },
+  { re:/^☁︎ 连接断开（(.+)），点一下重连$/, to:function(m){ return '☁︎ Mất kết nối (' + m[1] + '), bấm để kết nối lại'; } },
+  { re:/^(\d+) 单$/, to:function(m){ return m[1] + ' phiếu'; } },
+  { re:/^提交财务请款（(\d+) 条）$/, to:function(m){ return 'Nộp đề nghị thanh toán (' + m[1] + ' phiếu)'; } },
+  { re:/^已提交财务：(\d+) 条$/, to:function(m){ return 'Đã nộp Tài chính: ' + m[1] + ' phiếu'; } },
+  { re:/^拉取到 (\d+) 条云端使用记录，合并 (\d+)$/, to:function(m){ return 'Kéo được ' + m[1] + ' bản ghi từ đám mây, gộp ' + m[2]; } },
+  { re:/^(.+) 还没有待开单的使用记录 —— 上完课点「☁︎ 拉取使用记录」。$/, to:function(m){ return m[1] + ' chưa có bản ghi sử dụng chờ lập phiếu —— hết buổi học bấm «☁︎ Kéo bản ghi sử dụng».'; } },
+  /* 前缀 + 数据：只翻系统前缀，捕获值再用整串查一次表 ——
+     闭集枚举（招生 / 朋友介绍…）翻显示，自由文本（人民日报 / 国侨办…）原样。 */
+  { re:/^用途：(.+) · 平台：(.+)$/, to:function(m){ return 'Mục đích: ' + trText(m[1]) + ' · Nền tảng: ' + m[2]; } },
+  { re:/^来源：(.+)$/, to:function(m){ return 'Nguồn: ' + trText(m[1]); } },
+  { re:/^场地：(.+)$/, to:function(m){ return 'Mặt bằng: ' + m[1]; } },
+  { re:/^教室：(.+)$/, to:function(m){ return 'Phòng: ' + m[1]; } },
+  /* 收费抽屉 paidHint() 三种结局：整句一起翻，金额原样带回 */
+  { re:/^课程包 (.+) VND · 已缴 (.+) VND · 待缴 (.+) VND$/, to:function(m){ return 'Gói khóa học ' + m[1] + ' VND · Đã nộp ' + m[2] + ' VND · Còn nợ ' + m[3] + ' VND'; } },
+  { re:/^课程包 (.+) VND · 已缴 (.+) VND · 已缴超出 (.+) VND$/, to:function(m){ return 'Gói khóa học ' + m[1] + ' VND · Đã nộp ' + m[2] + ' VND · Đã nộp vượt ' + m[3] + ' VND'; } },
+  { re:/^课程包 (.+) VND · 已缴 (.+) VND · 已结清$/, to:function(m){ return 'Gói khóa học ' + m[1] + ' VND · Đã nộp ' + m[2] + ' VND · Đã thanh toán xong'; } },
+  /* 来源分布图例「朋友介绍 2」：中文来源名是系统枚举，数字是数据 */
+  { re:/^(朋友介绍|讲座会|其他) (\d+)$/, to:function(m){ return (BIZ_VI[m[1]] || m[1]) + ' ' + m[2]; } },
+  /* 课程包下拉的显示文字带参考价；只翻这个形状，不带价的演示数据原样中文 */
+  { re:/^(HSK1 完整（60课时）|HSK2 完整（60课时）|HSK3 备考包（含考试费）|试听课|一对一（每小时）|小班（每课时）) \(([\d.,]+) VND\)$/, to:function(m){
+      var P = {
+        'HSK1 完整（60课时）':'HSK1 trọn khóa (60 tiết)',
+        'HSK2 完整（60课时）':'HSK2 trọn khóa (60 tiết)',
+        'HSK3 备考包（含考试费）':'Gói luyện thi HSK3 (gồm lệ phí thi)',
+        '试听课':'Lớp học thử',
+        '一对一（每小时）':'1 kèm 1 (mỗi giờ)',
+        '小班（每课时）':'Lớp nhỏ (mỗi tiết)'
+      };
+      return P[m[1]] + ' (' + m[2] + ' VND)';
+  } },
+  { re:/^待缴 (.+)$/, to:function(m){ return 'Còn nợ ' + m[1]; } },
+  { re:/^已缴超出 (.+)$/, to:function(m){ return 'Đã nộp vượt ' + m[1]; } },
+  { re:/^已登记收款 (.+)$/, to:function(m){ return 'Đã ghi nhận thu ' + m[1]; } },
+  { re:/^编码「(.+)」已经存在，换一个$/, to:function(m){ return 'Mã «' + m[1] + '» đã tồn tại, chọn mã khác'; } },
+  { re:/^新编码从「(.+)-」往后接着排，已有的编码不重排、不覆盖。$/, to:function(m){ return 'Mã mới tiếp nối sau «' + m[1] + '-», mã cũ không xếp lại, không ghi đè.'; } },
+  { re:/^这间属于场地「(.+)」，$/, to:function(m){ return 'Phòng này thuộc mặt bằng «' + m[1] + '», '; } },
+  { re:/^周(.+)$/, to:function(m){
+      var d = { '一':'Thứ 2','二':'Thứ 3','三':'Thứ 4','四':'Thứ 5','五':'Thứ 6','六':'Thứ 7','日':'CN' };
+      var out = m[1], k;
+      for (k in d) if (d.hasOwnProperty(k)) out = out.split(k).join(d[k]);
+      return 'Tuần ' + out;
+  } },
+  { re:/^编辑线索 · (.+)$/, to:function(m){ return 'Sửa khách tiềm năng · ' + m[1]; } },
+  { re:/^编辑学员 · (.+)$/, to:function(m){ return 'Sửa học viên · ' + m[1]; } },
+  { re:/^编辑收费单 · (.+)$/, to:function(m){ return 'Sửa phiếu thu · ' + m[1]; } },
+  { re:/^编辑 · (.+)$/, to:function(m){ return 'Sửa · ' + m[1]; } },
+  { re:/^编辑投放 · (.+)$/, to:function(m){ return 'Sửa chiến dịch · ' + m[1]; } },
+  { re:/^编辑素材 · (.+)$/, to:function(m){ return 'Sửa tài liệu · ' + m[1]; } },
+  { re:/^编辑活动 · (.+)$/, to:function(m){ return 'Sửa sự kiện · ' + m[1]; } },
+  { re:/^编辑教室 · (.+)$/, to:function(m){ return 'Sửa phòng học · ' + m[1]; } },
+  { re:/^编辑场地 · (.+)$/, to:function(m){ return 'Sửa mặt bằng · ' + m[1]; } },
+  { re:/^补间数 · (.+)$/, to:function(m){ return 'Thêm phòng · ' + m[1]; } },
+  /* 两个长 confirm：整段一起翻，数字 / 时间 / 数据原样 */
+  { re:/^用云端备份覆盖本机？[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('用云端备份覆盖本机？').join('Ghi đè máy này bằng bản sao đám mây?')
+        .split('云端那份（').join('Bản trên đám mây (')
+        .split('线索 ').join('Khách ').split(' / 学员 ').join(' / Học viên ')
+        .split(' / 收费 ').join(' / Thu phí ').split(' / 教室 ').join(' / Phòng ')
+        .split('本机现有：').join('Máy này hiện có:')
+        .split('⚠️ 本机还没备份的改动会丢失，且无法恢复。').join('⚠️ Thay đổi chưa sao lưu trên máy này sẽ mất, không khôi phục được.');
+  } },
+  { re:/^云端有更新的数据（[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('云端有更新的数据（').join('Đám mây có dữ liệu mới hơn (')
+        .split('），').join('), ')
+        .split('本机也有还没推上去的改动。').join('Máy này cũng có thay đổi chưa đẩy lên. ')
+        .split('点「确定」= 用云端覆盖本机（本机改动会丢）').join('Bấm «OK» = ghi đè máy này bằng đám mây (thay đổi trên máy sẽ mất)')
+        .split('点「取消」= 保留本机，稍后本机会把它推上去').join('Bấm «Hủy» = giữ máy này, máy sẽ đẩy lên sau');
+  } },
+];
+
+var BIZ_SKIP_SEL = 'textarea, [data-raw], script, style';        /* 文本节点跳过 */
+var BIZ_ATTR_SKIP_SEL = '[data-raw], script, style, .lang-switch'; /* 属性跳过；textarea 的 placeholder 照翻 */
+var _bizMemo = new WeakMap();       /* 文本节点 → 中文原文 */
+var _bizAttrMemo = new WeakMap();   /* 元素 → {placeholder:原, title:原} */
+var _bizOptMemo = new WeakMap();    /* 没写 value 的 <option> → 中文原文 */
+var _bizTitleOrig = null;
+
+/* 单串查表：整串命中才翻，查不到返回 null（绝不逐词拆） */
+function _bizLookup(s){
+  var lead = (s.match(/^\s*/) || [''])[0];
+  var tail = (s.match(/\s*$/) || [''])[0];
+  var core = s.slice(lead.length, s.length - tail.length);
+  if (!core) return null;
+  if (BIZ_VI[core] !== undefined) return lead + BIZ_VI[core] + tail;
+  for (var i = 0; i < BIZ_VI_RE.length; i++){
+    var m = core.match(BIZ_VI_RE[i].re);
+    if (m) return lead + BIZ_VI_RE[i].to(m) + tail;
+  }
+  return null;
+}
+function trText(raw){
+  var s = String(raw);
+  if (!s.trim()) return s;
+  var one = _bizLookup(s);
+  if (one !== null) return one;
+  /* 静态说明常被 <b> 切开并带换行：逐「整行」查表。
+     任一行查不到 → 整段原样中文，不拆词、不留夹生句。 */
+  if (s.indexOf('\n') !== -1){
+    var parts = s.split('\n'), out = [], allHit = true;
+    for (var j = 0; j < parts.length; j++){
+      if (!parts[j].trim()){ out.push(parts[j]); continue; }
+      var hit = _bizLookup(parts[j]);
+      if (hit === null){ allHit = false; break; }
+      out.push(hit);
+    }
+    if (allHit) return out.join('\n');
+  }
+  return s;
+}
+/* 给 confirm() 这类「不进 DOM」的文案用；中文模式原样返回 */
+function tr(s){ return BIZ_LANG === 'vi' ? trText(s) : String(s); }
+
+function bizLangWalk(root){
+  if (!root || typeof document.createTreeWalker !== 'function' || typeof NodeFilter === 'undefined') return;
+  var vi = (BIZ_LANG === 'vi');
+
+  /* ★ <option> 没写 value 时，select.value 会跟着显示文字走。
+     先把中文原文钉成 value 再翻显示 —— 存盘枚举一个字不变。
+     切回中文把补上的 value 摘掉，DOM 逐字还原。 */
+  if (root.querySelectorAll){
+    Array.prototype.forEach.call(root.querySelectorAll('option'), function(el){
+      var memo = _bizOptMemo.get(el);
+      /* ★ 已钉住的要先验：它现在带着我们补的 value，若先判 hasAttribute 会被
+         return 挡掉，切回中文就永远摘不掉（P-138 探针实测）。 */
+      if (memo && memo.pinned){
+        if (!vi){ el.removeAttribute('value'); memo.pinned = false; }
+        return;
+      }
+      if (el.hasAttribute('value')) return;
+      if (!memo){ memo = { text: el.textContent, pinned:false }; _bizOptMemo.set(el, memo); }
+      if (!/[\u4e00-\u9fff]/.test(memo.text)) return;   /* 纯英文选项（Zalo…）不用钉 */
+      if (vi){ el.setAttribute('value', memo.text); memo.pinned = true; }
+    });
+  }
+  var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(n){
+      var p = n.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE') return NodeFilter.FILTER_REJECT;
+      if (p.closest && p.closest(BIZ_SKIP_SEL)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  var n;
+  while ((n = w.nextNode())){
+    var raw = n.nodeValue;
+    if (!raw || !raw.trim()) continue;
+    if (vi){
+      var out = trText(raw);
+      if (out !== raw){ if (!_bizMemo.has(n)) _bizMemo.set(n, raw); n.nodeValue = out; }
+    } else if (_bizMemo.has(n)){
+      n.nodeValue = _bizMemo.get(n);
+    }
+  }
+  if (!root.querySelectorAll) return;
+  ['placeholder','title'].forEach(function(attr){
+    Array.prototype.forEach.call(root.querySelectorAll('['+attr+']'), function(el){
+      if (el.closest && el.closest(BIZ_ATTR_SKIP_SEL)) return;
+      var v = el.getAttribute(attr);
+      if (v === null) return;
+      if (!_bizAttrMemo.has(el)) _bizAttrMemo.set(el, {});
+      var memo = _bizAttrMemo.get(el);
+      if (!(attr in memo)) memo[attr] = v;
+      el.setAttribute(attr, vi ? trText(memo[attr]) : memo[attr]);
+    });
+  });
+}
+
+function bizSyncBtn(){
+  var zh = document.getElementById('btn-zh'), viBtn = document.getElementById('btn-vi');
+  if (!zh || !viBtn) return;
+  zh.classList.toggle('on', BIZ_LANG === 'zh');
+  viBtn.classList.toggle('on', BIZ_LANG === 'vi');
+  /* 「中文」是语言名，不进字典（会啃到演示数据里的「中文岗」）。单独换名。 */
+  var n = zh.lastChild;
+  if (n && n.nodeType === 3) n.nodeValue = BIZ_LANG === 'vi' ? 'Tiếng Trung' : '中文';
+}
+function bizApplyLang(){
+  bizLangWalk(document.body);
+  if (BIZ_LANG === 'vi'){
+    if (_bizTitleOrig === null) _bizTitleOrig = document.title;
+    document.title = trText(_bizTitleOrig);
+  } else if (_bizTitleOrig !== null){
+    document.title = _bizTitleOrig;
+  }
+  bizSyncBtn();
+}
+function bizSetLang(l){
+  BIZ_LANG = (l === 'vi') ? 'vi' : 'zh';
+  try { localStorage.setItem(BIZ_LANG_KEY, BIZ_LANG); } catch(e){}
+  bizApplyLang();
+}
+document.getElementById('btn-zh').onclick = function(){ bizSetLang('zh'); };
+document.getElementById('btn-vi').onclick = function(){ bizSetLang('vi'); };
+
+/* 新渲染出来的内容（表格 / 抽屉 / toast / 云灯）自动再扫一遍。
+   收敛靠「翻完是越南语、不再命中字典」；busy + 有限补跑防死循环。 */
+(function(){
+  if (typeof MutationObserver === 'undefined') return;
+  var busy = false, again = false, rounds = 0;
+  function sweep(){
+    if (busy){ again = true; return; }
+    busy = true;
+    Promise.resolve().then(function(){
+      try { if (BIZ_LANG === 'vi') bizLangWalk(document.body); } finally {
+        busy = false;
+        if (again && rounds++ < 2){ again = false; sweep(); }
+        else { again = false; rounds = 0; }
+      }
+    });
+  }
+  new MutationObserver(function(){
+    if (BIZ_LANG === 'vi') sweep();
+  }).observe(document.body, { childList:true, subtree:true, characterData:true });
+})();
+
+/* module 块看不到这里的全局函数 —— confirm 与状态灯走这个只读口子 */
+window.__BIZ_TR__ = tr;
+/* 探针只读出口 */
+window.__BIZ_LANG_TEST__ = {
+  get lang(){ return BIZ_LANG; },
+  set: bizSetLang, tr: tr, walk: bizLangWalk, apply: bizApplyLang,
+  VI: BIZ_VI, RULES: BIZ_VI_RE, SKIP: BIZ_SKIP_SEL, KEY: BIZ_LANG_KEY,
 };
 
 /* ---- 侧栏导航 ---- */
@@ -2818,6 +3319,8 @@ nav('overview');
 backMainFix();
 cldMark('idle');
 bakMark('idle');
+/* ★ P-138：开机按本机记的语言生效（存的是 vi 就直接是越南语，不用手点） */
+if (BIZ_LANG === 'vi') bizApplyLang(); else bizSyncBtn();
 
 /* ★ 2026-11-08（P-136）：给下面的实时同步 module 留三个口子。
    主脚本是普通 <script>（全局作用域），module 看不到它的 var/function，
@@ -2859,6 +3362,11 @@ const FB = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', 
 const DOC = 'bizmaster';
 const TAG = 'zhops.biz';
 const PUSH_DELAY = 1200;      /* 防抖：连打几个字也只推一次 */
+
+/* ★ 2026-11-09（P-138）：只有「不进 DOM」的冲突弹窗要 module 自己翻。
+   ★ 状态灯千万别在这里预翻 —— 它写的是 DOM 文本，交给主脚本翻译层统一管：
+     预翻会让 _bizMemo 记不到中文原文，切回中文时这一行还原不了（P-138 实测）。 */
+const TR = (s) => (typeof window.__BIZ_TR__ === 'function') ? window.__BIZ_TR__(s) : s;
 
 const MARK = {
   el: null,
@@ -2943,12 +3451,12 @@ function applyRemote(raw){
 
   /* ★ 冲突保险：本机有改动没推出去，云端又更新了 → 问一次 */
   if (pendingLocalAt && remoteAt > lastPushedAt){
-    const ok = window.confirm(
+    const ok = window.confirm(TR(
       '云端有更新的数据（' + String(o.__at||'').slice(0,16).replace('T',' ') + '），' +
       '本机也有还没推上去的改动。\n\n' +
       '点「确定」= 用云端覆盖本机（本机改动会丢）\n' +
       '点「取消」= 保留本机，稍后本机会把它推上去'
-    );
+    ));
     if (!ok){
       /* 用户要保本机 → 立刻推上去，谁推得晚谁赢 */
       pushNow();

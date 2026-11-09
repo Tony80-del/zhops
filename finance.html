@@ -329,6 +329,14 @@ table.fmt td.bad{color:var(--neg)}
   transition:background .15s,color .15s,border-color .15s;}
 .backmain:hover{background:var(--surf2);color:var(--tx);border-color:var(--line2);}
 .backmain:focus-visible{outline:2px solid var(--b1);outline-offset:1px;}
+
+/* P-139 · 语言切换（跟业务端同一套，配色用本页变量） */
+.lang-switch{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--surf2);flex:0 0 auto;border-radius:6px;overflow:hidden}
+.lang-switch button{font-size:12px;font-family:inherit;display:flex;align-items:center;gap:5px;padding:0 10px;height:28px;border:0;background:transparent;color:var(--mu);cursor:pointer;white-space:nowrap}
+.lang-switch button + button{border-left:1px solid var(--line)}
+.lang-switch button:hover{background:var(--sel);color:var(--tx)}
+.lang-switch button.on{background:var(--b3);color:var(--ink);font-weight:650}
+.lang-switch .fl{font-size:14px;line-height:1}
 </style>
 </head>
 <body data-theme="ivory">
@@ -340,6 +348,11 @@ table.fmt td.bad{color:var(--neg)}
   <a class="backmain" id="backMain" href="admin.html" title="返回主端">← 主端</a>
   <div class="crumb">中文教学运营 · <b id="crumbName">使用说明</b></div>
   <div class="topsp"></div>
+  <!-- ★ P-139：语言切换（跟业务端同一套，共用 zhops.lang） -->
+  <div class="lang-switch" id="finLang">
+    <button class="on" id="btn-zh"><span class="fl">🇨🇳</span>中文</button>
+    <button id="btn-vi"><span class="fl">🇻🇳</span>Tiếng Việt</button>
+  </div>
   <div class="themes" id="themes">
     <span class="lb">配色</span>
     <button class="theme-dot" data-th="ivory"    style="--sw:#F5F7FA" title="象牙白"></button>
@@ -878,6 +891,799 @@ table.fmt td.bad{color:var(--neg)}
 <script>
 (function(){
 'use strict';
+/* ============================================================
+   P-139 · 财务端越南语翻译层（2026-11-09）
+   ------------------------------------------------------------
+   ★ 口径跟 P-138 业务端一致：系统界面中文一句不留，演示数据不翻；
+     状态枚举「翻显示、不翻存盘」；语言状态共用 zhops.lang。
+   ★ 整串命中才翻，绝不逐词拆 —— 夹生句不会出现，演示数据天然被保护。
+   ★ 红线：翻译层只碰 DOM / document.title / 语言键。
+     绝不调 save()、绝不写 zhops.fin.v1、绝不推 finmaster。
+   ============================================================ */
+var FIN_LANG_KEY = 'zhops.lang';
+var FIN_LANG = (function(){ try { return localStorage.getItem(FIN_LANG_KEY) === 'vi' ? 'vi' : 'zh'; } catch(e){ return 'zh'; } })();
+
+var VI_FIN = {
+  "值": "Giá trị",
+  "关": "Tắt",
+  "开": "Bật",
+  "数": "Số",
+  "新": "Mới",
+  "下拉": "Danh sách chọn",
+  "个税": "Thuế TNCN",
+  "人数": "Số người",
+  "付款": "Chi trả",
+  "代价": "Đánh đổi",
+  "做法": "Cách làm",
+  "其他": "Khác",
+  "动作": "Thao tác",
+  "单价": "Đơn giá",
+  "只读": "Chỉ đọc",
+  "合计": "Tổng",
+  "场地": "Địa điểm",
+  "备注": "Ghi chú",
+  "外包": "Thuê ngoài",
+  "姓名": "Họ tên",
+  "字段": "Trường",
+  "学费": "Học phí",
+  "实发": "Thực lãnh",
+  "实收": "Thực thu",
+  "审批": "Phê duyệt",
+  "导出": "Xuất",
+  "工号": "Mã nhân viên",
+  "已付": "Đã thanh toán",
+  "已批": "Đã phê duyệt",
+  "已连": "Đã kết nối",
+  "已驳": "Đã từ chối",
+  "应发": "Tổng lương",
+  "底薪": "Lương cơ bản",
+  "总数": "Tổng số",
+  "房租": "Tiền thuê",
+  "手填": "Nhập tay",
+  "批准": "Phê duyệt",
+  "报表": "Báo cáo",
+  "支出": "Chi",
+  "收入": "Thu nhập",
+  "教室": "Phòng học",
+  "教师": "Giáo viên",
+  "数据": "Dữ liệu",
+  "整数": "Số nguyên",
+  "文件": "Tệp",
+  "方案": "Phương án",
+  "日期": "Ngày",
+  "暮紫": "Tím hoàng hôn",
+  "月份": "Tháng",
+  "未连": "Chưa kết nối",
+  "条数": "Số dòng",
+  "板块": "Phần",
+  "查看": "Xem",
+  "核心": "Cốt lõi",
+  "格式": "Định dạng",
+  "毛利": "Lợi nhuận gộp",
+  "状态": "Trạng thái",
+  "现金": "Tiền mặt",
+  "班级": "Lớp",
+  "留空": "Để trống",
+  "税率": "Thuế suất",
+  "税额": "Tiền thuế",
+  "算法": "Cách tính",
+  "算，": "tính,",
+  "类别": "Loại",
+  "类型": "Loại",
+  "结算": "Quyết toán",
+  "自有": "Nội bộ",
+  "要填": "phải nhập",
+  "规则": "Quy tắc",
+  "计价": "Tính giá",
+  "说明": "Hướng dẫn",
+  "课时": "Số tiết học",
+  "配置": "Cấu hình",
+  "配色": "Bảng màu",
+  "采用": "Áp dụng",
+  "金额": "Số tiền",
+  "键盘": "Bàn phím",
+  "项目": "Khoản mục",
+  "驳回": "Từ chối",
+  "不用填": "Không cần nhập",
+  "云端：": "Đám mây:",
+  "人民币": "Nhân dân tệ",
+  "全手填": "Nhập tay toàn bộ",
+  "冷雾灰": "Xám sương lạnh",
+  "单据号": "Số chứng từ",
+  "发票号": "Số hóa đơn",
+  "墨玉绿": "Xanh ngọc mực",
+  "已付款": "Đã thanh toán",
+  "已批准": "Đã phê duyệt",
+  "已提交": "Đã nộp",
+  "已驳回": "Đã từ chối",
+  "干什么": "Dùng để làm gì",
+  "待审批": "Chờ duyệt",
+  "收款方": "Bên nhận tiền",
+  "暖砂褐": "Nâu cát ấm",
+  "材料费": "Phí tài liệu",
+  "检测中": "Đang kiểm tra",
+  "毛利率": "Tỷ suất lợi nhuận gộp",
+  "没开票": "Chưa xuất hóa đơn",
+  "深海蓝": "Xanh biển sâu",
+  "点一下": "Bấm một lần",
+  "石墨灰": "Xám than chì",
+  "米纸白": "Trắng giấy gạo",
+  "纯数字": "Chỉ số",
+  "薄荷白": "Trắng bạc hà",
+  "补课费": "Phí học bù",
+  "课时费": "Phí tiết học",
+  "象牙白": "Trắng ngà",
+  "须核实": "Cần xác minh",
+  "5 审批": "5 Phê duyệt",
+  "₫ 付款": "₫ Chi tiền",
+  "← 主端": "← Bảng chính",
+  "① 收入": "① Thu nhập",
+  "② 支出": "② Chi",
+  "③ 汇总": "③ Tổng hợp",
+  "③ 结算": "③ Quyết toán",
+  "④ 报表": "④ Báo cáo",
+  "⑤ 审批": "⑤ Phê duyệt",
+  "⑥ 配置": "⑥ Cấu hình",
+  "⑦ 导出": "⑦ Xuất",
+  "✓ 批准": "✓ Duyệt",
+  "✗ 驳回": "✗ Từ chối",
+  "一位小数": "Một chữ số thập phân",
+  "上次拉取": "Lần kéo cuối",
+  "不是单月": "Không phải một tháng",
+  "不用手填": "Không cần nhập tay",
+  "主体类型": "Loại pháp nhân",
+  "也能切。": "cũng chuyển được.",
+  "使用说明": "Hướng dẫn sử dụng",
+  "全部数据": "Toàn bộ dữ liệu",
+  "其他支出": "Chi khác",
+  "写回云端": "Ghi lên đám mây",
+  "切换月份": "Đổi tháng",
+  "单据明细": "Chi tiết chứng từ",
+  "单课收入": "Thu nhập mỗi tiết",
+  "单课毛利": "Lợi nhuận gộp mỗi tiết",
+  "口径提醒": "Lưu ý cách tính",
+  "只点按钮": "Chỉ bấm nút",
+  "右侧主区": "Khu vực chính bên phải",
+  "基础参数": "Tham số cơ bản",
+  "实发合计": "Tổng thực lãnh",
+  "实时计算": "Tính theo thời gian thực",
+  "工资社保": "Lương và bảo hiểm",
+  "左侧导航": "Thanh điều hướng bên trái",
+  "应发合计": "Tổng lương phải trả",
+  "应收学费": "Học phí phải thu",
+  "开票功能": "Chức năng hóa đơn",
+  "待办单据": "Chứng từ chờ xử lý",
+  "成本结构": "Cơ cấu chi phí",
+  "按月存档": "Lưu theo tháng",
+  "按班结算": "Quyết toán theo lớp",
+  "排课ID": "Mã xếp lớp",
+  "收款方式": "Hình thức thu",
+  "收款记录": "Ghi nhận thu tiền",
+  "本月支出": "Chi tháng này",
+  "本月毛利": "Lợi nhuận gộp tháng này",
+  "本月课次": "Số tiết tháng này",
+  "本机存储": "Lưu trên máy này",
+  "正确例子": "Ví dụ đúng",
+  "渠道投放": "Quảng cáo theo kênh",
+  "班级要填": "Phải nhập lớp",
+  "社保个人": "Bảo hiểm cá nhân",
+  "社保公司": "Bảo hiểm công ty",
+  "社保分摊": "Phân bổ bảo hiểm",
+  "要手填吗": "Có cần nhập tay không?",
+  "计划课次": "Số tiết kế hoạch",
+  "记钱出去": "Ghi tiền chi ra",
+  "设备离线": "Thiết bị ngoại tuyến",
+  "请款金额": "Số tiền đề nghị chi",
+  "财务系统": "Hệ thống tài chính",
+  "返回主端": "Về bảng chính",
+  "还没拉取": "Chưa kéo về",
+  "银行转账": "Chuyển khoản",
+  "+ 加班级": "+ Thêm lớp",
+  "+ 记一笔": "+ Ghi một khoản",
+  "①② 汇总": "①② Tổng hợp",
+  "可以付款了": "Có thể chi tiền rồi",
+  "同一个页面": "Cùng một trang",
+  "大部分自动": "Đa số tự động",
+  "实时同步中": "Đang đồng bộ thời gian thực",
+  "小时费参考": "Tham khảo phí theo giờ",
+  "已自动保存": "Đã tự lưu",
+  "已连上云端": "Đã kết nối đám mây",
+  "建设期工具": "Công cụ giai đoạn xây dựng",
+  "开 / 关": "Bật / Tắt",
+  "所有板块在": "Tất cả các phần ở",
+  "按单课毛利": "Theo lợi nhuận gộp mỗi tiết",
+  "数据从哪来": "Dữ liệu từ đâu",
+  "本月无单据": "Tháng này không có chứng từ",
+  "本月课时费": "Phí tiết học tháng này",
+  "格式怎么填": "Điền định dạng thế nào",
+  "正在检测…": "Đang kiểm tra…",
+  "点一下重测": "Bấm để kiểm tra lại",
+  "点一下重连": "Bấm để kết nối lại",
+  "现在导的是": "Hiện đang xuất",
+  "自动，只读": "Tự động, chỉ đọc",
+  "记学费进来": "Ghi học phí thu vào",
+  "请款金额 ": "Số tiền đề nghị ",
+  "还没选单据": "Chưa chọn chứng từ",
+  "里面有什么": "Bên trong có gì",
+  "↓ 工资社保": "↓ Lương và bảo hiểm",
+  "↓ 支出明细": "↓ Chi tiết chi",
+  "↓ 收入明细": "↓ Chi tiết thu",
+  "下拉，三选一": "Chọn một trong ba",
+  "人名或公司名": "Tên người hoặc công ty",
+  "付款没记上：": "Ghi chi tiền không thành công:",
+  "全部月份累计": "Lũy kế mọi tháng",
+  "公司社保 %": "Bảo hiểm công ty %",
+  "内资有限公司": "Công ty TNHH vốn trong nước",
+  "分红个税 %": "Thuế TNCN cổ tức %",
+  "别写长段落。": "Đừng viết đoạn dài.",
+  "员工社保 %": "Bảo hiểm nhân viên %",
+  "回到使用说明": "Về Hướng dẫn sử dụng",
+  "学费默认税率": "Thuế suất mặc định cho học phí",
+  "学费（整班）": "Học phí (cả lớp)",
+  "批准没成功：": "Duyệt không thành công:",
+  "拉取没成功：": "Kéo dữ liệu không thành công:",
+  "每节课赚多少": "Mỗi tiết lãi bao nhiêu",
+  "清空全部数据": "Xóa toàn bộ dữ liệu",
+  "点一下板块名": "Bấm tên phần",
+  "班级盈亏排名": "Xếp hạng lãi lỗ theo lớp",
+  "理由（必填）": "Lý do (bắt buộc)",
+  "这张工资单。": "bảng lương này.",
+  "驳回没成功：": "Từ chối không thành công:",
+  "（没写理由）": "(Không ghi lý do)",
+  "，打开变慢。": ", mở sẽ chậm đi.",
+  "☁︎ 读云端…": "☁︎ Đang đọc đám mây…",
+  "七个板块的分工": "Phân công của bảy phần",
+  "三个数怎么来的": "Ba số này từ đâu ra",
+  "上面「收入」是": "\"Thu\" ở trên là",
+  "代账拿它干什么": "Kế toán thuê ngoài dùng để làm gì",
+  "企业所得税 %": "Thuế TNDN %",
+  "伪装 .xls": "Giả dạng .xls",
+  "切换板块：四步": "Chuyển phần: bốn bước",
+  "场地请款单明细": "Chi tiết đề nghị chi mặt bằng",
+  "字母 + 数字": "Chữ cái + số",
+  "学生 / 班级": "Học viên / Lớp",
+  "工资不由这里算": "Lương không tính ở đây",
+  "文本，写清是谁": "Dạng văn bản, ghi rõ là ai",
+  "本页按选定月份": "Trang này theo tháng đã chọn",
+  "班级现在要手填": "Lớp hiện phải nhập tay",
+  "的顺序走一遍：": "theo thứ tự sau:",
+  "税率、社保费率": "Thuế suất, tỷ lệ bảo hiểm",
+  "给代账的三张表": "Ba bảng giao cho kế toán thuê ngoài",
+  "课时费（自动）": "Phí tiết học (tự động)",
+  "这套系统怎么用": "Cách dùng hệ thống này",
+  "这张表现在只读": "Bảng này hiện chỉ đọc",
+  "这是财务系统的": "Đây là của hệ thống tài chính",
+  "金额要大于 0": "Số tiền phải lớn hơn 0",
+  "（整班学费）。": "(học phí cả lớp).",
+  "：上面四个数按": ": Bốn số ở trên theo",
+  "0–7 八个入口": "0–7 tám lối vào",
+  "☁︎ 从云端拉取": "☁︎ Kéo từ đám mây",
+  "。第一次用建议按": ". Lần đầu nên theo",
+  "三个动作各写什么": "Ba thao tác ghi gì",
+  "中文教学运营 ·": "Đào tạo tiếng Trung ·",
+  "云端：正在检测…": "Đám mây: đang kiểm tra…",
+  "凭证号（必填）：": "Số chứng từ (bắt buộc):",
+  "工资社保.xls": "Luong-BH.xls",
+  "已按方案 1 做": "Đã làm theo phương án 1",
+  "支出明细.xls": "Chi-tiet-chi.xls",
+  "收入明细.xls": "Chi-tiet-thu.xls",
+  "月毛利、班级盈亏": "Lợi nhuận gộp tháng, lãi lỗ lớp",
+  "本月收入（实收）": "Thu tháng này (thực thu)",
+  "还没有支出数据。": "Chưa có dữ liệu chi.",
+  "还没有班级数据。": "Chưa có dữ liệu lớp.",
+  "这张场地请款单。": "phiếu đề nghị thanh toán địa điểm này.",
+  "，换电脑看不到。": ", sang máy khác sẽ không thấy.",
+  "一个文件只能一张表": "Mỗi tệp chỉ có một bảng",
+  "一句话，≤30 字": "Một câu, ≤30 ký tự",
+  "三张表，每月导一次": "Ba bảng, xuất mỗi tháng một lần",
+  "下面每一格都能改，": "Mỗi ô bên dưới đều sửa được,",
+  "为什么不做成写死的": "Tại sao không viết cứng",
+  "人事会原样看到这段": "Nhân sự sẽ thấy nguyên đoạn này",
+  "先在上面选一张单据": "Chọn một chứng từ ở trên trước",
+  "导出 · 喂给代账": "Xuất · giao cho kế toán thuê ngoài",
+  "库打包进 HTML": "Đóng gói thư viện vào HTML",
+  "手填，改一次长期用": "Nhập tay, sửa một lần dùng lâu dài",
+  "推送失败，稍后重试": "Đẩy lên thất bại, thử lại sau",
+  "支出 · 记钱出去": "Chi · ghi tiền ra",
+  "收入 · 记钱进来": "Thu · ghi tiền vào",
+  "最常错：金额带逗号": "Lỗi thường gặp: số tiền có dấu phẩy",
+  "板块内部还有子页签": "Trong mỗi phần còn có tab con",
+  "没批的单据不进报表": "Chứng từ chưa duyệt không vào báo cáo",
+  "班级课次 + ①②": "Tiết của lớp + ①②",
+  "这个环境不支持网络": "Môi trường này không hỗ trợ mạng",
+  "连接超时（8 秒）": "Quá thời gian kết nối (8 giây)",
+  "，一个月一张单据。": ", mỗi tháng một chứng từ.",
+  "0 是说明，不算板块": "0 là hướng dẫn, không tính phần",
+  "业务部会原样看到这段": "Kinh doanh sẽ thấy nguyên đoạn này",
+  "人事部提交，云端拉取": "Nhân sự nộp, kéo từ đám mây",
+  "从工资里代扣的部分。": "Phần khấu trừ từ lương.",
+  "内联 SheetJS": "SheetJS nhúng inline",
+  "到「结算」页加班级。": "Sang trang \"Quyết toán\" thêm lớp.",
+  "填完就走，不用点保存": "Điền xong là xong, không cần bấm Lưu",
+  "大 900KB 左右": "Khoảng 900KB",
+  "已自动保存 · 刚刚": "Đã tự lưu · vừa xong",
+  "必须先批准才能付款。": "Phải phê duyệt trước mới được chi trả.",
+  "教师单价 × 1 节": "Đơn giá giáo viên × 1 tiết",
+  "离线模式（不连云端）": "Chế độ ngoại tuyến (không nối đám mây)",
+  "第一次用，按这个顺序": "Lần đầu dùng, theo thứ tự này",
+  "要本地会计确认过再用": "Cần kế toán địa phương xác nhận mới dùng",
+  "规则 / 填错会怎样": "Quy tắc / Điền sai thì sao",
+  "这个浏览器不支持联网": "Trình duyệt này không hỗ trợ mạng",
+  "「工资社保」页已经改成": "Trang «Lương & Bảo hiểm» đã đổi thành",
+  "不要打逗号、不要打 ₫": "Đừng gõ dấu phẩy, đừng gõ ₫",
+  "业务部 · 场地请款单": "Phòng Kinh doanh · Đề nghị chi mặt bằng",
+  "付款金额（默认等于实发": "Số tiền chi (mặc định bằng thực lãnh",
+  "到「结算」把班级填进去": "Sang \"Quyết toán\" điền lớp vào",
+  "整班学费 ÷ 计划课次": "Học phí cả lớp ÷ Số tiết kế hoạch",
+  "文件名自动带月份（例：": "Tên tệp tự kèm tháng (Ví dụ:",
+  "结算 · 每节课赚多少": "Quyết toán · Mỗi tiết lãi bao nhiêu",
+  "自有、外包都从这里出。": "GV nội bộ và thuê ngoài đều ra từ đây.",
+  "载入示例数据（看效果）": "Nạp dữ liệu mẫu (xem thử)",
+  "两个口径不同，别混着看。": "Hai cách tính khác nhau, đừng lẫn vào nhau.",
+  "做收入凭证、核对银行到账": "Làm chứng từ thu, đối chiếu tiền về tài khoản",
+  "做费用凭证、算可抵扣成本": "Làm chứng từ chi phí, tính chi phí được khấu trừ",
+  "先到「配置」核对四个费率": "Trước hết sang \"Cấu hình\" kiểm tra bốn tỷ lệ",
+  "先在上面选一张场地请款单": "Chọn một phiếu đề nghị thanh toán địa điểm ở trên trước",
+  "布局：两栏，不是八个页面": "Bố cục: hai cột, không phải tám trang",
+  "当前板块的表格 / 图表": "Bảng / biểu đồ của phần hiện tại",
+  "技术取舍：一个文件一张表": "Đánh đổi kỹ thuật: một tệp một bảng",
+  "教师姓名要和工资页对得上": "Tên giáo viên phải khớp với trang lương",
+  "连不上云端（断网或被拦）": "Không nối được đám mây (mất mạng hoặc bị chặn)",
+  "配置 · 改一次，长期用": "Cấu hình · Sửa một lần, dùng lâu dài",
+  "☁︎ 实时同步：正在连接…": "☁︎ Đồng bộ trực tiếp: đang kết nối…",
+  "☁︎ 离线模式（不连云端）": "☁︎ Chế độ ngoại tuyến (không nối đám mây)",
+  "。 「工资社保」页已经改成": ". Trang \"Lương và bảo hiểm\" đã đổi thành",
+  "付款金额（默认等于请款金额": "Số tiền chi (mặc định bằng số tiền đề nghị",
+  "做成参数，改一个数字就行。": "làm thành tham số thì chỉ cần đổi một con số.",
+  "公司额外承担，不进工资条。": "Công ty chịu thêm, không đưa vào bảng lương.",
+  "只用于估算，实际由代账算。": "Chỉ để ước tính, thực tế do kế toán thuê ngoài tính.",
+  "同上：不带逗号、不带 ₫。": "Như trên: không dấu phẩy, không ₫.",
+  "审批 · 人事提交的工资单": "Phê duyệt · Bảng lương do Nhân sự nộp",
+  "报表 · 这个月到底赚没赚": "Báo cáo · Tháng này lãi hay lỗ",
+  "数据存在这台电脑的浏览器里": "Dữ liệu lưu trong trình duyệt của máy này",
+  "日期 + 金额 + 凭证号": "Ngày + Số tiền + Số chứng từ",
+  "看左边导航，找到要去的板块": "Nhìn thanh điều hướng bên trái, tìm phần cần đến",
+  "财务系统 · 中文教学运营": "Hệ thống tài chính · Đào tạo tiếng Trung",
+  "HTML 表格存成 .xls": "Lưu bảng HTML thành .xls",
+  "—— 人事部算完提交，这边在": "—— Nhân sự tính xong nộp lên, bên này",
+  "云端文档结构不认识，拒绝覆盖": "Không nhận dạng được cấu trúc tài liệu đám mây, từ chối ghi đè",
+  "云端那份不是财务数据，已忽略": "Dữ liệu trên đám mây không phải dữ liệu tài chính, đã bỏ qua",
+  "做工资凭证 + 个税社保申报": "Làm chứng từ lương + kê khai thuế TNCN và bảo hiểm",
+  "实时同步没起来（本机照常用）": "Đồng bộ thời gian thực không khởi động được (máy này vẫn dùng bình thường)",
+  "核对人事单据 → 批 → 付": "Đối chiếu chứng từ nhân sự → Duyệt → Chi",
+  "清空全部数据？这个不能撤销。": "Xóa sạch toàn bộ dữ liệu? Không thể hoàn tác.",
+  "社保和个税已经在实发里扣过了": "Bảo hiểm và thuế TNCN đã khấu trừ trong thực lãnh",
+  "payload 不是 JSON": "payload không phải JSON",
+  "—— 两个口径不同，别混着看。": "—— Hai cách tính khác nhau, đừng nhìn lẫn vào nhau.",
+  "云端文档里没有 payload": "Tài liệu đám mây không có payload",
+  "先看布局和切换，再看每页填什么": "Xem bố cục và cách chuyển trước, rồi xem mỗi trang điền gì",
+  "到「审批」看人事送上来的工资单": "Sang \"Phê duyệt\" xem bảng lương Nhân sự gửi lên",
+  "月底到「导出」拿三张表给代账。": "Cuối tháng sang \"Xuất\" lấy ba bảng giao kế toán thuê ngoài.",
+  "状态 → 已批准 + 批准时间": "Trạng thái → Đã phê duyệt + Thời gian duyệt",
+  "理由（必填，业务部会原样看到）": "Lý do (bắt buộc, Kinh doanh sẽ thấy nguyên văn)",
+  "理由（必填，人事会原样看到）：": "Lý do (bắt buộc, Nhân sự sẽ thấy nguyên văn):",
+  "能做多页签真 xlsx。但文件": "Có thể làm xlsx thật nhiều tab. Nhưng tệp",
+  "还没有收入数据，占比算不出来。": "Chưa có dữ liệu thu, không tính được tỷ trọng.",
+  "，接排课系统后由系统自动带出。": ", sau khi nối hệ thống xếp lịch sẽ tự động điền.",
+  "：待审批、已驳回的都不算支出。": ": Chờ duyệt và đã từ chối đều không tính chi.",
+  "云端那份不是 JSON，拒绝覆盖": "Dữ liệu đám mây không phải JSON, từ chối ghi đè",
+  "口径提醒（2026-10-31）": "Lưu ý cách tính (2026-10-31)",
+  "导三个独立文件，代账拿到直接开。": "Xuất ba tệp riêng, kế toán mở ngay được.",
+  "日期格式要 YYYY-MM-DD": "Định dạng ngày phải là YYYY-MM-DD",
+  "理由（必填，业务部会原样看到）：": "Lý do (bắt buộc, Kinh doanh sẽ thấy nguyên văn):",
+  "课时费自动算，工资社保和其他手填": "Phí tiết học tự tính, lương/bảo hiểm và khoản khác nhập tay",
+  "零依赖、双击能开、离线也能导。但": "Không phụ thuộc, mở bằng cú đúp, xuất được cả offline. Nhưng",
+  "云端有文档，但里面还没有人事单据。": "Đám mây có tài liệu nhưng chưa có chứng từ Nhân sự.",
+  "云端没有 approvals 文档": "Đám mây chưa có tài liệu approvals",
+  "云端还没有数据（本机一改就推上去）": "Đám mây chưa có dữ liệu (máy này sửa là đẩy lên ngay)",
+  "付款日期（YYYY-MM-DD）：": "Ngày chi (YYYY-MM-DD):",
+  "代账要的是 Excel，不是看板。": "Kế toán thuê ngoài cần Excel, không phải bảng điều khiển.",
+  "全页按月化等课时费接单据时一起做。": "sẽ làm cùng lúc khi tính phí tiết học theo tháng và nối chứng từ.",
+  "改完立刻影响工资页、结算页、报表页": "Sửa xong ảnh hưởng ngay trang lương, quyết toán, báo cáo",
+  "数据在本机浏览器 · 换设备看不到": "Dữ liệu ở trình duyệt máy này · Sang thiết bị khác không thấy",
+  "载入示例数据？会覆盖当前所有数据。": "Nạp dữ liệu mẫu? Sẽ ghi đè toàn bộ dữ liệu hiện có.",
+  "钱由人事算，财务只核对总数、批、付": "Tiền do Nhân sự tính, Tài chính chỉ đối chiếu tổng, duyệt, chi",
+  "你有代账，这三张表是系统最重要的出口": "Bạn có kế toán thuê ngoài, ba bảng này là đầu ra quan trọng nhất",
+  "单据来自人事部「提交财务」，存在云端": "Chứng từ từ \"Nộp Tài chính\" của Nhân sự, lưu trên đám mây",
+  "学费、材料费、补课费 —— 一笔一行": "Học phí, tài liệu, học bù —— mỗi khoản một dòng",
+  "左侧点板块，右侧内容直接换，不刷新。": "Bấm phần bên trái, nội dung bên phải đổi ngay, không tải lại.",
+  "已定。改主体等于换公司，不是改参数。": "Đã chốt. Đổi pháp nhân là đổi công ty, không phải đổi tham số.",
+  "教师月社保公司额 ÷ 该教师月总课次": "Bảo hiểm công ty tháng của GV ÷ Tổng tiết tháng của GV đó",
+  "理由不能空 —— 人事要知道改哪儿。": "Lý do không được để trống —— Nhân sự cần biết sửa chỗ nào.",
+  "财务只核对、只批、只付，不改任何数字": "Tài chính chỉ đối chiếu, duyệt, chi, không sửa số nào",
+  "还没有班级 —— 到「结算」页加班级": "Chưa có lớp —— Sang trang \"Quyết toán\" thêm lớp",
+  "（收入页填的钱）；「班级盈亏」用的是": "(Tiền nhập ở trang Thu); \"Lãi lỗ lớp\" dùng",
+  "—— 数字不对就驳回，让人事改完重提。": "—— Số sai thì từ chối, để Nhân sự sửa rồi nộp lại.",
+  "下拉 0 / 5 / 8 / 10 %": "Chọn 0 / 5 / 8 / 10 %",
+  "先记收入，再记支出，才能算结算和报表。": "Ghi thu trước, ghi chi sau, mới tính được quyết toán và báo cáo.",
+  "理由不能空 —— 业务部要知道改哪儿。": "Lý do không được để trống —— Kinh doanh cần biết sửa chỗ nào.",
+  "金额由业务部填，财务只核对、只批、只付": "Số tiền do Kinh doanh điền, Tài chính chỉ đối chiếu, duyệt, chi",
+  "，格式糙（没有合并单元格、没有公式）。": ", định dạng thô (không gộp ô, không có công thức).",
+  "云端结构不认识（没有 vouchers）": "Không nhận dạng cấu trúc đám mây (thiếu vouchers)",
+  "写全名，别写「房东」。以后对账靠这个搜。": "Ghi đủ tên, đừng ghi \"chủ nhà\". Sau này đối chiếu tìm theo đó.",
+  "只摊自有教师。外包没有社保，这栏是 0。": "Chỉ phân bổ cho GV nội bộ. GV thuê ngoài không có bảo hiểm, cột này là 0.",
+  "数字全部跟着收入 / 支出 / 工资页变": "Các số đều đổi theo trang Thu / Chi / Lương",
+  "核对总数、批、付。财务只出钱，不改数字。": "Đối chiếu tổng, duyệt, chi. Tài chính chỉ xuất tiền, không sửa số.",
+  "没批就付，等于绕过审批，那审批就白做了。": "Chi khi chưa duyệt là lách phê duyệt, phê duyệt trở nên vô nghĩa.",
+  "还没有班级 —— 点右上角「+ 加班级」": "Chưa có lớp —— Bấm \"+ Thêm lớp\" góc trên phải",
+  "这套系统真正的核心，通用财务软件没有这块": "Đây mới là lõi thật của hệ thống, phần mềm tài chính chung không có",
+  "金额 × 税率。灰底虚线框 = 不用填。": "Số tiền × Thuế suất. Ô nền xám viền đứt = không cần nhập.",
+  "（明细在人事，这里不重算），批完记付款。": "(Chi tiết ở Nhân sự, không tính lại ở đây), duyệt xong ghi chi trả.",
+  "。标「须核实」的三项请找越南本地会计确认。": ". Ba mục ghi \"Cần xác minh\" hãy nhờ kế toán Việt Nam xác nhận.",
+  "凭证号不能空 —— 不记凭证号，账对不上。": "Số chứng từ không được trống —— không ghi thì sổ không khớp.",
+  "教育培训通常 0。选了非 0 才要发票号。": "Giáo dục đào tạo thường là 0. Chọn khác 0 mới cần số hóa đơn.",
+  "个人股东分红代扣。内资分红不出境，只这一道。": "Khấu trừ cổ tức cổ đông cá nhân. Cổ tức vốn trong nước không ra nước ngoài, chỉ một lần này.",
+  "必须先批准才能付款。没批就付，等于绕过审批。": "Phải duyệt xong mới được chi. Chi trước khi duyệt là lách qua phê duyệt.",
+  "日常三件事：记收入 / 记支出 / 批工资单": "Ba việc hằng ngày: ghi thu / ghi chi / duyệt bảng lương",
+  "还没有其他支出 —— 点右上角「+ 记一笔」": "Chưa có chi khác —— Bấm \"+ Ghi một khoản\" góc trên phải",
+  "还没有收入记录 —— 点右上角「+ 记一笔」": "Chưa có khoản thu —— Bấm \"+ Ghi một khoản\" góc trên phải",
+  "这些数字会变（政策、主体、费率），所以不写死": "Các số này thay đổi (chính sách, pháp nhân, tỷ lệ) nên không viết cứng",
+  "还没有单据 —— 点右上角「☁︎ 从云端拉取」": "Chưa có chứng từ —— Bấm \"☁︎ Kéo từ đám mây\" góc trên phải",
+  "结算和报表全自动。人事提交工资单后到「审批」核对": "Quyết toán và báo cáo hoàn toàn tự động. Sau khi Nhân sự nộp bảng lương, sang \"Phê duyệt\" đối chiếu",
+  "这张单据是空的 —— 人事生成时一个人都没算出来": "Chứng từ này rỗng —— Nhân sự tạo nhưng không tính được ai",
+  "，不改数字。点上面「☁︎ 从云端拉取」一起取回。": ", không sửa số. Bấm \"☁︎ Kéo từ đám mây\" ở trên để lấy về cùng lúc.",
+  "1 收入 → 2 支出 → 3 结算 → 4 报表": "1 Thu → 2 Chi → 3 Quyết toán → 4 Báo cáo",
+  "如果代账明确要「一个文件三个页签」，再换方案 2。": "Nếu kế toán thuê ngoài muốn \"một tệp ba tab\", mới đổi sang phương án 2.",
+  "批准之后才可以付款。财务不改数字，数字不对请驳回。": "Chỉ được chi sau khi duyệt. Tài chính không sửa số; số sai xin từ chối.",
+  "收入 / 支出 / 结算 / 报表仍是全部月份累计": "Thu / Chi / Quyết toán / Báo cáo vẫn là lũy kế mọi tháng",
+  "核对 → 批准 / 驳回 → 付款。财务不改数字。": "Đối chiếu → Phê duyệt / Từ chối → Chi trả. Tài chính không sửa số.",
+  "顶栏 · 系统名 / 配色 / 主体 / 存储方式": "Thanh trên · Tên hệ thống / Bảng màu / Pháp nhân / Cách lưu",
+  "预支 / 其他扣款 / 补发归人事部管，财务不碰。": "Tạm ứng / Khấu trừ khác / Truy lĩnh do Nhân sự quản, Tài chính không đụng vào.",
+  "，自动算「未开票」。不影响毛利，只是不算税务口径。": ", tự tính \"Chưa xuất hóa đơn\". Không ảnh hưởng lợi nhuận gộp, chỉ không tính vào cách tính thuế.",
+  "。打了逗号会被当文本，合计变 0。千分位系统自动加。": ". Có dấu phẩy sẽ bị coi là văn bản, tổng thành 0. Dấu phân cách hàng nghìn hệ thống tự thêm.",
+  "云端找不到这张单据（可能人事重提覆盖了），先重新拉取": "Không tìm thấy chứng từ này trên đám mây (có thể Nhân sự nộp lại đè lên), hãy kéo lại",
+  "教育培训通常 0。改这里，新记的收入默认带出这个值。": "Giáo dục đào tạo thường là 0. Sửa ở đây, khoản thu mới sẽ mặc định giá trị này.",
+  "还没有场地请款单 —— 点右上角「☁︎ 从云端拉取」": "Chưa có đề nghị chi mặt bằng —— Bấm \"☁︎ Kéo từ đám mây\" góc trên phải",
+  "这也是配置单独占一个板块、而不是塞进某个弹窗的原因。": "Đó cũng là lý do Cấu hình chiếm riêng một phần thay vì nhét vào một hộp thoại.",
+  "里，切换只是把右边内容换掉。数据不重载，页面不刷新。": "trong đó, chuyển chỉ đổi nội dung bên phải. Dữ liệu không nạp lại, trang không tải lại.",
+  "云端还没有 approvals 文档（人事还没提交过）": "Đám mây chưa có tài liệu approvals (Nhân sự chưa nộp lần nào)",
+  "单据来自业务部「教室 › 场地使用」提交，同样存在云端": "Chứng từ do Kinh doanh nộp từ \"Phòng học › Sử dụng mặt bằng\", cũng lưu trên đám mây",
+  "工资社保由人事单据批后自动记；课时费只作参考；其他手填": "Lương và bảo hiểm tự ghi sau khi duyệt chứng từ Nhân sự; phí tiết học chỉ để tham khảo; khoản khác nhập tay",
+  "按计划课次平均摊。学生请假不退钱，所以不按实际出勤摊。": "Chia đều theo số tiết kế hoạch. Học viên nghỉ không hoàn tiền nên không chia theo tiết thực tế.",
+  "点上面列表里某张单据的「查看」，这里显示每个人的明细。": "Bấm \"Xem\" ở một chứng từ trong danh sách trên, chi tiết từng người hiện ở đây.",
+  "状态 → 已付款 + 这三个数。金额默认等于实发，可改": "Trạng thái → Đã chi trả + ba số này. Số tiền mặc định bằng thực lãnh, sửa được",
+  "现在关着。开了之后收入表发票号变必填，并计入税务口径。": "Hiện đang tắt. Bật lên thì số hóa đơn ở bảng Thu thành bắt buộc và được tính vào cách tính thuế.",
+  "的顺序走一遍： 先记收入，再记支出，才能算结算和报表。": "theo thứ tự này: ghi thu trước, rồi ghi chi, mới tính được quyết toán và báo cáo.",
+  "—— 数据全部来自人事部提交的工资单（「审批」页拉取）。": "—— Dữ liệu đều từ bảng lương Nhân sự nộp (kéo ở trang «Phê duyệt»).",
+  "点上面列表里某张单据的「查看」，这里显示每一次场地使用。": "Bấm \"Xem\" ở một chứng từ trong danh sách trên, từng lần sử dụng mặt bằng hiện ở đây.",
+  "现在能随便打。正式版要从名单里选，否则按班算毛利对不上。": "Hiện gõ tùy ý. Bản chính thức phải chọn từ danh sách, nếu không lợi nhuận gộp theo lớp sẽ không khớp.",
+  "输入即存。关掉再打开内容还在，左下角显示「已自动保存」。": "Nhập là lưu. Đóng rồi mở lại vẫn còn, góc dưới trái hiện \"Đã tự lưu\".",
+  "这个浏览器不让下载。换 Chrome 或 Edge 试。": "Trình duyệt này không cho tải xuống. Thử Chrome hoặc Edge.",
+  "右边内容立刻换。当前板块左边高亮，顶部面包屑同步显示名字。": "Nội dung bên phải đổi ngay. Phần hiện tại sáng ở bên trái, breadcrumb trên cùng hiện tên tương ứng.",
+  "日期 / 类别 / 收款方 / 金额 / 发票号 / 备注": "Ngày / Loại / Bên nhận tiền / Số tiền / Số hóa đơn / Ghi chú",
+  "状态 → 已驳回 + 理由 + 时间。人事那边原样看到理由": "Trạng thái → Đã từ chối + Lý do + Thời gian. Nhân sự thấy nguyên văn lý do",
+  "，两边口径不同 —— 跨月录过数据以后，这里的毛利会偏高。": ", hai cách tính khác nhau —— sau khi nhập dữ liệu qua tháng, lợi nhuận gộp ở đây sẽ cao hơn.",
+  "学费 / 材料费 / 补课费 / 其他。只有学费进班级毛利。": "Học phí / Tài liệu / Học bù / Khác. Chỉ học phí vào lợi nhuận gộp lớp.",
+  "社保个人 / 公司、企业所得税、分红个税。默认值是常见口径，": "Bảo hiểm cá nhân / công ty, thuế TNDN, thuế TNCN cổ tức. Giá trị mặc định là cách tính phổ biến,",
+  "两者差多少 = 还有多少没收到。正式版要把这两个数分两栏显示。": "Hai số chênh nhau bao nhiêu = còn bao nhiêu chưa thu. Bản chính thức sẽ tách hai số này thành hai cột.",
+  "姓名 / 应发 / 社保个人 / 社保公司 / 个税 / 实发": "Họ tên / Tổng lương / BH cá nhân / BH công ty / Thuế TNCN / Thực lãnh",
+  "现金 / 银行转账 / Momo / 其他。对银行流水靠这栏。": "Tiền mặt / Chuyển khoản / Momo / Khác. Đối chiếu sao kê ngân hàng dựa vào cột này.",
+  "编号 0–7 跟做账顺序一致：先记收入，再记支出，才能算结算。": "Số 0–7 theo đúng thứ tự làm sổ: ghi thu trước, rồi ghi chi, mới tính được quyết toán.",
+  "（实发 = 应发 − 社保个人 − 个税），付款时不要再扣一次。": "(Thực lãnh = Tổng lương − BH cá nhân − Thuế TNCN), khi chi không trừ lại lần nữa.",
+  "来源：结算页填的班级课次 × 教师单价。接排课系统后课次由系统自动填。": "Nguồn: Số tiết lớp nhập ở trang Quyết toán × Đơn giá GV. Sau khi nối hệ thống xếp lịch, số tiết do hệ thống tự điền.",
+  "业务部已提交，等财务核对。数字不对点「驳回」并写理由，业务部会原样看到。": "Kinh doanh đã nộp, chờ Tài chính đối chiếu. Số sai bấm «Từ chối» và ghi lý do, Kinh doanh sẽ thấy nguyên văn.",
+  "房租 / 渠道投放 / 其他。课时费、工资社保有专门页签，这里别重复填。": "Tiền thuê / Quảng cáo kênh / Khác. Phí tiết học, lương và bảo hiểm có tab riêng, đừng điền trùng ở đây.",
+  "没有这个出口，系统就是孤岛 —— 数字好看，代账用不上，最后还是两张皮。": "Thiếu đầu ra này, hệ thống thành đảo cô lập —— số đẹp nhưng kế toán không dùng được, cuối cùng vẫn hai hệ rời nhau.",
+  "点开是日期选择器。手打「10月30日」「30/10」认不出，算不进当月。": "Bấm ra là bộ chọn ngày. Gõ tay \"ngày 30 tháng 10\" hay \"30/10\" không nhận, không tính vào tháng đó.",
+  "，不分月。等确定要按月切之后再加日期筛选 —— 一次一个月的表才好对账。": ", không chia theo tháng. Khi chắc chắn sẽ tách theo tháng mới thêm bộ lọc ngày —— một tháng một bảng mới dễ đối chiếu.",
+  "人事已提交，等财务核对。核对数字无误点「批准」；数字不对点「驳回」并写理由。": "Nhân sự đã nộp, chờ Tài chính đối chiếu. Số đúng bấm «Duyệt»; số sai bấm «Từ chối» và ghi lý do.",
+  "分三页：课时费（自动）/ 工资社保 / 其他支出。子页签只换表格，不换板块。": "Chia ba trang: Phí tiết học (tự động) / Lương và bảo hiểm / Chi khác. Tab con chỉ đổi bảng, không đổi phần.",
+  "财务不在这里改数字：应发、社保个人、个税都是人事算的，这里改不了，也不该改。": "Tài chính không sửa số ở đây: Tổng lương, BH cá nhân, thuế TNCN đều do Nhân sự tính, ở đây sửa không được và cũng không nên sửa.",
+  "：课次来自这张表的班级，单价来自这里，社保来自工资页 —— 三边对上自动算。": ": Tiết lấy từ lớp trong bảng này, đơn giá lấy ở đây, bảo hiểm lấy từ trang lương —— ba bên khớp là tự tính.",
+  "（整班学费）。 两者差多少 = 还有多少没收到。正式版要把这两个数分两栏显示。": "(Học phí cả lớp). Hiệu của hai số = còn bao nhiêu chưa thu. Bản chính thức sẽ hiện hai số này ở hai cột riêng.",
+  "日期 / 学生 / 班级 / 类型 / 金额 / 收款方式 / 发票号 / 税额": "Ngày / Học viên / Lớp / Loại / Số tiền / Hình thức thu / Số hóa đơn / Tiền thuế",
+  "班级名、计划课次、本月课次、整班学费、教师、单价。接排课系统后这步由系统自动填。": "Tên lớp, số tiết kế hoạch, tiết tháng này, học phí cả lớp, giáo viên, đơn giá. Sau khi nối hệ thống xếp lịch, bước này do hệ thống tự điền.",
+  "= 应发 × 公司费率，不进工资条但真花钱。单据里没有这一项，财务按自己的费率估。": "= Tổng lương × Tỷ lệ công ty, không đưa vào bảng lương nhưng vẫn tốn tiền. Chứng từ không có khoản này, Tài chính ước theo tỷ lệ của mình.",
+  "，两边口径不同 —— 跨月录过数据以后，这里的毛利会偏高。 全页按月化等课时费接单据时一起做。": ", hai bên khác cách tính —— sau khi nhập dữ liệu lệch tháng, lợi nhuận gộp ở đây sẽ cao hơn. Việc chia toàn trang theo tháng sẽ làm cùng lúc khi phí tiết học nối chứng từ.",
+  "数据存在这台电脑的浏览器里（localStorage），同时自动同步到云端（别的设备打开就能看到）。": "Dữ liệu lưu trong trình duyệt máy này (localStorage), đồng thời tự đồng bộ lên đám mây (mở ở thiết bị khác là thấy).",
+  "（实发 = 应发 − 社保个人 − 个税），付款时不要再扣一次。 预支 / 其他扣款 / 补发归人事部管，财务不碰。": "(Thực lãnh = Tổng lương − BH cá nhân − Thuế TNCN), khi chi không trừ lại lần nữa. Tạm ứng / Khấu trừ khác / Truy lĩnh thuộc Nhân sự, Tài chính không đụng vào.",
+  "）。点了会存到浏览器的下载目录，一般是「下载」文件夹。用 Excel / WPS / Numbers 都能直接打开。": "). Bấm sẽ lưu vào thư mục Tải về của trình duyệt, thường là thư mục \"Tải xuống\". Mở trực tiếp được bằng Excel / WPS / Numbers.",
+  "社保费率和增值税优惠每年在调（越南 8% 增值税减征期到 2026-12-31）。写死在代码里，明年政策一改就得改程序；": "Tỷ lệ bảo hiểm và ưu đãi thuế GTGT thay đổi hằng năm (Việt Nam giảm thuế GTGT 8% đến 2026-12-31). Viết cứng trong code thì sang năm đổi chính sách phải sửa chương trình;",
+  "—— 应发 / 社保 / 个税 / 预支 / 扣款 / 补发全在人事算好，这里不重算、不改数字。批完回来记付款日和凭证号。": "—— Tổng lương / Bảo hiểm / Thuế TNCN / Tạm ứng / Khấu trừ / Truy lĩnh đều do Nhân sự tính sẵn, ở đây không tính lại, không sửa số. Duyệt xong quay lại ghi ngày chi và số chứng từ.",
+  "—— 数据全部来自人事部提交的工资单（「审批」页拉取）。 财务不在这里改数字：应发、社保个人、个税都是人事算的，这里改不了，也不该改。": "—— Dữ liệu đều từ bảng lương Nhân sự nộp (kéo ở trang \"Phê duyệt\"). Tài chính không sửa số ở đây: Tổng lương, BH cá nhân, thuế TNCN do Nhân sự tính, ở đây không sửa được và cũng không nên sửa.",
+  "社保费率和增值税优惠每年在调（越南 8% 增值税减征期到 2026-12-31）。写死在代码里，明年政策一改就得改程序； 做成参数，改一个数字就行。": "Tỷ lệ bảo hiểm và ưu đãi thuế GTGT thay đổi hằng năm (Việt Nam giảm thuế GTGT 8% đến 2026-12-31). Viết cứng trong code thì sang năm đổi chính sách phải sửa chương trình; làm thành tham số thì chỉ cần đổi một con số.",
+};
+
+/* 整句规则：带数字 / 月份 / 时间 / 金额的文案，整串命中后只换中文片段，
+   数据原样当参数带过去，绝不逐词拆。具体规则在前，兜底规则在后。 */
+var VI_FIN_RE = [
+  /* 弹窗：批准工资单 / 场地请款单 */
+  { re:/^批准 [\s\S]* 这张工资单？[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('批准 ').join('Duyệt ')
+        .split(' 这张工资单？').join(' bảng lương này?')
+        .split('应发 ').join('Tổng lương ')
+        .split('实发 ').join('Thực lãnh ')
+        .split('批准之后才可以付款。财务不改数字，数字不对请驳回。').join('Chỉ được chi sau khi duyệt. Tài chính không sửa số; số sai xin từ chối.');
+  } },
+  { re:/^批准 [\s\S]* 这张场地请款单？[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('批准 ').join('Duyệt ')
+        .split(' 这张场地请款单？').join(' phiếu đề nghị thanh toán địa điểm này?')
+        .split('请款金额 ').join('Số tiền đề nghị ')
+        .split('批准之后才可以付款。财务不改数字，数字不对请驳回。').join('Chỉ được chi sau khi duyệt. Tài chính không sửa số; số sai xin từ chối.');
+  } },
+  /* 弹窗：驳回（工资单 / 场地请款单） */
+  { re:/^驳回 [\s\S]* 这张工资单。[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('驳回 ').join('Từ chối ')
+        .split(' 这张工资单。').join(' bảng lương này.')
+        .split('理由（必填，人事会原样看到）：').join('Lý do (bắt buộc, Nhân sự sẽ thấy nguyên văn):');
+  } },
+  { re:/^驳回 [\s\S]* 这张场地请款单。[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('驳回 ').join('Từ chối ')
+        .split(' 这张场地请款单。').join(' phiếu đề nghị thanh toán địa điểm này.')
+        .split('理由（必填，业务部会原样看到）：').join('Lý do (bắt buộc, Kinh doanh sẽ thấy nguyên văn):');
+  } },
+  /* 弹窗：付款金额（默认等于 …） */
+  { re:/^付款金额（默认等于[\s\S]*）：$/, to:function(m){
+      return m[0]
+        .split('付款金额（默认等于').join('Số tiền chi (mặc định bằng ')
+        .split('实发 ').join('thực lãnh ')
+        .split('请款金额 ').join('số tiền đề nghị ')
+        .split('）：').join('):');
+  } },
+  /* 弹窗：当前状态不能再动作 */
+  { re:/^这张单据现在是「([\s\S]+?)」，不能再(批准|驳回)。$/, to:function(m){
+      return 'Chứng từ này đang ở trạng thái «' + finTrText(m[1]) + '», không thể '
+        + (m[2] === '批准' ? 'duyệt' : 'từ chối') + ' nữa.';
+  } },
+  /* 弹窗：失败前缀（冒号后面的 msg 原样保留） */
+  { re:/^(批准没成功：|驳回没成功：|付款没记上：|拉取没成功：)([\s\S]*)$/, to:function(m){
+      var M = { '批准没成功：':'Duyệt không thành công: ',
+                '驳回没成功：':'Từ chối không thành công: ',
+                '付款没记上：':'Ghi chi tiền không thành công: ',
+                '拉取没成功：':'Kéo dữ liệu không thành công: ' };
+      return M[m[1]] + m[2];
+  } },
+  /* module：云端冲突确认 */
+  { re:/^云端财务数据有更新（[\s\S]*$/, to:function(m){
+      return m[0]
+        .split('云端财务数据有更新（').join('Đám mây có dữ liệu tài chính mới hơn (')
+        .split('），本机也有还没推的改动。').join('), máy này cũng có thay đổi chưa đẩy lên.')
+        .split('点「确定」= 用云端覆盖本机').join('Bấm «OK» = ghi đè máy này bằng đám mây')
+        .split('点「取消」= 保留本机，稍后本机推上去').join('Bấm «Hủy» = giữ máy này, máy sẽ đẩy lên sau');
+  } },
+  /* DOM 动态：笔数 / 占比 / 导出 / 拉取时间 / 空表提示 */
+  { re:/^(\d+)\s*笔$/, to:function(m){ return m[1] + ' khoản'; } },
+  { re:/^其中已开票\s*(\d+)\s*笔$/, to:function(m){ return 'Trong đó đã xuất hóa đơn ' + m[1] + ' khoản'; } },
+  { re:/^教师相关\s*([\d.]+)%$/, to:function(m){ return 'Liên quan giáo viên ' + m[1] + '%'; } },
+  { re:/^已导出 · ([\s\S]+)$/, to:function(m){ return 'Đã xuất · ' + m[1]; } },
+  { re:/^上次拉取\s*(\d{1,2}:\d{2})$/, to:function(m){ return 'Lần kéo cuối ' + m[1]; } },
+  /* 审批明细标题「2026-11 · 已批准」是拼出来的一个文本节点 */
+  { re:/^(\d{4}-\d{2})\s*·\s*(待审批|已批准|已驳回|已付款)$/, to:function(m){
+      return m[1] + ' · ' + finTrText(m[2]);
+  } },
+  { re:/^([\d]{4}-[\d]{2}-[\d]{2}\s+[\d]{2}:[\d]{2})[\s\u3000]*可以付款了$/, to:function(m){
+      return m[1] + '　Có thể chi tiền rồi';
+  } },
+  { re:/^(\d{4}-\d{2}) 还没有人事单据 —— 到「审批」页点「☁︎ 从云端拉取」$/, to:function(m){
+      return m[1] + ' chưa có chứng từ Nhân sự —— sang trang «Phê duyệt» bấm «☁︎ Kéo từ đám mây»';
+  } },
+  /* 云灯 title / aria-label（cldRender 每次重写，why 走整句翻译） */
+  { re:/^云端：([\s\S]+?)\s*·\s*(\d{1,2}:\d{2})（点一下重测）$/, to:function(m){
+      return 'Đám mây: ' + finTrText(m[1]) + ' · ' + m[2] + ' (bấm để kiểm tra lại)';
+  } },
+  { re:/^云端：([\s\S]+)$/, to:function(m){ return 'Đám mây: ' + finTrText(m[1]); } },
+  { re:/^云在线（读被拒 (\d+)）$/, to:function(m){ return 'Đám mây trực tuyến (đọc bị từ chối ' + m[1] + ')'; } },
+  /* module 状态灯（☁︎ 前缀） */
+  { re:/^☁︎ 已同步 · (\d{1,2}:\d{2})$/, to:function(m){ return '☁︎ Đã đồng bộ · ' + m[1]; } },
+  { re:/^☁︎ 已断开（([\s\S]+?)），点一下重连$/, to:function(m){
+      return '☁︎ Đã mất kết nối (' + m[1] + '), bấm để kết nối lại';
+  } },
+  { re:/^☁︎ ([\s\S]+)$/, to:function(m){ return '☁︎ ' + finTrText(m[1]); } },
+];
+
+var FIN_SKIP_SEL = 'textarea, [data-raw], script, style';
+var FIN_ATTR_SKIP_SEL = '[data-raw], script, style, .lang-switch';
+var _finMemo = new WeakMap();       /* 文本节点 → 中文原文 */
+var _finAttrMemo = new WeakMap();   /* 元素 → {placeholder/title/aria-label: 原} */
+var _finOptMemo = new WeakMap();    /* 没写 value 的 <option> → 中文原文 */
+var _finTitleOrig = null;
+
+/* 单串查表：整串命中才翻，查不到返回 null（绝不逐词拆） */
+function _finLookup(s){
+  var lead = (s.match(/^\s*/) || [''])[0];
+  var tail = (s.match(/\s*$/) || [''])[0];
+  var core = s.slice(lead.length, s.length - tail.length);
+  if (!core) return null;
+  if (VI_FIN[core] !== undefined) return lead + VI_FIN[core] + tail;
+  for (var i = 0; i < VI_FIN_RE.length; i++){
+    var m = core.match(VI_FIN_RE[i].re);
+    if (m) return lead + VI_FIN_RE[i].to(m) + tail;
+  }
+  return null;
+}
+function finTrText(raw){
+  var s = String(raw);
+  if (!s.trim()) return s;
+  var one = _finLookup(s);
+  if (one !== null) return one;
+  /* 静态说明常被 <b> 切开并带换行：逐「整行」查表。
+     任一行查不到 → 整段原样中文，不拆词、不留夹生句。 */
+  if (s.indexOf('\n') !== -1){
+    var parts = s.split('\n'), out = [], allHit = true;
+    for (var j = 0; j < parts.length; j++){
+      if (!parts[j].trim()){ out.push(parts[j]); continue; }
+      /* 纯符号 / 纯数字行（「——」「。」这类）本来就不用翻，放行。
+         否则一整段静态说明会因为一个破折号查不到字典而原样留中文。 */
+      if (!/[\u4e00-\u9fff]/.test(parts[j])){ out.push(parts[j]); continue; }
+      var hit = _finLookup(parts[j]);
+      if (hit === null){ allHit = false; break; }
+      out.push(hit);
+    }
+    if (allHit) return out.join('\n');
+  }
+  return s;
+}
+/* 给原生弹窗 / module 这类「不进 DOM」的文案用；中文模式原样返回 */
+function finTr(s){ return FIN_LANG === 'vi' ? finTrText(s) : String(s); }
+
+/* ★★ var 提升陷阱（P-139 实测）：本段后面有 `var confirm = function...`，
+   在别的函数体里 `typeof confirm` 读的是**本函数作用域里已提升的那个 var**，
+   值是 undefined —— 抓原生弹窗必须放外层作用域，且从 globalThis / window 上取。
+   ★ 但**每次调用都要现取**，不能开场就 bind 下来存着：
+     探针会在页面加载后替换 window.confirm / prompt 当桩，提前存旧函数就抓不到桩，
+     无头 Chrome 里真弹窗直接卡死（P-139 踩过）。
+     现取现调也不会丢 this —— 挂在 globalThis / window 上调用，天然带着宿主。 */
+function _finHost(name){
+  try {
+    if (typeof globalThis !== 'undefined' && typeof globalThis[name] === 'function') return globalThis[name];
+  } catch(e){}
+  try {
+    if (typeof window !== 'undefined' && typeof window[name] === 'function') return window[name];
+  } catch(e){}
+  return null;
+}
+/* ★ 反射成对象，让探针能验「现取现调」的写法（也顺手当兜底开关） */
+var _finNative = {
+  get alert(){ return _finHost('alert'); },
+  get confirm(){ return _finHost('confirm'); },
+  get prompt(){ return _finHost('prompt'); },
+};
+/* ★ 调用时也要「现取」：探针会在页面加载后替换 window.confirm 当桩，
+   开场存下来的旧函数抓不到桩（无头 Chrome 真弹窗会卡死）。 */
+var alert = function(s){
+  var fn = _finHost('alert');
+  if (!fn) return undefined;
+  return fn(finTr(s));
+};
+var confirm = function(s){
+  var fn = _finHost('confirm');
+  if (!fn) return true;
+  return fn(finTr(s));
+};
+var prompt = function(s, d){
+  var fn = _finHost('prompt');
+  if (!fn) return (d === undefined ? '' : d);
+  return fn(finTr(s), d);
+};
+
+function finLangWalk(root){
+  if (!root || typeof document.createTreeWalker !== 'function' || typeof NodeFilter === 'undefined') return;
+  var vi = (FIN_LANG === 'vi');
+
+  /* ★ <option> 没写 value 时，select.value 会跟着显示文字走。
+     先把中文原文钉成 value 再翻显示 —— 存盘枚举一个字不变。
+     切回中文把补上的 value 摘掉，DOM 逐字还原。 */
+  if (root.querySelectorAll){
+    Array.prototype.forEach.call(root.querySelectorAll('option'), function(el){
+      var memo = _finOptMemo.get(el);
+      if (memo && memo.pinned){
+        if (!vi){ el.removeAttribute('value'); memo.pinned = false; }
+        return;
+      }
+      if (el.hasAttribute('value')) return;
+      if (!memo){ memo = { text: el.textContent, pinned:false }; _finOptMemo.set(el, memo); }
+      if (!/[\u4e00-\u9fff]/.test(memo.text)) return;
+      if (vi){ el.setAttribute('value', memo.text); memo.pinned = true; }
+    });
+  }
+  var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(n){
+      var p = n.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE') return NodeFilter.FILTER_REJECT;
+      if (p.closest && p.closest(FIN_SKIP_SEL)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  var n;
+  while ((n = w.nextNode())){
+    var raw = n.nodeValue;
+    if (!raw || !raw.trim()) continue;
+    if (vi){
+      var out = finTrText(raw);
+      if (out !== raw){
+        /* 动态文本（云灯 / 状态灯 / 合计）会被反复重写成中文，
+           每次都用当前中文刷新原文，切回中文才还原得准。 */
+        if (/[\u4e00-\u9fff]/.test(raw)) _finMemo.set(n, raw);
+        n.nodeValue = out;
+      }
+    } else if (_finMemo.has(n)){
+      n.nodeValue = _finMemo.get(n);
+    }
+  }
+  if (!root.querySelectorAll) return;
+  ['placeholder','title','aria-label'].forEach(function(attr){
+    Array.prototype.forEach.call(root.querySelectorAll('['+attr+']'), function(el){
+      if (el.closest && el.closest(FIN_ATTR_SKIP_SEL)) return;
+      var v = el.getAttribute(attr);
+      if (v === null) return;
+      if (!_finAttrMemo.has(el)) _finAttrMemo.set(el, {});
+      var memo = _finAttrMemo.get(el);
+      if (vi){
+        /* 云灯 title / aria-label 每次 cldRender() 都重写成中文，
+           用当前值刷新原文，不能锁死第一次记的值。 */
+        if (/[\u4e00-\u9fff]/.test(v)) memo[attr] = v;
+        if (memo[attr] !== undefined) el.setAttribute(attr, finTrText(memo[attr]));
+      } else if (memo[attr] !== undefined){
+        el.setAttribute(attr, memo[attr]);
+      }
+    });
+  });
+}
+
+function finSyncBtn(){
+  var zh = document.getElementById('btn-zh'), viBtn = document.getElementById('btn-vi');
+  if (!zh || !viBtn) return;
+  zh.classList.toggle('on', FIN_LANG === 'zh');
+  viBtn.classList.toggle('on', FIN_LANG === 'vi');
+  /* 「中文」是语言名，不进字典。单独换名。 */
+  var n = zh.lastChild;
+  if (n && n.nodeType === 3) n.nodeValue = FIN_LANG === 'vi' ? 'Tiếng Trung' : '中文';
+}
+function finApplyLang(){
+  finLangWalk(document.body);
+  if (FIN_LANG === 'vi'){
+    if (_finTitleOrig === null) _finTitleOrig = document.title;
+    document.title = finTrText(_finTitleOrig);
+  } else if (_finTitleOrig !== null){
+    document.title = _finTitleOrig;
+  }
+  finSyncBtn();
+}
+function finSetLang(l){
+  FIN_LANG = (l === 'vi') ? 'vi' : 'zh';
+  try { localStorage.setItem(FIN_LANG_KEY, FIN_LANG); } catch(e){}
+  finApplyLang();
+}
+document.getElementById('btn-zh').onclick = function(){ finSetLang('zh'); };
+document.getElementById('btn-vi').onclick = function(){ finSetLang('vi'); };
+
+/* 新渲染出来的内容（表格 / 明细 / 状态灯 / 云灯）自动再扫一遍。
+   收敛靠「翻完是越南语、不再命中字典」；busy + 有限补跑防死循环。 */
+(function(){
+  if (typeof MutationObserver === 'undefined') return;
+  var busy = false, again = false, rounds = 0;
+  function sweep(){
+    if (busy){ again = true; return; }
+    busy = true;
+    Promise.resolve().then(function(){
+      try { if (FIN_LANG === 'vi') finLangWalk(document.body); } finally {
+        busy = false;
+        if (again && rounds++ < 2){ again = false; sweep(); }
+        else { again = false; rounds = 0; }
+      }
+    });
+  }
+  new MutationObserver(function(){
+    if (FIN_LANG === 'vi') sweep();
+  }).observe(document.body, { childList:true, subtree:true, characterData:true });
+})();
+
+/* module 块看不到这个 IIFE 里的函数 —— 它的 confirm 走这个只读口子 */
+window.__FIN_TR__ = finTr;
+/* 探针只读出口 */
+window.__FIN_LANG_TEST__ = {
+  get lang(){ return FIN_LANG; },
+  set: finSetLang, tr: finTr, walk: finLangWalk, apply: finApplyLang,
+  VI: VI_FIN, RULES: VI_FIN_RE, SKIP: FIN_SKIP_SEL, KEY: FIN_LANG_KEY,
+};
+
+if (FIN_LANG === 'vi') finApplyLang(); else finSyncBtn();
+
 var KEY = 'zhops.fin.v1';
 var NAMES = {guide:'使用说明',income:'收入',expense:'支出',settle:'结算',report:'报表',config:'配置',approve:'审批',export:'导出'};
 
@@ -2264,6 +3070,8 @@ const FB = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', 
 const DOC = 'finmaster';
 const TAG = 'zhops.fin';
 const PUSH_DELAY = 1200;
+/* P-139：module 看不到主 IIFE 里的函数，confirm 走这个只读口子 */
+const TR = (s) => (typeof window.__FIN_TR__ === 'function') ? window.__FIN_TR__(s) : s;
 
 let db = null, unsub = null;
 let applyingRemote = false;
@@ -2326,10 +3134,10 @@ function applyRemote(raw){
   if (remoteAt && remoteAt <= lastPushedAt) return false;
 
   if (pendingLocalAt && remoteAt > lastPushedAt){
-    const ok = window.confirm(
+    const ok = window.confirm(TR(
       '云端财务数据有更新（' + hhmm(o.__at) + '），本机也有还没推的改动。\n\n' +
       '点「确定」= 用云端覆盖本机\n点「取消」= 保留本机，稍后本机推上去'
-    );
+    ));
     if (!ok){ pushNow(); return false; }
   }
 

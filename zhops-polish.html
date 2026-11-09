@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-08">2026-11-08 · 今天<span class="c">2</span></button>
+    <button class="on" data-day="2026-11-09">2026-11-09 · 今天<span class="c">2</span></button>
+    <button data-day="2026-11-08">2026-11-08<span class="c">2</span></button>
     <button data-day="2026-11-07">2026-11-07<span class="c">22</span></button>
     <button data-day="2026-11-05">2026-11-05<span class="c">5</span></button>
     <button data-day="2026-11-02">2026-11-02<span class="c">13</span></button>
@@ -247,8 +248,43 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     </div>
   </div>
 
+  <!-- ============ 2026-11-09 ============ -->
+  <div class="day-panel on" data-day="2026-11-09">
+    <div class="card">
+      <h2>2026-11-09 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-138</td>
+              <td><b>业务端越南语切换（系统界面全翻，演示数据不翻）</b><br><span style="color:#8899aa;font-size:12px">「一句说到尾在系统里面的就必须要翻译，演示数据不被翻」· 先只做业务端，看看情况</span></td>
+              <td class="nw">业务端 · 语言</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-09</td>
+              <td class="mono nw">11-09</td>
+              <td>业务端越南语按钮接上真翻译层：系统界面中文一句不留、演示数据 20 条原样中文，翻显示不翻存盘、语言状态共用 <span class="mono">zhops.lang</span>；真 Chrome 扫 9 视图 9 抽屉零残留，探针 61 项与整套 49/0 全绿，反向控制 5 路全红。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-139</td>
+              <td><b>财务端越南语切换（延续 P-138 口径）</b><br><span style="color:#8899aa;font-size:12px">系统界面全翻、演示数据不翻；财务端原本连语言按钮都没有</span></td>
+              <td class="nw">财务端 · 语言</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-09</td>
+              <td class="mono nw">11-09</td>
+              <td>财务端补上语言按钮和真翻译层：8 个视图界面中文清零、3 条演示数据原样中文，翻显示不翻存盘，25 个 alert / 4 个 confirm / 8 个 prompt 统一包一层翻译、调用点一行没动；探针 68 项与整套 50/0 全绿，反向控制 7 路全红。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 2026-11-08 ============ -->
-  <div class="day-panel on" data-day="2026-11-08">
+  <div class="day-panel" data-day="2026-11-08">
     <div class="card">
       <h2>2026-11-08 · 打磨记录<span class="n">8 行 · 已打磨 8 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
