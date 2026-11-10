@@ -1963,7 +1963,6 @@ function syncEmpFromContract(i){
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); markSaved(); }catch(e){}
 }
-
 function load(){
   try{
     var raw = localStorage.getItem(KEY);
@@ -3735,6 +3734,47 @@ if (typeof window !== 'undefined'){
   };
 }
 
+/* ============================================================
+   实时同步接收口（2026-11-08 · P-136）
+   ------------------------------------------------------------
+   ★ 给下面那个 module 脚本用。规矩跟业务端一致：本地为主 ——
+       本地 save() → 自动推 zhops/hrmaster
+       其余设备 onSnapshot 收到 → 套进本机 + 重画
+   ★ 只同步结构化数据（人/合同/证件/社保/工资/培训/制度）；
+     PDF 附件在 IndexedDB（zhops_hr_files），**不进云端同步**。
+   ============================================================ */
+window.__HR_KEY__ = KEY;
+window.__HR_APP_TAG__ = 'zhops.hr';
+
+window.__HR_SNAPSHOT__ = function(){
+  try {
+    var o = JSON.parse(JSON.stringify(S));
+    return o;
+  } catch(e){ return null; }
+};
+window.__HR_APPLY__ = function(o){
+  try {
+    if (!o || typeof o !== 'object') return false;
+    var b = blank();
+    ['emp','contract','doc','social','leave','payroll','train','policy','summary','adjust'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    b.cfg = Object.assign(b.cfg, o.cfg || {});
+    b.emp = o.emp; b.contract = o.contract; b.doc = o.doc; b.social = o.social;
+    b.leave = o.leave; b.payroll = o.payroll; b.train = o.train; b.policy = o.policy;
+    b.summary = o.summary;
+    b.adjust = o.adjust;
+    b.contract.forEach(function(c){
+      if(!c.payType) c.payType = '月薪';
+      if(c.rate === undefined) c.rate = '';
+    });
+    S = b;
+    try { localStorage.setItem(KEY, JSON.stringify(b)); } catch(e){}
+    return true;
+  } catch(e){ return false; }
+};
+window.__HR_RERENDER__ = function(){
+  try { if (typeof renderAll === 'function') renderAll(); } catch(e){}
+};
+})();
 </script>
 
 </body>
