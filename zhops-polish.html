@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-09">2026-11-09 · 今天<span class="c">2</span></button>
+    <button class="on" data-day="2026-11-12">2026-11-12 · 今天<span class="c">4</span></button>
+    <button data-day="2026-11-09">2026-11-09<span class="c">2</span></button>
     <button data-day="2026-11-08">2026-11-08<span class="c">2</span></button>
     <button data-day="2026-11-07">2026-11-07<span class="c">22</span></button>
     <button data-day="2026-11-05">2026-11-05<span class="c">5</span></button>
@@ -248,8 +249,70 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     </div>
   </div>
 
+  <!-- ============ 2026-11-12 ============ -->
+  <div class="day-panel on" data-day="2026-11-12">
+    <div class="card">
+      <h2>2026-11-12 · 打磨记录<span class="n">5 行 · 已打磨 5 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-140</td>
+              <td><b>人事端关掉实时同步与自动推云弹窗（补记）</b><br><span style="color:#8899aa;font-size:12px">上一轮做完没进台账，按「编号跨天连续」补一行</span></td>
+              <td class="nw">人事端 · 云端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-12</td>
+              <td class="mono nw">11-12</td>
+              <td>人事端 save() 只写本机，不再每改一格弹云端确认；本地四端互通不受影响。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-141</td>
+              <td><b>人事端金额改越南盾千分位 + ₫</b><br><span style="color:#8899aa;font-size:12px">「现在这个越南盾单位没有点数，怕搞错」</span></td>
+              <td class="nw">人事端 · 金额</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-12</td>
+              <td class="mono nw">11-12</td>
+              <td>合同月薪 / 课时单价、社保基数、薪酬应发、调整金额五格显示 1,000,000 并标 ₫，存盘一律纯整数盾；逗号 / 点号 / 空格 / VND 写法都收，离焦才整理、空值不写成 0；新探针 76 项与人事端三条旧探针全绿，反向控制两路报红。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-142</td>
+              <td><b>教师主档改由人事端发号，主端只读收取</b><br><span style="color:#8899aa;font-size:12px">「教师必须从人事端开始建档、开始做编码」</span></td>
+              <td class="nw">主端 · 人事端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-12</td>
+              <td class="mono nw">11-12</td>
+              <td>主端纯本地只读收取人事端发的 t1/t2/t3（助教也算、离职停用不删），三条自己发号的旁路连根拔掉；人事端排课ID候选只列本端已发号、旧云端教师清空，演示班造数移进探针夹具；全套 52 条探针全绿。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-143</td>
+              <td><b>教师资料 7 项由人事端合同录入，主端只读收取</b><br><span style="color:#8899aa;font-size:12px">「合同里面必须填写这些资料，员工花名册才会有信息，主页端也要收到」</span></td>
+              <td class="nw">人事端 · 主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-12</td>
+              <td class="mono nw">11-12</td>
+              <td>合同补联系方式 / 国籍 / 语言 / 资历四格，7 项资料经花名册送主端只读展示（国籍语言拆两列）；资料不齐不发排课ID、已发 t1/t2/t3 不撤只挂待补标记，合同岗位写错不许把教师降级成员工；新探针 129 项、反向控制六路报红，全套 53 条探针全绿。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-144</td>
+              <td><b>人事端合同补 3 格：住址 / 紧急联系人姓名 / 紧急联系人电话（拆两格）、进硬必填 10 项、花名册电话只读</b><br><span style="color:#8899aa;font-size:12px">① 紧急联系人拆姓名+电话 ② 花名册电话只从合同带出只读 ③ 住址/紧急联系人进硬卡 10 项、要送主端（主端代码下一轮动）</span></td>
+              <td class="nw">人事端 · 主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-12</td>
+              <td class="mono nw">11-12</td>
+              <td>合同表单新增 addr / ecName / ecPhone 三格（共 18 可填字段）；PROFILE_FIELDS 7→10 项，contractProfileMissing/Done 判 10 项，profileHint 分母 10，syncEmpFromContract 推 10 项进 emp；花名册 phone 列改只读（data-hr-ro，无 data-d-inp），只从合同带出；探针 check-hr-contract.js 50/0、check-p143-profile.js 校准 10 项口径 136/0、既有人事探针全绿；主端 mergeHRTeachers 扩 10 项留下一轮。全套 53 条探针全绿。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 2026-11-09 ============ -->
-  <div class="day-panel on" data-day="2026-11-09">
+  <div class="day-panel" data-day="2026-11-09">
     <div class="card">
       <h2>2026-11-09 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>

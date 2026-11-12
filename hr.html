@@ -297,6 +297,14 @@ input.ro{background:var(--track);color:var(--mu);border-style:dashed}
 .fld>input,.fld>select{width:100%}
 .fld.span2{grid-column:span 2}
 .fld.span3{grid-column:1/-1}
+
+/* ---------- VND 金额输入（P-141 · 2026-11-12）----------
+   显示 1,000,000 + ₫ 小字；存盘永远是纯整数盾。分隔符只由 VND_SEP 一个常量管。 */
+.vnd-w{display:inline-flex;align-items:center;gap:4px;width:100%;min-width:0}
+.fld>span.vnd-w{font-size:inherit;color:inherit;gap:4px}
+.vnd-w>input{flex:1 1 auto;min-width:0;width:auto}
+.vnd-w.w-money{width:116px}
+.vnd-u{font-style:normal;font-size:11px;color:var(--mu);flex:0 0 auto;white-space:nowrap;user-select:none}
 .con-sum .cn{font-weight:500}
 
 /* ---------- 说明表 ---------- */
@@ -651,8 +659,8 @@ table.fmt td.bad{color:var(--neg)}
         </table>
         </div>
         <datalist id="tidList"></datalist>
-        <p class="sm mu" style="margin:9px 0 0"><b>工号 / 姓名 / 岗位 / 部门 / 入职日 / 状态 由「合同」页自动带出</b> —— 签合同的时候填一次就够了，这里只补合同上没有的（电话、住址、紧急联系人）。点任意一行 → 右侧拉出「一人一档」。</p>
-        <p class="sm mu" style="margin:5px 0 0"><b>排课ID</b>：对应排课系统的教师 id（<code>t1</code> / <code>t2</code>）。<b>只有填了才会自动统计课时</b> —— 两套系统 id 不通用，这一栏是唯一的桥。点输入框会列出云端已有的教师。</p>
+        <p class="sm mu" style="margin:9px 0 0"><b>工号 / 姓名 / 岗位 / 部门 / 入职日 / 状态 由「合同」页自动带出</b> —— 签合同的时候填一次就够了，这里只补合同上没有的（住址、紧急联系人姓名、紧急联系人电话），电话由合同带出只读。点任意一行 → 右侧拉出「一人一档」。</p>
+        <p class="sm mu" style="margin:5px 0 0"><b>排课ID</b>：由<b>人事端发号</b>（<code>t1</code> / <code>t2</code> / <code>t3</code>…），主端只读收取，用于排课与课时统计。<b>只有填了才会自动统计课时</b>，也是两套系统唯一的桥。点输入框会列出本端已发出的号 + 下一个可用号；工号（T001…）是人事内部编号，不进主端。</p>
       </div>
       <div class="card fmtcard">
         <div class="card-h"><h3>格式怎么填</h3><span class="sp"></span><span class="tag nologic">最常错：排课ID空着</span></div>
@@ -696,6 +704,7 @@ table.fmt td.bad{color:var(--neg)}
         <datalist id="empNameList"></datalist>
         <p class="sm mu" style="margin:9px 0 0"><b>这一页是录入的第一入口。</b>点一行 → 下面展开整张表单。<b>姓名直接打字</b>（点一下会列出在册的人），打完离开这一格，<b>花名册自动建档</b> —— 工号自动给，岗位/部门/入职日/状态跟着合同走，不用再去花名册重写一遍。已有同名的人，就当续签挂到他身上。</p>
         <p class="sm mu" style="margin:5px 0 0">「剩余」在提醒天数以内会变黄，已过期变红。<b>这里的月薪只是合同约定，不是实发</b> —— 实发在「薪酬发放」。</p>
+        <p class="sm mu" style="margin:5px 0 0"><b>教师资料 10 项（姓名 / 类型 / 联系方式 / 国籍 / 语言 / 资历 / 单价 / 住址 / 紧急联系人姓名 / 紧急联系人电话）在合同里填齐，花名册才会有信息，主端才会收到并只读展示；没填齐不发排课ID。</b></p>
         <p class="sm mu" style="margin:5px 0 0"><b>计价方式</b>决定怎么算钱：<b>月薪</b> 用「月薪（约定）」；<b>课时费</b> 用「课时单价 × 当月已完成课次」（课次自动从排课系统读，前提是花名册填了排课ID）。<b>合同是唯一的定价出口</b> —— 排课系统里的教师单价只作参考，不作结算依据。</p>
       </div>
       <details class="card fmtcard">
@@ -710,7 +719,7 @@ table.fmt td.bad{color:var(--neg)}
             <tr><td>类型</td><td class="f">下拉</td><td class="e">固定期</td><td>试用 / 固定期 / 无固定期 / 兼职。越南固定期合同最长 36 个月，到期不续要提前通知。选「试用」→ 花名册状态自动变「试用」。</td></tr>
             <tr><td>起始</td><td class="f">YYYY-MM-DD</td><td class="e">2025-03-01</td><td>这一格就是花名册的「入职日」，试用期到期日从这天往后算。</td></tr>
             <tr><td>到期</td><td class="f">YYYY-MM-DD</td><td class="e">2027-02-28</td><td>无固定期合同这一格留空，剩余列会显示「—」。</td></tr>
-            <tr><td>月薪（约定）</td><td class="f">纯数字</td><td class="e">12000000</td><td>不带逗号、不带 ₫。这只是合同写的数，实发看财务。</td></tr>
+            <tr><td>月薪（约定）</td><td class="f">VND · 自动千分位</td><td class="e">12,000,000</td><td>框里显示 <span class="f">12,000,000</span> 并标 ₫；打 <span class="f">12000000</span> / <span class="f">12,000,000</span> / <span class="f">12.000.000</span> 都收，<b>存盘永远是纯整数盾</b>。这只是合同写的数，实发看财务。</td></tr>
           </tbody>
         </table>
       </details>
@@ -1235,7 +1244,7 @@ function markZh(state, at){
   if(!el) return;
   if(state === 'syncing'){ el.textContent = '☁︎ 读排课数据…'; el.className = 'tag pending'; return; }
   if(state === 'ok'){
-    el.textContent = '☁︎ 排课数据 · ' + ZH.teachers.length + ' 位教师 · ' + ZH.lessons.length + ' 节课';
+    el.textContent = '☁︎ 排课课时 · ' + ZH.lessons.length + ' 节课（教师名单由本端花名册发号）';
     el.className = 'tag has';
     return;
   }
@@ -1263,7 +1272,8 @@ function pullMaster(cb){
     mergeDoneRecords(function(ok, n){
       markZh('ok', ZH.at);
       if(ok) ZH.doneN = n;
-      renderTidList();
+      /* ★ P-142：这里不再 renderTidList() —— 排课ID 由本端花名册发号，
+         跟云端 master 无关。master 仍只读，仅用于 ZH.lessons 课时统计。 */
       /* 顺手把财务那边的审批结果也读回来（同一份云端文档，多一次请求） */
       fsPullVoucherState(function(){
         if(cb) cb(true);
@@ -1324,14 +1334,29 @@ function mergeDoneRecords(cb){
     if(cb) cb(true, Object.keys(best).length);
   }).catch(function(){ if(cb) cb(false, 0); });
 }
-/* 花名册「排课ID」栏的候选列表 —— 点输入框就列出云端已有的教师 */
+/* ★ P-142（2026-11-12 · Tony 拍板）：**人事端才是正式发号口**，方向反过来。
+   旧版从云端 zhops/master 拉主端教师当候选 —— 清库后云端还是 11-08 旧快照，
+   会一直提示已经删掉的教师。现在只认本机花名册：列出本端已发出的排课ID，
+   再补一个「下一个可用号」供发号。云端 master 仍由 pullMaster() 读，
+   但只用于课时统计（ZH.lessons），不再参与发号。助教也算教师。 */
 function renderTidList(){
   var dl = document.getElementById('tidList');
   if(!dl) return;
-  dl.innerHTML = ZH.teachers.map(function(t){
-    var nm = t.name || t.zh || '';
-    return '<option value="'+esc(t.id)+'">'+esc(t.id + (nm ? ' · ' + nm : ''))+'</option>';
-  }).join('');
+  var used = {}, opts = [];
+  (S.emp || []).forEach(function(e){
+    if(!e) return;
+    var role = String(e.role || '');
+    if(role !== '教师' && role !== '助教') return;
+    var tid = String(e.zhopsTid || '').trim();
+    if(!tid || used[tid]) return;
+    used[tid] = true;
+    opts.push('<option value="'+esc(tid)+'">'+esc(tid + ' · 已发 · ' + (e.zh || ''))+'</option>');
+  });
+  /* 下一个可用号：从 t1 起找第一个没人占的 —— 旧教师清完后从 t1 重新发 */
+  var n = 1;
+  while(used['t' + n]) n++;
+  opts.push('<option value="t'+n+'">t'+n+' · 下一个可用号（发新教师用）</option>');
+  dl.innerHTML = opts.join('');
 }
 /* 某位排课教师在**每个市**各上了几节「已完成」的课（2026-11-01 · P-73）
    —— 教师跨市上课时要能拆账：t1 · 苏州 12 节 / t1 · 杭州 8 节。
@@ -1848,11 +1873,38 @@ function toastish(msg){
   clearTimeout(el.__t);
   el.__t = setTimeout(function(){ el.style.opacity = '0'; }, 2800);
 }
+/* ★ 2026-11-12（P-141）：人事端 VND 金额统一口径。
+   显示 = 千分位 + ₫ 小字；存盘 = 纯整数盾字符串（不带分隔符、不带单位）。
+   分隔符只由 VND_SEP 一个常量管，想换成越南本地的点只改这一行；
+   与业务端 P-107 同值，四端数字看起来一样。 */
+var VND_SEP = ',';
+/* 把用户手填的金额洗成整数盾。认 1,000,000 / 1.000.000 / 1 000 000 /
+   1000000 vnd / 1000000₫；空值保持空（别把「没填」写成 0）；脏输入不炸，给 ''。 */
+function hrParseVND(raw){
+  var s = String(raw == null ? '' : raw).trim();
+  if(!s) return '';
+  s = s.replace(/vnd|vnđ|đồng|₫|đ/gi, '').replace(/[\s.,]/g, '');
+  var n = parseInt(s, 10);
+  return isFinite(n) ? String(n) : '';
+}
+function hrFmtVND(raw){
+  var n = hrParseVND(raw);
+  return n === '' ? '' : money(n);
+}
+/* 金额输入框：data-vnd="1" 是存盘 / 格式化认它的唯一标记。
+   ⚠️ 别用 class 或 placeholder 认，也别在这里绑 oninput —— 光标会被顶到末尾。 */
+function vndInput(dataK, raw, ph, wCls){
+  return '<span class="vnd-w'+(wCls ? ' '+wCls : '')+'">'+
+           '<input class="num" data-k="'+dataK+'" data-vnd="1" type="text" inputmode="numeric" '+
+             'value="'+esc(hrFmtVND(raw))+'" placeholder="'+esc(ph)+'">'+
+           '<i class="vnd-u">₫</i>'+
+         '</span>';
+}
 function money(n){
   n = Number(n);
   if(!isFinite(n)) return '0';
   var neg = n < 0; n = Math.abs(Math.round(n));
-  var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, VND_SEP);
   return (neg?'-':'') + s;
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -1912,11 +1964,59 @@ function empByZh(name){
   return null;
 }
 
+/* ================= P-143：教师资料 10 项（2026-11-12 · Tony 拍板） =================
+   口径：
+   - 合同是唯一录入口。10 项 = 姓名 / 类型 / 联系方式 / 国籍 / 语言 / 资历 / 单价 / 住址 / 紧急联系人姓名 / 紧急联系人电话。
+   - 「类型」用「人与期限」里**原有**的合同期限类型（试用 / 固定期 / 无固定期 / 兼职），
+     不另造「教师类型」，也不改主端「类型（自有 / 外包）」的语义。
+   - 国籍、语言在合同里拆两格，主端也拆两列。
+   - 硬卡：10 项不齐 → 不发号（新教师进不了主端）；已发过的号不撤，只挂待补标记。
+   - 空值不覆盖：合同没填的，绝不抹掉花名册里手填过的值。
+   ============================================================================ */
+/* ★ P-143（Tony 拍板）：教师资料 10 项硬必填 —— 只有这 10 项不齐才卡发号。
+   合同表单与花名册同步 10 项，主端也要收到这 10 项（主端下一轮扩 mergeHRTeachers）。 */
+var PROFILE_FIELDS = [
+  { k:'zh',      label:'姓名' },
+  { k:'type',    label:'类型' },
+  { k:'phone',   label:'联系方式' },
+  { k:'nat',     label:'国籍' },
+  { k:'lang',    label:'语言' },
+  { k:'exp',     label:'资历' },
+  { k:'rate',    label:'单价' },
+  { k:'addr',    label:'住址' },
+  { k:'ecName',  label:'紧急联系人姓名' },
+  { k:'ecPhone', label:'紧急联系人电话' }
+];
+function contractProfileMissing(c){
+  if(!c) return PROFILE_FIELDS.map(function(f){ return f.label; });
+  return PROFILE_FIELDS.filter(function(f){
+    return !String(c[f.k] == null ? '' : c[f.k]).trim();
+  }).map(function(f){ return f.label; });
+}
+function contractProfileDone(c){ return contractProfileMissing(c).length === 0; }
+/* 完整度提示是动态句（缺项每次不同），进不了整串字典 → 按当前语言整句生成，
+   否则越南语模式会留一截中文。HR_LANG 是 var，提升后为 undefined 也安全。 */
+var PROFILE_VI = { '姓名':'Họ tên', '类型':'Loại', '联系方式':'Liên hệ',
+                   '国籍':'Quốc tịch', '语言':'Ngôn ngữ', '资历':'Kinh nghiệm', '单价':'Đơn giá',
+                   '住址':'Địa chỉ', '紧急联系人姓名':'Tên người liên hệ khẩn cấp', '紧急联系人电话':'SĐT người liên hệ khẩn cấp' };
+function profileHint(miss){
+  var got = 10 - miss.length;
+  if(HR_LANG === 'vi'){
+    return 'Mức độ hồ sơ ' + got + '/10' +
+      (miss.length ? ' · Còn thiếu: ' + miss.map(function(x){ return PROFILE_VI[x] || x; }).join(', ') +
+                     ' —— chưa đủ điều kiện cấp ID xếp lịch, trang chính chưa nhận giáo viên này'
+                   : ' · Đã đủ, có thể cấp ID xếp lịch');
+  }
+  return '资料完整度 ' + got + '/10' +
+    (miss.length ? ' · 还缺：' + miss.join('、') + ' —— 补齐前不发号，主端收不到这位教师'
+                 : ' · 已齐，可发排课ID');
+}
+
 /* ================= 合同 → 花名册（2026-10-31 · Tony：合同定下就自动建档） =================
    口径：合同是录入的第一入口，花名册不再重写一遍。
    - 合同填了姓名 → 花名册没有就建档（工号自动给）；已有同名的人 → 挂到他身上，算续签
    - 合同改了什么就推什么：姓名 / 岗位 / 部门 / 排课ID / 入职日 / 状态
-   - 合同里没有的（电话、住址、紧急联系人）花名册自己留着，一概不动
+   - 合同里没有的字段花名册自己留着，一概不动
    - 只推「空着的」和「合同明确写了的」，不整行覆盖 —— 防止把花名册里手改过的部门又盖回去
    ★ 只在「改完离开输入框」时调一次。边打字边建档会把「阮」当成一个人。 */
 function syncEmpFromContract(i){
@@ -1931,18 +2031,24 @@ function syncEmpFromContract(i){
   var role = roleOfPos(c.pos);
   var isNew = false;
   if(!e){
+    /* ★ P-143 硬卡：资料不齐不发号 —— 合同里填了 tN 也不推进花名册，主端就收不到 */
     e = { id:nextEid(), code:nextCode(role), codeAuto:true, zh:name,
           role:role, dept:deptOfPos(c.pos, role), start:String(c.from || today()),
           status:(c.type === '试用' ? '试用' : '在职'),
-          phone:'', addr:'', ec:'', note:'', zhopsTid:String(c.zhopsTid || '') };
+          phone:'', addr:'', ecName:'', ecPhone:'', note:'',
+          zhopsTid:(contractProfileDone(c) ? String(c.zhopsTid || '') : '') };
     S.emp.push(e);
     isNew = true;
   }else{
     e.zh = name;                               /* 姓名以合同为准 */
-    if(String(c.zhopsTid || '').trim()) e.zhopsTid = c.zhopsTid;
+    /* ★ P-143 硬卡：资料齐了才认合同里的排课ID。已发过的号不撤，只挂待补标记。 */
+    if(contractProfileDone(c) && String(c.zhopsTid || '').trim()) e.zhopsTid = c.zhopsTid;
     if(String(c.from || ''))            e.start = c.from;
     if(String(c.pos || '').trim()){
-      e.role = role;
+      /* ★ P-143 守卫：合同岗位写错 / 写空被判成「员工」时，不许把在册教师 / 助教降级。
+         降级会让 P-142 收号口直接丢人（主端把这位标成「已停用」）。真要降级去花名册手改。 */
+      var wasTeach = (e.role === '教师' || e.role === '助教');
+      if(!(wasTeach && role === '员工')) e.role = role;
       if(!String(e.dept || '').trim()) e.dept = deptOfPos(c.pos, role);
     }
     if(c.type === '试用') e.status = '试用';
@@ -1955,6 +2061,24 @@ function syncEmpFromContract(i){
     else if(e.codeAuto && !codeFitsRole(e.code, role)){ e.code = nextCode(role); }
   }
   c.eid = e.id;
+  c.zh = name;                               /* ★ P-143：顺手规整合同姓名的首尾空格 */
+  /* ★ P-143：教师资料 10 项 → 花名册。emp 是主端唯一桥梁，主端绝不直接读 contract。
+     只推「合同明确写了的」，空值不覆盖花名册手填；单价一律洗成纯整数盾。 */
+  var pushProfile = function(ek, ck){
+    var v = String(c[ck] == null ? '' : c[ck]).trim();
+    if(!v) return;
+    e[ek] = (ck === 'rate') ? hrParseVND(v) : v;
+  };
+  pushProfile('phone','phone'); pushProfile('nat','nat');
+  pushProfile('lang','lang');   pushProfile('exp','exp');
+  pushProfile('rate','rate');
+  pushProfile('addr','addr');
+  pushProfile('ecName','ecName');
+  pushProfile('ecPhone','ecPhone');
+  /* 「类型」按 Tony 拍板用合同原有的合同期限类型，不另造「教师类型」字段 */
+  if(String(c.type || '').trim()) e.contractType = c.type;
+  if(contractProfileDone(c)) delete e.profilePending;
+  else e.profilePending = true;
   if(!String(c.zhopsTid || '').trim()) c.zhopsTid = e.zhopsTid || '';
   return { emp:e, isNew:isNew };
 }
@@ -2093,7 +2217,7 @@ function renderEmp(){
         '<td><select data-k="emp.'+i+'.status">'+
           ['试用','在职','离职'].map(function(x){return '<option'+(e.status===x?' selected':'')+'>'+x+'</option>';}).join('')+
         '</select></td>'+
-        '<td><input class="w-mid" data-k="emp.'+i+'.phone" value="'+esc(e.phone)+'" placeholder="0901 111 222"></td>'+
+        '<td><span class="mono" data-k="emp.'+i+'.phone" data-ro="1">'+esc(e.phone)+'</span></td>'+
         /* data-tip 是给 refreshRow 用的定位标记 —— 别再用 children[n] 数格子，
            2026-10-31 就是因为数错一格，改「状态」时把电话输入框覆盖掉了 */
         '<td class="sm '+(tip ? ((tip.indexOf('到期')>=0)?'neg':'hi') : '')+'" data-tip="1">'+esc(tip)+'</td>'+
@@ -2107,6 +2231,7 @@ function renderEmp(){
   document.getElementById('kCon').textContent = c.conWarn;
   document.getElementById('kDoc').textContent = c.docWarn;
   document.getElementById('empCount').textContent = S.emp.length + ' 人';
+  renderTidList();   /* P-142：花名册变了，发号候选跟着重算 */
 }
 
 /* ================= 渲染：合同 =================
@@ -2160,6 +2285,7 @@ function renderCon(){
       if(!open) return head;
 
       var K = 'contract.' + i + '.';
+      var miss = contractProfileMissing(c);   /* ★ P-143：资料完整度 / 硬卡提示 */
       return head +
         '<tr class="con-open"><td colspan="7"><div class="cform">'+
 
@@ -2184,9 +2310,25 @@ function renderCon(){
               fld('计价方式', '<select data-k="'+K+'payType">'+
                 ['月薪','课时费'].map(function(x){return '<option'+(c.payType===x?' selected':'')+'>'+x+'</option>';}).join('')+
                 '</select>')+
-              fld('月薪（约定）', '<input class="num" data-k="'+K+'salary" type="number" value="'+esc(c.salary)+'" placeholder="12000000">')+
-              fld('课时单价', '<input class="num" data-k="'+K+'rate" type="number" value="'+esc(c.rate||'')+'" placeholder="1000000">')+
+              fld('月薪（约定）', vndInput(K+'salary', c.salary, '12,000,000'))+
+              fld('课时单价', vndInput(K+'rate', c.rate||'', '1,000,000'))+
             '</div>'+
+          '</div>'+
+
+          /* ★ P-143（Tony 拍板）：合同是教师资料唯一录入口，主端只读收。
+             「类型」沿用上面「人与期限」原有的合同类型，不另造一格。 */
+          '<div>'+
+            '<div class="csec-h">教师资料 <b>主端只读 · 合同是唯一录入口</b></div>'+
+            '<div class="cgrid">'+
+              fld('联系方式', '<input data-k="'+K+'phone" value="'+esc(c.phone||'')+'" placeholder="0901 111 222 / Zalo">')+
+              fld('国籍', '<input data-k="'+K+'nat" value="'+esc(c.nat||'')+'" placeholder="越南 / 中国">')+
+              fld('语言', '<input data-k="'+K+'lang" value="'+esc(c.lang||'')+'" placeholder="中文 · 越南语">')+
+              fld('资历', '<input data-k="'+K+'exp" value="'+esc(c.exp||'')+'" placeholder="HSK6 / 3 年教龄">')+
+              fld('住址', '<input data-k="'+K+'addr" value="'+esc(c.addr||'')+'" placeholder="Quận 7, TP.HCM">')+
+              fld('紧急联系人姓名', '<input data-k="'+K+'ecName" value="'+esc(c.ecName||'')+'" placeholder="阮文海">')+
+              fld('紧急联系人电话', '<input data-k="'+K+'ecPhone" value="'+esc(c.ecPhone||'')+'" placeholder="0902 333 444">')+
+            '</div>'+
+            '<p class="sm '+(miss.length ? 'neg' : '')+'" style="margin:6px 0 0">'+esc(profileHint(miss))+'</p>'+
           '</div>'+
 
           '<div>'+
@@ -2266,7 +2408,7 @@ function renderSoc(){
         '<td><select data-k="social.'+i+'.status">'+
           ['参保','暂停','未参保'].map(function(x){return '<option'+(s.status===x?' selected':'')+'>'+x+'</option>';}).join('')+
         '</select></td>'+
-        '<td><input class="w-money num" data-k="social.'+i+'.base" type="number" value="'+esc(s.base)+'" placeholder="5000000"></td>'+
+        '<td>'+vndInput('social.'+i+'.base', s.base, '5,000,000', 'w-money')+'</td>'+
         '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(se)+'"></td>'+
         '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(sc)+'"></td>'+
         '<td><input class="w-date" data-k="social.'+i+'.from" type="date" value="'+esc(s.from)+'"></td>'+
@@ -2326,7 +2468,7 @@ function renderPr(){
       return '<tr data-i="'+i+'">'+
         '<td><select data-k="payroll.'+i+'.eid">'+empOptions(p.eid)+'</select></td>'+
         '<td><input class="w-inv" data-k="payroll.'+i+'.month" value="'+esc(p.month)+'" placeholder="2026-10"></td>'+
-        '<td><input class="w-money num" data-k="payroll.'+i+'.gross" type="number" value="'+esc(p.gross)+'" placeholder="12000000"></td>'+
+        '<td>'+vndInput('payroll.'+i+'.gross', p.gross, '12,000,000', 'w-money')+'</td>'+
         '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(si)+'"></td>'+
         '<td><input class="w-tax num" data-k="payroll.'+i+'.pit" type="number" value="'+esc(p.pit)+'" placeholder="0"></td>'+
         '<td class="num"><input class="w-tax num ro" type="text" readonly value="'+money(g-si-pit)+'"></td>'+
@@ -2445,7 +2587,7 @@ function renderAdj(){
           }).join('')+
         '</select></td>'+
         '<td><input class="w-inv" data-k="adjust.'+i+'.month" value="'+esc(a.month)+'" placeholder="2026-10"></td>'+
-        '<td><input class="w-money num" data-k="adjust.'+i+'.amount" type="number" value="'+esc(a.amount)+'" placeholder="3000000"></td>'+
+        '<td>'+vndInput('adjust.'+i+'.amount', a.amount, '3,000,000', 'w-money')+'</td>'+
         '<td><input class="w-date" data-k="adjust.'+i+'.date" type="date" value="'+esc(a.date)+'"></td>'+
         '<td><input data-k="adjust.'+i+'.reason" value="'+esc(a.reason)+'" placeholder="家里急用 / 迟到 2 次"></td>'+
         '<td class="num">'+(paid === '' ? '<span class="mu">—</span>' : money(paid))+'</td>'+
@@ -2782,7 +2924,10 @@ function fileHTML(eid){
   h += '<div class="fcard"><h4>基本信息</h4><div class="dr-kv">'+
        kv('工号', e.code)+kv('岗位', e.role)+kv('部门', e.dept)+kv('入职日', e.start)+
        kv('状态', e.status)+kv('电话', e.phone)+kv('住址', e.addr)+
-       kv('紧急联系人', e.ec)+kv('排课ID', e.zhopsTid)+kv('备注', e.note)+
+       kv('紧急联系人姓名', e.ecName)+kv('紧急联系人电话', e.ecPhone)+kv('排课ID', e.zhopsTid)+kv('备注', e.note)+
+       kv('合同类型', e.contractType)+kv('国籍', e.nat)+kv('语言', e.lang)+
+       kv('资历', e.exp)+kv('课时单价', e.rate ? money(e.rate) + ' ₫' : '')+
+       (e.profilePending ? kv('资料', '待补 · 见合同页') : '')+
        '</div></div>';
 
   /* 合同 —— 整行铺开，因为 PDF 列表要宽度 */
@@ -3096,9 +3241,11 @@ function onField(el){
   }
   var tbl = p[0], i = Number(p[1]), f = p[2];
   if(!S[tbl] || !S[tbl][i]) return true;
-  S[tbl][i][f] = el.value;
+  /* ★ P-141：金额框显示带千分位，存盘前一律洗成纯整数盾 */
+  S[tbl][i][f] = (el.getAttribute('data-vnd') === '1') ? hrParseVND(el.value) : el.value;
   /* 花名册里手改过工号 → 以后不再被合同自动重发（尊重手填） */
   if(tbl === 'emp' && f === 'code') S[tbl][i].codeAuto = false;
+  if(tbl === 'emp' && f === 'zhopsTid') renderTidList();  /* P-142：发号后立刻更新候选 */
   save();
   refreshRow(tbl, i);
   refreshDerived(tbl);
@@ -3106,6 +3253,15 @@ function onField(el){
 }
 document.addEventListener('input', function(e){ onField(e.target); });
 document.addEventListener('change', function(e){ onField(e.target); });
+
+/* ★ P-141：只在离焦时整理显示。绝不能在 input 事件里插逗号 ——
+   人事端每敲一字就 save() 一次，边打边格式化会把光标顶到末尾。 */
+document.addEventListener('change', function(e){
+  var el = e.target;
+  if(!el || !el.getAttribute || el.getAttribute('data-vnd') !== '1') return;
+  var n = hrParseVND(el.value);
+  el.value = (n === '' ? '' : money(n));
+});
 
 /* 合同改完离开输入框 → 推一次花名册（不重建合同表，否则 Tab 到下一格会掉焦点） */
 document.addEventListener('change', function(e){
@@ -3456,6 +3612,13 @@ var HR_LANG = (function(){
   /* ---- 表头 ---- */
   '工号':'Mã NV', '中文名':'Tên tiếng Trung', '岗位':'Chức vụ', '部门':'Bộ phận',
   '排课ID':'ID xếp lịch', '入职日':'Ngày vào', '状态':'Trạng thái', '电话':'Điện thoại',
+  /* ---- 教师资料 10 项（P-143）---- */
+  '联系方式':'Liên hệ', '国籍':'Quốc tịch', '语言':'Ngôn ngữ', '资历':'Kinh nghiệm',
+  '教师资料':'Hồ sơ giáo viên', '主端只读 · 合同是唯一录入口':'Trang chính chỉ đọc · Hợp đồng là nơi nhập duy nhất',
+  '合同类型':'Loại hợp đồng', '课时单价':'Đơn giá tiết dạy', '资料':'Hồ sơ',
+  '待补 · 见合同页':'Cần bổ sung · Xem trang Hợp đồng',
+  '教师资料 10 项（姓名 / 类型 / 联系方式 / 国籍 / 语言 / 资历 / 单价 / 住址 / 紧急联系人姓名 / 紧急联系人电话）在合同里填齐，花名册才会有信息，主端才会收到并只读展示；没填齐不发排课ID。':
+    'Điền đủ 10 mục hồ sơ giáo viên (họ tên / loại / liên hệ / quốc tịch / ngôn ngữ / kinh nghiệm / đơn giá / địa chỉ / tên người liên hệ khẩn cấp / SĐT người liên hệ khẩn cấp) trong hợp đồng thì danh sách nhân viên mới có thông tin, trang chính mới nhận và chỉ hiển thị ở chế độ đọc; chưa đủ thì không cấp ID xếp lịch.',
   '提醒':'Nhắc nhở', '姓名':'Họ tên', '合同号':'Số hợp đồng', '类型':'Loại',
   '到期日':'Ngày hết hạn', '剩余':'Còn lại', '备注':'Ghi chú', '简历':'Lý lịch',
   '基数':'Mức đóng', '月份':'Tháng', '应发':'Lương gộp', '实发':'Thực lĩnh',
@@ -3494,7 +3657,7 @@ var HR_LANG = (function(){
 
 /* 不翻的地方：这些元素里的文字一律原样保留。
    —— 人名 / 班名 / 事由这些是「用户填的数据」，翻译层从不碰（见上面的前提①）。 */
-var VI_SKIP_SEL = '#drawer, .ro-list, [data-k], input, textarea, select, option, .mono';
+var VI_SKIP_SEL = '#drawer, .ro-list, [data-k], input, textarea, select, option, .mono, .vnd-u';
 
 (function(){
   var memo = new WeakMap();     /* 文本节点 → 中文原文（切回中文时还原） */
@@ -3725,6 +3888,18 @@ if (typeof window !== 'undefined'){
     val: val,
     ZH: ZH,
     getS: function(){ return S; },
+    /* ★ 2026-11-12（P-141）：VND 金额口径。只读，不挂任何写操作 ——
+       探针要验「1.000.000 也算 1000000」「空值不写成 0」这类纯函数行为。 */
+    hrParseVND: hrParseVND,
+    hrFmtVND: hrFmtVND,
+    money: money,
+    getVNDSep: function(){ return VND_SEP; },
+    /* ★ 2026-11-12（P-143）：教师资料 10 项完整度。纯函数，只读，不挂任何写操作。 */
+    contractProfileMissing: contractProfileMissing,
+    contractProfileDone: contractProfileDone,
+    profileHint: profileHint,
+    PROFILE_FIELDS: PROFILE_FIELDS,
+    fileHTML: fileHTML,   /* 纯渲染函数，探针要验一人一档真的显示了新资料 */
     /* ★ 2026-11-01（P-81）：语言探针要重渲染页面看效果 */
     renderAll: renderAll,
     save: save,

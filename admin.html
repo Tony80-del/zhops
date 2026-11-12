@@ -590,6 +590,10 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 .kv .mono{font-family:var(--mono);}
 /* 编辑态：字段 */
 .fld{margin-bottom:12px;}
+/* ★ P-143：人事端合同带过来的教师资料是只读值，长得像输入框但不能点 */
+.hr-ro{padding:6px 9px;min-height:16px;box-sizing:border-box;
+  border:1px dashed var(--line2);border-radius:6px;background:var(--surface-2);
+  font-size:13px;line-height:1.45;color:var(--ink2);word-break:break-word;}
 .fld > .lbl{display:block;margin-bottom:5px;}
 .fld .inp{width:100%;box-sizing:border-box;}
 .fld textarea.inp{height:auto;min-height:62px;padding:7px 9px;line-height:1.5;
@@ -1380,7 +1384,8 @@ function writePublic(cb){
    —— 每位教师一个文档。只装他自己的：档案 · 班级 · 学生 · 课次 · 缺勤 · 申请。
    —— 只由主端写。教师端在第 3 步改成只读自己这一份。
    —— 主端本机仍存全量（zhops.sched.v3），一个字不改。
-   —— ⚠️ 文档 id = 教师 id（t1 / t2 / t_demo）。生成规则见 saveEdit()，
+   —— ⚠️ 文档 id = 教师 id（人事端花名册发的 t1 / t2 / t3…）。
+        ★ P-142 起发号口在人事端，主端不再生成教师 id。
         只含字母数字下划线，Firestore 收得下；仍做一次净化兜底。
    —— ⚠️ 只写不删：教师被移除后，旧分片会留在云端。试用期接受。
    ========================================================================== */
@@ -2150,6 +2155,7 @@ let fQ = '';
 /* ---------- 视图：教师 ---------- */
 let fTeacher = {src:'all', lv:'all'};
 function vTeachers(){
+  const hrDupes = hrTeacherRoster().dupes;
   let rows = DB.teachers.filter(t =>
     (fTeacher.src==='all' || t.src===fTeacher.src) &&
     (fTeacher.lv==='all' || t.levels.includes(fTeacher.lv)) &&
@@ -2158,9 +2164,9 @@ function vTeachers(){
   <div class="freeze-page">
   <div class="freeze-head">
   <div class="page-h">
-    <div><h2>教师</h2><p class="desc">${DB.teachers.length} 位 · 自有 ${DB.teachers.filter(t=>t.src==='own').length} · 外包 ${DB.teachers.filter(t=>t.src==='out').length}</p></div>
+    <div><h2>教师</h2><p class="desc">${DB.teachers.length} 位 · 自有 ${DB.teachers.filter(t=>t.src==='own').length} · 外包 ${DB.teachers.filter(t=>t.src==='out').length}<br><span class="lbl">教师由人事端花名册发「排课ID」，本端只收号、只用于排课${hrDupes.length ? ' · ⚠️ 人事端排课ID 撞号：'+hrDupes.join('、') : ''}</span></p></div>
     <div class="sp"></div>
-    <button class="btn" data-act="export" title="导出整份数据备份（JSON）">导出备份</button><button class="btn pri" data-act="newteacher">＋ 新增教师</button>
+    <button class="btn" data-act="export" title="导出整份数据备份（JSON）">导出备份</button><button class="btn pri" data-act="hiring" title="教师请到人事端花名册聘请并填「排课ID」">＋ 新增教师</button>
   </div>
 
   <div class="bar">
@@ -2188,7 +2194,7 @@ function vTeachers(){
         <th>教室</th><th>班级</th><th class="num">单价/节</th><th class="num">学生</th><th>状态</th><th></th>
       </tr></thead>
       <tbody>${rows.map(t=>'<tr data-open="teacher:'+t.id+'">'+
-        '<td><b>'+esc(t.name)+'</b></td>'+
+        '<td><b>'+esc(t.name)+'</b>'+(t.hrIncomplete ? ' <span class="tg bad">合同资料未齐</span>' : '')+'</td>'+
         '<td>'+ownTag(t.src)+'</td>'+
         '<td class="m">'+esc(t.tel)+'</td>'+
         '<td>'+t.levels.map(l=>'<span class="tg off">'+l+'</span>').join(' ')+'</td>'+
@@ -2504,8 +2510,7 @@ function bClasses(){
         : '<tr><td colspan="10" class="empty">'+(fQ
             ? '没有匹配「'+esc(fQ)+'」的班级'
             : '<div class="big">还没有班级</div>'+
-              '开班要先走「开班申请」审批。想先看看资料库长什么样，可以载入一个演示班：<br><br>'+
-              '<a href="#" class="act" data-c-act="demo">载入演示班 · 苏州班 HSK1 · 8 位学生 · 上到第 14 课</a>')+
+              '开班要先走「开班申请」审批；教师请先在人事端花名册建档并填「排课ID」。')+
           '</td></tr>'}</tbody>
     </table></div></div>
   </div>`;
@@ -2621,48 +2626,10 @@ function vRoom(cid){
         '<tbody>'+rows+'</tbody></table></div></div></div>';
 }
 
-/* 载入一个演示班 —— 只在「一个班都没有」时提供，不会污染已有数据。
-   为什么需要：主端 2026-10-13 清过演示数据，空表状态下所有「点进去看」的功能
-   都没地方点（Tony 2026-10-19 连着两次卡在这）。 */
-function seedDemoClass(){
-  const cid = 'c_demo';
-  if (DB.classes.some(x => x.id === cid)){ location.hash = '#room/'+cid; return; }
-  const tid = 't_demo';
-  if (!DB.teachers.some(x => x.id === tid)) DB.teachers.push(Object.assign(blankTeacher(), {
-    id:tid, name:'阮氏梅', src:'own', lang:'中文 · 越南语', exp:'5 年',
-    levels:['HSK1'], rate:0, rateUnit:'session', perfScore:4,
-    room:'苏州', cities:['苏州'],
-  }));
-  /* 挑「晚班」当演示时段（跟真实中文课的时间更像），没有就用第一个 */
-  const slotId = ((DB.slots.find(x => x.name === '晚班') || DB.slots[0] || {}).id) || 's1';
-  const sl = S(slotId);
-  DB.classes.push({
-    id:cid, name:'苏州班', code:'苏01', lv:'HSK1', mode:'online',
-    slot:slotId, teacher:tid, room:'苏州', cap:13,
-    startedAt:'2026-07-01', plannedLessons:42,
-  });
-  const names = ['阮文海','陈氏兰','黎明俊','范氏花','武庆','黄文雄','吴氏秋','郑德胜'];
-  const scores = ['85','78','62','90','55','88','70','66'];
-  names.forEach((nm, i) => {
-    DB.students.push(Object.assign(blankStudent(), {
-      id:'s_demo'+i, name:nm, cls:cid, lv:'HSK1', teacherId:tid,
-      city:'苏州', room:'苏州', joinedAt:'2026-07-01',
-      exam:{ s1:scores[i] },
-    }));
-  });
-  /* 14 节已上的课 —— classLesson() 只数 status==='done' */
-  for (let i = 1; i <= 14; i++){
-    DB.lessons.push({
-      id:cid+'#'+i, cid, no:i, date:addDays('2026-07-01', (i-1)*7),
-      time:sl.time, status:'done', teacher:tid,
-      cname:'苏州班', ccode:'苏01', clv:'HSK1', cmode:'online', city:'苏州',
-    });
-  }
-  save(); buildFacts();
-  toast('已载入演示班 · 苏州班 · 8 位学生 · 上到第 14 课');
-  location.hash = '#room/'+cid;
-}
-
+/* ★ P-142（2026-11-12 · Tony 拍板）：演示班已连根摘掉。
+   原来那个演示班函数会自己造一个演示教师 + 8 学生 + 14 节课，
+   是绕过「人事端发号」的第三条旁路。教师主档权威现在只在人事端，
+   主端不允许任何路径凭空生成教师 id。 */
 /* 该生可上课时段 —— ★ 2026-10-12 第 ③ 步修的真 bug：
    原来这里写死 ['s1','s3']，所以每个学生都显示「早班 晚班」，跟 s.slots 毫无关系。 */
 function slotCells(s){
@@ -2709,6 +2676,77 @@ function weekRange(iso){
    线上班不占教室（roomCode 为空），不在这里出现。
    ⚠️ 旧的「中国 10 省份」模型（teacher.room=省 / class.room=市）已被这套取代；
       字段先留着（probe-audit 与教师档案还在用），本视图不再读它。 */
+/* ---------- 教师主档：人事端发号，主端只读（P-142 · 2026-11-12）----------
+   ★ 权威在人事：教师在 hr.html 花名册建档、填「排课ID」(zhopsTid)，
+     主端不再自己发 tN，只把人事端已发的号收进 DB.teachers 供排课用。
+   ★ 纯本地直读：四端 file:// 同源（线上 Pages 同源），直接读
+     localStorage['zhops.hr.v1']。不建云文档、不加订阅、不加弹窗。
+   ★ 绝不回写 zhops.hr.v1（人事端可能正开着，回写会被它的 save() 覆盖）。
+   ★ 合流只在内存：不调 save()、不落盘、不顶 cloudDirty ——
+     __ADMIN_LIVE_ARRIVE__ 有 cloudDirty 守卫，顶成 true 会静默挡掉 master 实时接收。
+     重开页面 / 切回标签页会按人事端最新花名册重算一遍。
+   ★ 关联键只有 emp.zhopsTid ↔ DB.teachers[].id；工号 T001 不进主端。
+   ★ 人事端拥有 id / 姓名 / 在职状态；可教级别、时段、课时费、教室由主端排课时补，
+     重算时不冲掉。离职 / 撤号的人标停用、不删（历史课次要回看）。 */
+const HR_STORE_KEY = 'zhops.hr.v1';
+function hrTeacherRoster(){
+  let o = null;
+  try { o = JSON.parse(localStorage.getItem(HR_STORE_KEY) || '{}'); }
+  catch(e){ return { list:[], dupes:[] }; }
+  const emp = Array.isArray(o.emp) ? o.emp : [];
+  const seen = Object.create(null), list = [], dupes = [];
+  emp.forEach(function(e){
+    if (!e) return;
+    const role = String(e.role || '');
+    if (role !== '教师' && role !== '助教') return;   /* Tony 拍板：助教也算教师 */
+    const tid = String(e.zhopsTid || '').trim();
+    if (!tid) return;                                  /* 还没发号 → 不进主端 */
+    if (seen[tid]){ dupes.push(tid); return; }         /* 撞号：只认第一个，不静默覆盖 */
+    seen[tid] = true;
+    /* ★ P-143：教师资料 7 项一并带出。emp 是唯一来源，主端绝不直接读 contract。 */
+    list.push({ id:tid, name:String(e.zh || '').trim() || tid,
+                active:String(e.status || '') !== '离职', role:role,
+                phone:String(e.phone || '').trim(),
+                nat:String(e.nat || '').trim(),
+                lang:String(e.lang || '').trim(),
+                exp:String(e.exp || '').trim(),
+                rate:String(e.rate || '').trim(),
+                contractType:String(e.contractType || '').trim(),
+                pending:!!e.profilePending });
+  });
+  return { list:list, dupes:dupes };
+}
+function mergeHRTeachers(){
+  const r = hrTeacherRoster(), live = Object.create(null);
+  r.list.forEach(function(h){
+    live[h.id] = true;
+    let t = DB.teachers.find(x => x.id === h.id);
+    if (!t){
+      t = Object.assign(blankTeacher(), { id:h.id, name:h.name, src:'own', state:'正常' });
+      DB.teachers.push(t);
+    }
+    /* 只覆盖人事端拥有的字段，主端补的排课信息一律保留 */
+    t.name   = h.name;
+    t.fromHR = true;
+    t.hrRole = h.role;
+    t.state  = h.active ? '正常' : '已停用';
+    /* ★ P-143：人事端合同里的 7 项资料。**空值不覆盖** —— 合同还没填齐时
+       不抹掉主端已有值；单价洗成数字（人事端存的是纯整数盾字符串）。 */
+    if (h.phone) t.tel = h.phone;
+    if (h.nat)   t.nat = h.nat;
+    if (h.lang)  t.lang = h.lang;
+    if (h.exp)   t.exp = h.exp;
+    if (h.contractType) t.contractType = h.contractType;
+    if (h.rate){ let rn = Number(String(h.rate).replace(/[^\d]/g,'')); if (rn) t.rate = rn; }
+    t.hrIncomplete = !!h.pending;
+  });
+  /* 人事端已撤号 / 标离职 → 停用，不删人 */
+  DB.teachers.forEach(function(t){
+    if (t.fromHR && !live[t.id]) t.state = '已停用';
+  });
+  return { n:r.list.length, dupes:r.dupes };
+}
+
 const BIZ_STORE_KEY = 'zhops.biz.v1';
 function bizRooms(){
   try{
@@ -3630,8 +3668,11 @@ function saveEdit(){
     if (!String(d[contactField]||'').trim()) miss.push(kind === 'member' ? '权限' : '联系方式');
     if (miss.length){ dState.err = miss.join(' 和 '); renderDrawer(); return; }
 
-    const list = kind === 'teacher' ? DB.teachers : kind === 'student' ? DB.students : DB.members;
-    const prefix = kind === 'teacher' ? 't' : kind === 'student' ? 'st' : 'm';
+    /* ★ P-142：教师由人事端发号，主端绝不自己生成 tN。
+       openNewProfile('teacher') 已挡在门口，这里再兜一层：真绕进来也直接拒绝。 */
+    if (kind === 'teacher'){ dState.err = '教师请到人事端发号'; renderDrawer(); return; }
+    const list = kind === 'student' ? DB.students : DB.members;
+    const prefix = kind === 'student' ? 'st' : 'm';
     const nums = list.map(x => parseInt(String(x.id).replace(/\D/g,''), 10) || 0);
     d.id   = prefix + (Math.max(0, ...nums) + 1);
     d.name = String(d.name).trim();
@@ -3682,10 +3723,14 @@ function slotTags(ids){
 }
 function tView(o){
   return '<dl class="kv">'+
+    (o.hrIncomplete ? kv('资料', '<span class="tg bad">合同资料未齐 · 去人事端补齐</span>') : '')+
     kv('姓名', esc(o.name))+
     kv('类型', ownTag(o.src))+
+    kv('合同类型', esc(o.contractType || '—'))+
     kv('联系方式', '<span class="mono">'+esc(o.tel)+'</span>')+
-    kv('国籍 · 语言', esc(o.lang))+
+    /* ★ P-143：国籍 / 语言拆两列，跟人事端合同的两格一一对应 */
+    kv('国籍', esc(o.nat || '—'))+
+    kv('语言', esc(o.lang || '—'))+
     kv('资历', esc(o.exp))+
     kv('可授级别', tags(o.levels))+
     kv('可授课时段', o.slots.length
@@ -3824,22 +3869,33 @@ function repaintCityPicks(){
     }
   }
 }
+/* ★ P-143（Tony 拍板只读）：人事端合同拥有的 7 项在本端只显示、不能改。
+   data-hr-ro 是给越南语层用的护罩 —— 主端 viSwap 是子串替换，
+   不挡会把姓名 / 语言里的中文词啃掉。没有 data-d-inp，saveEdit() 也就不会写回。 */
+function hrRo(label, f, v){
+  return fld(label, '<div class="hr-ro" data-hr-ro="'+f+'">'+esc(v == null ? '' : String(v))+'</div>');
+}
 function tEdit(m){
-  return fld('姓名', inp('name', m.name))+
+  return '<div class="a-warn" style="margin:0 0 12px"><b>姓名 / 类型 / 联系方式 / 国籍 / 语言 / 资历 / 单价 由人事端合同维护</b> —— 本端只读，这里只改排课字段。</div>'+
+    hrRo('姓名', 'name', m.name)+
     '<div class="g2">'+
-      fld('类型', sel('src', m.src, [['own','自有'],['out','外包']]))+
-      fld('联系方式', inp('tel', m.tel))+
+      hrRo('类型', 'src', m.src === 'out' ? '外包' : '自有')+
+      hrRo('合同类型', 'contractType', m.contractType)+
     '</div>'+
     '<div class="g2">'+
-      fld('国籍 · 语言', inp('lang', m.lang))+
-      fld('资历', inp('exp', m.exp))+
+      hrRo('联系方式', 'tel', m.tel)+
+      hrRo('资历', 'exp', m.exp)+
+    '</div>'+
+    '<div class="g2">'+
+      hrRo('国籍', 'nat', m.nat)+
+      hrRo('语言', 'lang', m.lang)+
     '</div>'+
     fld('可授级别', picks('levels', m.levels, ['HSK1','HSK2','HSK3']))+
     fld('可授课时段', slotPicks('slots', m.slots))+
     fld('教室（省份）', roomPicks(m.room))+
     fld('教室（市）', cityPicks(m.room, m.cities))+
     '<div class="g2">'+
-      fld('单价 (VND)', money('rate', m.rate))+
+      hrRo('单价 (VND)', 'rate', Number(m.rate || 0).toLocaleString('en-US'))+
       fld('计价方式', sel('rateUnit', m.rateUnit, RATEUNIT))+
     '</div>'+
     fld('教课表现', sel('perfScore', m.perfScore,
@@ -3855,7 +3911,8 @@ function tEdit(m){
    —— 教师可换，市跟着重算（换教师时市要重选，因为别的教师可能没这个市） */
 function teacherSel(tid){
   const opts = [['','（未指定 · 先存候选池）']].concat(
-    DB.teachers.map(t => [t.id, t.name + '（' + (t.room || '未定省') + '）'])
+    DB.teachers.map(t => [t.id, t.name + '（' + (t.room || '未定省') + '）' +
+      (t.fromHR && t.state === '已停用' ? ' · 已停用' : '')])
   );
   return sel('teacherId', tid || '', opts);
 }
@@ -3927,7 +3984,8 @@ function sEdit(m){
    Tony 2026-10-03：教师页头 / 学生页头那两个按钮原来点了没反应。 */
 function blankTeacher(){
   return {
-    name:'', src:'own', tel:'', lang:'', exp:'',
+    name:'', src:'own', tel:'', nat:'', lang:'', exp:'',
+    contractType:'', hrIncomplete:false,
     levels:[], slots:[], rate:0, rateUnit:'session',
     perfScore:3, perfNote:'', note:'',
     room:'',   /* 教师选的教室（省份，独占互斥） */
@@ -3958,6 +4016,8 @@ function blankMember(){
   return { name:'', role:'主端 · 全部权限', lastLogin:'' };
 }
 function openNewProfile(kind){
+  /* ★ P-142：教师主档只在人事端。任何路径都不许在主端新建教师。 */
+  if (kind === 'teacher'){ toast('教师请到人事端花名册聘请并填「排课ID」'); return; }
   dState = {
     kind: kind, id: '__new__', edit: true,
     draft: kind === 'teacher' ? blankTeacher() : kind === 'student' ? blankStudent() : blankMember(),
@@ -3969,7 +4029,6 @@ function openNewProfile(kind){
   $('#drawer').setAttribute('aria-hidden','false');
   const x = $('#drawer .x'); if (x) x.focus();
 }
-const openNewTeacher = () => openNewProfile('teacher');
 const openNewStudent = () => openNewProfile('student');
 const openNewMember  = () => openNewProfile('member');
 
@@ -5303,6 +5362,12 @@ const VI = {
   '没登记名单 · 只按人数建班':'Chưa ghi danh sách · chỉ tạo lớp theo số người',
   '原因必须选':'Phải chọn lý do', '线下课才需要填教室名称。':'Chỉ lớp ngoại tuyến mới cần điền tên phòng.',
   '国籍 · 语言':'Quốc tịch · Ngôn ngữ', '联系方式（电话 / Zalo）':'Liên hệ (điện thoại / Zalo)',
+  /* ★ P-143：教师资料 7 项只读口径 */
+  '国籍':'Quốc tịch', '语言':'Ngôn ngữ', '合同类型':'Loại hợp đồng',
+  '合同资料未齐':'Hồ sơ hợp đồng chưa đủ',
+  '合同资料未齐 · 去人事端补齐':'Hồ sơ hợp đồng chưa đủ · Bổ sung ở Nhân sự',
+  '姓名 / 类型 / 联系方式 / 国籍 / 语言 / 资历 / 单价 由人事端合同维护':
+    'Họ tên / Loại / Liên hệ / Quốc tịch / Ngôn ngữ / Kinh nghiệm / Đơn giá do hợp đồng Nhân sự quản lý',
   '新增教师':'Thêm giáo viên', '新增学生':'Thêm học viên', '新增成员':'Thêm thành viên',
   '教师档案':'Hồ sơ giáo viên', '已登记':'Đã ghi danh',
   /* ---- Phase 4：逐页复测（中/越对照）后按「整句 + 量词」补齐 ----
@@ -5713,6 +5778,9 @@ function langWalk(root){
     acceptNode(node){
       const p = node.parentNode;
       if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE')) return NodeFilter.FILTER_REJECT;
+      /* ★ P-143：人事端带过来的教师资料是「数据」，越南语模式下一律不翻。
+         viSwap 是子串替换，姓名 / 语言里的中文词会被整句替换啃掉。 */
+      if (p && p.closest && p.closest('[data-hr-ro]')) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
@@ -5901,7 +5969,6 @@ document.addEventListener('click', e => {
     if (k === 'advance')      advanceClass(cid);
     else if (k === 'roll')    openRollDrawer(cid);
     else if (k === 'del')     delClass(cid);
-    else if (k === 'demo')    seedDemoClass();   /* P-47：空表时载入一个演示班 */
     /* ---- 排课 › 矩阵的班级卡片 → 跳到「班级」子页签并点亮那一行（2026-10-12 第 ③ 步收尾）----
        班级没有自己的抽屉，跟总览「差 N 人开班」那条 goclasses 是同一个思路，只是多了个聚焦。
        ⚠️ hash 没变时 hashchange 不触发，得手动 render()（跟侧栏导航同一处理） */
@@ -5928,7 +5995,7 @@ document.addEventListener('click', e => {
     const k = act.dataset.act;
     if (k === 'new')       openNewApp();
     else if (k === 'auto') autoAssign();
-    else if (k === 'newteacher') openNewTeacher();
+    else if (k === 'hiring')  toast('教师请到人事端花名册聘请并填「排课ID」，主端会自动收取；本端不再新建教师');
     else if (k === 'newstudent') openNewStudent();
     else if (k === 'newmember')  openNewMember();
     else if (k === 'exportstatement') exportStatement();
@@ -6239,7 +6306,15 @@ function cldProbe(){
 })();
 
 window.addEventListener('hashchange', render);
+/* ★ P-142：首屏渲染前先收人事端发号；从人事端切回来也按最新花名册重算。
+   纯内存合流，不调 save()、不落盘、不顶 cloudDirty。 */
+mergeHRTeachers();
 render();
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden) return;
+  mergeHRTeachers();
+  render();
+});
 
 /* ⚠️⚠️ 2026-10-17（Tony 定：全手动）：
    原来这里有 cloudBootPull() —— 启动时自动拉云端、切回标签页也拉。
