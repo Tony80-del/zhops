@@ -845,6 +845,9 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
    ============================================================ */
 
 var KEY = 'zhops.biz.v1';
+/* ★ 2026-11-13（P-???）：本机最新落盘时间戳（ms），挂在 window 上让 module 也能读到。
+   applyRemote() 用它做旧云覆盖保护闸——云端比它还旧就忽略，防自动订阅把新本地数据盖回去。 */
+window.__BIZ_LOCAL_SAVE_AT__ = 0;
 var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], campaigns:[], assets:[], events:[], rooms:[], places:[],
   /* ★ 2026-11-05（P-103 ④）：场地使用记录 / 已提交请款单 / 每条使用记录的请款金额（手填） */
   usage:[], placeVouchers:[], usageAmt:{},
@@ -1125,6 +1128,8 @@ function load(){
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); toast('已保存'); }
   catch(e){ toast('保存失败', true); }
+  /* ★ 2026-11-13（P-???）：记下落盘时刻，供 applyRemote() 做旧云覆盖保护。 */
+  window.__BIZ_LOCAL_SAVE_AT__ = Date.now();
   /* ★ 2026-11-08（P-136）：存完就地自动推云端（防抖 1.2s）。
      挂 window 上是因为推送函数在下面的 module 脚本里（要 import SDK）。
      没接上（断网 / SDK 没加载）就静默跳过 —— 存盘本身绝不能因为云端挂掉而失败。 */
@@ -3466,6 +3471,10 @@ function applyRemote(raw){
   if (!d) return false;
 
   const remoteAt = Date.parse(o.__at || '') || 0;
+  /* ★ 2026-11-13（P-???）：本机刚写过的本地数据不能反被旧云端覆盖。
+     localSaveAt = 0 表示从未保存过，放行兼容。 */
+  const localSaveAt = window.__BIZ_LOCAL_SAVE_AT__ || 0;
+  if (localSaveAt && remoteAt && remoteAt < localSaveAt) return false;
   /* 比本机刚推的还旧 → 是我们自己刚写下去的，忽略（避免回声） */
   if (remoteAt && remoteAt <= lastPushedAt) return false;
 
