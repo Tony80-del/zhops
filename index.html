@@ -4570,17 +4570,12 @@ function renderNewAppDrawer(){
       /* ★ 自定义课表（方案 B：不再从固定时段里挑） */
       aSec('上课时间（自定义）',
         fld('开班日期', '<input class="inp" data-a-inp="startDate" type="date" value="'+esc(f.startDate||'')+'">')+
-        fld('每周哪几天',
-          '<div class="picks">'+WEEKDAYS.map(w => {
-            const on = (f.days||[]).indexOf(w[0]) >= 0;
-            return '<button type="button" class="pick'+(on?' on':'')+'" data-a-day="'+w[0]+'">'+w[1]+'</button>';
-          }).join('')+'</div>')+
         '<div class="g2">'+
           fld('几点开始', '<input class="inp" data-a-inp="startTime" type="time" value="'+esc(f.startTime||'19:00')+'">')+
           fld('每节多少分钟', inp('durationMin', f.durationMin, 'number', 'data-a-inp'))+
         '</div>'+
         '<div class="note" style="margin:10px 0 0;font-size:11.5px">'+
-          '当前课表：<b>'+esc(schedText(f.days, f.startTime, f.durationMin) || '（还没选周几）')+'</b>'+
+          '当前课表：<b>'+esc(schedText(f.startDate ? [String(new Date(f.startDate).getDay())] : [], f.startTime, f.durationMin) || '（请先选开班日期）')+'</b>'+
           '<br>⚠️ 课次暂时<b>不自动生成</b>，开班后按现有方式推进（打磨台已记，以后补）。</div>')+
       /* ★ 学生（只读，自动带出候选池成员） */
       aSec('学生（自动带入）', stuSec)+
@@ -4594,11 +4589,13 @@ function renderNewAppDrawer(){
 function createApp(){
   readAppForm();
   const f = dState.form;
-  /* ★ 2026-10-17：不再用固定 slot，改成自定义课表
-     校验：教师 + 级别 + 形态 + 至少一个周几 + 开始时间 */
+  /* ★ 2026-11-13：单日化 —— 由开班日期自动推导周几（getDay()），不再手工勾选 */
   if (!f.teacher || !f.lv || !f.mode) return;
-  if (!(f.days||[]).length){ toast('请至少选一个上课日'); return; }
+  if (!f.startDate){ toast('请选开班日期'); return; }
   if (!f.startTime){ toast('请填上课时间'); return; }
+  /* 由 startDate 推导单日数组：'2026-10-08' → ['4']（周四） */
+  const dayOfWeek = String(new Date(f.startDate).getDay());  // 0=周日 .. 6=周六
+  f.days = [dayOfWeek];
   /* 教室（市）：从「教师勾了但还没开班」的市里取
      —— 教师只勾一个未开班市 → 用它；多个 → 用 f.room（用户在下拉里选的） */
   const t = DB.teachers.find(x => x.id === f.teacher) || {};
