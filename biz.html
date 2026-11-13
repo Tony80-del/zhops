@@ -2290,8 +2290,8 @@ function placeForm(p){
       '<div class="fld"><label>电话</label><input id="f-pl-tel" value="'+esc(p.tel||'')+'" placeholder="房东 / 管理员"></div>'+
     '</div>'+
     '<div class="fld-row">'+
-      '<div class="fld"><label>整层月租（VND / 月）</label><input type="number" id="f-pl-rent" value="'+(p.rent||'')+'"></div>'+
-      '<div class="fld"><label>小时费（VND / 小时）</label><input type="number" id="f-pl-hourly" value="'+(p.hourly||'')+'"></div>'+
+      '<div class="fld"><label>整层月租（VND / 月）</label><input type="text" inputmode="numeric" id="f-pl-rent" value="'+fmtVND(p.rent||0)+'" placeholder="如：50,000,000" onblur="this.value=fmtVND(parseVND(this.value))"></div>'+
+      '<div class="fld"><label>小时费（VND / 小时）</label><input type="text" inputmode="numeric" id="f-pl-hourly" value="'+fmtVND(p.hourly||0)+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"></div>'+
     '</div>'+
     (isNew
       ? '<div class="fld"><label>这层有几间？ <span style="color:#e24b4a">*</span></label><input type="number" id="f-pl-count" value="" placeholder="5 / 6 / 7 / 8 —— 看店铺多大"></div>'+
@@ -2316,8 +2316,8 @@ function savePlace(origId){
   if(!/^[A-Z0-9]/.test(prefix)){ toast('编码前缀要以字母或数字开头，例：D7', true); return; }
 
   var billMode = val('f-pl-bill') === 'hour' ? 'hour' : 'month';
-  var rent   = parseInt(val('f-pl-rent')||'0', 10) || 0;
-  var hourly = parseInt(val('f-pl-hourly')||'0', 10) || 0;
+  var rent   = parseVND(val('f-pl-rent'));
+  var hourly = parseVND(val('f-pl-hourly'));
   var n      = parseInt(val('f-pl-count')||'0', 10) || 0;
   if(!origId && (n < 1 || n > 50)){ toast('间数填 1–50 之间', true); return; }
 
@@ -2420,8 +2420,8 @@ function roomForm(r){
       '<div class="fld"><label>电话</label><input id="f-rm-tel" value="'+esc(r.tel||'')+'" placeholder="房东 / 管理员"></div>'+
     '</div>'+
     '<div class="fld-row">'+
-      '<div class="fld"><label>月租费（VND / 月）</label><input type="number" id="f-rm-rent" value="'+(r.rent||'')+'"'+(fromPlace?' disabled':'')+'></div>'+
-      '<div class="fld"><label>小时费（VND / 小时）</label><input type="number" id="f-rm-hourly" value="'+(r.hourly||'')+'"'+(fromPlace?' disabled':'')+'></div>'+
+      '<div class="fld"><label>月租费（VND / 月）</label><input type="text" inputmode="numeric" id="f-rm-rent" value="'+fmtVND(r.rent||0)+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"'+(fromPlace?' disabled':'')+'></div>'+
+      '<div class="fld"><label>小时费（VND / 小时）</label><input type="text" inputmode="numeric" id="f-rm-hourly" value="'+fmtVND(r.hourly||0)+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"'+(fromPlace?' disabled':'')+'></div>'+
     '</div>'+
     '<div class="fld"><label>备注</label><textarea id="f-rm-note" placeholder="停车、电梯、门禁、限制…">'+esc(r.note||'')+'</textarea></div>'+
     (isNew ? '' :
@@ -2457,9 +2457,9 @@ function saveRoom(origCode){
     cap:   parseInt(val('f-rm-cap')||'0', 10) || 0,
     /* ★ 2026-11-05（P-103 ①）：费用拆三栏。rent 保留原名 = 月租费，
        老数据一个字段都不删、不迁移，只新增下面两个字段。 */
-    rent:  parseInt(val('f-rm-rent')||'0', 10) || 0,
+    rent:  parseVND(val('f-rm-rent')),
     billMode: val('f-rm-bill') === 'hour' ? 'hour' : 'month',
-    hourly:   parseInt(val('f-rm-hourly')||'0', 10) || 0,
+    hourly: parseVND(val('f-rm-hourly')),
     /* ★ 2026-11-05（P-103 ②）：用途只记 class / office 两种；
        老数据没有 purpose，一律当课室，不做迁移、不改旧账。 */
     purpose: val('f-rm-purpose') === 'office' ? 'office' : 'class',
