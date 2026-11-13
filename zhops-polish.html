@@ -312,7 +312,16 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-13</td>
               <td class="mono nw">11-13</td>
-              <td>VND_SEP 常量由 ',' → '.'，fmtVND() 自动切点格式；新场地/新教室的 rent / hourly 四个输入框从 type=number 改为 type=text inputmode=numeric + onblur fmtVND(parseVND(this.value))，与付费字段口径一致；parseInt(val||'0',10) 全换成 parseVND(val(...)) 保持存盘整数盾不变。新增 window.__BIZ_LOCAL_SAVE_AT__ 落盘时间戳，applyRemote() 在 remoteAt < localSaveAt 时直接 return false —— 解决「本地写完 20 名学生、1 秒后被旧云备份 st1~st12 盖回」的循环覆盖问题。线上恢复 st1~st20 + BINHTHANH 5间教室后手动触发备份到云端固化。<td>
+              <td>VND_SEP 常量由 ',' → '.'，fmtVND() 自动切点格式；新场地/新教室的 rent / hourly 四个输入框从 type=number 改为 type=text inputmode=numeric + onblur fmtVND(parseVND(this.value))，与付费字段口径一致；parseInt(val||'0',10) 全换成 parseVND(val(...)) 保持存盘整数盾不变。新增 window.__BIZ_LOCAL_SAVE_AT__ 落盘时间戳，applyRemote() 在 remoteAt < localSaveAt 时直接 return false —— 解决「本地写完 20 名学生、1 秒后被旧云备份 st1~st12 盖回」的循环覆盖问题。线上恢复 st1~st20 + BINHTHANH 5间教室后手动触发备份到云端固化。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-144c</td>
+              <td><b>主端开班申请显示教室编码 + clashOf 升级按 roomCode 精确碰撞</b><br><span style="color:#8899aa;font-size:12px">「开班申请不显示具体哪间教室」「同城市不同教室会撞车」· 审批抽屉 + 碰撞检查两处修</span></td>
+              <td class="nw">主端 · 开班申请</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-13</td>
+              <td class="mono nw">11-13</td>
+              <td>aFacts() 中「教室」行加 roomCode 展示（有编码时在市名后括号内显示）；clashOf() 第③路升级为按「城市+编码」双重匹配：有 roomCode 时只查同名编码是否时段冲突，无编码时退回原城市级逻辑兼容老数据；createApp() 把 f.roomCode 写入 DB.apps[] 使后续检查和显示都有据可依。BINHTHANH-01 / BINHTHANH-02 不再互认同一间教室，但同一编码在同一时段只能有一个班。</td>
             </tr>
           </tbody>
         </table>
