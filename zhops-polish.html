@@ -332,8 +332,224 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-13</td>
               <td>renderNewAppDrawer() 删 fld('每周哪几天', 7按钮块)；预览行改用 startDate 推导周几显示「周四 19:00–21:00」；createApp() 校验改为 if(!f.startDate) toast('请选开班日期')，现场 f.days=[String(new Date(f.startDate).getDay())]；老多日数据（days:['1','3']) 完全保留兼容。无需改其它文件，日期链路完整通往人事/财务端。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-145</td>
+              <td><b>排课引擎重构：统一「排课规则」模型，支持周循环 / 连续天 / 双周 / 自定义日期列表</b><br><span style="color:#8899aa;font-size:12px">「寒暑假密集班、企业短期培训、双周班」等场景现无法下单，需一套通用展开引擎</span></td>
+              <td class="nw">主端 · 排课核心</td>
+              <td><span class="b wait">⬜待打磨</span></td>
+              <td class="mono nw">11-13</td>
+              <td class="mono nw">—</td>
+              <td>见下方详细规划（P-145 规划文档）</td>
+            </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ P-145 详细规划文档 ============ -->
+  <div class="day-panel" data-day="P-145-plan">
+    <div class="card">
+      <h2>P-145 · 排课引擎重构 规划文档<span class="n">版本 1.0 · 2026-11-13</span><span class="sp"></span>
+        <span class="hint">状态：⬜待打磨 · 优先级：P1（寒暑假前上线）</span></h2>
+      <div class="bd" style="padding:18px; font-size:13px; line-height:1.75;">
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">1. 目标与范围</h3>
+        <p>现行「自定义课表」只支持 <b>周循环</b>（每周固定一天），无法覆盖：</p>
+        <ul style="margin:8px 0 0 20px;">
+          <li><b>连续天（密集班）</b>：寒暑假班、企业短期培训、新生入门营 —— 连上 3–15 天，每天 1–4 节</li>
+          <li><b>双周/隔周</b>：兼职教师、成人班 —— 隔周一次</li>
+          <li><b>自定义日期列表</b>：不规律排课（如仅工作日、仅特定节假日）</li>
+          <li><b>每日多时段</b>：上午 2 节 + 下午 1 节、早晚分场</li>
+        </ul>
+        <p>目标：<b>统一「排课规则」模型 + 通用展开引擎</b>，一次开发覆盖所有场景，下游（碰撞检查、课表渲染、教师端、人事/财务结算）零感知迁移。</p>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">2. 核心数据模型</h3>
+        <pre style="background:var(--surface-3); padding:12px; border-radius:6px; overflow:auto; font-size:12px;"><code>// 统一排课规则（存入 DB.scheduleRules[]，申请/班级引用 ruleId）
+interface ScheduleRule {
+  id: string;                    // 'rule_xxx'
+  name: string;                  // '周循环·周四晚' / '寒假密集班·5天'
+  type: 'weekly' | 'consecutive' | 'biweekly' | 'custom';
+  params: {
+    // --- 周循环 ---
+    days?: number[];             // [4] = 周四；[1,3,5] = 周一三五
+    // --- 连续天 ---
+    consecutiveDays?: number;    // 5
+    // --- 双周 ---
+    biweeklyOffset?: number;     // 0=本周起，1=下周起
+    // --- 自定义日期列表 ---
+    customDates?: string[];      // ['2026-01-15','2026-01-16',...]
+    // --- 通用每日时段（所有类型共用）---
+    dailySessions: Session[];    // 每天的时段数组
+  };
+  createdAt: string;
+}
+
+interface Session {
+  startTime: string;             // '09:00'
+  durationMin: number;           // 90
+  roomCode?: string;             // 可选：指定教室编码（为空=按班级 roomCode）
+  label?: string;                // '上午第1节' / '晚自习'
+}
+
+// 课次展开结果（生成后存入 DB.lessons[]，与现有 lesson 结构兼容）
+interface Lesson {
+  id: string;                    // 'c1#3'
+  cid: string;                   // 班级 ID
+  no: number;                    // 第几课
+  date: string;                  // '2026-01-15'  ← 关键：人事/财务只认这字段
+  time: string;                  // '09:00–10:30'
+  status: 'plan'|'today'|'done'|'cancel';
+  roomCode: string;              // 教室编码快照
+  teacher: string;               // 常任教师 ID
+  // 新增追溯字段
+  ruleId: string;                // 来源规则
+  sessionIndex: number;          // 当天第几个时段（0-based）
+}</code></pre>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">3. 通用展开引擎 <code>expandLessons(rule, classInfo, startNo=1)</code></h3>
+        <pre style="background:var(--surface-3); padding:12px; border-radius:6px; overflow:auto; font-size:12px;"><code>function expandLessons(rule, classInfo, startNo=1){
+  const lessons = [];
+  let no = startNo;
+  const dates = computeDates(rule, classInfo.startDate, classInfo.plannedLessons);
+  
+  dates.forEach((date, dayIdx) => {
+    rule.params.dailySessions.forEach((session, sessIdx) => {
+      lessons.push({
+        id: classInfo.id + '#' + no,
+        cid: classInfo.id,
+        no: no++,
+        date: date,
+        time: session.startTime + '–' + addMin(session.startTime, session.durationMin),
+        status: date < DB.todayDate ? 'done' : (date === DB.todayDate ? 'today' : 'plan'),
+        roomCode: session.roomCode || classInfo.roomCode || '',
+        teacher: classInfo.teacher,
+        ruleId: rule.id,
+        sessionIndex: sessIdx
+      });
+    });
+  });
+  return lessons;
+}
+
+function computeDates(rule, startDate, maxLessons){
+  const dates = [];
+  const d = new Date(startDate + 'T00:00:00');
+  
+  switch(rule.type){
+    case 'weekly':
+      const targetDays = rule.params.days.map(Number).sort((a,b)=>a-b); // [1,3,4]
+      while(dates.length * rule.params.dailySessions.length < maxLessons){
+        if(targetDays.includes(d.getDay())){
+          dates.push(formatDate(d));
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      break;
+      
+    case 'consecutive':
+      for(let i=0; i<rule.params.consecutiveDays; i++){
+        const dd = new Date(d);
+        dd.setDate(d.getDate() + i);
+        dates.push(formatDate(dd));
+      }
+      break;
+      
+    case 'biweekly':
+      const targetDay = rule.params.days?.[0] || d.getDay();
+      const offset = rule.params.biweeklyOffset || 0;
+      // 先找到第一个目标周几
+      while(d.getDay() !== targetDay) d.setDate(d.getDate() + 1);
+      d.setDate(d.getDate() + offset * 7);
+      while(dates.length * rule.params.dailySessions.length < maxLessons){
+        dates.push(formatDate(d));
+        d.setDate(d.getDate() + 14);
+      }
+      break;
+      
+    case 'custom':
+      dates.push(...(rule.params.customDates || []).slice(0, Math.ceil(maxLessons/rule.params.dailySessions.length)));
+      break;
+  }
+  return dates.slice(0, Math.ceil(maxLessons/rule.params.dailySessions.length));
+}</code></pre>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">4. 碰撞检查升级 <code>clashOf(rule, classInfo, excludeLessonId?)</code></h3>
+        <p>现行只查「同教师同 slot」/「同教室同 slot」。新引擎需查 <b>日期级精确碰撞</b>：</p>
+        <ul style="margin:8px 0 0 20px;">
+          <li>教师碰撞：同一教师在 <b>同一天同一时段</b> 已有课（含不同 rule 生成的课次）</li>
+          <li>教室碰撞：同一 <code>roomCode</code> 在 <b>同一天同一时段</b> 已有课</li>
+          <li>按 <code>lesson.date + lesson.time + lesson.roomCode</code> 三键精确匹配</li>
+          <li>支持「排除某课次」用于编辑/移动课次</li>
+        </ul>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">5. UI 变更（新建/编辑开班申请抽屉）</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;">
+          <thead><tr style="background:var(--surface-2);"><th style="padding:8px 12px; border:1px solid var(--line); width:25%;">字段</th><th style="padding:8px 12px; border:1px solid var(--line);">现行</th><th style="padding:8px 12px; border:1px solid var(--line);">新版</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">排课模式</td><td style="padding:8px 12px; border:1px solid var(--line);">隐式（仅周循环）</td><td style="padding:8px 12px; border:1px solid var(--line);"><b>显式单选</b>：周循环 / 连续天 / 双周 / 自定义日期</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">周循环配置</td><td style="padding:8px 12px; border:1px solid var(--line);">开班日期 → 自动推导周几</td><td style="padding:8px 12px; border:1px solid var(--line);">保留「开班日期」+ 可选「勾选周几」（默认=开班日期对应周几）</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">连续天配置</td><td style="padding:8px 12px; border:1px solid var(--line);">—</td><td style="padding:8px 12px; border:1px solid var(--line);">连续天数 [5]、每日时段列表（可增删行：开始时间/时长/教室编码）</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">双周配置</td><td style="padding:8px 12px; border:1px solid var(--line);">—</td><td style="padding:8px 12px; border:1px solid var(--line);">开班日期 + 周几 + 偏移（本周/下周起）</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">自定义日期</td><td style="padding:8px 12px; border:1px solid var(--line);">—</td><td style="padding:8px 12px; border:1px solid var(--line);">日期选择器（多选）或粘贴日期列表</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">每日时段</td><td style="padding:8px 12px; border:1px solid var(--line);">单行：开始时间/时长</td><td style="padding:8px 12px; border:1px solid var(--line);"><b>可变行数组</b>：每行=一个时段，支持上午/下午/晚自习多时段</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">预览</td><td style="padding:8px 12px; border:1px solid var(--line);">单行「周四 19:00–21:00」</td><td style="padding:8px 12px; border:1px solid var(--line);">日历视图：高亮所有上课日期，悬浮显示当天时段列表</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">6. 迁移与兼容策略</h3>
+        <ol style="margin:8px 0 0 20px;">
+          <li><b>存量申请/班级</b>：无 ruleId，继续走旧 <code>slot.days</code> 逻辑（兼容层自动包装为 <code>type:'weekly', days:slot.days</code>）</li>
+          <li><b>存量课次</b>：<code>lesson.ruleId</code> 为空，碰撞检查按旧 <code>slotId</code> 兼容</li>
+          <li><b>新建申请</b>：必须选规则类型，生成 ruleId，<code>approveApp()</code> 调用 <code>expandLessons()</code> 写 <code>DB.lessons[]</code></li>
+          <li><b>教师端/课表矩阵</b>：只读 <code>DB.lessons[]</code>，完全兼容（字段不变，只多了 ruleId/sessionIndex）</li>
+          <li><b>人事/财务</b>：只认 <code>lesson.date</code> + <code>lesson.status==='done'</code>，零影响</li>
+        </ol>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">7. 实施步骤与验收</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;">
+          <thead><tr style="background:var(--surface-2);"><th style="padding:8px 12px; border:1px solid var(--line); width:8%;">步骤</th><th style="padding:8px 12px; border:1px solid var(--line);">任务</th><th style="padding:8px 12px; border:1px solid var(--line); width:12%;">产出</th><th style="padding:8px 12px; border:1px solid var(--line); width:12%;">验收</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">1</td><td style="padding:8px 12px; border:1px solid var(--line);">新增 <code>DB.scheduleRules[]</code> + <code>expandLessons()</code> + <code>computeDates()</code> 核心引擎（纯函数，可单测）</td><td style="padding:8px 12px; border:1px solid var(--line);">zhops-admin.html 新增 ~200 行</td><td style="padding:8px 12px; border:1px solid var(--line);">Node 单测：4 类型 × 3 参数组合 = 12 组展开结果逐字对齐</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">2</td><td style="padding:8px 12px; border:1px solid var(--line);">新增 <code>clashOfV2(rule, classInfo)</code> 日期级碰撞检查，并行跑新旧双版本对比</td><td style="padding:8px 12px; border:1px solid var(--line);">zhops-admin.html 替换 <code>clashOf</code></td><td style="padding:8px 12px; border:1px solid var(--line);">探针：教师/教室碰撞 100% 命中、无误报、老数据回归 0 失败</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">3</td><td style="padding:8px 12px; border:1px solid var(--line);"><code>renderNewAppDrawer()</code> 重写：规则类型单选 + 动态配置区 + 日历预览</td><td style="padding:8px 12px; border:1px solid var(--line);">UI 完整可用</td><td style="padding:8px 12px; border:1px solid var(--line);">手工测：4 类型各建 1 班 → 审批通过 → 课次日期/时段/教室全对</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">4</td><td style="padding:8px 12px; border:1px solid var(--line);"><code>approveApp()</code> 接入 <code>expandLessons()</code>，写 <code>lesson.ruleId/sessionIndex</code></td><td style="padding:8px 12px; border:1px solid var(--line);">建班流程打通</td><td style="padding:8px 12px; border:1px solid var(--line);">端到端：申请→审批→建班→教师端见课次→点名 done → 人事拉取 → 财务结算</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">5</td><td style="padding:8px 12px; border:1px solid var(--line);">教师端课表矩阵渲染优化（支持同一天多时段显示）</td><td style="padding:8px 12px; border:1px solid var(--line);">zhops-teacher.html 同步</td><td style="padding:8px 12px; border:1px solid var(--line);">三端截图无横向溢出、点名/推进正常</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">6</td><td style="padding:8px 12px; border:1px solid var(--line);">全套探针回归 + 反向控制 + 线上发布</td><td style="padding:8px 12px; border:1px solid var(--line);">53 条全绿</td><td style="padding:8px 12px; border:1px solid var(--line);">线上 SHA 一致、无头 Chrome 零报错</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">8. 风险与对策</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;">
+          <thead><tr style="background:var(--surface-2);"><th style="padding:8px 12px; border:1px solid var(--line); width:30%;">风险</th><th style="padding:8px 12px; border:1px solid var(--line);">对策</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">展开引擎 bug 导致课次日期错乱</td><td style="padding:8px 12px; border:1px solid var(--line);">纯函数 + 详尽单测（含跨月、跨年、闰年、夏令时边界）；<code>lesson.date</code> 为唯一真相源</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">碰撞检查漏判（教室双订）</td><td style="padding:8px 12px; border:1px solid var(--line);">新旧双版本并行跑 1 周，日志对比；反向控制造数据强制触发碰撞</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">教师端渲染性能（同天多时段）</td><td style="padding:8px 12px; border:1px solid var(--line);">矩阵按 <code>date+time</code> 分桶渲染，单天最多 4 时段，DOM 增量 < 5%</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">老申请编辑时规则类型不匹配</td><td style="padding:8px 12px; border:1px solid var(--line);">编辑老申请时锁定为「周循环」模式，不提供类型切换；只能改参数</td></tr>
+            <tr><td style="padding:8px 12px; border:1px solid var(--line);">人事端 <code>pullDoneRecords</code> 兼容性</td><td style="padding:8px 12px; border:1px solid var(--line);">人事端只读 <code>lesson.date/status</code>，完全兼容；新增字段只读不写</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">9. 预估工期</h3>
+        <ul style="margin:8px 0 0 20px;">
+          <li>核心引擎 + 单测：0.5 天</li>
+          <li>碰撞检查重写 + 探针：0.5 天</li>
+          <li>UI 重写（抽屉 + 日历预览）：1 天</li>
+          <li>建班流程接入 + 端到端联调：0.5 天</li>
+          <li>教师端同步 + 全套回归：0.5 天</li>
+          <li><b>合计：~3 天</b>（可拆分为 2 个 PR：引擎层 / UI层）</li>
+        </ul>
+
+        <h3 style="margin:20px 0 10px; font-size:15px; color:var(--navy);">10. 关键决策待确认</h3>
+        <ol style="margin:8px 0 0 20px;">
+          <li><b>每日时段上限</b>：建议最多 4 个（早/午/晚/夜），超出需拆分多个班</li>
+          <li><b>连续天数上限</b>：建议 15 天（寒暑假最长），防止一次性生成过多课次</li>
+          <li><b>教室编码是否按时段可变</b>：当前设计支持 <code>session.roomCode</code> 覆盖班级 <code>roomCode</code>，确认是否需要</li>
+          <li><b>双周偏移</b>：是否需要「指定首课日期」而非「本周/下周起」？</li>
+          <li><b>自定义日期列表导入</b>：是否需要 Excel/CSV 粘贴导入，还是仅手工多选？</li>
+        </ol>
+
       </div>
     </div>
   </div>
