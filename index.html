@@ -4228,11 +4228,21 @@ function clashOf(a){
   /* ② 已经有通过的申请占了同一位教师的同一时段 */
   const ta = DB.apps.find(x => x !== a && x.state === '已通过' && x.slot === a.slot && x.teacher === a.teacher);
   if (ta) return {kind:'clash', hit:null, what:'app', app:ta};
-  /* ③ 线下教室碰撞：线上课不占教室，只有线下才查（课室总数待 Tony 提供） */
+  /* ③ 线下教室碰撞：线上课不占教室，只有线下才查。
+     ★ 2026-11-13（P-???）：升级为按「城市 + 编码」双重精确匹配 ——
+       同一城市的不同教室（BINHTHANH-01 / BINHTHANH-02）互不影响；
+       但同一编码在同一时段只能有一个班。 */
   const room = roomOf(a);
   if (a.mode === 'offline' && room){
-    const rc = DB.classes.find(c => c.mode === 'offline' && c.slot === a.slot && c.room && c.room === room);
-    if (rc) return {kind:'room', hit:rc, what:'class'};
+    /* 有具体编码 → 按编码精确查；没编码 → 退回城市级（兼容老数据） */
+    const code = a.roomCode || '';
+    if (code){
+      const rc = DB.classes.find(c => c.mode === 'offline' && c.slot === a.slot && c.roomCode === code);
+      if (rc) return {kind:'room', hit:rc, what:'class'};
+    } else {
+      const rc = DB.classes.find(c => c.mode === 'offline' && c.slot === a.slot && c.room && c.room === room);
+      if (rc) return {kind:'room', hit:rc, what:'class'};
+    }
   }
   return null;
 }
@@ -4309,7 +4319,7 @@ function aFacts(o){
     kv('形态', modeTag(o.mode))+
     kv('时段', esc(sl.name)+' <span class="lbl">'+esc(sl.time)+' · '+esc(sl.days)+'</span>')+
     kv('教室', o.mode==='offline'
-        ? (o.room ? esc(o.room) : '<span class="tg bad">未填</span>')
+        ? (o.room ? esc(o.room) + (o.roomCode ? ' <span class="lbl">（'+esc(o.roomCode)+'）</span>' : '') : '<span class="tg bad">未填</span>')
         : '<span class="lbl">线上课 · 不占教室</span>')+
     kv('学生数', (o.roster && o.roster.length)
         ? '<span class="mono">'+o.roster.length+'</span> <span class="lbl">按名单 · 申请时填 '+o.n+'</span>'
@@ -4330,14 +4340,14 @@ function aCheck(o){
       '。请驳回，并给对方一个空档时段的建议。</div>';
   }
   if (cl && cl.kind === 'room'){
+    const hitRoom = cl.hit ? (esc(cl.hit.name)+' '+esc(cl.hit.code)) : '其他班';
+    const roomLabel = a.roomCode ? '教室 <b>'+esc(a.roomCode)+'</b>' : '教室 <b>'+esc(roomOf(a))+'</b>';
     return '<div class="a-clash"><b>⛔ 线下课室已被占用 · 不能通过</b><br>'+
-      '教室 <b>'+esc(roomOf(o))+'</b> 在 <b>'+esc(S(o.slot).name)+' '+esc(S(o.slot).time)+'</b> 已经被 '+
-      (cl.hit ? esc(cl.hit.name)+' '+esc(cl.hit.code) : '其他班')+' 占用。'+
-      '<span class="lbl">（线上课不占教室；课室总数待补）</span></div>';
+      roomLabel+' 在 <b>'+esc(S(a.slot).name)+' '+esc(S(a.slot).time)+'</b> 已经被 '+hitRoom+' 占用。</div>';
   }
   let s = '<div class="a-ok"><b>✓ 系统检查通过</b> —— 教师时间没有碰撞'+
     (o.mode==='offline'
-      ? '，教室 <b>'+esc(roomOf(o)||'—')+'</b> 在这个时段也空着。'
+      ? '，教室 <b>'+esc(roomOf(o)||'—')+(o.roomCode?' ('+esc(o.roomCode)+')':'')+'</b> 在这个时段也空着。'
       : '（线上课不占教室）。')+'</div>';
   if (o.n < DB.set.minOpen)
     s += '<div class="a-warn"><b>人数参考</b> —— 现在 '+o.n+' 人，低于开班门槛 '+DB.set.minOpen+
@@ -4625,6 +4635,7 @@ function createApp(){
     stage: stageOf(1), lesson: 1,
     mode: f.mode, slot: slotId,
     room: finalRoom,                      /* 市名 = 开班名 */
+    roomCode: f.roomCode || '',           /* ★ P-???：具体教室编码随申请落地，碰撞检查和显示都靠它 */
     n: n,
     roster: roster,
     plannedLessons: lvTotal(f.lv),
