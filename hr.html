@@ -1900,6 +1900,34 @@ function vndInput(dataK, raw, ph, wCls){
            '<i class="vnd-u">₫</i>'+
          '</span>';
 }
+/* ★ 合同表单：计价方式互斥 —— 选「月薪」只能填月薪，选「课时费」只能填课时单价 */
+function togglePayFields(sel, idx){
+  var val = sel.value;                    // "月薪" 或 "课时费"
+  var row = sel.closest('.con-open');     // 当前合同的展开行
+  if(!row) return;
+  var salaryInp = row.querySelector('[data-k="contract.'+idx+'.salary"]');
+  var rateInp   = row.querySelector('[data-k="contract.'+idx+'.rate"]');
+  var salaryLock = row.querySelector('.pay-lock-salary');
+  var rateLock   = row.querySelector('.pay-lock-rate');
+  if(!salaryInp || !rateInp) return;
+
+  if(val === '月薪'){
+    salaryInp.disabled = false; salaryInp.style.opacity = '1';
+    rateInp.disabled = true;  rateInp.style.opacity = '0.4'; rateInp.value = '';
+    if (salaryLock) salaryLock.style.display = 'none';
+    if (rateLock) rateLock.style.display = 'block';
+  }else{ // "课时费"
+    salaryInp.disabled = true;  salaryInp.style.opacity = '0.4'; salaryInp.value = '';
+    rateInp.disabled = false; rateInp.style.opacity = '1';
+    if (salaryLock) salaryLock.style.display = 'block';
+    if (rateLock) rateLock.style.display = 'none';
+  }
+  /* 触发 change 让 VND 格式化跑一下、并存盘 */
+  salaryInp.dispatchEvent(new Event('change', {bubbles:true}));
+  rateInp.dispatchEvent(new Event('change', {bubbles:true}));
+}
+/* 暴露给全局，供 onchange 调用（IIFE 内部函数默认不可见） */
+window.togglePayFields = togglePayFields;
 function money(n){
   n = Number(n);
   if(!isFinite(n)) return '0';
@@ -2307,11 +2335,11 @@ function renderCon(){
           '<div>'+
             '<div class="csec-h">定价 <b>合同是唯一定价出口</b></div>'+
             '<div class="cgrid">'+
-              fld('计价方式', '<select data-k="'+K+'payType">'+
+              fld('计价方式', '<select data-k="'+K+'payType" onchange="togglePayFields(this,'+i+')">'+
                 ['月薪','课时费'].map(function(x){return '<option'+(c.payType===x?' selected':'')+'>'+x+'</option>';}).join('')+
                 '</select>')+
-              fld('月薪（约定）', vndInput(K+'salary', c.salary, '12,000,000'))+
-              fld('课时单价', vndInput(K+'rate', c.rate||'', '1,000,000'))+
+              fld('月薪（约定）', vndInput(K+'salary', c.salary, '12,000,000') + (c.payType==='课时费'?'<span class="pay-lock pay-lock-salary" style="display:block;margin-top:4px;color:var(--bad);font-size:11px">已锁定：选「课时费」时不可填月薪</span>':'<span class="pay-lock pay-lock-salary" style="display:none;margin-top:4px;color:var(--bad);font-size:11px">已锁定：选「课时费」时不可填月薪</span>'))+
+              fld('课时单价', vndInput(K+'rate', c.rate||'', '1,000,000') + (c.payType==='月薪'?'<span class="pay-lock pay-lock-rate" style="display:block;margin-top:4px;color:var(--bad);font-size:11px">已锁定：选「月薪」时不可填课时单价</span>':'<span class="pay-lock pay-lock-rate" style="display:none;margin-top:4px;color:var(--bad);font-size:11px">已锁定：选「月薪」时不可填课时单价</span>'))+
             '</div>'+
           '</div>'+
 
@@ -2919,14 +2947,19 @@ function kv(k, v){ return '<span class="k">'+esc(k)+'</span><span>'+esc(v || '�
 function fileHTML(eid){
   var e = empById(eid);
   if(!e) return '<div class="fcard">这个人找不到了</div>';
+  /* ★ 从合同关联读 5 项（合同是唯一录入口，档案页只读展示） */
+  var con = S.contract.find(function(x){ return x.eid === eid; });
   var h = '';
 
   h += '<div class="fcard"><h4>基本信息</h4><div class="dr-kv">'+
        kv('工号', e.code)+kv('岗位', e.role)+kv('部门', e.dept)+kv('入职日', e.start)+
        kv('状态', e.status)+kv('电话', e.phone)+kv('住址', e.addr)+
        kv('紧急联系人姓名', e.ecName)+kv('紧急联系人电话', e.ecPhone)+kv('排课ID', e.zhopsTid)+kv('备注', e.note)+
-       kv('合同类型', e.contractType)+kv('国籍', e.nat)+kv('语言', e.lang)+
-       kv('资历', e.exp)+kv('课时单价', e.rate ? money(e.rate) + ' ₫' : '')+
+       kv('合同类型', (con && con.type) || e.contractType || '—')+
+       kv('国籍', (con && con.nat) || e.nat || '—')+
+       kv('语言', (con && con.lang) || e.lang || '—')+
+       kv('资历', (con && con.exp) || e.exp || '—')+
+       kv('课时单价', (con && con.rate ? money(con.rate) + ' ₫' : (e.rate ? money(e.rate) + ' ₫' : '—')))+
        (e.profilePending ? kv('资料', '待补 · 见合同页') : '')+
        '</div></div>';
 

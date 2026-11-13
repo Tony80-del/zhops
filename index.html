@@ -1067,6 +1067,12 @@ function load(){
   /* ★ 全部校验都过了才算「真的用上了存盘」—— 半路 return null 的不能算 */
   loadedFromStore = true;
   lastSavedAt = at;
+  /* ★ 2026-11-12：只保留业务端同步的 20 位（st1-st20），清理残留脏数据 */
+  const keepIds = new Set(['st1','st2','st3','st4','st5','st6','st7','st8','st9','st10',
+                           'st11','st12','st13','st14','st15','st16','st17','st18','st19','st20']);
+  if (Array.isArray(o.students)) {
+    o.students = o.students.filter(s => keepIds.has(s.id));
+  }
   /* 剥元数据 + 补标量交给 normalizeDB —— 和「导入备份」走同一条路，口径不会漂 */
   return normalizeDB(o);
 }
@@ -2703,10 +2709,13 @@ function hrTeacherRoster(){
     if (!tid) return;                                  /* 还没发号 → 不进主端 */
     if (seen[tid]){ dupes.push(tid); return; }         /* 撞号：只认第一个，不静默覆盖 */
     seen[tid] = true;
-    /* ★ P-143：教师资料 7 项一并带出。emp 是唯一来源，主端绝不直接读 contract。 */
+    /* ★ P-143 / P-144：教师资料 10 项一并带出。emp 是唯一来源，主端绝不直接读 contract。 */
     list.push({ id:tid, name:String(e.zh || '').trim() || tid,
                 active:String(e.status || '') !== '离职', role:role,
                 phone:String(e.phone || '').trim(),
+                addr:String(e.addr || '').trim(),
+                ecName:String(e.ecName || '').trim(),
+                ecPhone:String(e.ecPhone || '').trim(),
                 nat:String(e.nat || '').trim(),
                 lang:String(e.lang || '').trim(),
                 exp:String(e.exp || '').trim(),
@@ -2730,9 +2739,12 @@ function mergeHRTeachers(){
     t.fromHR = true;
     t.hrRole = h.role;
     t.state  = h.active ? '正常' : '已停用';
-    /* ★ P-143：人事端合同里的 7 项资料。**空值不覆盖** —— 合同还没填齐时
+    /* ★ P-143 / P-144：人事端合同里的 10 项资料。**空值不覆盖** —— 合同还没填齐时
        不抹掉主端已有值；单价洗成数字（人事端存的是纯整数盾字符串）。 */
     if (h.phone) t.tel = h.phone;
+    if (h.addr)  t.addr = h.addr;
+    if (h.ecName) t.ecName = h.ecName;
+    if (h.ecPhone) t.ecPhone = h.ecPhone;
     if (h.nat)   t.nat = h.nat;
     if (h.lang)  t.lang = h.lang;
     if (h.exp)   t.exp = h.exp;
@@ -3728,6 +3740,8 @@ function tView(o){
     kv('类型', ownTag(o.src))+
     kv('合同类型', esc(o.contractType || '—'))+
     kv('联系方式', '<span class="mono">'+esc(o.tel)+'</span>')+
+    kv('住址', esc(o.addr || '—'))+
+    kv('紧急联系人', esc(o.ecName || '—') + (o.ecPhone ? ' ('+esc(o.ecPhone)+')' : ''))+
     /* ★ P-143：国籍 / 语言拆两列，跟人事端合同的两格一一对应 */
     kv('国籍', esc(o.nat || '—'))+
     kv('语言', esc(o.lang || '—'))+
@@ -3869,14 +3883,14 @@ function repaintCityPicks(){
     }
   }
 }
-/* ★ P-143（Tony 拍板只读）：人事端合同拥有的 7 项在本端只显示、不能改。
+/* ★ P-143 / P-144（Tony 拍板只读）：人事端合同拥有的 10 项在本端只显示、不能改。
    data-hr-ro 是给越南语层用的护罩 —— 主端 viSwap 是子串替换，
    不挡会把姓名 / 语言里的中文词啃掉。没有 data-d-inp，saveEdit() 也就不会写回。 */
 function hrRo(label, f, v){
   return fld(label, '<div class="hr-ro" data-hr-ro="'+f+'">'+esc(v == null ? '' : String(v))+'</div>');
 }
 function tEdit(m){
-  return '<div class="a-warn" style="margin:0 0 12px"><b>姓名 / 类型 / 联系方式 / 国籍 / 语言 / 资历 / 单价 由人事端合同维护</b> —— 本端只读，这里只改排课字段。</div>'+
+  return '<div class="a-warn" style="margin:0 0 12px"><b>姓名 / 类型 / 联系方式 / 住址 / 紧急联系人 / 国籍 / 语言 / 资历 / 合同类型 / 单价 由人事端合同维护</b> —— 本端只读，这里只改排课字段。</div>'+
     hrRo('姓名', 'name', m.name)+
     '<div class="g2">'+
       hrRo('类型', 'src', m.src === 'out' ? '外包' : '自有')+
@@ -3884,12 +3898,17 @@ function tEdit(m){
     '</div>'+
     '<div class="g2">'+
       hrRo('联系方式', 'tel', m.tel)+
-      hrRo('资历', 'exp', m.exp)+
+      hrRo('住址', 'addr', m.addr)+
+    '</div>'+
+    '<div class="g2">'+
+      hrRo('紧急联系人', 'ecName', m.ecName)+
+      hrRo('紧急电话', 'ecPhone', m.ecPhone)+
     '</div>'+
     '<div class="g2">'+
       hrRo('国籍', 'nat', m.nat)+
       hrRo('语言', 'lang', m.lang)+
     '</div>'+
+    hrRo('资历', 'exp', m.exp)+
     fld('可授级别', picks('levels', m.levels, ['HSK1','HSK2','HSK3']))+
     fld('可授课时段', slotPicks('slots', m.slots))+
     fld('教室（省份）', roomPicks(m.room))+
@@ -3986,6 +4005,7 @@ function blankTeacher(){
   return {
     name:'', src:'own', tel:'', nat:'', lang:'', exp:'',
     contractType:'', hrIncomplete:false,
+    addr:'', ecName:'', ecPhone:'',   /* ★ P-144：人事端 3 项额外资料 */
     levels:[], slots:[], rate:0, rateUnit:'session',
     perfScore:3, perfNote:'', note:'',
     room:'',   /* 教师选的教室（省份，独占互斥） */

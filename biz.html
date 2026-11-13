@@ -1141,7 +1141,27 @@ function seed(){
   ];
   S.students = [
     /* ★ 2026-11-02（P-93）：编号统一成主端的 st 格式 —— 两边对得上，出勤才算得出来 */
-    { id:'st1', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'0901234567', level:'HSK3', enrollDate:'2026-10-16', pkg:'hsk3', paid:10000000, status:'在读' },
+    { id:'st1', name:'Nguyễn Văn A', type:'学生', source:'Zalo', refBy:'', contact:'0901234567', level:'HSK1', enrollDate:'2026-10-16', pkg:'hsk1', paid:10000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st2', name:'Cheong', type:'学生', source:'朋友介绍', refBy:'', contact:'', level:'HSK1', enrollDate:'2026-10-17', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st3', name:'Tu', type:'学生', source:'Facebook', refBy:'', contact:'090987654', level:'HSK1', enrollDate:'2026-10-18', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st4', name:'tom', type:'学生', source:'TikTok', refBy:'', contact:'09876543', level:'HSK1', enrollDate:'2026-10-19', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st5', name:'Tuyen', type:'学生', source:'讲座会', refBy:'', contact:'', level:'HSK1', enrollDate:'2026-10-20', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st6', name:'Nguyen minh', type:'学生', source:'Wechat', refBy:'', contact:'09887878', level:'HSK1', enrollDate:'2026-10-21', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
+    { id:'st7', name:'Tran', type:'白领', source:'TikTok', refBy:'', contact:'', level:'HSK1', enrollDate:'2026-10-22', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
+    { id:'st8', name:'Tuan', type:'白领', source:'Zalo', refBy:'', contact:'898765443', level:'HSK1', enrollDate:'2026-10-23', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st9', name:'Tri', type:'学生', source:'Facebook', refBy:'', contact:'90987654', level:'HSK1', enrollDate:'2026-10-24', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st10', name:'Quan', type:'白领', source:'Wechat', refBy:'', contact:'890765432', level:'HSK1', enrollDate:'2026-10-25', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st11', name:'Thang', type:'白领', source:'Zalo', refBy:'', contact:'980765678', level:'HSK1', enrollDate:'2026-10-26', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st12', name:'Phuong', type:'白领', source:'Zalo', refBy:'', contact:'890876543', level:'HSK1', enrollDate:'2026-10-27', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
+    /* ★ 2026-11-12 新增 8 位：4线下 + 4线上，统一 HSK1 完整包、已缴 3,000,000 */
+    { id:'st13', name:'阮文南', type:'学生', source:'Zalo', refBy:'', contact:'0912345678', level:'HSK1', enrollDate:'2026-11-13', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st14', name:'陈氏兰', type:'白领', source:'朋友介绍', refBy:'', contact:'0923456789', level:'HSK1', enrollDate:'2026-11-13', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st15', name:'黎明勇', type:'学生', source:'Facebook', refBy:'', contact:'0934567890', level:'HSK1', enrollDate:'2026-11-14', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st16', name:'范氏花', type:'白领', source:'TikTok', refBy:'', contact:'0945678901', level:'HSK1', enrollDate:'2026-11-14', pkg:'hsk1', paid:3000000, status:'在读', mode:'offline', preferRoom:'' },
+    { id:'st17', name:'武文上', type:'学生', source:'Wechat', refBy:'', contact:'0956789012', level:'HSK1', enrollDate:'2026-11-15', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
+    { id:'st18', name:'邓氏春', type:'白领', source:'讲座会', refBy:'', contact:'0967890123', level:'HSK1', enrollDate:'2026-11-15', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
+    { id:'st19', name:'胡文安', type:'学生', source:'Zalo', refBy:'', contact:'0978901234', level:'HSK1', enrollDate:'2026-11-16', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
+    { id:'st20', name:'吴氏平', type:'白领', source:'朋友介绍', refBy:'', contact:'0989012345', level:'HSK1', enrollDate:'2026-11-16', pkg:'hsk1', paid:3000000, status:'在读', mode:'online', preferRoom:'' },
   ];
   S.billing = [
     { id:'B-001', sid:'st1', sname:'Nguyễn Văn A', pkg:'HSK3 备考包（含考试费）', total:10000000, paid:5000000, method:'分期', plan:'分2期：5M + 5M', dueDate:'2026-12-01', status:'进行中' },
@@ -1161,7 +1181,7 @@ function seed(){
   S.events = [
     { id:'E-001', name:'免费中文体验课', type:'线下体验课', date:'2026-10-28', loc:'胡志明市 District 1', reg:25, att:18, conv:4, cost:1500000, note:'到场率 72%，现场转化 22%' },
   ];
-  S.seq = { lead:6, stu:2, bill:2, res:3, cmp:3, ast:3, evt:2 };
+  S.seq = { lead:6, stu:21, bill:2, res:3, cmp:3, ast:3, evt:2 };
   save();
 }
 
