@@ -323,6 +323,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-13</td>
               <td>aFacts() 中「教室」行加 roomCode 展示（有编码时在市名后括号内显示）；clashOf() 第③路升级为按「城市+编码」双重匹配：有 roomCode 时只查同名编码是否时段冲突，无编码时退回原城市级逻辑兼容老数据；createApp() 把 f.roomCode 写入 DB.apps[] 使后续检查和显示都有据可依。BINHTHANH-01 / BINHTHANH-02 不再互认同一间教室，但同一编码在同一时段只能有一个班。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-144d</td>
+              <td><b>主端新建开班申请：周几按钮改为「开班日期」单日自动推导</b><br><span style="color:#8899aa;font-size:12px">「选开班日期（如 08/10/2026）→ 自动得知周四 → 每周四上课」· 删 7 个周几按钮、startDate 必填、createApp() 现场推导 f.days=[getDay()]</span></td>
+              <td class="nw">主端 · 开班申请</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-13</td>
+              <td class="mono nw">11-13</td>
+              <td>renderNewAppDrawer() 删 fld('每周哪几天', 7按钮块)；预览行改用 startDate 推导周几显示「周四 19:00–21:00」；createApp() 校验改为 if(!f.startDate) toast('请选开班日期')，现场 f.days=[String(new Date(f.startDate).getDay())]；老多日数据（days:['1','3']) 完全保留兼容。无需改其它文件，日期链路完整通往人事/财务端。</td>
+            </tr>
           </tbody>
         </table>
       </div>
