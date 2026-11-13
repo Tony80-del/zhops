@@ -437,7 +437,7 @@
 <div class="header">
   <div>
     <h1>系统生态地图</h1>
-    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-10-31 深夜</b>（按源码核对，不按计划）· 决策 <b>11 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b></div>
+    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-11-12</b>（按源码核对，不按计划）· 决策 <b>11 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b> · <b>P-144 主端单入口 / 人事 10 项同步 / 计价互斥</b></div>
   </div>
   <div class="meter">
     <div class="row"><span>系统建成</span><span>2 / 5 · 财务 + 人事骨架已建</span></div>
@@ -689,11 +689,11 @@
     <div class="ov-sys zhops built">
       <div class="ov-s-name">排课系统（三端）</div>
       <div class="ov-s-file">zhops/ · 3 个 html</div>
-      <div class="ov-s-status"><span class="badge b-ok">已建</span> <span class="badge b-bad">1 端孤立</span></div>
+      <div class="ov-s-status"><span class="badge b-ok">已建</span> <span class="badge b-ok">P-144 人事 10 项同步</span></div>
       <div class="ov-triple">
-        <span class="ov-tri isolated">主端 index<br><em>不连云 · 孤立</em></span>
-        <span class="ov-tri synced">教师端 teacher<br><em>连云</em></span>
-        <span class="ov-tri synced">管理端 admin<br><em>连云</em></span>
+        <span class="ov-tri synced">主端 / (根地址)<br><em>已连云 · fsPullMain/fsPushMain</em></span>
+        <span class="ov-tri synced">教师端 teacher<br><em>连云 · 分片读写</em></span>
+        <span class="ov-tri synced">管理端 admin<br><em>重定向到 / · 连云</em></span>
       </div>
     </div>
 
@@ -879,12 +879,13 @@
     <div class="left">
       <span class="sys-tag">执行层</span>
       <span class="sys-name">排课系统（zhops · 含教师端 / 主端 / 管理端）</span>
-      <span class="sys-sub">三端共用 zhops/master · 2026-10-31 三端已上线上</span>
+      <span class="sys-sub">三端共用 zhops/master · 2026-11-12 P-144：主端单入口 / 人事 10 项同步 / 计价互斥已上线</span>
     </div>
     <div class="right">
       <span class="status-badge s-ok">已建</span>
       <span class="status-badge s-ok">记账已统一 · 主端已上云</span>
-      <span class="status-badge s-warn">剩 2 个断点</span>
+      <span class="status-badge s-ok">P-144 人事 10 项同步完成</span>
+      <span class="status-badge s-warn">剩 1 个断点</span>
       <span class="toggle">▶</span>
     </div>
   </div>
@@ -894,14 +895,16 @@
       <div class="field-value multi" style="line-height:1.9;">
         <div><b>主端</b>（排课引擎 · 现行）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">docs/zhops-admin.html</span></a></div>
-        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a></div>
-        <div style="padding-left:14px; color:var(--hint);">⚠️ 同一份源文件发布成<b>两个</b>线上文件名：<span class="loc">admin.html</span> 和根地址 <span class="loc">index.html</span>。</div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/"><span class="loc">https://tony80-del.github.io/zhops/</span></a>
+          <span class="status-badge s-ok" style="font-size:10px;">唯一入口</span></div>
+        <div style="padding-left:14px; color:var(--hint);">⚠️ <b>/admin.html 现为重定向页</b> → 自动跳转到 <span class="loc">/</span>（2026-11-12 P-144 发布后）。旧双文件名机制已废止。</div>
         <div style="margin-top:8px;"><b>教师端</b>（老师手机上开的就是这个）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-teacher.html</span></a></div>
         <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/teacher.html"><span class="loc">https://tony80-del.github.io/zhops/teacher.html</span></a></div>
         <div style="margin-top:8px;"><b>管理端</b>（主控 · 审批 / 配置 / 结算）</div>
         <div style="padding-left:14px;">本地　<a href="file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html"><span class="loc">file:///Users/tonycheong/Desktop/ZH-System/docs/zhops-admin.html</span></a></div>
-        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a></div>
+        <div style="padding-left:14px;">线上　<a href="https://tony80-del.github.io/zhops/admin.html"><span class="loc">https://tony80-del.github.io/zhops/admin.html</span></a>
+          <span style="color:var(--hint);">（重定向到 /）</span></div>
         <div style="margin-top:8px; color:var(--hint);">
           <b>「已同步」怎么核的</b>：跑 <span class="loc">sh build/verify.sh</span>，把线上页面下载回来逐个比对 sha256 —— 与本地<b>完全一致</b>才算过（不是看 push 成功）。
         </div>
@@ -912,7 +915,7 @@
       <div class="triple-grid">
         <div class="triple-item">
           <div class="ti-label">主端 · 已连云</div>
-          <div class="ti-name">index.html</div>
+          <div class="ti-name">/ （根地址）</div>
           <div class="ti-path">本机 zhops.sched.v3</div>
           <div class="ti-tag synced">fsPullMain / fsPushMain ⇄ zhops/master</div>
           <div class="ti-path" style="margin-top:4px; color:var(--hint);">171 KB · 排课 / 数据 / 结算 / 成员</div>
@@ -926,7 +929,7 @@
         </div>
         <div class="triple-item">
           <div class="ti-label">管理端 · 连云</div>
-          <div class="ti-name">admin.html</div>
+          <div class="ti-name">admin.html → 重定向到 /</div>
           <div class="ti-path">本机 zhops.sched.v3</div>
           <div class="ti-tag synced">fsPush / fsPull ⇄ zhops/master</div>
           <div class="ti-path" style="margin-top:4px; color:var(--hint);">332 KB · 审批 / 全局配置 / 课次状态下拉</div>
@@ -944,6 +947,13 @@
         <div>· 本机键<b>两把互不相通</b>：主端 / 管理端 <span class="key">zhops.sched.v3</span>（<span class="loc">admin:751</span>）· 教师端 <span class="key">zhops.teacher.v1</span>（<span class="loc">teacher:517</span>，2026-10-30 拆开 —— 不拆教师端会把分片写进主端那把钥匙）</div>
         <div>· 云端<b>三个文档</b>（2026-10-30 新增后两个）：<span class="key">zhops/master</span> 全量 · <span class="key">zhops/public</span> 公共只读（时段 / 课名 / 教室 / 门槛）· <span class="key">zhops/t1…t5</span> 每位教师一份分片。<b>主端写全部；教师端只读 public + 自己那份，写回只动自己班的 lessons / absences</b></div>
         <div>· 时段表是<b>全局</b>的（早班 / 午间 / 晚班 / 周末），班级挂一个时段，教师能授多个 —— <b>没有按教师独立配时段的机制</b></div>
+        <div style="margin-top:8px;"><b class="yes">P-144（2026-11-12）主端同步人事 10 项已完成上线</b>：</div>
+        <div style="padding-left:14px;">合同 <code>syncEmpFromContract()</code> → 花名册 <code>S.emp</code>（10 字段：<code>zh, type, phone, nat, lang, exp, rate, addr, ecName, ecPhone</code>）→ 主端只读 <code>zhops.hr.v1</code> 合流 <code>mergeHRTeachers()</code> → <code>DB.teachers[]</code> 内存补齐</div>
+        <div style="padding-left:14px;">主端 <code>hrTeacherRoster()</code> / <code>tView()</code> / <code>tEdit()</code> / <code>blankTeacher()</code> 已全量接 10 项；<code>addr/ecName/ecPhone</code> 只读（来自合同），<code>nat/lang/exp/rate</code> 只读+越南语护罩</div>
+        <div style="padding-left:14px;"><b class="yes">线上已有 3 位教师完整 10 项</b>：<code>t1</code> Uyen / <code>t2</code> Tu / <code>t3</code> 阮氏梅 —— 合同/花名册/主端三端一致</div>
+        <div style="margin-top:8px;"><b class="yes">P-144+ 人事合同计价方式互斥（月薪 vs 课时费）已上线</b>：</div>
+        <div style="padding-left:14px;">人事端 <code>togglePayFields()</code> 暴露到 <code>window</code>，<code>payType</code> 选「月薪」→ <code>salary</code> 可填 / <code>rate</code> 置灰清空锁定；选「课时费」反之</div>
+        <div style="padding-left:14px;">选定后另一栏<b>永久锁定</b>（不可再改），非单纯置灰；<code>change</code> 事件同步触发合同存盘</div>
       </div>
     </div>
 
@@ -1056,7 +1066,7 @@
       <div class="field-label">已建的范围（九个板块 + 配置）</div>
       <div class="field-value multi">
         <div><span class="yes">✓</span> ① 员工花名册（工号 / 岗位 / 在职状态 / 试用期提醒）</div>
-        <div><span class="yes">✓</span> ② 合同（起止 / 类型 / 到期提醒）· <b>合同是录入第一入口</b>：签完自动建员工档</div>
+        <div><span class="yes">✓</span> ② 合同（起止 / 类型 / 到期提醒 · <b>计价方式互斥：月薪 ↔ 课时费，另一栏永久锁定</b>）· <b>合同是录入第一入口</b>：签完自动建员工档</div>
         <div><span class="yes">✓</span> ③ 证件资质（工作许可 / 暂住证 / 到期提醒 —— <b>单独成板块，因为到期后果最重</b>）</div>
         <div><span class="yes">✓</span> ④ 社保与个税（<b>按缴费基数算，不是按应发</b>）</div>
         <div><span class="yes">✓</span> ⑤ 考勤与假勤（年假总额 / 已用 / 余额）</div>
@@ -1070,11 +1080,12 @@
       </div>
     </div>
     <div class="field">
-      <div class="field-label">职责边界（已定 2026-10-30）</div>
+      <div class="field-label">职责边界（已定 2026-10-30，P-144 更新 2026-11-12）</div>
       <div class="field-value">
-        <b class="yes">人员主档在人事</b>。主端教师资料里的<b>姓名 / 合同类型 / 联系方式 / 国籍 / 语言 / 资历 / 课时单价</b>全部来自人事端合同，<b>主端只读</b>；主端只补排课字段（可教级别 / 时段 / 计价方式 / 教室 / 城市 / 绩效 / 备注）。靠<b>排课ID（<code>zhopsTid</code> ↔ 主端教师 <code>t1</code>/<code>t2</code>/<code>t3</code>…）</b>关联；人事内部工号 <code>T001…</code> 不进主端。<br>
+        <b class="yes">人员主档在人事</b>。主端教师资料里的<b>姓名 / 合同类型 / 联系方式 / 国籍 / 语言 / 资历 / 课时单价 / 住址 / 紧急联系人姓名 / 紧急联系人电话</b>全部来自人事端合同，<b>主端只读</b>；主端只补排课字段（可教级别 / 时段 / 计价方式 / 教室 / 城市 / 绩效 / 备注）。靠<b>排课ID（<code>zhopsTid</code> ↔ 主端教师 <code>t1</code>/<code>t2</code>/<code>t3</code>…）</b>关联；人事内部工号 <code>T001…</code> 不进主端。<br>
         <b class="yes">✓ 教师发号（2026-11-12 · P-142）</b>：教师在人事端聘请并填「排课ID」→ 主端纯本地只读 <code>zhops.hr.v1</code> 收取，主端不再自己发号、不造演示班；零云、零新文档。<br>
-        <b class="yes">✓ 教师资料 7 项（2026-11-12 · P-143）</b>：<b>合同是唯一录入口</b> → <code>syncEmpFromContract()</code> 推进花名册 <code>S.emp</code> → 主端只读 <code>zhops.hr.v1</code> 合流；7 项不齐不发排课ID，已发的号不撤、只挂「待补」标记；国籍 / 语言合同拆两格、主端拆两列。主端<b>绝不直接读合同</b>（续签 / 多合同会打架）、不回写人事库、不推云。<br>
+        <b class="yes">✓ 教师资料 10 项（2026-11-12 · P-144，原 P-143 的 7 项扩充为 10 项）</b>：<b>合同是唯一录入口</b> → <code>syncEmpFromContract()</code> 推进花名册 <code>S.emp</code>（10 字段：<code>zh, type, phone, nat, lang, exp, rate, addr, ecName, ecPhone</code>） → 主端只读 <code>zhops.hr.v1</code> 合流 <code>mergeHRTeachers()</code>；10 项不齐不发排课ID，已发的号不撤、只挂「待补」标记；国籍 / 语言合同拆两格、主端拆两列。主端<b>绝不直接读合同</b>（续签 / 多合同会打架）、不回写人事库、不推云。<br>
+        <b class="yes">✓ 合同计价方式互斥（P-144+）</b>：人事端 <code>payType</code> 选「月薪」↔「课时费」，另一栏自动置灰清空<b>永久锁定</b>（<code>togglePayFields()</code> 暴露到 <code>window</code>，<code>change</code> 触发存盘）。<br>
         <b>学生不进人事</b> —— 学生是客户，档案在排课系统；助教签成员工才进这里。<br>
         <b>不做审批</b> —— 制度只标四态，审批动作留给主页端，避免两套审批打架。<br>
         <b>唯一例外：工资汇总单</b>（2026-10-31 定）—— 人事<b>算</b>，提交财务<b>批</b>；这是薪酬独有的流程，不推广到别的板块。<br>

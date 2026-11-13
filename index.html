@@ -278,6 +278,18 @@ a{color:var(--brand);text-decoration:none;}
 /* 从排课矩阵点班级卡片跳过来时，把那一行点亮（2026-10-12 第 ③ 步收尾）。
    ⚠️ 故意放在 :hover 后面 —— 两者权重相同，后写的赢，否则一悬停高亮就没了 */
 .tbl tbody tr.focus td{background:var(--brand-soft);}
+
+/* ===== 学生页批量归属工具栏（2026-11-13）===== */
+.batch-bar{
+  display:none; align-items:center; gap:8px;
+  padding:8px 12px; background:var(--brand-soft); border:1px solid var(--brand);
+  border-radius:6px; margin:0 0 12px; flex-wrap:wrap; font-size:12.5px;
+}
+.batch-bar.on{display:flex;}
+.batch-bar .lbl{color:var(--ink2); font-weight:600;}
+.batch-bar select.inp{height:28px; padding:0 8px; font-size:12px;}
+.batch-bar .btn{height:28px; padding:0 10px; font-size:12px;}
+.batch-bar .count{color:var(--brand); font-weight:600; margin-left:auto;}
 /* 淡底太弱，再加一道左边条 —— 用 inset 阴影而不是 border-left，免得把列宽挤歪 */
 .tbl tbody tr.focus td:first-child{box-shadow:inset 3px 0 0 var(--brand);}
 .tbl .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;}
@@ -2251,12 +2263,19 @@ function teacherClassesCell(t){
 
 /* ---------- 视图：学生 ---------- */
 let fStu = {own:'all', lv:'all', where:'all'};
+/* 学生页批量归属：选中的学生 ID 集合 */
+let fStuBatch = new Set();
 function vStudents(){
   let rows = DB.students.filter(s =>
     (fStu.own==='all' || s.own===fStu.own) &&
     (fStu.lv==='all' || s.lv===fStu.lv) &&
     (fStu.where==='all' || (fStu.where==='in' ? !!s.cls : !s.cls)) &&
     (!fQ || s.name.includes(fQ)));
+  /* 批量工具栏的教师/级别/市下拉复用现有函数；工具栏默认隐藏，有勾选时显示 */
+  const teacherOpts = [['','（不改教师）']].concat(DB.teachers.map(t => [t.id, t.name + '（' + (t.room || '未定省') + '）' + (t.fromHR && t.state === '已停用' ? ' · 已停用' : '')]));
+  const batchTeacherHtml = '<select class="inp" data-batch="teacher">' + teacherOpts.map(x => '<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join('') + '</select>';
+  const batchLvHtml = '<select class="inp" data-batch="lv"><option value="">（不改级别）</option><option value="HSK1">HSK1</option><option value="HSK2">HSK2</option><option value="HSK3">HSK3</option></select>';
+  const batchCityHtml = '<span class="lbl" id="batchCityHint" style="color:var(--ink3);font-size:12px">先选教师，再出市下拉</span>';
   return `
   <div class="freeze-page">
   <div class="freeze-head">
@@ -2289,18 +2308,35 @@ function vStudents(){
   </div>
 
   <div class="note"><b>归属（自有 / 外包）是学生自己的字段</b>，不是从归属教师派生 —— 公司自家的学生也可能被派给外包老师教。</div>
+
+  <!-- 批量归属工具栏：默认隐藏，有勾选时显示 -->
+  <div class="batch-bar" id="batchBar" style="display:none;">
+    <span class="lbl">批量归属：</span>
+    <span class="lbl">教师</span>
+    ${batchTeacherHtml}
+    <span class="lbl">级别</span>
+    ${batchLvHtml}
+    <span class="lbl" id="batchCityLabel" style="display:none;">市</span>
+    <span id="batchCityWrap">${batchCityHtml}</span>
+    <button class="btn pri" data-batch="apply">应用到选中行</button>
+    <span class="count" id="batchCount">已选 0 人</span>
+  </div>
+
   </div><!-- /freeze-head -->
 
   <div class="freeze-body">
   <div class="card">
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
+        <th style="width:36px"><input type="checkbox" id="stuSelectAll" title="全选本页"></th>
         <th>学生</th><th>归属</th><th>级别</th><th>教室</th><th>进度</th>
         <th class="num">出勤</th><th>联系人</th><th>阶段考试</th><th></th>
       </tr></thead>
       <tbody>${rows.map(s=>{
         const c = s.cls ? C(s.cls) : null;
-        return '<tr data-open="student:'+s.id+'">'+
+        const checked = fStuBatch.has(s.id) ? 'checked' : '';
+        return '<tr data-open="student:'+s.id+'" data-stu-id="'+s.id+'">'+
+        '<td class="nowrap"><input type="checkbox" class="stu-chk" data-stu-id="'+s.id+'" '+checked+'></td>'+
         '<td><b>'+esc(s.name)+'</b>'+(s.bizGone ? ' <span class="tg bad" style="font-size:10px">业务部已删除</span>' : '')+'</td>'+
         '<td>'+ownTag(s.own)+'</td>'+
         '<td><span class="tg off">'+s.lv+'</span></td>'+
@@ -2335,6 +2371,30 @@ function vStudents(){
   </div>
   </div><!-- /freeze-body -->
   </div>`;
+}
+
+/* 学生页批量归属工具栏：更新显示状态 */
+function updateBatchBar(){
+  const bar = $('#batchBar');
+  const count = $('#batchCount');
+  if (!bar || !count) return;
+  const n = fStuBatch.size;
+  if (n){
+    bar.style.display = 'flex';
+    bar.classList.add('on');
+    count.textContent = '已选 '+n+' 人';
+  }else{
+    bar.style.display = 'none';
+    bar.classList.remove('on');
+    count.textContent = '已选 0 人';
+  }
+  /* 全选框同步 */
+  const allChk = $('#stuSelectAll');
+  if (allChk){
+    const rows = document.querySelectorAll('.stu-chk');
+    if (rows.length) allChk.checked = Array.from(rows).every(c => c.checked);
+    else allChk.checked = false;
+  }
 }
 
 /* ---------- 视图：排课 ---------- */
@@ -5206,6 +5266,7 @@ function render(){
   window.scrollTo(0,0);
   bFocus = null;   /* 矩阵点卡片点亮的那个班只亮这一次 render，下次重画就恢复正常 */
   applyLang();     /* 渲染完再套语言层（中文 → 越南语） */
+  if (id === 'students') updateBatchBar(); /* 学生页批量工具栏状态同步 */
 }
 
 /* ==================== 语言切换（B · 翻译层） ====================
@@ -6038,6 +6099,77 @@ document.addEventListener('click', e => {
     }
     /* ★ 2026-10-17：开班表单的学生改为「只读自动带入」，
        原 addstu / delstu / rmode / pickall / picknone 全部删除（Tony 定：开班只从候选池拉人） */
+    return;
+  }
+  /* ---- 学生页批量归属：checkbox 点击 ---- */
+  const chk = e.target.closest('.stu-chk');
+  if (chk){
+    const id = chk.dataset.stuId;
+    if (chk.checked) fStuBatch.add(id); else fStuBatch.delete(id);
+    updateBatchBar();
+    return;
+  }
+  /* ---- 学生页批量归属：全选/反选本页 ---- */
+  const allChk = e.target.closest('#stuSelectAll');
+  if (allChk){
+    const rows = document.querySelectorAll('.stu-chk');
+    rows.forEach(c => {
+      const id = c.dataset.stuId;
+      if (allChk.checked) fStuBatch.add(id); else fStuBatch.delete(id);
+      c.checked = allChk.checked;
+    });
+    updateBatchBar();
+    return;
+  }
+  /* ---- 学生页批量归属：应用到选中行 ---- */
+  const applyBtn = e.target.closest('[data-batch="apply"]');
+  if (applyBtn){
+    if (!fStuBatch.size){ toast('没勾选任何学生'); return; }
+    const teacherId = $('#batchBar select[data-batch="teacher"]').value;
+    const lv = $('#batchBar select[data-batch="lv"]').value;
+    const citySel = $('#batchBar select[data-batch="city"]');
+    const city = citySel ? citySel.value : '';
+    if (!teacherId && !lv && !city){ toast('至少选一样：教师 / 级别 / 市'); return; }
+    const yes = (typeof window.confirm === 'function')
+      ? window.confirm('将把『教师'+(teacherId?'：'+DB.teachers.find(t=>t.id===teacherId)?.name:'不改')+'、级别'+(lv?'：'+lv:'不改')+'、市'+(city?'：'+city:'不改')+'』应用到 '+fStuBatch.size+' 位学生？')
+      : true;
+    if (!yes) return;
+    let n = 0;
+    fStuBatch.forEach(id => {
+      const s = DB.students.find(x => x.id === id);
+      if (!s) return;
+      if (teacherId){ s.teacherId = teacherId; const t = DB.teachers.find(x => x.id === teacherId); s.room = t ? (t.room || '') : ''; }
+      if (lv) s.lv = lv;
+      if (city) s.city = city;
+      n++;
+    });
+    fStuBatch.clear();
+    save();
+    render();
+    toast('已批量更新 '+n+' 位学生');
+    return;
+  }
+  /* ---- 批量工具栏：教师下拉变化 → 更新市下拉 ---- */
+  const batchTeacherSel = e.target.closest('#batchBar select[data-batch="teacher"]');
+  if (batchTeacherSel){
+    const tid = batchTeacherSel.value;
+    const cityWrap = $('#batchCityWrap');
+    const cityLabel = $('#batchCityLabel');
+    if (!tid){
+      cityWrap.innerHTML = '<span class="lbl" id="batchCityHint" style="color:var(--ink3);font-size:12px">先选教师，再出市下拉</span>';
+      cityLabel.style.display = 'none';
+      return;
+    }
+    const t = DB.teachers.find(x => x.id === tid);
+    const cities = (t && t.cities) || [];
+    if (!cities.length){
+      cityWrap.innerHTML = '<span class="lbl" style="color:var(--warn);font-size:12px">该教师还没勾市</span>';
+      cityLabel.style.display = 'none';
+      return;
+    }
+    const opts = [['','（不改市）']].concat(cities.map(c => [c, c]));
+    cityWrap.innerHTML = sel('city', '', opts, 'data-batch');
+    cityLabel.style.display = '';
     return;
   }
   /* ★ 2026-10-17：自定义课表 —— 周几多选（toggle，不整页重画） */
