@@ -305,6 +305,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-12</td>
               <td>合同表单新增 addr / ecName / ecPhone 三格（共 18 可填字段）；PROFILE_FIELDS 7→10 项，contractProfileMissing/Done 判 10 项，profileHint 分母 10，syncEmpFromContract 推 10 项进 emp；花名册 phone 列改只读（data-hr-ro，无 data-d-inp），只从合同带出；探针 check-hr-contract.js 50/0、check-p143-profile.js 校准 10 项口径 136/0、既有人事探针全绿；主端 mergeHRTeachers 扩 10 项留下一轮。全套 53 条探针全绿。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-144b</td>
+              <td><b>业务部 VND 金额显示改用越南点分隔符 + 旧云覆盖保护闸</b><br><span style="color:#8899aa;font-size:12px">「VND 金额改 1.000.000 格式」「学生数据被旧云端盖回去」· 教室/场地费用输入框也同步修</span></td>
+              <td class="nw">业务部 · 云端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-13</td>
+              <td class="mono nw">11-13</td>
+              <td>VND_SEP 常量由 ',' → '.'，fmtVND() 自动切点格式；新场地/新教室的 rent / hourly 四个输入框从 type=number 改为 type=text inputmode=numeric + onblur fmtVND(parseVND(this.value))，与付费字段口径一致；parseInt(val||'0',10) 全换成 parseVND(val(...)) 保持存盘整数盾不变。新增 window.__BIZ_LOCAL_SAVE_AT__ 落盘时间戳，applyRemote() 在 remoteAt < localSaveAt 时直接 return false —— 解决「本地写完 20 名学生、1 秒后被旧云备份 st1~st12 盖回」的循环覆盖问题。线上恢复 st1~st20 + BINHTHANH 5间教室后手动触发备份到云端固化。<td>
+            </tr>
           </tbody>
         </table>
       </div>
