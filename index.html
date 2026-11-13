@@ -2275,6 +2275,7 @@ function vStudents(){
   const teacherOpts = [['','（不改教师）']].concat(DB.teachers.map(t => [t.id, t.name + '（' + (t.room || '未定省') + '）' + (t.fromHR && t.state === '已停用' ? ' · 已停用' : '')]));
   const batchTeacherHtml = '<select class="inp" data-batch="teacher">' + teacherOpts.map(x => '<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join('') + '</select>';
   const batchLvHtml = '<select class="inp" data-batch="lv"><option value="">（不改级别）</option><option value="HSK1">HSK1</option><option value="HSK2">HSK2</option><option value="HSK3">HSK3</option></select>';
+  const batchModeHtml = '<select class="inp" data-batch="mode"><option value="">（不改形态）</option><option value="online">线上</option><option value="offline">线下</option></select>';
   const batchCityHtml = '<span class="lbl" id="batchCityHint" style="color:var(--ink3);font-size:12px">先选教师，再出市下拉</span>';
   return `
   <div class="freeze-page">
@@ -2316,6 +2317,8 @@ function vStudents(){
     ${batchTeacherHtml}
     <span class="lbl">级别</span>
     ${batchLvHtml}
+    <span class="lbl">形态</span>
+    ${batchModeHtml}
     <span class="lbl" id="batchCityLabel" style="display:none;">市</span>
     <span id="batchCityWrap">${batchCityHtml}</span>
     <button class="btn pri" data-batch="apply">应用到选中行</button>
@@ -2329,7 +2332,7 @@ function vStudents(){
     <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
         <th style="width:36px"><input type="checkbox" id="stuSelectAll" title="全选本页"></th>
-        <th>学生</th><th>归属</th><th>级别</th><th>教室</th><th>进度</th>
+        <th>学生</th><th>归属</th><th>级别</th><th>形态</th><th>教室</th><th>进度</th>
         <th class="num">出勤</th><th>联系人</th><th>阶段考试</th><th></th>
       </tr></thead>
       <tbody>${rows.map(s=>{
@@ -2340,6 +2343,7 @@ function vStudents(){
         '<td><b>'+esc(s.name)+'</b>'+(s.bizGone ? ' <span class="tg bad" style="font-size:10px">业务部已删除</span>' : '')+'</td>'+
         '<td>'+ownTag(s.own)+'</td>'+
         '<td><span class="tg off">'+s.lv+'</span></td>'+
+        '<td>'+modeTag(s.mode)+'</td>'+
         /* ★ 2026-10-17（Tony 定的三层链）：教室列显示「教师·市 → 班名」
            省 = 教师 ID / 市 = 班名 / 学生按「教师 + 市」归属。
            · 有市 + 班已开 → 「苏州 → 苏州班」（正常）
@@ -3831,6 +3835,7 @@ function sView(o){
     kv('归属', ownTag(o.own))+
     kv('来源', '<span class="tg off">'+esc(srcText(o.source))+'</span>')+
     kv('级别', '<span class="tg off">'+esc(o.lv)+'</span>')+
+    kv('形态', modeTag(o.mode))+
     kv('联系方式', '<span class="mono">'+esc(o.phone)+'</span>')+
     kv('联系人', '<span class="tg off">'+esc(o.contact)+'</span>')+
     kv('职业', esc(o.job))+
@@ -4037,9 +4042,12 @@ function sEdit(m){
     '</div>'+
     '<div class="g2">'+
       fld('级别', sel('lv', m.lv, ['HSK1','HSK2','HSK3']))+
-      fld('联系人', sel('contact', m.contact, ['本人','家长']))+
+      fld('形态', sel('mode', m.mode, [['online','线上'],['offline','线下']]))+
     '</div>'+
-    fld('联系方式（电话 / Zalo）', inp('phone', m.phone))+
+    '<div class="g2">'+
+      fld('联系人', sel('contact', m.contact, ['本人','家长']))+
+      fld('联系方式（电话 / Zalo）', inp('phone', m.phone))+
+    '</div>'+ 
     '<div class="g2">'+
       fld('职业', sel('job', m.job, JOBS))+
       fld('结业等级', sel('grade', m.grade, GRADES))+
@@ -6127,11 +6135,12 @@ document.addEventListener('click', e => {
     if (!fStuBatch.size){ toast('没勾选任何学生'); return; }
     const teacherId = $('#batchBar select[data-batch="teacher"]').value;
     const lv = $('#batchBar select[data-batch="lv"]').value;
+    const mode = $('#batchBar select[data-batch="mode"]').value;
     const citySel = $('#batchBar select[data-batch="city"]');
     const city = citySel ? citySel.value : '';
-    if (!teacherId && !lv && !city){ toast('至少选一样：教师 / 级别 / 市'); return; }
+    if (!teacherId && !lv && !mode && !city){ toast('至少选一样：教师 / 级别 / 形态 / 市'); return; }
     const yes = (typeof window.confirm === 'function')
-      ? window.confirm('将把『教师'+(teacherId?'：'+DB.teachers.find(t=>t.id===teacherId)?.name:'不改')+'、级别'+(lv?'：'+lv:'不改')+'、市'+(city?'：'+city:'不改')+'』应用到 '+fStuBatch.size+' 位学生？')
+      ? window.confirm('将把『教师'+(teacherId?'：'+DB.teachers.find(t=>t.id===teacherId)?.name:'不改')+'、级别'+(lv?'：'+lv:'不改')+'、形态'+(mode?'：'+(mode==='online'?'线上':'线下'):'不改')+'、市'+(city?'：'+city:'不改')+'』应用到 '+fStuBatch.size+' 位学生？')
       : true;
     if (!yes) return;
     let n = 0;
@@ -6140,6 +6149,7 @@ document.addEventListener('click', e => {
       if (!s) return;
       if (teacherId){ s.teacherId = teacherId; const t = DB.teachers.find(x => x.id === teacherId); s.room = t ? (t.room || '') : ''; }
       if (lv) s.lv = lv;
+      if (mode) s.mode = mode;
       if (city) s.city = city;
       n++;
     });
