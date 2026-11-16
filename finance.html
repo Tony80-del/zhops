@@ -3308,7 +3308,6 @@ function boot(){
     elBizPay.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (typeof subscribeBizPayments === 'function' && db) subscribeBizPayments(); } });
   }
 }
-boot();
 
 /* ============================================================
    L-03 ③ · bizpayments 只读订阅（业务部 → 财务端）
@@ -3353,6 +3352,8 @@ window.__FIN_SYNC__ = {
 window.__FIN_BIZ_PAYMENTS__ = function(){
   return JSON.parse(JSON.stringify(S.bizPayments));
 };
+
+boot();
 </script>
 </body>
 </html>
