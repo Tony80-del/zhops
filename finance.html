@@ -3301,11 +3301,11 @@ function boot(){
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); subscribe(); } });
   }
   /* L-03 ③：bizpayments 只读订阅 —— 不碰 S.income、不调 save */
-  if (db) subscribeBizPayments();
+  if (typeof subscribeBizPayments === 'function' && db) subscribeBizPayments();
   const elBizPay = document.getElementById('finBizPay');
   if (elBizPay){
-    elBizPay.addEventListener('click', () => { if (db) subscribeBizPayments(); });
-    elBizPay.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (db) subscribeBizPayments(); } });
+    elBizPay.addEventListener('click', () => { if (typeof subscribeBizPayments === 'function' && db) subscribeBizPayments(); });
+    elBizPay.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (typeof subscribeBizPayments === 'function' && db) subscribeBizPayments(); } });
   }
 }
 boot();
