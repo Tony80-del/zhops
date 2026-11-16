@@ -3321,12 +3321,12 @@ const BIZPAY_DOC = 'bizpayments';
 function subscribeBizPayments(){
   if (!db) return;
   unsubBiz = onSnapshot(doc(db, FB.coll, BIZPAY_DOC), snap => {
-    var tag = '';
     if (snap.exists()){
       const d = snap.data() || {};
-      if (d.app && d.app !== TAG){ mark('bizpayments 不是财务数据，已忽略', 'bad'); return; }
-      tag = String(d.app || '');
+      // bizpayments 是业务部写的，顶层 app 应该是 zhops.biz，不能用财务的 TAG 校验
+      if (d.app && d.app !== 'zhops.biz'){ mark('bizpayments 来源不是业务部，已忽略', 'bad'); return; }
     }
+    var tag = '';
     /* 无论文档是否存在，更新本地缓存 */
     const rawPayload = snap.exists() ? (snap.data().payload || '') : '';
     let items = [];
