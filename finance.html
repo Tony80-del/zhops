@@ -510,6 +510,22 @@ table.fmt td.bad{color:var(--neg)}
         </table>
         </div>
       </div>
+      <!-- ★ 2026-11-16（L-03 ③）：业务部推送的待入账流水 —— 只读，不自动并入 S.income -->
+      <div class="card" id="bizPendCard">
+        <div class="card-h"><h3>📥 待入账（来自业务部）</h3><span class="sp"></span>
+          <span class="tag pending" id="bizPendBadge" style="display:none">—</span>
+        </div>
+        <div class="tw">
+        <table class="grid">
+          <thead><tr>
+            <th style="width:140px">流水号</th><th style="width:150px">学员 / 编号</th><th style="width:92px">日期</th>
+            <th style="width:100px">金额</th><th style="width:88px">方式</th><th style="width:96px">操作</th>
+          </tr></thead>
+          <tbody id="tb-bizpend"></tbody>
+        </table>
+        </div>
+        <p class="sm mu" style="margin:6px 0 0">从业务部「☁︎ 推已缴费给财务」来的钱。点「✓」确认入账 → 写进收入表；点「×」忽略。</p>
+      </div>
       <div class="card">
         <div class="card-h"><h3>格式怎么填</h3><span class="sp"></span><span class="tag nologic">最常错：金额带逗号</span></div>
         <table class="fmt">
@@ -1382,6 +1398,14 @@ var VI_FIN = {
   "—— 应发 / 社保 / 个税 / 预支 / 扣款 / 补发全在人事算好，这里不重算、不改数字。批完回来记付款日和凭证号。": "—— Tổng lương / Bảo hiểm / Thuế TNCN / Tạm ứng / Khấu trừ / Truy lĩnh đều do Nhân sự tính sẵn, ở đây không tính lại, không sửa số. Duyệt xong quay lại ghi ngày chi và số chứng từ.",
   "—— 数据全部来自人事部提交的工资单（「审批」页拉取）。 财务不在这里改数字：应发、社保个人、个税都是人事算的，这里改不了，也不该改。": "—— Dữ liệu đều từ bảng lương Nhân sự nộp (kéo ở trang \"Phê duyệt\"). Tài chính không sửa số ở đây: Tổng lương, BH cá nhân, thuế TNCN do Nhân sự tính, ở đây không sửa được và cũng không nên sửa.",
   "社保费率和增值税优惠每年在调（越南 8% 增值税减征期到 2026-12-31）。写死在代码里，明年政策一改就得改程序； 做成参数，改一个数字就行。": "Tỷ lệ bảo hiểm và ưu đãi thuế GTGT thay đổi hằng năm (Việt Nam giảm thuế GTGT 8% đến 2026-12-31). Viết cứng trong code thì sang năm đổi chính sách phải sửa chương trình; làm thành tham số thì chỉ cần đổi một con số.",
+  "📥 待入账（来自业务部）": "📥 Chờ nhập quỹ (từ bộ phận kinh doanh)",
+  "没有新流水": "Không có dòng tiền mới",
+  "业务部还没推收款记录到这里": "Bộ phận kinh doanh chưa đẩy ghi nhận thu ở đây",
+  "✓": "✓",
+  "×": "×",
+  "已入账 · ": "Đã nhập quỹ · ",
+  "学员号格式不对": "Mã học viên không đúng định dạng",
+  "不能入账": "không thể nhập quỹ",
 };
 
 /* 整句规则：带数字 / 月份 / 时间 / 金额的文案，整串命中后只换中文片段，
@@ -1724,18 +1748,17 @@ function blank(){
     approvals:[], approvalsAt:'',
     /* ★ 2026-11-05（P-103 ④）：业务部场地请款单，跟工资单分开放。
        同一个 zhops/approvals 文档拉回来，按 dept 分流；工资表 / 人工成本一个字不动。 */
-    placeApprovals:[]
+    placeApprovals:[],
+    /* ★ 2026-11-16（L-03 ③）：业务部推送的已缴费流水（只读）。
+       点「✓ 确认入账」才并入 S.income；「× 忽略」移进 bizPaymentsIgnored。
+       bizPayments 始终等于原始推送（含 ignored），用 bizIgnoredSet 过滤展示。 */
+    bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[]
   };
 }
 function demo(){
   return {
     cfg:{ siEmp:10.5, siComp:21.5, cit:20, divPit:5, vatDefault:'0', invoiceOn:'off' },
     income:[
-      {d:'2026-10-03', who:'苹果班 · 整班学费', type:'学费',   amt:'10500000', pay:'银行转账', inv:'', vat:'0'},
-      {d:'2026-10-08', who:'芒果班 · 整班学费', type:'学费',   amt:'8400000',  pay:'银行转账', inv:'', vat:'0'},
-      {d:'2026-10-12', who:'柚子班 · 整班学费', type:'学费',   amt:'10500000', pay:'现金',     inv:'', vat:'0'},
-      {d:'2026-10-20', who:'柠檬班 · 整班学费', type:'学费',   amt:'7140000',  pay:'Momo',     inv:'', vat:'0'},
-      {d:'2026-10-22', who:'黎明俊 · 材料费',   type:'材料费', amt:'180000',   pay:'Momo',     inv:'0000123', vat:'10'}
     ],
     expense:[
       {d:'2026-10-01', cat:'房租',     payee:'Minh Land', amt:'2400000', inv:'', note:'10 月办公室租金'},
@@ -1752,7 +1775,7 @@ function demo(){
       {name:'柚子班', lessons:'42', done:'5', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
       {name:'柠檬班', lessons:'42', done:'4', fee:'7140000',  teacher:'黎明俊', rate:'150000', own:true}
     ],
-    approvals:[], approvalsAt:'', placeApprovals:[]
+    approvals:[], approvalsAt:'', placeApprovals:[], bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[]
   };
 }
 var S = blank();
@@ -1841,6 +1864,10 @@ function load(){
     b.approvalsAt = String(o.approvalsAt || '');
     /* ★ 2026-11-05（P-103 ④）：老存盘没有这个集合，补空数组 */
     b.placeApprovals = o.placeApprovals;
+    /* L-03 ③：业务部推送的待入账流水。老存盘没有这三项 → 默认空。 */
+    b.bizPayments = Array.isArray(o.bizPayments) ? o.bizPayments.slice() : [];
+    b.bizPaymentsAt = String(o.bizPaymentsAt || '');
+    b.bizPaymentsIgnored = Array.isArray(o.bizPaymentsIgnored) ? o.bizPaymentsIgnored.slice() : [];
     /* 迁移（2026-10-31 · Phase 1）：老工资行没有 month → 归到当月。
        不归的话，加了月份选择器以后这些行会「一条都看不见」。 */
     b.payroll.forEach(function(p){
@@ -1983,6 +2010,86 @@ function renderIncome(){
   document.getElementById('sumVat').textContent = money(c.vat);
   document.getElementById('incCount').textContent = S.income.length + ' 笔';
   document.getElementById('incNote').textContent = '其中已开票 ' + c.invoiced + ' 笔';
+}
+
+/* ================= L-03 ③ · 渲染：待入账清单（只读，非 S.income） ================= */
+function renderPending(){
+  var card = document.getElementById('bizPendCard');
+  var badge = document.getElementById('bizPendBadge');
+  if (!card) return;
+  /* 过滤掉已被忽略的 */
+  var ignoredSet = {};
+  (S.bizPaymentsIgnored || []).forEach(function(x){ if(x && x.pid) ignoredSet[x.pid] = true; });
+  var active = (S.bizPayments || []).filter(function(p){ return p && !ignoredSet[p.pid]; });
+  if (!badge) return;
+  if (active.length > 0){
+    badge.style.display = '';
+    badge.textContent = '📥 ' + active.length + ' 条待入账';
+  }else{
+    badge.style.display = 'none';
+  }
+  var tb = document.getElementById('tb-bizpend');
+  if (!active.length){
+    var hintTxt = S.bizPaymentsAt ? '没有新流水' : '业务部还没推收款记录到这里';
+    tb.innerHTML = emptyRow(5, '<i>' + hintTxt + '</i>');
+    return;
+  }
+  tb.innerHTML = active.map(function(p,i){
+    var amtStr = money(p.amount);
+    var dateStr = p.date || '—';
+    var rowId = i;
+    return '<tr data-pid="'+esc(p.pid)+'">'+
+      '<td class="f">'+esc(p.pid)+'</td>'+
+      '<td class="f">'+esc(p.sname||'')+' <span class="mu dim">('+esc(p.sid)+')</span></td>'+
+      '<td>'+esc(dateStr)+'</td>'+
+      '<td class="num">'+amtStr+'</td>'+
+      '<td><span class="tag '+((p.method||'').toLowerCase()==='现金'?'nodata':((p.method||'').toLowerCase()==='银行转账'?'has':'pending'))+'">'+esc(p.method||'其他')+'</span></td>'+
+      '<td style="white-space:nowrap"><button class="mini" data-confirm="'+rowId+'" style="margin-right:4px;padding:2px 7px;">✓</button><button class="mini" data-ignore="'+rowId+'" style="padding:2px 7px;">×</button></td>'+
+    '</tr>';
+  }).join('');
+  /* 确认 / 忽略 按钮绑定 */
+  tb.querySelectorAll('[data-confirm]').forEach(function(btn){
+    btn.addEventListener('click', function(){ handleBizPayConfirm(Number(this.getAttribute('data-confirm'))); });
+  });
+  tb.querySelectorAll('[data-ignore]').forEach(function(btn){
+    btn.addEventListener('click', function(){ handleBizPayIgnore(Number(this.getAttribute('data-ignore'))); });
+  });
+}
+
+function handleBizPayConfirm(idx){
+  var ignoredSet = {};
+  (S.bizPaymentsIgnored||[]).forEach(function(x){ if(x && x.pid) ignoredSet[x.pid]=true; });
+  var active = (S.bizPayments||[]).filter(function(p){ return p && !ignoredSet[p.pid]; });
+  if (idx < 0 || idx >= active.length) return;
+  var p = active[idx];
+  if (!p || Number(p.amount) <= 0) return;
+  /* 三把闸门：sid 格式对、金额 > 0、学员档案能反查 */
+  if (!/^st\d+$/.test(String(p.sid))) { alert('学员号格式不对（'+p.sid+'），不能入账'); return; }
+  var entry = {
+    d: p.date || today(),
+    who: p.sname || p.sid,
+    type: '学费',
+    amt: String(p.amount),
+    pay: p.method || '其他',
+    inv: '',
+    vat: '0',
+    /* L-03 ③：收入单关联字段，来源唯一指向 */
+    sid: p.sid, bid: p.bid||'', pid: p.pid||'', amount: p.amount,
+    origin: 'bizpayments.'+p.pid,
+  };
+  S.income.push(entry);
+  S.bizPaymentsIgnored = (S.bizPaymentsIgnored||[]).concat([{pid:p.pid, at:new Date().toISOString()}]);
+  save(); renderAll();
+}
+
+function handleBizPayIgnore(idx){
+  var ignoredSet = {};
+  (S.bizPaymentsIgnored||[]).forEach(function(x){ if(x && x.pid) ignoredSet[x.pid]=true; });
+  var active = (S.bizPayments||[]).filter(function(p){ return p && !ignoredSet[p.pid]; });
+  if (idx < 0 || idx >= active.length) return;
+  var p = active[idx];
+  S.bizPaymentsIgnored = (S.bizPaymentsIgnored||[]).concat([{pid:p.pid, at:new Date().toISOString()}]);
+  save(); renderPending();
 }
 
 /* ================= 渲染：支出 ================= */
@@ -2593,6 +2700,7 @@ function renderCfg(){
 function renderAll(){
   renderIncome(); renderTch(); renderPay(); renderExpense();
   renderSettle(); renderReport(); renderApprove(); renderCfg();
+  renderPending();
 }
 
 /* ================= 视图 ================= */
@@ -3040,6 +3148,10 @@ window.__FIN_APPLY__ = function(o){
     b.approvals = o.approvals;
     b.approvalsAt = String(o.approvalsAt || '');
     b.placeApprovals = o.placeApprovals;
+    /* L-03 ③：业务部推送（只读，不覆盖 bizIgnored） */
+    b.bizPayments = Array.isArray(o.bizPayments) ? o.bizPayments.slice() : [];
+    b.bizPaymentsAt = String(o.bizPaymentsAt || '');
+    b.bizPaymentsIgnored = Array.isArray(o.bizPaymentsIgnored) ? o.bizPaymentsIgnored.slice() : [];
     b.payroll.forEach(function(p){ if(!p.month) p.month = monthTag(); if(p.paidOn === undefined) p.paidOn = ''; });
     S = b;
     try { localStorage.setItem(KEY, JSON.stringify(b)); } catch(e){}
@@ -3188,13 +3300,58 @@ function boot(){
     el.addEventListener('click', subscribe);
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); subscribe(); } });
   }
+  /* L-03 ③：bizpayments 只读订阅 —— 不碰 S.income、不调 save */
+  if (db) subscribeBizPayments();
+  const elBizPay = document.getElementById('finBizPay');
+  if (elBizPay){
+    elBizPay.addEventListener('click', () => { if (db) subscribeBizPayments(); });
+    elBizPay.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (db) subscribeBizPayments(); } });
+  }
 }
 boot();
+
+/* ============================================================
+   L-03 ③ · bizpayments 只读订阅（业务部 → 财务端）
+   ------------------------------------------------------------
+   方向单向：bizpayments 是「待入账」，不是收入记录。
+   收到 → 存 S.bizPayments / S.bizPaymentsAt、重画待入账区，
+   绝不调 save()、绝不改 S.income、绝不影响 finmaster 推。
+   ============================================================ */
+const BIZPAY_DOC = 'bizpayments';
+function subscribeBizPayments(){
+  if (!db) return;
+  unsubBiz = onSnapshot(doc(db, FB.coll, BIZPAY_DOC), snap => {
+    var tag = '';
+    if (snap.exists()){
+      const d = snap.data() || {};
+      if (d.app && d.app !== TAG){ mark('bizpayments 不是财务数据，已忽略', 'bad'); return; }
+      tag = String(d.app || '');
+    }
+    /* 无论文档是否存在，更新本地缓存 */
+    const rawPayload = snap.exists() ? (snap.data().payload || '') : '';
+    let items = [];
+    try {
+      if (rawPayload){
+        const o = JSON.parse(rawPayload);
+        if (Array.isArray(o && o.payments)) items = o.payments.slice();
+      }
+    } catch(e){ items = []; }
+    S.bizPayments = items;
+    S.bizPaymentsAt = String(snap.exists() ? (snap.data().at || '') : '');
+    renderPending();
+  }, err => {
+    mark('bizpayments 订阅失败（' + (err && err.code ? err.code : '网络') + '），点一下重连', 'bad');
+  });
+}
+let unsubBiz = null;
 
 window.__FIN_SYNC__ = {
   state: () => ({ hasDb: !!db, hasSub: !!unsub, lastPushedAt, pending: !!pendingLocalAt }),
   docName: () => DOC,
   resub: subscribe
+};
+window.__FIN_BIZ_PAYMENTS__ = function(){
+  return JSON.parse(JSON.stringify(S.bizPayments));
 };
 </script>
 </body>

@@ -724,13 +724,16 @@ tr[data-open]:hover td{background:var(--brand-soft);}
            这个拉的是 zhops/bizstudents（业务部登记的学生）。 -->
       <button type="button" class="sf-btn" id="btnBizPull">☁︎ 拉取业务部学生</button>
       <span id="stBiz" style="font-size:10px;opacity:.7"></span><br>
+      <!-- ★ 2026-11-14（P-146 / L-06 ②）：教室清单只读桥，独立文档 bizrooms。 -->
+      <button type="button" class="sf-btn" id="btnBizRoomsPull">☁︎ 拉取业务部教室</button>
+      <span id="stBizRooms" style="font-size:10px;opacity:.7"></span><br>
       <button type="button" class="sf-btn" id="btnReset">重置为演示数据</button>
       <!-- ★ 2026-10-17：版本标记 —— 用来确认浏览器加载的是不是最新文件（file:// 也会缓存） -->
       <!-- ★ 版本标记：必须带「构建日期 时间」，否则 Tony 无法判断跑的是哪一版。
            规矩（2026-10-30 立）：① 版本号只增不改语义 · ② 后缀是这版主要做了什么 ·
            ③ 末尾永远是「MM-DD HH:MM」= 这份文件落盘的那一刻。
            改了主端就顺手改这一行 —— 别让侧栏停在旧日期上骗人。 -->
-      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v10 · dept-links · 10-31 23:50</div>
+      <div id="buildTag" style="margin-top:6px;font-size:10px;opacity:.55;font-family:var(--mono)">build v12 · roomcode-gate · 11-14 10:18</div>
     </div>
   </aside>
 
@@ -2824,18 +2827,65 @@ function mergeHRTeachers(){
 }
 
 const BIZ_STORE_KEY = 'zhops.biz.v1';
+/* ★ 2026-11-14（P-146 / L-06 第②步）：教室清单只读桥。
+   独立文档 zhops/bizrooms —— 业务部手点推、主端手点拉，单向、只读。
+   绝不复用 bizstudents（学生 5 字段桥）或 master（主端整份备份），见 chief §8。 */
+const BIZROOM_DOC = 'bizrooms';
+/* 云端清单只进内存：不落 zhops.sched.v3、不顶 cloudDirty、不回写 zhops.biz.v1。
+   bizRooms() 是同步函数（被 bRooms() 同步调用），拉取结果必须先缓存再给渲染用。 */
+let bizRoomsCloud = null;
+function setBizRoomsCloud(list){ bizRoomsCloud = Array.isArray(list) ? list : null; return bizRoomsCloud; }
+function readBizRoomsCloud(){ return Array.isArray(bizRoomsCloud) ? bizRoomsCloud : null; }
+
+/* 拉 zhops/bizrooms。cb(ok, list, at)。
+   只认业务部推的（__app）且 rooms 是数组；空数组也算成功。
+   断网 / 文档不存在 / 来源不对 → cb(false)，主端自动回落本机教室，照常能用。 */
+function pullBizRooms(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  fetch(fsUrlOf(FS.coll, BIZROOM_DOC))
+    .then(r => r.ok ? r.json() : null)
+    .then(raw => {
+      if (!raw || !raw.fields){ if (cb) cb(false); return; }
+      const p = fsDec(raw.fields.payload);
+      const at = fsDec(raw.fields.at);
+      if (!p){ if (cb) cb(false); return; }
+      let o = null;
+      try { o = JSON.parse(p); } catch(e){ o = null; }
+      if (!o || o.__app !== BIZ_SRC_TAG || !Array.isArray(o.rooms)){ if (cb) cb(false); return; }
+      if (cb) cb(true, o.rooms, at || o.at || '');
+    })
+    .catch(() => { if (cb) cb(false); });
+}
+
 function bizRooms(){
+  /* ★ 云端清单优先，本机 localStorage 兜底。云端那份来自业务部手点推送，
+     换设备 / 换网址也能拿到；没拉过（或断网）时完整保留原来的本机行为。 */
+  const cloud = readBizRoomsCloud();
   try{
-    const raw = localStorage.getItem(BIZ_STORE_KEY);
-    if (!raw) return [];
-    const o = JSON.parse(raw);
-    const list = Array.isArray(o.rooms) ? o.rooms : [];
+    const raw = cloud ? null : localStorage.getItem(BIZ_STORE_KEY);
+    const o = cloud ? { rooms: cloud } : (raw ? JSON.parse(raw) : null);
+    const list = o && Array.isArray(o.rooms) ? o.rooms : [];
     /* ★ 2026-11-05（P-103 ②）：用途在业务部定，主端只读结果。
        整层租 5 间、其中 2 间做办事处 → 主端按地区只数到 3 间课室。
        这里不加「启用 / 停用」开关：主端只是如实反映业务部的房间用途。
        老数据没有 purpose，一律当课室 —— 拆用途之前的行为不变。 */
     return list.filter(r => r && r.purpose !== 'office');
   }catch(e){ return []; }
+}
+
+/* ★ 2026-11-14（P-146 / L-06 ③）：教室编码唯一清单。
+   下拉选项与提交查号都只认这一份，防两处口径漂移。
+   ★ value 永远是业务端 rooms[].code 原样 —— 不生成、不改名、不预设格式。
+   ★ 停用教室不列（Tony 2026-11-14 拍板「不列」）；历史值由抽屉单独保留可见。 */
+function roomCodeOptions(){
+  return bizRooms()
+    .filter(r => r && r.code && r.open !== false)
+    .map(r => [String(r.code),
+      String(r.code) + (r.name ? ' · ' + r.name : '') + (r.area ? '（' + r.area + '）' : '')]);
+}
+function isKnownRoomCode(code){
+  if (!code) return true;                 /* 留空 = 暂不指定，放行 */
+  return roomCodeOptions().some(x => x[0] === String(code));
 }
 
 /* 一间教室的供给：教师 / 学生 / 空时段 */
@@ -4557,11 +4607,26 @@ function renderNewAppDrawer(){
         })()+
         /* ★ 2026-11-02（P-98）：具体教室编码（业务部「市场 › 教室」里录的）。
            「教室（市）」= 哪一片，这里 = 哪一间。线上班不需要，填了也不生效。 */
-        fld('教室编码', inp('roomCode', f.roomCode || '', 'text', 'data-a-inp') +
-            '<span class="lbl" style="font-size:11px;display:block;margin-top:4px">'+
-            (f.mode === 'online'
-              ? '线上班不占教室，留空即可'
-              : '业务部「市场 › 教室」里的编码，例：Q7-01。留空 = 暂不指定')+'</span>')+
+        /* ★ 2026-11-14（P-146 / L-06 ③）：手打框换成下拉 —— 编码只能从业务部清单选。
+           ★ 首项「暂不指定」保留（Tony 拍板「留」）；停用教室不列（拍板「不列」）。
+           ★ 老值不在清单时补一个可见 option，绝不静默变空（<select> 赋不存在的 value 会变 ""）。 */
+        (function(){
+          const v = String(f.roomCode || '');
+          const opts = [['', '暂不指定']].concat(roomCodeOptions());
+          const missing = v && !opts.some(x => x[0] === v);
+          if (missing) opts.push([v, v + '（清单里没有这间 · 历史值）']);
+          const dis = (f.mode === 'online') ? ' disabled' : '';
+          const box = '<select class="inp" data-a-inp="roomCode"' + dis + '>' +
+            opts.map(x => '<option value="'+esc(x[0])+'"'+(x[0]===v?' selected':'')+'>'+esc(x[1])+'</option>').join('') +
+            '</select>';
+          let tip;
+          if (f.mode === 'online') tip = '线上班不占教室，留空即可';
+          else if (!roomCodeOptions().length) tip = '业务端还没推教室清单 —— 先去业务端点「推教室给主端」，或留空暂不指定；留空时碰撞检查退回城市级、不产场地费单据';
+          else tip = '只能从业务部教室清单里选，不许手打。留空 = 暂不指定：碰撞检查退回城市级、不产场地费单据';
+          if (missing) tip = '当前编码「'+esc(v)+'」不在在用清单里，请重选或留空。' + tip;
+          return fld('教室编码', box +
+            '<span class="lbl" style="font-size:11px;display:block;margin-top:4px">'+tip+'</span>');
+        })()+
         fld('级别', sel('lv', f.lv, [['HSK1','HSK1'],['HSK2','HSK2'],['HSK3','HSK3']], 'data-a-inp'))+
         fld('形态', sel('mode', f.mode, [['online','线上'],['offline','线下']], 'data-a-inp'))+
         fld('学生人数', inp('n', f.n, 'number', 'data-a-inp'))+
@@ -4593,6 +4658,12 @@ function createApp(){
   if (!f.teacher || !f.lv || !f.mode) return;
   if (!f.startDate){ toast('请选开班日期'); return; }
   if (!f.startTime){ toast('请填上课时间'); return; }
+  /* ★ 2026-11-14（P-146 / L-06 ③）：查号红灯 —— 线下班编码必须来自业务部在用清单。
+     ★ 留空放行（Tony 拍板「留」），后果已写在抽屉提示里。 */
+  if (f.mode === 'offline' && f.roomCode && !isKnownRoomCode(f.roomCode)){
+    toast('教室编码「'+f.roomCode+'」不在业务部在用教室清单里 —— 请重选或留空');
+    return;
+  }
   /* 由 startDate 推导单日数组：'2026-10-08' → ['4']（周四） */
   const dayOfWeek = String(new Date(f.startDate).getDay());  // 0=周日 .. 6=周六
   f.days = [dayOfWeek];
@@ -4632,7 +4703,7 @@ function createApp(){
     stage: stageOf(1), lesson: 1,
     mode: f.mode, slot: slotId,
     room: finalRoom,                      /* 市名 = 开班名 */
-    roomCode: f.roomCode || '',           /* ★ P-???：具体教室编码随申请落地，碰撞检查和显示都靠它 */
+    roomCode: (f.mode === 'online' ? '' : (f.roomCode || '')),  /* ★ L-06 ③：线上不占教室，申请层也别存 */
     n: n,
     roster: roster,
     plannedLessons: lvTotal(f.lv),
@@ -5159,11 +5230,11 @@ function approveApp(){
       /* ★ 2026-10-17（Tony 定）：市名 = 开班名，线上班也要记 room。
          以前只在线下才存 room，导致线上班在「教室」页看不见、班名也取不到市名。 */
       room: cityName,
-      /* ★ 2026-11-02（P-98）：具体教室编码。
-         线上班留空 —— 线上课不占教室。
-         ⚠️ 主端没有教室编码表（编码由 Tony 在业务部「市场 › 教室」定），
-            这里只存他填的字符串，不校验存在性。 */
-      roomCode: (o.mode === 'online' ? '' : (f.roomCode || '')),
+      /* ★ 2026-11-14（P-146 / L-06 ③）：编码的真相源是申请 o，不是审批草稿 f。
+         appFormOf() 返回的草稿没有 roomCode 字段、审批表单也没有这个输入框（Tony 拍板「只读」）——
+         以前取 f.roomCode 恒为 undefined → 建班编码变空 → 课次快照空 →
+         不产场地使用记录 → 场地费少算，全程不报错。 */
+      roomCode: (o.mode === 'online' ? '' : (o.roomCode || '')),
       name: cityName + '班',
       own: f.own,
     };
@@ -5300,6 +5371,14 @@ const VI = {
   /* 品牌 / 页脚 / 顶栏 */
   'MGD 排课系统':'Hệ thống xếp lớp MGD', 'ADMIN · 主端':'ADMIN · Bảng chính',
   '还没保存过':'Chưa lưu lần nào', '重置为演示数据':'Đặt lại dữ liệu demo',
+  /* 2026-11-14（P-146 / L-06 ②）：教室清单只读桥的新侧栏按钮 */
+  '☁︎ 拉取业务部教室':'☁︎ Kéo phòng học từ Phòng Kinh doanh',
+  /* 2026-11-14（L-06 ③）：教室编码下拉的新提示文案（长串优先，_viKeys 按长度降序） */
+  '只能从业务部教室清单里选，不许手打。留空 = 暂不指定：碰撞检查退回城市级、不产场地费单据':'Chỉ chọn từ danh sách phòng của Phòng Kinh doanh, không nhập tay. Để trống = chưa chỉ định: kiểm tra xung đột lùi về cấp thành phố, không phát sinh chứng từ phí mặt bằng',
+  '业务端还没推教室清单 —— 先去业务端点「推教室给主端」，或留空暂不指定；留空时碰撞检查退回城市级、不产场地费单据':'Phòng Kinh doanh chưa đẩy danh sách phòng — hãy bấm «Đẩy phòng học sang bảng chính» bên Phòng Kinh doanh, hoặc để trống; để trống thì kiểm tra xung đột lùi về cấp thành phố, không phát sinh chứng từ phí mặt bằng',
+  '清单里没有这间 · 历史值':'Không có phòng này trong danh sách · giá trị cũ',
+  '当前编码':'Mã hiện tại', '不在在用清单里，请重选或留空。':'không có trong danh sách đang dùng, hãy chọn lại hoặc để trống.',
+  '暂不指定':'Chưa chỉ định',
   '主端':'Bảng chính', '搜索教师 / 学生 / 班级…':'Tìm giáo viên / học viên / lớp…',
   /* 通用动作 */
   '保存':'Lưu', '取消':'Hủy', '删除':'Xóa', '新建':'Tạo mới', '编辑':'Sửa', '关闭':'Đóng',
@@ -6384,6 +6463,27 @@ if (_bpBiz) _bpBiz.addEventListener('click', () => {
                 (stat.gone ? ' · 业务部已删除 ' + stat.gone : '');
     if (st) st.textContent = '☁︎ ' + msg + ' · ' + String(at || '').slice(5, 16).replace('T', ' ');
     toast('☁︎ 已拉取业务部学生：' + msg);
+  });
+});
+/* ★ 2026-11-14（P-146 / L-06 ②）：拉取业务部教室清单。
+   ⚠️ 只更新云端缓存 + 重画：不写 zhops.sched.v3、不顶 cloudDirty、不弹确认框。
+   ⚠️ 教室编号由业务部发号，这里一个字不改、不生成、不预设格式。 */
+const _bpRooms = document.getElementById('btnBizRoomsPull');
+if (_bpRooms) _bpRooms.addEventListener('click', () => {
+  const sr = document.getElementById('stBizRooms');
+  if (sr) sr.textContent = '☁︎ 拉取中…';
+  _bpRooms.disabled = true;
+  pullBizRooms((ok, list, at) => {
+    _bpRooms.disabled = false;
+    if (!ok){
+      if (sr) sr.textContent = '☁︎ 没拉到（本机教室照常用）';
+      toast('☁︎ 没拉到业务部教室 —— 先去业务部点「推教室给主端」', true);
+      return;
+    }
+    setBizRoomsCloud(list);
+    render();
+    if (sr) sr.textContent = '☁︎ 云端 ' + list.length + ' 间 · ' + String(at || '').slice(5, 16).replace('T', ' ');
+    toast('☁︎ 已拉取业务部教室：' + list.length + ' 间');
   });
 });
 /* 顶栏搜索：一个框管三处（教师 / 学生 / 排课 › 班级），跟 placeholder 的承诺对齐。

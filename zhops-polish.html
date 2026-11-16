@@ -134,18 +134,18 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     <div class="sub">ZH-System 全部系统 —— 排课 / 财务 / 人事 / 市场，以及以后的 BMS 等。按日期归档；新工作记到当天那一页；顶部切换日期</div>
     <div class="sp"></div>
     <button id="modeBtn" class="mode">精简视图</button>
-    <span class="tag">更新 2026-10-31 23:05</span>
+    <span class="tag">更新 2026-11-15 23:50</span>
   </div>
 
   <!-- ============ 现在正在打磨 ============ -->
   <div class="now">
     <div>
       <div class="lab">Now Polishing</div>
-      <div class="big"><em>已上线</em> · 主端 v9 + 教师端分片，只剩云端生成分片</div>
-      <div class="meta"><b>★ 现在的位置</b>：三个文件已推到 <span class="mono">tony80-del.github.io/zhops</span>，线上与本地 sha256 逐字一致。<b>差最后一步</b>：在<b>本地</b>主端点一次「上传到云端」，云端才会生成 <span class="mono">zhops/public</span> 与 <span class="mono">t1…t5</span>。<b>不点</b>，线上教师端打开只会退回读全量。</div>
+      <div class="big"><em>P-157c 完成</em> · 学员删除重构 + 归档页，L-02 学生收费页完工</div>
+      <div class="meta"><b>★ 现在的位置</b>：业务端 docs/biz.html 全部在本地，P-157c 已跑通全套回归（54/54 运行时 + 87/87 静态 + 36/36 biz-core + 43/43 biz-rooms + 46/46 biz-push）。<b>下一步</b>：L-03 钱线（收费单 → 财务收入），需财务端 + 人事端 + 总管配合搭建；主端 P-145 排课引擎重构 7 项决策已拍板，待开工。</div>
     </div>
     <div class="sp"></div>
-    <div class="st">等上传云端</div>
+    <div class="st">L-03 钱线 + P-145 排课引擎</div>
   </div>
 
   <div class="note" style="margin-bottom:26px">
@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-12">2026-11-12 · 今天<span class="c">4</span></button>
+    <button class="on" data-day="2026-11-15">2026-11-15 · 今天<span class="c">1</span></button>
+    <button data-day="2026-11-12">2026-11-12<span class="c">4</span></button>
     <button data-day="2026-11-09">2026-11-09<span class="c">2</span></button>
     <button data-day="2026-11-08">2026-11-08<span class="c">2</span></button>
     <button data-day="2026-11-07">2026-11-07<span class="c">22</span></button>
@@ -250,9 +251,9 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   </div>
 
   <!-- ============ 2026-11-12 ============ -->
-  <div class="day-panel on" data-day="2026-11-12">
+  <div class="day-panel" data-day="2026-11-12">
     <div class="card">
-      <h2>2026-11-12 · 打磨记录<span class="n">5 行 · 已打磨 5 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-12 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -340,6 +341,167 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-13</td>
               <td class="mono nw">—</td>
               <td>已出规划文档 1.1：7 项决策全拍板（单节独立改 / 加学员冲突），补记 GitHub+GitLab+Gitee+商业 SaaS 调研结论；结论仍是自研不搬系统。见下方 P-145 规划文档。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-146</td>
+              <td><b>L-06 ② 教室清单上云：业务端 → 主端独立只读桥</b><br><span style="color:#8899aa;font-size:12px">「换设备 / 换线上主端看不到教室」· 只接通道，红灯闸门与验收留 ③④</span></td>
+              <td class="nw">业务端 · 主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-14</td>
+              <td>业务端新增独立文档 <code>zhops/bizrooms</code> 与手点「☁︎ 推教室给主端」（载荷 9 字段、code 原样、钱线字段不推），主端新增手点「☁︎ 拉取业务部教室」+ 内存缓存，bizRooms() 云优先本机兜底、不写存盘键不顶 cloudDirty；探针 33/33、反向控制 3 组全红，只在本地未发布，L-06 工序 2/4 线仍红。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-147</td>
+              <td><b>L-06 ③ 教室编码红灯闸门：主端开班申请只认业务部在用清单</b><br><span style="color:#8899aa;font-size:12px">「BINHTHANH-01 手滑成 -1，系统不报错、碰撞检查当两间教室、场地费跟着算错」</span></td>
+              <td class="nw">主端 · 开班申请</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-14</td>
+              <td>renderNewAppDrawer() 的手打 text 框换成 &lt;select&gt;（选项来自新增 roomCodeOptions() 唯一清单，停用教室不列、留「暂不指定」、老值补 option 不静默变空、线上班禁用），createApp() 加查号闸门（isKnownRoomCode 不通过就 toast + return 不落盘），approveApp() 建班编码由审批草稿 f 改取申请 o.roomCode（补上原来恒空、不产场地费单据的断点），P-98 探针断言同步升级；静态探针 34/34、运行时探针 21/21（含审批建班 → 课次快照 → 场地使用记录的钱线），反向控制静态 3 组 + 运行时 3 组全红，只在本地未发布，L-06 工序 3/4 线仍红。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-148</td>
+              <td><b>L-01 ① 两端编号对齐：号码本登记「线索 ↔ 学员」互指</b><br><span style="color:#8899aa;font-size:12px">「同一个人两条记录互不相认，介绍人 / 备注在重打时丢掉」· 只做 ①，不写按钮不改界面</span></td>
+              <td class="nw">业务端 · 主链 L-01</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-14</td>
+              <td>生态地图编号字典「业务部 · 市场」加 1 行登记 <code>L-001 ↔ stN</code>（原有 25 行 / 6 列 / 5 分组一字未动），<code>saveLead()</code> 新建分支留 <code>leads[].studentId=''</code>、<code>saveStudent()</code> 新建分支留 <code>students[].leadId=''</code>，两字段只放新建分支所以编辑不抹值、老数据不迁移、bizstudents 云桥仍 7 键不变；P-101 探针同步加 1 条断言，flow-map L-01 工序 ① 打勾 1/4 线仍红（钱线 L-02 未通）。只做号码本与空位，真正互指留 ②。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-149</td>
+              <td><b>L-01 ② 通道接上：线索「转成学员」按钮与字段自动带出</b><br><span style="color:#8899aa;font-size:12px">「线索转学员要重打姓名电话，介绍人 / 备注还丢」</span></td>
+              <td class="nw">业务端 · 主链 L-01</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-14</td>
+              <td>4 份线索行模板统一走 <code>leadActions()</code> 并加「转成学员」，点开原有 <code>studentForm()</code> 的预填版（姓名 / 类型 / 来源 / 联系方式 / 录入日期），三个 hidden 把 <code>leadId / refBy / note</code> 带过抽屉；<code>saveStudent()</code> 转换分支写 <code>students[].leadId</code> 与 <code>leads[].studentId</code> 互指、线索状态置 enrolled，普通新建仍是空 leadId、云桥仍 7 键，越语字典与整句规则同步补齐。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-150</td>
+              <td><b>L-01 ③ 红灯闸门：同一线索不许重复转学员</b><br><span style="color:#8899aa;font-size:12px">「再点一次就多出一个 stN，历史账指向两个人」</span></td>
+              <td class="nw">业务端 · 主链 L-01</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-14</td>
+              <td><code>leadConvertError()</code> 双判据（线索自带 studentId + 反查 <code>students[].leadId</code>），按钮入口与 <code>saveStudent()</code> 保存点各过一次闸门，拦下在 <code>nextStudentId()</code> 之前不烧号；已转线索只显示「已转 stN」不再给按钮，原学员已删也不放行。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-151</td>
+              <td><b>L-01 ④ 整线验收：全套 53 条复跑一次，线仍红标「待收口」</b><br><span style="color:#8899aa;font-size:12px">钱线 L-02 只登记接口、不接</span></td>
+              <td class="nw">总管 · 施工图 L-01</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-14</td>
+              <td>L-01 四步全打勾 <b>4 / 4</b>、线保持红并标「待收口」（钱线 L-02 仍 0 / 4、头部 3 绿 / 6 红 / 1 待收口 / 1 灰一字未动）；接口留 <code>students[].id → billing[].sid</code> 不接；静态 / 运行时针对性探针 + 3 组副本反向控制全过，全套 <code>run.sh</code> 53 条复跑一次核口径，只本地未发布。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-152</td>
+              <td><b>L-01 编号口径落地：已在册的人只关联、不重发号；编号规则显示给用户看</b><br><span style="color:#8899aa;font-size:12px">「线索池只是拿到信息，跟进成功才转学员；学员页面已经有 20 位，转过来该用什么号？」</span></td>
+              <td class="nw">业务端 · 主链 L-01</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-14</td>
+              <td class="mono nw">11-15</td>
+              <td>编号规则写死并展示：<code>stN</code> 由系统接学员档案现有最大号自动发（现有 20 位 → 下一位 <code>st21</code>），人不填、删过的号不回收，线索号 <code>L-xxx</code> 不参与编号、只做互指。新增 <code>findExistingStudent()</code>（姓名 + 电话数字比对）先查重，命中已有学员则弹确认「关联到他 / 先不处理」，选关联只补 <code>leadId / studentId</code> 与线索状态，<b>不新增学员、不发新号</b>；抽屉显示「来源线索 L-xxx」与「下一个自动学员编号 stN」，学员编辑页显示「来源线索 / 学员编号」只读行。演示数据 20 位一条未动。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-153</td>
+              <td><b>线索池只留待跟进的人：已转出的不显示，记录不删</b><br><span style="color:#8899aa;font-size:12px">「正式报名了就把它移除。」Tony 选 ②：总览数字不动。</span></td>
+              <td class="nw">业务端 · 主链 L-01</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>新增 <code>activeLeads()</code>,按「<code>studentId</code> 空 + 反查学员 <code>leadId</code>」过滤;四处线索行模板与侧栏计数改用它,总览漏斗 / 来源分布仍读全部历史线索并标「含已转出」。只本地,未发布。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-154</td>
+              <td><b>学员档案 → 收费:一张单 = 应收、多笔流水 = 实收(允许预缴)</b><br><span style="color:#8899aa;font-size:12px">「学生的收费怎么记录?」报价先不做,先做学生收费。</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>新增 <code>S.billPayments[]</code>,一笔收款一行(日期 / 金额 / 方式 / 备注 / 来源),收费单 <code>paid</code> 一律由流水求和、人不填;旧单已有 <code>paid</code> 开机补成一条 <code>origin:'opening'</code> 期初流水,<b>幂等不重复</b>(判据 <code>legacy&gt;0 &amp;&amp; sum===0</code>),<code>load()</code> 末尾补跑一次对账(<code>seed()</code> 直接赋值、不走 <code>normalizeBiz</code>)。收款改成抽屉「登记收款」,不再用一个 prompt 累加数字;允许预缴并标「预缴」,待缴 / 逾期 / 总览都取 <code>Math.max(0, ...)</code> 不出负数。学员行加「收费」入口带 <b>只读 sid</b> 开单(不许手打 / 换人);四道红灯闸门:sid 查不到 / 总金额 ≤ 0 / 有收款流水的单不许删 / 名下有收费单的学员不许删。<b>演示种子与学员档案「已缴」(st1 = 10.000.000)一字未动</b>;学员表单并列显示「名下收费单已缴合计」。<b>L-03 钱线(收费单 → 财务收入)仍 0 / 4,本线保持红</b>;静态 85 项 + 运行时 51 项 + 3 组副本反向控制全过。只本地,未发布。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-155</td>
+              <td><b>板块改名「学生收费」+ 学员档案「已缴」改只读摘要(钱只认收费单)</b><br><span style="color:#8899aa;font-size:12px">「本来编辑里面都已经有这个收费的记录. 你又在尾端再加一个收费的弹跳窗口. 有什么用处?」Tony 选 A1 + B1。</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td><b>A1</b>:板块「报价与收费」改名 <b>「学生收费」</b>(导航 / 板块标题 / <code>titles.billing</code> / 面包屑 / 越语字典 / 编号字典 <code>B-001</code> 行 / 施工图 L-02·L-03 一起改)。<b>B1</b>:学员档案不再自带第二份「已缴」——表格那一列改 <code>stuFeeCell()</code> 只读摘要(已收 · 应收·待收 · 逾期 / 未开单),编辑抽屉顶部加 <code>stuFeeBlock()</code> 摘要块 <code>#stu-fee</code>,「已缴」框改 <code>readonly</code>、值 = <code>billPaidByStudent()</code>,<code>saveStudent()</code> 不再写 <code>paid</code>;P-107 的「课程包 / 已缴 / 待缴」联动行整段拆除(按手打已缴算第二个待缴数,与收费单口径打架),<code>paidHint()</code> 连根拔掉、越语三条整句规则一并撤。存盘里旧的 <code>students[].paid</code> 原样保留、不迁移、不清零。<b>L-03 钱线仍未接,本线保持红。</b>探针:p107 105/106(只剩 <code>VND_SEP</code> 历史红)、p154 静态 87/87 + 运行时 51/51、p101 39/39、p138 越语残留 67 条 = 基线(零新增);反向控制 3 组全红。只本地,未发布。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-156</td>
+              <td><b>学员档案 = 开单第一入口;收费单窗口三格从报名窗口预填</b><br><span style="color:#8899aa;font-size:12px">「你又在尾端再加一个收费的弹跳窗口. 有什么用处?」→ Tony 定:填课程包就等于开单。</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td><b>P-156 把「报名 → 开单」这条链接死</b>:学员档案「已缴」按有无收费单分两态 —— <b>还没开单可手填</b>(= 报名已收,存进 <code>students[].paid</code>),<b>已开单转只读</b>、值 = 收费单流水合计,<code>saveStudent()</code> 有单不回写(不再存第二份钱)。点「收费」进新收费单窗口,<b>课程包 / 总金额 / 已缴·开单时已收三格自动从报名窗口带过来</b> —— 课程包<b>锁死</b>(要改回学员档案改)、总金额 = 课程包价、开单时已收 = 报名已缴,只留缴费方式 / 下次应收日 / 分期计划手填;那笔已收记成 <code>origin:'opening'</code> 期初流水。学员表单「已缴(VND)」标签保持<b>全角括号</b>(越语字典按整串命中)。新建 <code>check-p156-prefill.js</code> <b>33 / 33</b>;p107 105/106、p154 静态 87/87 + 运行时 51/51、p101 39/39、p138 60/2(与改前逐条<b>完全相同</b> = 基线);p103-fees / p103-places 红项与基线逐条相同;反向控制 <b>4 组副本全红</b>(去掉有单守卫 / 课程包不锁 / 已收不预填 / hasBill 恒 false)。<b>学生收费页横表(全列学员 + 手机号 + 汇总 + 展开)仍是下一轮;L-03 钱线仍未接。</b>只本地,未发布。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-156b</td>
+              <td><b>新收费单:「缴费方式」默认「第一次交」;新建单「下次应收日期」改叫「日期」留证</b><br><span style="color:#8899aa;font-size:12px">「这个入口只要记录第一次缴费, 和日期证明。」</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>新收费单窗口「缴费方式」加「<b>第一次交</b>」并<b>默认选中</b>;「下次应收日期」在<b>新建单</b>时改叫「<b>日期</b>」(= 这笔缴费的日子,默认今天)并加一行说明「这个入口只记第一次缴费和日期;后续收款到学生收费页登记。」;<b>编辑单仍叫「下次应收日期」</b>。<code>saveBilling()</code> 新建单<b>不写 <code>dueDate</code></b>、期初流水 <code>date</code> 取该格(<code>val('f-dueDate') || todayStr()</code>),缴费方式一并写进流水;<code>BIZ_VI</code> 加两条越语整句。<code>check-p156-prefill.js</code> 扩到 <b>44 / 44</b>;p107 105/106、p154 静态 87/87 + 运行时 51/51、p138 60/2 与改前逐条<b>完全相同</b> = 基线,零新增红。<b>学生收费页横表仍是下一轮;L-03 钱线仍未接。</b>只本地,未发布。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-157</td>
+              <td><b>学生收费页横表:一行一学员、全列 20 位、加手机号、筛选、点击展开流水</b><br><span style="color:#8899aa;font-size:12px">优先把这个处理,接下来调用财务部+人事部技能搭建 L-03 钱线</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>学生收费视图从竖卡改成横表(11 列:学号/姓名/手机号/课程包/应收/已缴/待收/下次应交日/最近已缴日/状态/动作);筛选段:全部/未开单/进行中/逾期/已结清;点击行展开名下每张单+每笔流水;顶部 6 格汇总保留。renderBilling()->renderBillingTable()/filterBilling()/expandBillingRow();旧 billing-list 隐藏兼容;不碰存盘键/不碰其他端。P-154 运行时 51/51、静态 87/87、biz-core 36/36、biz-rooms 43/43、biz-push 46/46、p107 105/106、p138 60/2 均与改前逐条相同(零新增红)。反向控制 2 组副本报红。只本地,未发布,未推云。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-157b</td>
+              <td><b>横表修正:隐藏学号列、只显 HSK 1/2/3、档案定价 8M/3M、筛选展开保留</b><br><span style="color:#8899aa;font-size:12px">Tony:1B/2A/3C —— 学号隐藏、课程包只留 HSK 1/2/3、trial/vip1/small 整行隐藏、st1 按收费单算(10M/5M/5M)、其余 19 位按档案算(8M/3M/5M)、Trần Thị B 是线索不进表</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>thead 删除"学号"列 → 10 列;renderBillingTable() 增 HSK 1/2/3 过滤(trial/vip1/small 返回 null)、课程包显示简化 hsk1/2/3→HSK 1/2/3、手机号回退读 contact;双口径应收/已缴/待收:有收费单按收费单算(st1),无收费单按档案价+paid 算(其余 19 位);expandBillingRow/空行 colspan 11→10。全套回归:p154运行时 51/51、p154静态 87/87、biz-core 36/36、biz-rooms 43/43、biz-push 46/46、p107 105/106(基线红)、p138 60/2(基线红),零新增红。反向控制破坏 HSK过滤/档案定价→探针报红。本地 sha256: b60958b2313dde1751a5205b00d89b8e4e3d8f5bdbc72998fc1e96dadd56cf74,线上未变。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-157c</td>
+              <td><b>学员删除重构:有单级联删单+删流水、留墓碑、侧栏新增「已删除学员」归档页</b><br><span style="color:#8899aa;font-size:12px">「有收费单或者没收费单都能删除。有收费单的，删除之后学生会的收费单也同时删除单」</span></td>
+              <td class="nw">业务端 · 学员档案 / 归档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>delStudent() 重写为级联删除:先删 billPayments(按 bid 过滤)、再删 billing(按 sid 过滤)、再写墓碑 studentsDeleted(含 id/name/contact/enrollDate/deletedAt/billingCount/paymentCount)、最后从 students 移除。at+deletedAt 双字段兼容旧探针与新视图。侧栏新分组「归档」+ 导航项 data-v=deleted-students;新增 renderDeletedStudents()/expandDeletedStudent() 列表/详情(只留姓名/联系/报名/退学日期,不记金额汇总,不允许恢复)。BIZ_VI 追加 12 条键值。全套回归:p154运行时 54/54、静态 87/87、biz-core 36/36、biz-rooms 43/43、biz-push 46/46、p107 105/106(基线红)、p138 60/2(基线红),零新增红。反向控制副本破坏级联删除/墓碑/视图→探针报红。本地未发布,线上未变。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-11-15 ============ -->
+  <div class="day-panel on" data-day="2026-11-15">
+    <div class="card">
+      <h2>2026-11-15 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-157c</td>
+              <td><b>学员删除重构:有单级联删单+删流水、留墓碑、侧栏新增「已删除学员」归档页</b><br><span style="color:#8899aa;font-size:12px">「有收费单或者没收费单都能删除。有收费单的，删除之后学生会的收费单也同时删除单」</span></td>
+              <td class="nw">业务端 · 学员档案 / 归档</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-15</td>
+              <td class="mono nw">11-15</td>
+              <td>delStudent() 重写为级联删除:先删 billPayments(按 bid 过滤)、再删 billing(按 sid 过滤)、再写墓碑 studentsDeleted(含 id/name/contact/enrollDate/deletedAt/billingCount/paymentCount)、最后从 students 移除。at+deletedAt 双字段兼容旧探针与新视图。侧栏新分组「归档」+ 导航项 data-v=deleted-students;新增 renderDeletedStudents()/expandDeletedStudent() 列表/详情(只留姓名/联系/报名/退学日期,不记金额汇总,不允许恢复)。BIZ_VI 追加 12 条键值。全套回归:p154运行时 54/54、静态 87/87、biz-core 36/36、biz-rooms 43/43、biz-push 46/46、p107 105/106(基线红)、p138 60/2(基线红),零新增红。反向控制副本破坏级联删除/墓碑/视图→探针报红。本地未发布,线上未变。</td>
             </tr>
           </tbody>
         </table>

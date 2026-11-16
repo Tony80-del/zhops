@@ -410,7 +410,11 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
     </a>
     <a data-v="billing">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12v12H2z"/><path d="M2 6h12M6 2v12"/></svg>
-      报价收费 <span class="cnt" id="cnt-billing">0</span>
+      学生收费 <span class="cnt" id="cnt-billing">0</span>
+    </a>
+    <a data-v="deleted-students">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 14h13"/><path d="M3 14V4l5-2.5L13 4v10"/><path d="M6 6l4 4M10 6l-4 4" stroke-width="1.5"/></svg>
+      已删除学员 <span class="cnt" id="cnt-deleted-students">0</span>
     </a>
 
     <div class="grp">市场</div>
@@ -442,6 +446,12 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
          手动推，不做自动同步 —— 自动同步一旦出错，两边会互相冲。 -->
     <span class="bizcld idle" id="bizCld">☁︎ 还没推送过</span>
     <button type="button" class="sf-btn" id="btnBizPush" title="只推学员的 5 个字段，给主端候选池看">☁︎ 推学生给主端</button>
+    <!-- ★ 2026-11-14（P-146 / L-06 ②）：教室清单只读桥，独立文档 bizrooms。
+         跟「推学生」「整份备份」三件事各走各的文档，文案刻意写死，别让人误点。 -->
+    <button type="button" class="sf-btn" id="btnBizRoomsPush" title="只推教室编号清单（code / 名称 / 地区 / 可用时段），给主端排课选教室用">☁︎ 推教室给主端</button>
+    <!-- ★ 2026-11-16（L-03 ②）：已缴费 → 财务端，独立文档 bizpayments， Tony 手点。
+         只推流水与单号（stN / B-xxx / P-xxx），不推学员档案、不推 students[].paid。 -->
+    <button type="button" class="sf-btn" id="btnBizPayPush" title="只推已收流水与单号（stN/B/P），给财务端待入账用">☁︎ 推已缴费给财务</button>
     <!-- ★ 2026-11-08（P-133）：整份云备份 —— 换设备 / 换网址靠它。
          ⚠️ 跟上面那颗是两件事，文案刻意写死，别让人误点。
          ★ 2026-11-08（P-136）：这两颗现在退成「手动保险」，常态是自动同步（见下面 #syncBox）。 -->
@@ -519,6 +529,7 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
         </div>
         <div class="card-b">
           <div class="funnel" id="funnel"></div>
+          <div style="color:var(--ink3);font-size:12px;margin-top:8px">总览含已转出线索；侧栏只数待跟进的人。</div>
         </div>
       </div>
 
@@ -632,10 +643,44 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
       </div>
     </div>
 
-    <!-- ====== 报价收费 ====== -->
+    <!-- ====== 已删除学员 ====== -->
+    <div class="view" data-view="deleted-students">
+      <div class="page-h">
+        <h2>已删除学员</h2>
+        <p class="desc">退学/删除的学员记录 · 姓名、联系方式、报名日期、退学日期</p>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <h3>已删除学员</h3>
+          <div class="sp"></div>
+          <span class="sub" id="del-stu-count">0 条</span>
+        </div>
+        <div class="card-b tight">
+          <div class="tbl-wrap">
+            <table class="tbl" id="tbl-deleted-students">
+              <thead>
+                <tr>
+                  <th>学号</th>
+                  <th>姓名</th>
+                  <th>联系方式</th>
+                  <th>报名日期</th>
+                  <th>退学日期</th>
+                  <th>原收费单数</th>
+                  <th>原流水数</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tb-deleted-students"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 学生收费 ====== -->
     <div class="view" data-view="billing">
       <div class="page-h">
-        <h2>报价与收费</h2>
+        <h2>学生收费</h2>
         <p class="desc">每个学员该交多少、什么时候交、交了没</p>
         <div class="sp"></div>
         <button class="btn pri" onclick="addBilling()">+ 新收费单</button>
@@ -650,12 +695,39 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
       </div>
       <div class="card">
         <div class="card-h">
-          <h3>收费单</h3>
+          <h3>学生收费</h3>
           <div class="sp"></div>
           <span class="sub" id="bill-count">0 单</span>
         </div>
         <div class="card-b tight">
-          <div id="billing-list"></div>
+          <div class="seg" style="margin-bottom:10px">
+            <button class="seg-s" onclick="filterBilling('all')" id="bill-flt-all">全部</button>
+            <button class="seg-s" onclick="filterBilling('no-bill')" id="bill-flt-no">未开单</button>
+            <button class="seg-s" onclick="filterBilling('active')" id="bill-flt-active">进行中</button>
+            <button class="seg-s" onclick="filterBilling('overdue')" id="bill-flt-overdue">逾期</button>
+            <button class="seg-s" onclick="filterBilling('closed')" id="bill-flt-closed">已结清</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl" id="tbl-billing">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>手机号</th>
+                  <th>课程包</th>
+                  <th>应收</th>
+                  <th>已缴</th>
+                  <th>待收</th>
+                  <th>下次应交日</th>
+                  <th>最近已缴日</th>
+                  <th>状态</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tb-billing"></tbody>
+            </table>
+          </div>
+          <!-- 旧卡片视图（隐藏，供测试兼容） -->
+          <div id="billing-list" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -875,6 +947,12 @@ var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], ca
 var FS = { pid:'hsk-class-v1', key:'AIzaSyBC5FdMk8dBZA_AkWjFodZD_ixyd2m3C_c', coll:'zhops' };
 var BIZ_CLOUD_TAG = 'zhops.biz';
 var BIZSTU_DOC = 'bizstudents';
+/* ★ 2026-11-14（P-146 / L-06 第②步）：教室清单独立文档。
+   绝不复用 bizstudents（学生桥）或 bizmaster（自用整份备份）—— 见 bizRoomsPush 上方注释。 */
+var BIZROOM_DOC = 'bizrooms';
+/* ★ 2026-11-16（L-03 ② · Tony 批）：已缴费 → 财务端，独立文档 bizpayments。
+   不塞 bizstudents（主端候选池）、不塞 approvals（三方共写）、不拿 bizmaster 反读。 */
+var BIZPAY_DOC = 'bizpayments';
 var CLD = { state:'idle', at:null };
 
 function fsUrlOf(doc){
@@ -920,6 +998,124 @@ function cldMark(state, at, msg){
   }
   if (state === 'bad'){ el.className = 'bizcld bad'; el.textContent = '☁︎ ' + (msg || '推送失败'); return; }
   el.className = 'bizcld idle'; el.textContent = '☁︎ 还没推送过';
+}
+
+/* ============================================================
+   教室清单只读桥（2026-11-14 · P-146 / L-06 第②步）
+   ------------------------------------------------------------
+   方向：业务部 → 主端（单向、手点、只读桥）。
+     业务部点「☁︎ 推教室给主端」→ 写 zhops/bizrooms
+     主端点「☁︎ 拉取业务部教室」→ 读 zhops/bizrooms
+
+   ★ 为什么单独开一个文档（chief §8 分板块铁律）：
+     bizstudents 是「学生候选池」5 字段桥，bizmaster 是业务部自用整份备份。
+     教室清单既不属于学生，也不该让主端去解析整份业务库 —— 塞进任何一个，
+     「谁写谁读」就说不清，且业务部一恢复整份备份就会把教室清单盖掉。
+
+   ★ 只推主端排课要用的字段：
+     code 是 Tony 手填的教室编号，原样带过去，一个字不改、不生成、不预设格式。
+     rent / hourly / billMode / tel / note / placeId 属于场地与钱线，一律不推 ——
+     L-06 是编号线不是钱线，推过去等于偷开第二条钱线。
+   ============================================================ */
+function bizRoomsPayload(){
+  return (S.rooms || []).map(function(r){
+    return {
+      code:    (r && r.code) || '',
+      name:    (r && r.name) || '',
+      area:    (r && r.area) || '',
+      addr:    (r && r.addr) || '',
+      days:    Array.isArray(r && r.days) ? r.days.slice() : [],
+      hours:   (r && r.hours) || '',
+      cap:     Number(r && r.cap) || 0,
+      purpose: (r && r.purpose) === 'office' ? 'office' : 'class',
+      open:    !(r && r.open === false),
+    };
+  });
+}
+
+function bizRoomsPush(){
+  if (typeof fetch !== 'function'){ toast('推送失败：浏览器不支持联网', true); return; }
+  var payload = {
+    __app: BIZ_CLOUD_TAG,
+    at: new Date().toISOString(),
+    rooms: bizRoomsPayload(),
+  };
+  var body = { fields: {
+    payload: { stringValue: JSON.stringify(payload) },
+    at:      { stringValue: payload.at },
+    app:     { stringValue: BIZ_CLOUD_TAG },
+  }};
+  fetch(fsUrlOf(BIZROOM_DOC), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(){ toast('已推送 ' + payload.rooms.length + ' 间教室到云端'); })
+  .catch(function(e){ toast('推送失败：' + (e && e.message ? e.message : '连不上云端'), true); });
+}
+
+/* ============================================================
+   L-03 ② · 已缴费 → 财务端（2026-11-16 Tony 批）
+   ------------------------------------------------------------
+   方向：业务部 → 财务端（单向、手点、只读桥）。
+     业务部点「☁︎ 推已缴费给财务」→ 写 zhops/bizpayments
+     财务端读它 → 出待入账清单 → Tony 点确认才写 S.income
+
+   ★ 为什么单独开文档（chief §8）：bizstudents 是主端候选池（6 字段），
+     bizmaster 是自用整份备份，approvals 已三方共写。收费流水塞进任何一个，
+     要么污染主端，要么让财务端读整份业务库，要么变成第四方共写。
+
+   ★ 只推流水与单号，不推学员档案、不推 students[].paid：
+     students[].paid 是旧口径（演示 st1 挂着 10M 对 8M 包价的超额脏数据），
+     它不是「已收」的权威。权威只有 S.billPayments[] 一笔一行的收款流水。
+
+   ★ 查号闸门：pid / bid / sid 三套号都在业务端发，财务端只抄。
+     号不对或在学员档案查不到 → bad 记下来，整批不推，红灯说话。
+   ============================================================ */
+function bizPaymentsPayload(){
+  var nameOf = {};
+  (S.students||[]).forEach(function(s){ if(s && s.id) nameOf[s.id] = s.name || ''; });
+  var bad = [], payments = [];
+  (S.billPayments||[]).forEach(function(p){
+    if(!p || !(Number(p.amount) > 0)) return;
+    var pid = p.id||'', bid = p.bid||'', sid = p.sid||'';
+    if(!/^P-\d+$/.test(pid)){ bad.push('流水号 '+pid); return; }
+    if(!/^B-\d+$/.test(bid)){ bad.push('收费单号 '+bid); return; }
+    if(!/^st\d+$/.test(sid)){ bad.push('学员号 '+sid); return; }
+    if(!nameOf[sid]){ bad.push('学员号 '+sid+' 在档案里查不到'); return; }
+    payments.push({
+      pid: pid, bid: bid, sid: sid, sname: nameOf[sid],
+      date: p.date||'', amount: Number(p.amount),
+      method: p.method||'其他', note: p.note||'', origin: p.origin||'manual',
+    });
+  });
+  var bills = (S.billing||[]).filter(function(b){
+    return b && /^B-\d+$/.test(b.id||'');
+  }).map(function(b){
+    return { id:b.id, sid:b.sid||'', total:Number(b.total)||0, paid:Number(b.paid)||0, status:b.status||'' };
+  });
+  return { __app:BIZ_CLOUD_TAG, at:new Date().toISOString(), payments:payments, bills:bills, bad:bad };
+}
+
+function bizPayPush(){
+  if (typeof fetch !== 'function'){ toast('推送失败：浏览器不支持联网', true); return; }
+  var payload = bizPaymentsPayload();
+  if(payload.bad.length){
+    toast('查号不过：'+payload.bad.slice(0,3).join('、')+'，没推', true);
+    return;
+  }
+  /* bad 只留本机给探针看，不写进云端 */
+  var cloud = { __app:payload.__app, at:payload.at, payments:payload.payments, bills:payload.bills };
+  var body = { fields: {
+    payload: { stringValue: JSON.stringify(cloud) },
+    at:      { stringValue: payload.at },
+    app:     { stringValue: BIZ_CLOUD_TAG },
+  }};
+  fetch(fsUrlOf(BIZPAY_DOC), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(){ toast('已推送 '+cloud.payments.length+' 笔收款给财务'); })
+  .catch(function(e){ toast('推送失败：' + (e && e.message ? e.message : '连不上云端'), true); });
 }
 
 /* 推送：整份写 zhops/bizstudents（P-96 定的「推全部」，不做增量） */
@@ -976,7 +1172,7 @@ function normalizeBiz(o){
   /* 至少要有学员数组才算「像一份业务部数据」，否则当它坏了 */
   if (!Array.isArray(o.students)) return null;
   var d = {
-    leads:[], students:[], studentsDeleted:[], billing:[], research:[],
+    leads:[], students:[], studentsDeleted:[], billing:[], billPayments:[], research:[],
     campaigns:[], assets:[], events:[], rooms:[], places:[],
     usage:[], placeVouchers:[], usageAmt:{},
     seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1},
@@ -989,6 +1185,7 @@ function normalizeBiz(o){
   if (!Array.isArray(d.students)) d.students = [];
   if (!Array.isArray(d.studentsDeleted)) d.studentsDeleted = [];
   if (!Array.isArray(d.billing)) d.billing = [];
+  if (!Array.isArray(d.billPayments)) d.billPayments = [];
   if (!Array.isArray(d.research)) d.research = [];
   if (!Array.isArray(d.campaigns)) d.campaigns = [];
   if (!Array.isArray(d.assets)) d.assets = [];
@@ -1001,6 +1198,66 @@ function normalizeBiz(o){
   if (!d.seq || typeof d.seq !== 'object') d.seq = {};
   ['lead','stu','bill','res','cmp','ast','evt','room','place'].forEach(function(x){
     if (!d.seq[x]) d.seq[x] = 1;
+  });
+  /* ★ P-154：读盘 / 恢复 / 探针造数都走同一处，把 billing.paid 对齐到收款流水。
+     syncBillPayments 只补「旧单已有的钱」，不改任何原有数值、不落盘。 */
+  syncBillPayments(d);
+  return d;
+}
+
+/* ============================================================
+   P-154 · 学生收费：一张单 = 应收，多笔流水 = 实收（2026-11-15）
+   ------------------------------------------------------------
+   - S.billPayments[] 一笔一行：id / bid / sid / date / amount / method / note / origin
+   - billing[].paid 永远 = 名下流水 amount 求和，人不填
+   - 旧单原本就带 paid（演示 B-001 = 5.000.000）→ 补一条「期初」流水保住这笔钱。
+     幂等、只补内存、不改学员档案 students[].paid、不落盘。
+   - Tony 2026-11-15 拍板：允许预缴，超额标「预缴」，待缴不出负数。
+   ============================================================ */
+function nextPaymentIdIn(d){
+  var max = 0;
+  (d && Array.isArray(d.billPayments) ? d.billPayments : []).forEach(function(p){
+    var mm = /^P-(\d+)$/.exec((p && p.id) || '');
+    if (mm) max = Math.max(max, Number(mm[1]));
+  });
+  return 'P-' + String(max + 1).padStart(3,'0');
+}
+function nextPaymentId(){ return nextPaymentIdIn(S); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function billPaymentsOf(bid){
+  return (S.billPayments||[]).filter(function(p){ return p && p.bid === bid; });
+}
+function billPaidOf(b){
+  return billPaymentsOf(b && b.id).reduce(function(a,p){ return a + (Number(p.amount)||0); }, 0);
+}
+function billPaidByStudent(sid){
+  return (S.billing||[]).filter(function(b){ return b && b.sid === sid; })
+    .reduce(function(a,b){ return a + billPaidOf(b); }, 0);
+}
+function syncBillPayments(d){
+  if (!d || !Array.isArray(d.billing)) return d;
+  if (!Array.isArray(d.billPayments)) d.billPayments = [];
+  d.billPayments.forEach(function(p){ if(p) p.amount = Number(p.amount)||0; });
+  d.billing.forEach(function(b){
+    if (!b || !b.id) return;
+    var sum = d.billPayments.reduce(function(a,p){
+      return p && p.bid === b.id ? a + (Number(p.amount)||0) : a;
+    }, 0);
+    var legacy = Number(b.paid)||0;
+    /* ★ 期初保钱：旧单有已缴、名下却一笔流水都没有 → 补一条期初。
+       已有流水绝不补（幂等）；学员档案的 students[].paid 一个字不碰。 */
+    if (legacy > 0 && sum === 0){
+      d.billPayments.push({ id: nextPaymentIdIn(d), bid: b.id, sid: b.sid||'',
+        date: b.dueDate || todayStr(), amount: legacy,
+        method: b.method || '一次性', note:'', origin:'opening' });
+    }
+  });
+  /* paid 一律以流水为准 —— 现有所有算式（total - paid）不用改 */
+  d.billing.forEach(function(b){
+    if (!b || !b.id) return;
+    b.paid = d.billPayments.reduce(function(a,p){
+      return p && p.bid === b.id ? a + (Number(p.amount)||0) : a;
+    }, 0);
   });
   return d;
 }
@@ -1112,6 +1369,8 @@ function load(){
   if(!S.leads || !S.leads.length){ seed(); }
   /* ★ 2026-11-02（P-96）：老数据没有这两个集合，补上空数组，别让渲染炸 */
   if(!Array.isArray(S.studentsDeleted)) S.studentsDeleted = [];
+  /* ★ P-154：老存盘没有「收款流水」集合，补空数组，别让渲染炸 */
+  if(!Array.isArray(S.billPayments)) S.billPayments = [];
   if(!Array.isArray(S.rooms)) S.rooms = [];
   /* ★ 2026-11-05（P-103 ③）：老存盘没有「场地」集合，补空数组，别让渲染炸 */
   if(!Array.isArray(S.places)) S.places = [];
@@ -1124,6 +1383,9 @@ function load(){
   /* ★ 2026-11-02（P-93）：把老的 S-001 编号迁成 st 编号（幂等，跑一次就够）。
      放在 seed() 之后 —— 种子数据本身已经用 st 编号，不会重复迁。 */
   if(migrateStudentIds()) save();
+  /* ★ P-154：seed() 是直接赋值、不走 normalizeBiz，所以这里再对一次账。
+     旧单原本带 paid 的，补一条「期初」流水把那笔钱保住；幂等、不改学员档案。 */
+  syncBillPayments(S);
 }
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); toast('已保存'); }
@@ -1194,7 +1456,7 @@ function seed(){
 function nav(v){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===v));
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on', el.dataset.view===v));
-  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'报价收费', research:'市场调查', campaigns:'投放记录', assets:'宣传素材', events:'讲座活动', rooms:'教室' };
+  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'学生收费', research:'市场调查', campaigns:'投放记录', assets:'宣传素材', events:'讲座活动', rooms:'教室', 'deleted-students':'已删除学员' };
   document.getElementById('crumb-sub').textContent = titles[v]||'';
   render(v);
 }
@@ -1211,15 +1473,17 @@ function render(v){
   if(v==='assets') renderAssets();
   if(v==='events') renderEvents();
   if(v==='rooms') renderRooms();
+  if(v==='deleted-students') renderDeletedStudents();
   updateCounts();
 }
 function currentView(){
   var on = document.querySelector('.view.on'); return on ? on.dataset.view : 'overview';
 }
 function updateCounts(){
-  document.getElementById('cnt-leads').textContent = S.leads.length;
+  document.getElementById('cnt-leads').textContent = activeLeads().length;
   document.getElementById('cnt-students').textContent = S.students.length;
   document.getElementById('cnt-billing').textContent = S.billing.length;
+  document.getElementById('cnt-deleted-students').textContent = (S.studentsDeleted||[]).length;
   var cr = document.getElementById('cnt-rooms');
   if(cr) cr.textContent = (S.rooms||[]).length;
 }
@@ -1257,6 +1521,13 @@ function fmtDate(d){
   if(!d) return '—';
   return d;
 }
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  try{
+    var dt = new Date(iso);
+    return fmtDate(dt.toISOString().slice(0,10)) + ' ' + dt.toTimeString().slice(0,5);
+  }catch(e){ return iso; }
+}
 function statusTag(s){
   var map = { 'new':['tg off','新线索'], 'contacted':['tg amber','已联系'], 'trial':['tg warn','已试听'], 'enrolled':['tg on','已报名'], 'lost':['tg bad','已流失'] };
   var m = map[s]||['tg off',s];
@@ -1286,9 +1557,10 @@ function renderOverview(){
   var monthLeads = S.leads.filter(function(l){ return l.date && l.date.startsWith(ym); });
   var monthStus = S.students.filter(function(s){ return s.enrollDate && s.enrollDate.startsWith(ym); });
   var activeBills = S.billing.filter(function(b){ return b.status==='进行中'; });
-  var totalDue = activeBills.reduce(function(a,b){ return a + (b.total - b.paid); }, 0);
+  /* ★ P-154：预缴不进待缴 / 逾期，报表不出负数 */
+  var totalDue = activeBills.reduce(function(a,b){ return a + Math.max(0, b.total - b.paid); }, 0);
   var overdue = activeBills.filter(function(b){ return b.dueDate && new Date(b.dueDate) < now; });
-  var overdueAmt = overdue.reduce(function(a,b){ return a + (b.total - b.paid); }, 0);
+  var overdueAmt = overdue.reduce(function(a,b){ return a + Math.max(0, b.total - b.paid); }, 0);
 
   document.getElementById('kpi-leads').textContent = monthLeads.length;
   document.getElementById('kpi-leads-d').textContent = '—';
@@ -1333,43 +1605,68 @@ function renderOverview(){
 /* ============================================================
    线索池
    ============================================================ */
+/* ---- L-01 补（2026-11-15 · Tony 选 ②）：已转出的线索不再进线索池 ----
+   线索池 = 待跟进清单。正式报名的人已经进学员档案，池里不该再占一行。
+   ★ 只过滤视图，不删记录：students[].leadId 还指着 L-xxx，历史账不能断。
+   ★ 判据只看「转出去没有」，不看 status —— 演示数据 L-001 状态是 enrolled
+     但 studentId 为空，按状态过滤会让它凭空消失、却还没进学员档案。
+   ★ 两条判据跟 leadConvertError() 对齐：线索自带 studentId + 反查学员 leadId。 */
+function activeLeads(){
+  return (S.leads||[]).filter(function(l){
+    if(!l) return false;
+    if(l.studentId) return false;
+    return !(S.students||[]).some(function(s){ return s && s.leadId === l.id; });
+  });
+}
+/* ★ 2026-11-14（L-01 ② / ③）：线索行右侧动作唯一出口。
+   原来 4 份行模板各拼一次「编辑」，加一个动作要改 4 处（P-94 学员表踩过）。
+   现在 renderLeads / filterLeads / filterLeadsStatus / filterLeadsSrc 全调这里。
+   ★ 已转过的线索只给只读标记，不再给「转成学员」入口 —— 闸门在
+     leadConvertError() 里还兜一层，防旧 DOM / 双击绕过。
+   ★ 文案一律输出中文，由 P-138 语言层整串翻译（动态串走 BIZ_VI_RE 规则），
+     切回中文能逐字还原；不在这里调 tr()。 */
+function leadActions(l){
+  var edit = '<a class="act" onclick="editLead(\''+l.id+'\')">编辑</a>';
+  if (l.studentId) return edit + ' <span class="tg on">已转 '+esc(l.studentId)+'</span>';
+  return edit + ' <a class="act" onclick="leadToStudent(\''+l.id+'\')">转成学员</a>';
+}
 function renderLeads(){
   var tb = document.getElementById('tb-leads');
-  var rows = S.leads;
+  var rows = activeLeads();
   if(!rows.length){ tb.innerHTML = '<tr><td colspan="8" class="empty">还没有线索。点「+ 新线索」开始。</td></tr>'; return; }
   tb.innerHTML = rows.map(function(l){
     return '<tr>'+
-      '<td><b>'+l.name+'</b></td>'+
+      '<td><b data-raw>'+esc(l.name)+'</b></td>'+
       '<td>'+(l.type||'—')+'</td>'+
       '<td><span class="tg own">'+l.source+'</span></td>'+
       '<td class="m">'+(l.refBy||'—')+'</td>'+
       '<td class="m">'+(l.contact||'—')+'</td>'+
       '<td>'+statusTag(l.status)+'</td>'+
       '<td class="m">'+fmtDate(l.date)+'</td>'+
-      '<td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td>'+
+      '<td>'+leadActions(l)+'</td>'+
       '</tr>';
   }).join('');
 }
 function filterLeads(q){
   q = (q||'').toLowerCase();
-  var rows = S.leads.filter(function(l){ return !q || (l.name||'').toLowerCase().includes(q) || (l.contact||'').toLowerCase().includes(q); });
+  var rows = activeLeads().filter(function(l){ return !q || (l.name||'').toLowerCase().includes(q) || (l.contact||'').toLowerCase().includes(q); });
   var tb = document.getElementById('tb-leads');
   tb.innerHTML = rows.length ? rows.map(function(l){
-    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td></tr>';
+    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td>'+leadActions(l)+'</td></tr>';
   }).join('') : '<tr><td colspan="8" class="empty">没有匹配的线索</td></tr>';
 }
 function filterLeadsStatus(v){ /* 简单筛选 */
   var tb = document.getElementById('tb-leads');
-  var rows = v ? S.leads.filter(function(l){ return l.status===v; }) : S.leads;
+  var rows = v ? activeLeads().filter(function(l){ return l.status===v; }) : activeLeads();
   tb.innerHTML = rows.length ? rows.map(function(l){
-    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td></tr>';
+    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td>'+leadActions(l)+'</td></tr>';
   }).join('') : '<tr><td colspan="8" class="empty">没有匹配</td></tr>';
 }
 function filterLeadsSrc(v){
   var tb = document.getElementById('tb-leads');
-  var rows = v ? S.leads.filter(function(l){ return l.source===v; }) : S.leads;
+  var rows = v ? activeLeads().filter(function(l){ return l.source===v; }) : activeLeads();
   tb.innerHTML = rows.length ? rows.map(function(l){
-    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td><a class="act" onclick="editLead(\''+l.id+'\')">编辑</a></td></tr>';
+    return '<tr><td><b>'+l.name+'</b></td><td>'+(l.type||'—')+'</td><td><span class="tg own">'+l.source+'</span></td><td class="m">'+(l.refBy||'—')+'</td><td class="m">'+(l.contact||'—')+'</td><td>'+statusTag(l.status)+'</td><td class="m">'+fmtDate(l.date)+'</td><td>'+leadActions(l)+'</td></tr>';
   }).join('') : '<tr><td colspan="8" class="empty">没有匹配</td></tr>';
 }
 
@@ -1386,20 +1683,67 @@ function roomText(s){
   if ((s.mode || 'offline') === 'online') return '线上';
   return '线下' + (s.preferRoom ? ' · ' + s.preferRoom : '');
 }
+/* ============================================================
+   ★ P-155(B1 · Tony 2026-11-15 选 B1):学员档案不再自带一份「已缴」。
+   ------------------------------------------------------------
+   钱的权威只有一份 = 收费单 + 收款流水。表格这一列与表单摘要都从这边算。
+   students[].paid 字段保留在存盘里(不迁移、不清零),只是不再当收费来源、
+   也不再从表单写回 —— 谁也不再手打第二份。
+   ============================================================ */
+function stuBillsOf(sid){
+  return (S.billing||[]).filter(function(b){ return b && b.sid === sid; });
+}
+function stuFee(sid){
+  var bills = stuBillsOf(sid);
+  var recv = bills.reduce(function(a,b){ return a + (Number(b.total)||0); }, 0);
+  var got  = bills.reduce(function(a,b){ return a + billPaidOf(b); }, 0);
+  var now  = new Date();
+  var next = '', over = false;
+  bills.forEach(function(b){
+    if(!b || b.status !== '进行中' || !b.dueDate) return;
+    if(!next || new Date(b.dueDate) < new Date(next)) next = b.dueDate;
+    if((Number(b.total)||0) - (Number(b.paid)||0) > 0 && new Date(b.dueDate) < now) over = true;
+  });
+  return { n:bills.length, recv:recv, got:got, due:Math.max(0, recv-got), next:next, over:over };
+}
+/* 表格单元格:只读摘要(已收 / 应收·待收 / 逾期)。中文标签各自成串,越语层整串命中。 */
+function stuFeeCell(s){
+  var f = stuFee(s.id);
+  if(!f.n) return '<span class="tg off">未开单</span>';
+  return fmtVND(f.got)+'<small>VND</small>'+
+    (f.due>0 ? '<br><small style="color:var(--ink3)"><span>应收</span> <span data-raw>'+fmtVND(f.recv)+
+      '</span> · <span>待收</span> <span data-raw>'+fmtVND(f.due)+'</span></small>' : '')+
+    (f.over ? ' <span class="tg bad">逾期</span>' : '');
+}
+/* 表单顶部只读摘要块:应收 / 已收 / 待收 / 下次应收日,全部从收费单算 */
+function stuFeeBlock(s){
+  if(!s || !s.id) return '';
+  var f = stuFee(s.id);
+  if(!f.n) return '<div id="stu-fee" class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+    '<span>还没开收费单。填好课程包和已缴,再点「收费」开单。</span></div>';
+  return '<div id="stu-fee" class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+    '<span>收费以收费单为准,学员档案不再另记一份。</span><br>'+
+    '<span>名下收费单已缴合计</span> <span data-raw>'+fmtVND(f.got)+'</span> <span>VND</span><br>'+
+    '<span>应收</span> <span data-raw>'+fmtVND(f.recv)+'</span> <span>VND</span> · '+
+    '<span>待收</span> <span data-raw>'+fmtVND(f.due)+'</span> <span>VND</span> · '+
+    '<span>下次应收</span> <span data-raw>'+(f.next||'—')+'</span></div>';
+}
 function stuRow(s){
   var online = (s.mode || 'offline') === 'online';
   return '<tr>'+
     '<td class="m">'+esc(s.id)+'</td>'+
-    '<td><b>'+esc(s.name)+'</b></td>'+
+    '<td><b data-raw>'+esc(s.name)+'</b></td>'+
     '<td>'+(esc(s.type)||'—')+'</td>'+
     '<td><span class="tg own">'+(esc(s.source)||'—')+'</span></td>'+
     '<td><span class="tg amber">'+(esc(s.level)||'—')+'</span></td>'+
     /* ★ 2026-11-02（P-94）：上课方式 —— 线上走 .on（青），线下走 .off */
     '<td><span class="tg '+(online?'on':'off')+'">'+esc(roomText(s))+'</span></td>'+
     '<td class="m">'+esc(fmtDate(s.enrollDate))+'</td>'+
-    '<td class="num">'+fmtVND(s.paid)+'<small>VND</small></td>'+
+    '<td class="num">'+stuFeeCell(s)+'</td>'+
     '<td>'+studentStatusTag(s.status)+'</td>'+
-    '<td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a></td>'+
+    '<td><a class="act" onclick="editStudent(\''+s.id+'\')">编辑</a>'+
+      /* ★ P-154 / L-02 ②：从学员档案直接开收费单，带只读 sid 过去 */
+      ' <a class="act" onclick="addBilling(\''+s.id+'\')">收费</a></td>'+
     '</tr>';
 }
 function fillStudents(rows, emptyText){
@@ -1425,45 +1769,284 @@ function filterStudentStatus(v){
 }
 
 /* ============================================================
-   报价收费
+   已删除学员（P-157c：退学/删除学员的归档视图）
+   ============================================================ */
+function renderDeletedStudents(){
+  var tb = document.getElementById('tb-deleted-students');
+  if(!tb) return;
+  var ds = S.studentsDeleted || [];
+  document.getElementById('del-stu-count').textContent = ds.length + ' 条';
+  
+  if(!ds.length){
+    tb.innerHTML = '<tr><td colspan="8" class="empty">还没有已删除学员记录。</td></tr>';
+    return;
+  }
+  
+  var rows = ds.map(function(d){
+    var delDate = d.deletedAt ? fmtDateTime(d.deletedAt) : '—';
+    return '<tr>'+
+      '<td class="m">'+esc(d.id)+'</td>'+
+      '<td><b>'+esc(d.name)+'</b></td>'+
+      '<td>'+esc(d.contact||'—')+'</td>'+
+      '<td class="m">'+esc(d.enrollDate||'—')+'</td>'+
+      '<td class="m">'+delDate+'</td>'+
+      '<td class="m">'+(d.billingCount||0)+'</td>'+
+      '<td class="m">'+(d.paymentCount||0)+'</td>'+
+      '<td><a class="act" onclick="expandDeletedStudent(this, \''+esc(d.id)+'\')">详情</a></td>'+
+    '</tr>';
+  }).join('');
+  
+  tb.innerHTML = rows;
+}
+
+function expandDeletedStudent(link, id){
+  var tr = link.closest('tr');
+  var expanded = tr.classList.contains('expanded');
+  
+  // 收起同类其他行
+  document.querySelectorAll('#tb-deleted-students tr.expanded').forEach(function(r){
+    if(r !== tr) r.classList.remove('expanded');
+    var nxt = r.nextElementSibling;
+    if(nxt && nxt.classList.contains('del-stu-expand')) nxt.remove();
+  });
+  
+  if(expanded){
+    tr.classList.remove('expanded');
+    var nxt = tr.nextElementSibling;
+    if(nxt && nxt.classList.contains('del-stu-expand')) nxt.remove();
+    link.textContent = '详情';
+    return;
+  }
+  
+  tr.classList.add('expanded');
+  link.textContent = '收起';
+  
+  var d = (S.studentsDeleted||[]).find(function(x){return x.id===id;});
+  if(!d) return;
+  
+  var html = '<tr class="del-stu-expand"><td colspan="8" style="padding:0"><div style="padding:12px 16px;background:var(--surface-2);border-top:1px solid var(--line)">';
+  html += '<div class="sm" style="color:var(--ink3);margin-bottom:8px">该学员已于 '+fmtDateTime(d.deletedAt)+' 删除，原收费单 '+ (d.billingCount||0) +' 张，原流水 '+ (d.paymentCount||0) +' 笔。不可恢复。</div>';
+  html += '</div></td></tr>';
+  
+  tr.insertAdjacentHTML('afterend', html);
+}
+
+/* ============================================================
+   学生收费(★ P-155 / Tony 2026-11-15 选 A1:原名「报价与收费」,
+   板块里其实只有学生学费,没有报价;报价是市场部 / 教室的另一件事,以后另开)
    ============================================================ */
 function renderBilling(){
   var total = S.billing.reduce(function(a,b){return a+b.total;},0);
   var paid = S.billing.reduce(function(a,b){return a+b.paid;},0);
   var now = new Date();
-  var active = S.billing.filter(function(b){return b.status==='进行中';});
-  var pending = active.reduce(function(a,b){return a+(b.total-b.paid);},0);
+  var active = S.billing.filter(function(b){return b.status==="进行中";});
+  /* ★ P-154：允许预缴，超额不进「待缴 / 逾期」，报表不出负数 */
+  var pending = active.reduce(function(a,b){return a+Math.max(0, b.total-b.paid);},0);
   var overdue = active.filter(function(b){return b.dueDate && new Date(b.dueDate)<now;});
-  var overdueAmt = overdue.reduce(function(a,b){return a+(b.total-b.paid);},0);
-  var closed = S.billing.filter(function(b){return b.status==='已结清';}).length;
+  var overdueAmt = overdue.reduce(function(a,b){return a+Math.max(0, b.total-b.paid);},0);
+  var closed = S.billing.filter(function(b){return b.status==="已结清";}).length;
 
-  document.getElementById('bill-paid').innerHTML = fmtVND(paid)+'<small>VND</small>';
-  document.getElementById('bill-pending').innerHTML = fmtVND(pending)+'<small>VND</small>';
-  document.getElementById('bill-overdue').innerHTML = fmtVND(overdueAmt)+'<small>VND</small>';
-  document.getElementById('bill-total').innerHTML = fmtVND(total)+'<small>VND</small>';
-  document.getElementById('bill-active').innerHTML = active.length+'<small>单</small>';
-  document.getElementById('bill-closed').innerHTML = closed+'<small>单</small>';
-  document.getElementById('bill-count').textContent = S.billing.length + ' 单';
+  document.getElementById("bill-paid").innerHTML = fmtVND(paid)+"<small>VND</small>";
+  document.getElementById("bill-pending").innerHTML = fmtVND(pending)+"<small>VND</small>";
+  document.getElementById("bill-overdue").innerHTML = fmtVND(overdueAmt)+"<small>VND</small>";
+  document.getElementById("bill-total").innerHTML = fmtVND(total)+"<small>VND</small>";
+  document.getElementById("bill-active").innerHTML = active.length+"<small>单</small>";
+  document.getElementById("bill-closed").innerHTML = closed+"<small>单</small>";
+  document.getElementById("bill-count").textContent = S.billing.length + " 单";
 
-  var el = document.getElementById('billing-list');
-  if(!S.billing.length){ el.innerHTML = '<div class="empty">还没有收费单。</div>'; return; }
-  el.innerHTML = S.billing.map(function(b){
-    var isOver = b.status==='进行中' && b.dueDate && new Date(b.dueDate)<now;
+  /* ★ P-157：按学员渲染横表，一行一学员，含未开单；点击展开流水 */
+  renderBillingTable();
+  // 旧卡片视图（测试兼容）
+  var oldEl = document.getElementById("billing-list");
+  if(oldEl) oldEl.innerHTML = S.billing.map(function(b){
+    var isOver = b.status==="进行中" && b.dueDate && new Date(b.dueDate)<now;
     var remain = b.total - b.paid;
-    return '<div class="quote-card'+(isOver?' over':'')+'">'+
-      '<div class="qh"><b>'+(b.sname||'—')+'</b><span class="tg own">'+b.id+'</span><div class="sp"></div>'+
-        (b.status==='进行中'?'<span class="tg '+(isOver?'bad':'warn')+'">'+(isOver?'逾期':'进行中')+'</span>':'<span class="tg on">已结清</span>')+
+    return '<div class="quote-card'+(isOver?" over":"")+'">'+
+      '<div class="qh"><b data-raw>'+(esc(b.sname)||"—")+'</b><span class="tg own">'+b.id+'</span><div class="sp"></div>'+
+        (b.status==="进行中"?'<span class="tg '+(isOver?"bad":"warn")+'">'+(isOver?"逾期":"进行中")+'</span>':'<span class="tg on">已结清</span>')+
+        (remain<0?' <span class="tg on">预缴</span>':'')+
       '</div>'+
-      '<div class="row"><span>课程包</span><b>'+(b.pkg||'—')+'</b></div>'+
+      '<div class="row"><span>课程包</span><b>'+(b.pkg||"—")+'</b></div>'+
       '<div class="row"><span>总金额</span><b>'+fmtVND(b.total)+' VND</b></div>'+
       '<div class="row"><span>已缴</span><b>'+fmtVND(b.paid)+' VND</b></div>'+
-      (remain>0?'<div class="row'+(isOver?' due':'')+'"><span>'+(isOver?'逾期 ':'')+'待缴</span><b>'+fmtVND(remain)+' VND</b></div>':'')+
-      (b.dueDate?'<div class="row'+(isOver?' due':'')+'"><span>下次应收</span><b>'+b.dueDate+'</b></div>':'')+
-      (b.plan?'<div class="row"><span>分期</span><b>'+b.plan+'</b></div>':'')+
+      (remain>0?'<div class="row'+(isOver?" due":"")+'"><span>'+(isOver?"逾期 ":"")+'待缴</span><b>'+fmtVND(remain)+' VND</b></div>':'')+
+      (remain<0?'<div class="row"><span>预缴</span><b>'+fmtVND(-remain)+' VND</b></div>':'')+
+      (b.dueDate?'<div class="row'+(isOver?" due":"")+'"><span>下次应收</span><b>'+b.dueDate+'</b></div>':'')+
+      (b.plan?'<div class="row"><span>分期</span><b>'+esc(b.plan)+'</b></div>':'')+
+      billPaymentRows(b.id)+
       '<div style="margin-top:8px"><a class="act" onclick="editBilling(\''+b.id+'\')">编辑</a>'+
-      (remain>0?' <a class="act" onclick="recordPayment(\''+b.id+'\')">登记收款</a>':'')+'</div>'+
-    '</div>';
-  }).join('');
+      ' <a class="act" onclick="recordPayment(\''+b.id+'\')">登记收款</a></div>';
+  }).join("");
+}
+
+/* 筛选当前模式 */
+var _billFilterMode = "all";
+function filterBilling(mode){
+  _billFilterMode = mode;
+  ["all","no-bill","active","overdue","closed"].forEach(function(m){
+    var el = document.getElementById("bill-flt-"+m.replace("no-bill","no"));
+    if(el) el.classList.toggle("on", m===mode);
+  });
+  renderBillingTable();
+}
+
+function renderBillingTable(){
+  var tb = document.getElementById("tb-billing");
+  if(!tb) return;
+  var now = new Date();
+  var rows = S.students.map(function(s){
+    // 3. C: 只显示 HSK 1/2/3 学员，隐藏 trial/vip1/small
+    if (s.pkg === 'trial' || s.pkg === 'vip1' || s.pkg === 'small') return null;
+    
+    var bills = stuBillsOf(s.id);
+    var hasBill = bills.length > 0;
+    var recv, got, due, nextDue, over;
+    
+    if (hasBill) {
+      // 1. B: 有收费单 -> 按收费单算
+      var f = stuFee(s.id);
+      recv = f.recv;
+      got = f.got;
+      due = f.due;
+      nextDue = f.next || "—";
+      over = f.over;
+    } else {
+      // 无收费单 -> 按学员档案算
+      var pkgInfo = (PACKAGES.find(function(p){ return p.id === s.pkg; }) || {price:0});
+      recv = pkgInfo.price;           // 8,000,000
+      got = Number(s.paid) || 0;      // 3,000,000
+      due = Math.max(0, recv - got);
+      nextDue = "—";
+      over = false;
+    }
+    
+    var status = !hasBill ? "no-bill" : (over ? "overdue" : (due>0 ? "active" : "closed"));
+    if(_billFilterMode !== "all" && _billFilterMode !== status) return null;
+    
+    var lastPay = "—";
+    if(got > 0){
+      var allPay = [];
+      bills.forEach(function(b){
+        billPaymentsOf(b.id).forEach(function(p){
+          if(p && p.amount > 0) allPay.push({date:p.date, amount:p.amount});
+        });
+      });
+      allPay.sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+      if(allPay.length) lastPay = allPay[0].date;
+    }
+    
+    var cls = status==="overdue" ? "class=\"due\"" : (status==="no-bill" ? "class=\"off\"" : "");
+    // 课程包显示：只显示 HSK 1/2/3
+    var pkgDisplay = s.pkg === 'hsk1' ? 'HSK 1' : (s.pkg === 'hsk2' ? 'HSK 2' : (s.pkg === 'hsk3' ? 'HSK 3' : '—'));
+    var phone = s.phone || s.contact || "—";
+    
+    return "<tr data-sid=\""+esc(s.id)+"\" data-status=\""+status+"\">"+
+      "<td><b data-raw>"+esc(s.name)+"</b></td>"+
+      "<td>"+esc(phone)+"</td>"+
+      "<td>"+esc(pkgDisplay)+"</td>"+
+      "<td class=\"num\">"+fmtVND(recv)+" <small>VND</small></td>"+
+      "<td class=\"num\">"+fmtVND(got)+" <small>VND</small></td>"+
+      "<td class=\"num\" "+cls+">"+(due>0 ? fmtVND(due)+" <small>VND</small>" : (hasBill?"<span class=\"tg on\">已结清</span>":"<span class=\"tg off\">未开单</span>"))+"</td>"+
+      "<td class=\"m\">"+nextDue+"</td>"+
+      "<td class=\"m\">"+lastPay+"</td>"+
+      "<td>"+studentStatusTag(s.status)+"</td>"+
+      "<td><a class=\"act\" onclick=\"event.stopPropagation(); addBilling('" + esc(s.id) + "')\">收费</a>"+
+      " <a class=\"act\" onclick=\"event.stopPropagation(); expandBillingRow(this, '" + esc(s.id) + "')\">明细</a></td>"+
+    "</tr>";
+  }).filter(Boolean).join("");
+  if(!rows) rows = "<tr><td colspan=\"10\" class=\"empty\">没有匹配的学员。</td></tr>";
+  tb.innerHTML = rows;
+}
+function expandBillingRow(link, sid){
+  var now = new Date();
+  var tr = link.closest("tr");
+  var expanded = tr.classList.contains("expanded");
+  /* 收起同学员其他行 */
+  document.querySelectorAll("#tb-billing tr.expanded").forEach(function(r){
+    if(r !== tr) r.classList.remove("expanded");
+    var nxt = r.nextElementSibling;
+    if(nxt && nxt.classList.contains("bill-expand")) nxt.remove();
+  });
+  if(expanded){
+    tr.classList.remove("expanded");
+    var nxt = tr.nextElementSibling;
+    if(nxt && nxt.classList.contains("bill-expand")) nxt.remove();
+    link.textContent = "展开";
+    return;
+  }
+  tr.classList.add("expanded");
+  link.textContent = "收起";
+  var bills = stuBillsOf(sid);
+  var html = "<tr class=\"bill-expand\"><td colspan=\"10\" style=\"padding:0\"><div style=\"padding:12px 16px;background:var(--surface-2);border-top:1px solid var(--line)\">";
+  if(!bills.length){
+    html += "<div class=\"sm\" style=\"color:var(--ink3)\">还没有收费单。</div>"+
+      "<div style=\"margin-top:8px\"><a class=\"act\" onclick=\"event.stopPropagation(); addBilling('" + esc(sid) + "')\">开这一单</a></div>";
+  } else {
+    /* 对账单顶部汇总：数字全部来自 stuFee()，不另算一份 */
+    var fee = stuFee(sid);
+    var prepaid = Math.max(0, fee.got - fee.recv);
+    html += "<div style=\"display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:8px\">"+
+      "<div style=\"background:var(--surface);border-radius:6px;padding:8px 10px\"><div class=\"sm\" style=\"color:var(--ink3)\">应收总额</div><b>"+fmtVND(fee.recv)+" VND</b></div>"+
+      "<div style=\"background:var(--surface);border-radius:6px;padding:8px 10px\"><div class=\"sm\" style=\"color:var(--ink3)\">已收</div><b>"+fmtVND(fee.got)+" VND</b></div>"+
+      "<div style=\"background:var(--surface);border-radius:6px;padding:8px 10px\"><div class=\"sm\" style=\"color:var(--ink3)\">未收</div><b>"+fmtVND(fee.due)+" VND</b></div>"+
+      "<div style=\"background:var(--surface);border-radius:6px;padding:8px 10px\"><div class=\"sm\" style=\"color:var(--ink3)\">预缴</div><b>"+fmtVND(prepaid)+" VND</b></div>"+
+      "</div>";
+    html += "<div class=\"sm\" style=\"color:var(--ink3);margin-bottom:10px\">"+
+      (fee.next ? "<span>下次应收</span> <span data-raw>"+esc(fee.next)+"</span>" : "")+
+      (fee.over ? " · <span>逾期</span>" : "")+"</div>";
+    bills.forEach(function(b){
+      var isOver = b.status==="进行中" && b.dueDate && new Date(b.dueDate)<now;
+      var remain = b.total - b.paid;
+      html += "<div class=\"quote-card"+(isOver?" over":"")+"\" style=\"margin-bottom:8px\">";
+      html += "<div class=\"qh\"><b data-raw>"+esc(b.sname||"\u2014")+"</b><span class=\"tg own\">"+esc(b.id)+"\u00a0\u00b7\u00a0"+esc(b.pkg||"\u2014")+"</span><div class=\"sp\"></div>"+
+        (b.status==="进行中"?"<span class=\"tg "+(isOver?"bad":"warn")+"\">"+(isOver?"逾期":"进行中")+"</span>":"<span class=\"tg on\">已结清</span>")+
+        (remain<0?" <span class=\"tg on\">预缴</span>":"")+"</div>";
+      html += "<div class=\"row\"><span>总金额</span><b>"+fmtVND(b.total)+" VND</b></div>";
+      html += "<div class=\"row\"><span>已缴</span><b>"+fmtVND(b.paid)+" VND</b></div>";
+      html += (remain>0?"<div class=\"row"+(isOver?" due":"")+"\"><span>"+(isOver?"逾期 ":"")+"待缴</span><b>"+fmtVND(remain)+" VND</b></div>":"");
+      html += (remain<0?"<div class=\"row\"><span>预缴</span><b>"+fmtVND(-remain)+" VND</b></div>":"");
+      html += (b.dueDate?"<div class=\"row"+(isOver?" due":"")+"\"><span>下次应收</span><b>"+b.dueDate+"</b></div>":"");
+      html += (b.plan?"<div class=\"row\"><span>分期</span><b>"+esc(b.plan)+"</b></div>":"");
+      html += billPaymentRows(b.id);
+      html += "<div style=\"margin-top:8px\"><a class=\"act\" onclick=\"event.stopPropagation(); editBilling(\'" + esc(b.id) + "\')\">编辑</a> <a class=\"act\" onclick=\"event.stopPropagation(); recordPayment(\'" + esc(b.id) + "\')\">登记收款</a></div>";
+      html += "</div>";
+    });
+  }
+  html += "</div></td></tr>";
+  tr.insertAdjacentHTML("afterend", html);
+}
+
+/* ★ P-158：流水列表 = 一张对账单。按日期排序，每笔带「本笔后剩余」，末尾放计划行。
+   origin="opening" = 旧单期初转入（不是新收的钱）。
+   日期 / 备注 / 金额是数据，越语层不啃；标签单独成串便于整串命中字典。 */
+function billPaymentRows(bid){
+  var b = (S.billing||[]).find(function(x){ return x && x.id === bid; });
+  var rows = billPaymentsOf(bid).slice().sort(function(a,c){
+    return String(a.date||'').localeCompare(String(c.date||''));
+  });
+  if(!rows.length) return "<div class=\"sm\" style=\"color:var(--ink3);margin:8px 0 0\">还没有收款流水。</div>";
+  var total = b ? (Number(b.total)||0) : 0, acc = 0;
+  var cols = "display:grid;grid-template-columns:1.1fr .9fr 1.1fr 1.1fr;gap:8px;";
+  var html = "<div class=\"sm\" style=\"color:var(--ink3);margin:8px 0 4px\">收款流水 "+rows.length+" 笔</div>"+
+    "<div style=\""+cols+"font-size:12px;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--line)\">"+
+      "<span>收款日期</span><span>方式</span><span style=\"text-align:right\">本次收款</span><span style=\"text-align:right\">本笔后剩余</span></div>";
+  rows.forEach(function(p){
+    acc += Number(p.amount)||0;
+    var left = total - acc;
+    html += "<div style=\""+cols+"padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--line)\">"+
+      "<span data-raw>"+esc(p.date||"\u2014")+"</span>"+
+      "<span>"+(p.origin==="opening"?"期初已缴":esc(p.method||"\u2014"))+"</span>"+
+      "<span style=\"text-align:right\" data-raw>"+fmtVND(p.amount)+" VND</span>"+
+      "<span style=\"text-align:right\">"+(left<0?"<span class=\"tg on\">预缴</span> ":"")+"<span data-raw data-bal>"+fmtVND(Math.abs(left))+" VND</span></span>"+
+      (p.note?"<span data-raw style=\"grid-column:1/-1;color:var(--ink3)\">"+esc(p.note)+"</span>":"")+
+      "</div>";
+  });
+  if(b && b.dueDate && total - acc > 0){
+    html += "<div style=\""+cols+"padding:5px 0;font-size:12.5px;color:var(--ink3);border-top:1px dashed var(--line)\">"+
+      "<span data-raw>"+esc(b.dueDate)+"</span><span>计划 · 未收</span>"+
+      "<span style=\"text-align:right\">—</span><span style=\"text-align:right\" data-raw data-plan-bal>"+fmtVND(total-acc)+" VND</span></div>";
+  }
+  return html;
 }
 
 /* ============================================================
@@ -1644,6 +2227,10 @@ function saveLead(id){
     Object.assign(l, data);
   } else {
     data.id = 'L-' + String(S.seq.lead++).padStart(3,'0');
+    /* ★ 2026-11-14（L-01 ①）：号码本互指空位 —— lead 记「转成了哪个 stN」。
+       第 ② 步「转成学员」才写值；老数据不迁移、读的时候按空处理。
+       ★ 只放在新建分支：编辑时 data 里没有它，Object.assign 不会把已写的值抹掉。 */
+    data.studentId = '';
     S.leads.unshift(data);
   }
   save(); closeDrawer(); render('leads');
@@ -1654,20 +2241,102 @@ function delLead(id){
   save(); closeDrawer(); render('leads');
 }
 
+/* ---- L-01 ③：重复转学员红灯闸门（2026-11-14） ----
+   两条判据都查：① 线索自己记着 studentId ② 已经有学员的 leadId 指回这条线索。
+   只查一条不够 —— 半路写坏 / 老数据只写了一半时，另一条能兜住。
+   ★ 学员被删了也不放行：墓碑号还在，重开一个新 stN 会让历史账指向两个人。 */
+function leadConvertError(l){
+  if(!l) return '找不到这条线索';
+  if(l.studentId) return '这条线索已转成学员 '+l.studentId+'，不能重复转';
+  if((S.students||[]).some(function(s){ return s && s.leadId === l.id; }))
+    return '已经有学员来自这条线索，不能重复转';
+  return '';
+}
+/* ---- L-01 ③ 补（2026-11-14 深夜 Tony 拍的口径） ----
+   线索池 = 拿到信息、等业务部跟进；能不能成学员是另一码事。
+   若跟进成功时，这个人**已经在学员档案里**（演示数据 L-001 ↔ st1 就是），
+   正确做法是「关联到已有编号」，不是再发一个 stN 造重复档案。
+   ★ 编号只有一条规矩：接学员档案现有最大号往下自动发，人不填、旧号不回收。 */
+function normPerson(s){ return String(s==null?'':s).trim().toLowerCase().replace(/[\s.\-]/g,''); }
+function findExistingStudent(l){
+  var nm = normPerson(l.name);
+  if(!nm) return null;
+  return (S.students||[]).find(function(s){
+    if(normPerson(s.name) !== nm) return false;
+    /* 线索的电话常带「zalo: 」这类前缀 → 只比数字；两边都有却不同 = 不是同一人 */
+    var a = String(l.contact||'').replace(/\D/g,'');
+    var b = String(s.contact||'').replace(/\D/g,'');
+    return (a && b) ? a === b : true;   /* 有一边没电话 → 只按姓名认，但仍要人按确定才算 */
+  }) || null;
+}
+/* 关联：只补两个外键 + 线索状态，**不新增学员、不发新号、不碰原有学员字段** */
+function linkLeadToStudent(l, s){
+  if(!l || !s) return;
+  s.leadId = l.id;
+  l.studentId = s.id;
+  l.status = 'enrolled';
+  save(); render('leads'); render('students');
+  toast('已关联到 '+s.id+'，没有新增学员、没有发新号');
+}
+/* ---- L-01 ②：线索 → 学员，字段自动带出（2026-11-14） ----
+   开的是「已有学员表单」的预填版，不是另造一张表：表单口径、金额整数盾、
+   教室下拉、编号 stN 全走原有 saveStudent()，不复制第二份保存逻辑。
+   ★ 三个 hidden 只在这张抽屉里出现：leadId / refBy / note。
+     refBy / note 学员表单没有对应输入框，靠它们带过去，不让人重打时丢掉。 */
+function leadToStudent(id){
+  var l = S.leads.find(function(x){return x.id===id;});
+  var err = leadConvertError(l);
+  if(err){ toast(err, true); return; }
+  /* ★ 先查「这个人是不是已经在学员档案里」—— 在就关联，绝不发新号 */
+  var hit = findExistingStudent(l);
+  if(hit){
+    var msg = '学员档案里已经有这位（'+hit.id+'）。点「确定」= 关联到他，不发新号；点「取消」= 先不处理。';
+    if(!confirm(tr(msg))) return;
+    linkLeadToStudent(l, hit);
+    return;
+  }
+  var draft = {
+    name: l.name || '', type: l.type || '', source: l.source || '',
+    contact: l.contact || '', level: 'HSK1',
+    enrollDate: l.date || new Date().toISOString().slice(0,10),
+    pkg: (PACKAGES[0]||{}).id || '', paid: 0, status: '在读',
+    mode: 'offline', preferRoom: '', leadId: l.id
+  };
+  var hidden = '<input type="hidden" id="f-leadId" value="'+esc(l.id)+'">'+
+    '<input type="hidden" id="f-refBy" value="'+esc(l.refBy||'')+'">'+
+    '<input type="hidden" id="f-note" value="'+esc(l.note||'')+'">';
+  /* ★ 抽屉里看得见的证据：来源线索号 + 下一个自动编号。
+     编号 / 姓名是数据不是界面文案 → 包 data-raw，越语层不啃、P-138 不报残留。 */
+  var tip = '<div class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+    '来源线索：<span data-raw>'+esc(l.id)+'</span> · <span data-raw>'+esc(l.name)+'</span><br>'+
+    '保存后系统接着学员档案现有最大号自动发编号，不用手填，删过的号不回收。<br>'+
+    '下一个自动学员编号：<span data-raw>'+esc(peekStudentId())+'</span><br>'+
+    '已从线索带出：姓名 / 类型 / 来源 / 联系方式 / 录入日期；介绍人与备注会随学员一起保存。</div>';
+  openDrawer('转成学员 · '+l.name, hidden + tip + studentForm(draft));
+  roomPickHint();
+}
+
 /* ---- 学员表单 ---- */
 function addStudent(){
   openDrawer('新学员', studentForm());
-  paidHint();   /* ★ P-107：抽屉一打开就带出「课程包 / 已缴 / 待缴」，不等用户先打字 */
 }
 function editStudent(id){
   var s = S.students.find(function(x){return x.id===id;});
   if(!s) return;
   openDrawer('编辑学员 · '+s.name, studentForm(s));
-  paidHint();
 }
 function studentForm(s){
   s = s || {};
-  return '<div class="fld"><label>姓名</label><input id="f-name" value="'+(s.name||'')+'"></div>'+
+  /* ★ 2026-11-14 深夜：转过来的学员，编辑时看得见「来自哪条线索 / 哪个编号」。
+     只读，不给输入框 —— 编号永远系统发，人不改。draft 没有 s.id，转换抽屉不会重复显示。 */
+  /* ★ P-156(Tony 2026-11-15):学员档案 = 报名窗口。
+     还没开单 → 「已缴」手填(报名已收),开单时带去收费单的「开单时已收」;
+     已开单 → 只读,显示收费单流水合计。钱只有一份。 */
+  var hasBill = stuBillsOf(s.id).length > 0;
+  return stuFeeBlock(s)+
+    (s.leadId && s.id ? '<div class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+    '来源线索：<span data-raw>'+esc(s.leadId)+'</span>　｜　<span>学员编号：</span><span data-raw>'+esc(s.id)+'</span></div>' : '')+
+    '<div class="fld"><label>姓名</label><input id="f-name" value="'+(s.name||'')+'"></div>'+
     '<div class="fld-row"><div class="fld"><label>类型</label><select id="f-type"><option '+(s.type==='学生'?'selected':'')+'>学生</option><option '+(s.type==='白领'?'selected':'')+'>白领</option></select></div>'+
     '<div class="fld"><label>来源</label><select id="f-source">'+['朋友介绍','Zalo','Facebook','TikTok','Wechat','讲座会','其他'].map(function(t){return '<option '+(s.source===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
     '<div class="fld"><label>联系方式</label><input id="f-contact" value="'+(s.contact||'')+'"></div>'+
@@ -1693,40 +2362,24 @@ function studentForm(s){
       '</select></div>'+
     '</div>'+
     '<div id="room-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
-    '<div class="fld"><label>课程包</label><select id="f-pkg" onchange="paidHint()">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
-    /* ★ 2026-11-05（P-107）：已缴改成「认千分位」的文本框。
-       原来是 type=number，粘 1,000,000 会被浏览器判成无效值直接变空。 */
-    '<div class="fld-row"><div class="fld"><label>已缴（VND）</label><input type="text" inputmode="numeric" id="f-paid" value="'+fmtVND(s.paid||0)+'" oninput="paidHint()" onblur="fmtPaidInput(this)" placeholder="如：1,000,000"></div>'+
+    '<div class="fld"><label>课程包</label><select id="f-pkg">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
+    /* ★ P-156(Tony 2026-11-15):「已缴」分两种状态 ——
+       没开单:手填(报名已收),开单时带进收费单;已开单:只读,显示流水合计。
+       千分位文本框口径不变(type=text + inputmode),失焦才格式化。 */
+    '<div class="fld-row"><div class="fld"><label>已缴（VND）</label><input type="text" inputmode="numeric" id="f-paid" value="'+fmtVND(hasBill?billPaidByStudent(s.id):(Number(s.paid)||0))+'"'+(hasBill?' readonly':' onblur="fmtPaidInput(this)"')+'></div>'+
     '<div class="fld"><label>状态</label><select id="f-status">'+['在读','结业','暂停','退学'].map(function(t){return '<option '+(s.status===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
-    '<div id="paid-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
       '<button class="btn pri" onclick="saveStudent('+(s.id?"'"+s.id+"'":"null")+')">保存</button>'+
       (s.id?'<button class="btn danger" onclick="delStudent(\''+s.id+'\')">删除</button>':'')+
       '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
     '</div>';
 }
-/* ★ 2026-11-05（P-107）：「课程包 / 已缴 / 待缴」联动行 + 失焦格式化。
-   - 只显示，不改任何存盘口径；钱的单位永远是「盾」。
-   - 失焦才格式化（输入过程中不动光标，否则打一个数字就跳一次）。
-   - 待缴 = 课程包参考价 - 已缴；超出 / 结清都讲清楚，不显示负数吓人。 */
-function paidHint(){
-  var pEl = document.getElementById('f-pkg');
-  var aEl = document.getElementById('f-paid');
-  var hEl = document.getElementById('paid-hint');
-  if(!pEl || !aEl || !hEl) return;
-  var pkg = PACKAGES.find(function(p){ return p.id === pEl.value; });
-  var price = pkg ? pkg.price : 0;
-  var paid = parseVND(aEl.value);
-  var due  = price - paid;
-  hEl.textContent = '课程包 ' + fmtVND(price) + ' VND · 已缴 ' + fmtVND(paid) + ' VND · ' +
-    (due > 0 ? '待缴 ' + fmtVND(due) + ' VND'
-             : due < 0 ? '已缴超出 ' + fmtVND(-due) + ' VND'
-                       : '已结清');
-}
+/* ★ 2026-11-05(P-107):金额框失焦才格式化(输入过程中不动光标,否则打一个数字就跳一次)。
+   ★ P-155(B1 · Tony 2026-11-15):原来的「课程包 / 已缴 / 待缴」联动行已拆除 ——
+     它按「手打已缴」算第二个待缴数,和收费单口径打架。钱只认收费单,摘要见 stuFeeBlock。 */
 function fmtPaidInput(el){
   if(!el) return;
   el.value = fmtVND(parseVND(el.value));
-  paidHint();
 }
 
 /* ★ 2026-11-02（P-94）：表单里「上课方式 / 指定教室」的联动提示。
@@ -1764,16 +2417,26 @@ function roomPickHint(){
 function saveStudent(id){
   var pkgId = val('f-pkg');
   var pkg = PACKAGES.find(function(p){return p.id===pkgId;});
+  /* ★ 2026-11-14（L-01 ② / ③）：只有「转成学员」抽屉带 f-leadId；
+     普通新学员没有这个框 → ''。闸门必须在 nextStudentId() 之前，
+     不然拦下了也白烧一个 stN 号。 */
+  var fromLead = val('f-leadId') || '';
+  var lead = fromLead ? S.leads.find(function(x){return x.id===fromLead;}) : null;
+  if(fromLead && !id){
+    var err = leadConvertError(lead);
+    if(err){ toast(err, true); return; }
+  }
   var data = {
     name: val('f-name'), type: val('f-type'), source: val('f-source'), contact: val('f-contact'),
-    /* ★ P-107：手填的 1,000,000 / 1.000.000 / 1000000 vnd 都洗成整数盾 1000000 再存，
-       绝不把带分隔符的字符串塞进 paid（parseInt('1.000.000') 会存成 1）。 */
-    level: val('f-level'), enrollDate: val('f-enrollDate'), pkg: pkgId, paid: parseVND(val('f-paid')),
+    level: val('f-level'), enrollDate: val('f-enrollDate'), pkg: pkgId,
     status: val('f-status'),
     /* ★ 2026-11-02（P-94）：上课方式 + 指定教室 */
     mode: val('f-mode') || 'offline',
     preferRoom: val('f-preferRoom') || ''
   };
+  /* ★ P-156(Tony 2026-11-15):报名窗口的「已缴」= 报名已收,存进学员。
+     已有收费单的学员不回写 —— 钱只认收费单流水,不存第二份。 */
+  if(!id || !stuBillsOf(id).length) data.paid = parseVND(val('f-paid'));
   if(!data.name){ toast('请填姓名', true); return; }
   if(id){
     var s = S.students.find(function(x){return x.id===id;});
@@ -1787,9 +2450,22 @@ function saveStudent(id){
          因为主端可能已经建到 st28，业务部这边必须接着往后排，不能从 1 开始撞。
        ⚠️ 已经用 st 开头的号不重复用；删除学员后的空号也不回收（避免历史记录指向别人）。 */
     data.id = nextStudentId();
+    /* ★ 2026-11-14（L-01 ②）：① 留的空位在这里写成真正的互指。
+       普通新建仍是 ''；只有 fromLead 非空（点了「转成学员」）才写线索号。
+       ★ refBy / note 也只在转换分支带上，普通新建 / 编辑一律不碰。 */
+    data.leadId = fromLead;
+    if(fromLead){
+      data.refBy = val('f-refBy') || '';
+      data.note  = val('f-note') || '';
+    }
     S.students.unshift(data);
+    if(fromLead && lead){
+      lead.studentId = data.id;
+      lead.status = 'enrolled';
+    }
   }
   save(); closeDrawer(); render('students');
+  if(fromLead) render('leads');   /* ★ 线索行的「已转 stN」要立刻刷新 */
 }
 /* ★ 2026-11-02（P-93）：学员取号 —— 跟主端 addStudentsFromRoster 同一套规则。
    取现有所有 st 编号里的「最大数字 + 1」，不是简单自增。
@@ -1861,39 +2537,91 @@ function migrateStudentIds(){
 }
 
 function delStudent(id){
-  if(!confirm(tr('删除这个学员？'))) return;
-  /* ★ 2026-11-02（P-96）：删人不删号，留一块墓碑。
-     下次推送时带 deleted:true 上去 —— 主端看到后标「业务部已删除」但保留人，
-     因为这个人可能已经编进班了，直接删掉会让历史出勤记录指向空气。 */
+  if(!confirm(tr('删除这个学员？名下收费单与流水将一并删除。'))) return;
+  /* ★ P-157c: 允许删除所有学员（含有收费单的），级联删除名下收费单与收款流水 */
+  var bills = (S.billing||[]).filter(function(b){return b && b.sid===id;});
+  var billIds = bills.map(function(b){return b.id;});
+  
+  // 1) 删除这些收费单关联的收款流水
+  if(billIds.length){
+    S.billPayments = (S.billPayments||[]).filter(function(p){
+      return !billIds.includes(p.bid);
+    });
+  }
+  
+  // 2) 删除收费单本身
+  if(bills.length){
+    S.billing = (S.billing||[]).filter(function(b){return b.sid!==id;});
+  }
+  
+  // 3) 写墓碑（保留姓名、联系方式、报名日期、退学日期、原收费单数、原流水数）
   var gone = S.students.find(function(x){ return x.id === id; });
   if (gone){
     S.studentsDeleted = S.studentsDeleted || [];
-    S.studentsDeleted.push({ id: gone.id, name: gone.name || '', at: new Date().toISOString() });
+    var nowIso = new Date().toISOString();
+    S.studentsDeleted.push({ 
+      id: gone.id, 
+      name: gone.name || '',
+      contact: gone.contact || '',
+      enrollDate: gone.enrollDate || '',
+      at: nowIso,              // 兼容旧探针
+      deletedAt: nowIso,       // 新视图用
+      billingCount: bills.length,
+      paymentCount: billIds.length
+    });
   }
+  
+  // 4) 从学生列表移除
   S.students = S.students.filter(function(x){return x.id!==id;});
+  
   save(); closeDrawer(); render('students');
 }
 
 /* ---- 收费表单 ---- */
-function addBilling(){
-  var stuOpts = S.students.map(function(s){return '<option value="'+s.id+'">'+s.id+' '+s.name+'</option>';}).join('');
+function addBilling(sid){
+  /* ★ P-154 / L-02 ②：从学员档案点「收费」带过来的是只读 sid，不许手打、不许换人 */
+  var fixed = sid ? S.students.find(function(s){return s.id===sid;}) : null;
+  if(sid && !fixed){ toast('找不到学员 '+sid+'，不能开收费单', true); return; }
   if(!S.students.length){ toast('请先添加学员', true); return; }
-  openDrawer('新收费单', billingForm(null, stuOpts));
+  var stuOpts = fixed
+    ? '<option value="'+esc(fixed.id)+'" selected>'+esc(fixed.id)+' <span data-raw>'+esc(fixed.name)+'</span></option>'
+    : S.students.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.id)+' <span data-raw>'+esc(s.name)+'</span></option>';}).join('');
+  openDrawer('新收费单', billingForm(null, stuOpts, !!fixed, fixed));
 }
 function editBilling(id){
   var b = S.billing.find(function(x){return x.id===id;});
   if(!b) return;
-  var stuOpts = S.students.map(function(s){return '<option value="'+s.id+'" '+(b.sid===s.id?'selected':'')+'>'+s.id+' '+s.name+'</option>';}).join('');
+  var stuOpts = S.students.map(function(s){return '<option value="'+s.id+'" '+(b.sid===s.id?'selected':'')+'>'+s.id+' <span data-raw>'+esc(s.name)+'</span></option>';}).join('');
   openDrawer('编辑收费单 · '+b.id, billingForm(b, stuOpts));
 }
-function billingForm(b, stuOpts){
+function billingForm(b, stuOpts, fixedSid, seedStu){
   b = b || {};
-  return '<div class="fld"><label>学员</label><select id="f-sid">'+stuOpts+'</select></div>'+
-    '<div class="fld"><label>课程包</label><select id="f-pkg" onchange="autoPrice()">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" data-price="'+p.price+'" '+(b.pkg&&b.pkg.includes(p.name.split('（')[0])?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
-    '<div class="fld-row"><div class="fld"><label>总金额（VND）</label><input type="text" inputmode="numeric" id="f-total" value="'+fmtVND(b.total||0)+'" onblur="fmtPaidInput(this)" placeholder="如：8,000,000"></div>'+
-    '<div class="fld"><label>已缴（VND）</label><input type="text" inputmode="numeric" id="f-paid" value="'+fmtVND(b.paid||0)+'" onblur="fmtPaidInput(this)" placeholder="如：1,000,000"></div></div>'+
-    '<div class="fld-row"><div class="fld"><label>缴费方式</label><select id="f-method"><option '+(b.method==='一次性'?'selected':'')+'>一次性</option><option '+(b.method==='分期'?'selected':'')+'>分期</option></select></div>'+
-    '<div class="fld"><label>下次应收日期</label><input type="date" id="f-dueDate" value="'+(b.dueDate||'')+'"></div></div>'+
+  /* ★ P-156(Tony 2026-11-15):从学员档案点「收费」进来,三格全部从报名窗口带过来 ——
+     课程包(锁死)/ 总金额(= 课程包价)/ 开单时已收(= 报名窗口填的已缴),不用再选。 */
+  var seed = seedStu || null;
+  var lockPkg = !!(seed && seed.pkg);
+  var seedPrice = 0;
+  if(lockPkg){
+    var sp = PACKAGES.find(function(p){ return p.id === seed.pkg; });
+    if(sp) seedPrice = Number(sp.price) || 0;
+  }
+  var pkgOpts = lockPkg
+    ? PACKAGES.filter(function(p){ return p.id === seed.pkg; }).map(function(p){
+        return '<option value="'+p.id+'" data-price="'+p.price+'" selected>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';
+      }).join('')
+    : PACKAGES.map(function(p){return '<option value="'+p.id+'" data-price="'+p.price+'" '+(b.pkg&&b.pkg.includes(p.name.split('(')[0])?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('');
+  var totalVal = lockPkg ? seedPrice : (b.total||0);
+  var paidVal  = (seed && !b.id) ? (Number(seed.paid)||0) : (b.paid||0);
+  return '<div class="fld"><label>学员</label><select id="f-sid"'+(fixedSid?' disabled':'')+'>'+stuOpts+'</select></div>'+
+    (fixedSid?'<div class="sm" style="color:var(--ink3);margin:-6px 0 12px">学员编号来自学员档案，这里只读，不许手打或换人。</div>':'')+
+    '<div class="fld"><label>课程包</label><select id="f-pkg"'+(lockPkg?' disabled':' onchange="autoPrice()"')+'>'+pkgOpts+'</select></div>'+
+    (lockPkg?'<div class="sm" style="color:var(--ink3);margin:-6px 0 12px">课程包来自学员档案,这里只读,要改回学员档案改。</div>':'')+
+    '<div class="fld-row"><div class="fld"><label>总金额（VND）</label><input type="text" inputmode="numeric" id="f-total" value="'+fmtVND(totalVal)+'" onblur="fmtPaidInput(this)" placeholder="如：8,000,000"></div>'+
+    '<div class="fld"><label>已缴（VND）'+(b.id?' · 由流水算出':' · 开单时已收')+'</label><input type="text" inputmode="numeric" id="f-paid" value="'+fmtVND(paidVal)+'" '+(b.id?'readonly':'')+' onblur="fmtPaidInput(this)" placeholder="如：1,000,000"></div></div>'+
+    '<div class="sm" style="color:var(--ink3);margin:-6px 0 12px">开单以后每一笔收款都在「登记收款」里记流水：日期 / 金额 / 方式 / 备注；已缴由流水自动合计，不在这里改。</div>'+
+    '<div class="fld-row"><div class="fld"><label>缴费方式</label><select id="f-method"><option '+(b.method==='第一次交'?'selected':'')+'>第一次交</option><option '+(b.method==='一次性'?'selected':'')+'>一次性</option><option '+(b.method==='分期'?'selected':'')+'>分期</option></select></div>'+
+    '<div class="fld"><label>'+(b.id?'下次应收日期':'日期')+'</label><input type="date" id="f-dueDate" value="'+(b.dueDate||(b.id?'':todayStr()))+'"></div></div>'+
+    (b.id?'':'<div class="sm" style="color:var(--ink3);margin:-6px 0 12px">这个入口只记第一次缴费和日期;后续收款到学生收费页登记。</div>')+
     '<div class="fld"><label>分期计划</label><input id="f-plan" value="'+(b.plan||'')+'" placeholder="如：分2期：5M + 5M"></div>'+
     '<div class="fld"><label>状态</label><select id="f-status"><option '+(b.status==='进行中'?'selected':'')+'>进行中</option><option '+(b.status==='已结清'?'selected':'')+'>已结清</option></select></div>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
@@ -1912,37 +2640,77 @@ function autoPrice(){
 function saveBilling(id){
   var sid = val('f-sid');
   var stu = S.students.find(function(s){return s.id===sid;});
+  /* ★ P-154 红灯：收费单 sid 必须是学员档案里已有的 stN。
+     旧代码查不到还照样写 sname:'—' 存进去，会留一张没人认领的孤儿单。 */
+  if(!stu){ toast('找不到学员 '+sid+'，不能开收费单', true); return; }
   var pkgId = val('f-pkg');
   var pkgObj = PACKAGES.find(function(p){return p.id===pkgId;});
+  var total = parseVND(val('f-total'));
+  if(total <= 0){ toast('总金额要大于 0', true); return; }
   var data = {
-    sid: sid, sname: stu?stu.name:'—', pkg: pkgObj?pkgObj.name:val('f-pkg'),
-    total: parseVND(val('f-total')), paid: parseVND(val('f-paid')),
-    method: val('f-method'), plan: val('f-plan'), dueDate: val('f-dueDate'), status: val('f-status')
+    sid: sid, sname: stu.name, pkg: pkgObj?pkgObj.name:val('f-pkg'),
+    total: total, paid: parseVND(val('f-paid')),
+    method: val('f-method'), plan: val('f-plan'), dueDate: id ? val('f-dueDate') : '', status: val('f-status')
   };
   if(id){
     var b = S.billing.find(function(x){return x.id===id;});
+    if(!b){ toast('找不到这张收费单', true); return; }
     Object.assign(b, data);
   } else {
     data.id = 'B-' + String(S.seq.bill++).padStart(3,'0');
+    /* ★ 开单时填的「已收」记成一笔期初流水，不是凭空挂一个数字 */
+    var opening = data.paid;
+    data.paid = 0;
     S.billing.unshift(data);
+    if(opening > 0) S.billPayments.push({ id: nextPaymentId(), bid: data.id, sid: sid,
+      date: val('f-dueDate') || todayStr(), amount: opening, method: data.method||'一次性', note:'', origin:'opening' });
   }
+  syncBillPayments(S);
   save(); closeDrawer(); render('billing');
 }
 function delBilling(id){
   if(!confirm(tr('删除这条收费单？'))) return;
+  /* ★ P-154：有收款流水的单不许删 —— 删了流水就成孤儿，账断在半路 */
+  if(billPaymentsOf(id).length){ toast('这张单已经有收款流水，不能删', true); return; }
   S.billing = S.billing.filter(function(x){return x.id!==id;});
   save(); closeDrawer(); render('billing');
 }
+/* ★ P-154：收款不再用一个 prompt 只累加数字。
+   每一笔都留日期 / 金额 / 方式 / 备注，进 S.billPayments[]；paid 由流水求和。 */
 function recordPayment(id){
   var b = S.billing.find(function(x){return x.id===id;});
   if(!b) return;
-  var amt = prompt('本次收款金额（VND）：', fmtVND(b.total - b.paid));
-  if(!amt) return;
-  amt = parseVND(amt);
-  if(amt<=0){ toast('金额不对', true); return; }
-  b.paid += amt;
+  openDrawer('登记收款 · '+b.id, paymentForm(b));
+}
+function paymentForm(b){
+  /* 中文标签各自单独成串（整串命中字典），编号 / 姓名 / 金额用 data-raw 护住 */
+  return '<div class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+      '<span>收费单</span> <span data-raw>'+esc(b.id)+' · '+esc(b.sname||'—')+'</span><br>'+
+      '<span>总额</span> <span data-raw>'+fmtVND(b.total)+'</span> VND　｜　'+
+      '<span>已缴</span> <span data-raw>'+fmtVND(b.paid)+'</span> VND</div>'+
+    '<div class="fld-row"><div class="fld"><label>收款日期</label><input type="date" id="f-pay-date" value="'+todayStr()+'"></div>'+
+      '<div class="fld"><label>本次收款金额（VND）</label><input type="text" inputmode="numeric" id="f-pay-amount" value="'+fmtVND(Math.max(0, b.total - b.paid))+'" onblur="fmtPaidInput(this)"></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>收款方式</label><select id="f-pay-method">'+
+      ['现金','转账','MoMo','其他'].map(function(t){return '<option>'+t+'</option>';}).join('')+'</select></div>'+
+      '<div class="fld"><label>备注</label><input id="f-pay-note" placeholder="选填"></div></div>'+
+    '<div class="sm" style="color:var(--ink3);margin:-6px 0 12px">收过头不拦，系统标「预缴」；待缴不会变负数。</div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button class="btn pri" onclick="savePayment(\''+b.id+'\')">登记这笔收款</button>'+
+      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
+    '</div>';
+}
+function savePayment(bid){
+  var b = S.billing.find(function(x){return x.id===bid;});
+  if(!b){ toast('找不到这张收费单', true); return; }
+  var amt = parseVND(val('f-pay-amount'));
+  if(amt <= 0){ toast('金额不对', true); return; }
+  S.billPayments.push({ id: nextPaymentId(), bid: bid, sid: b.sid||'',
+    date: val('f-pay-date') || todayStr(), amount: amt,
+    method: val('f-pay-method') || '其他', note: val('f-pay-note'), origin:'manual' });
+  syncBillPayments(S);
   if(b.paid >= b.total){ b.status = '已结清'; }
-  save(); render('billing'); toast('已登记收款 '+fmtVND(amt)+' VND');
+  save(); closeDrawer(); render('billing');
+  toast('已登记收款 '+fmtVND(amt)+' VND');
 }
 
 /* ---- 市场调查表单 ---- */
@@ -2752,12 +3520,20 @@ var BIZ_LANG = (function(){ try { return localStorage.getItem(BIZ_LANG_KEY) === 
 
 /* ---- 中文整串 → Tiếng Việt（只收界面骨架，不收演示数据） ---- */
 var BIZ_VI = {
+  "第一次交": "Nộp lần đầu",
+  "这个入口只记第一次缴费和日期;后续收款到学生收费页登记。": "Mục này chỉ ghi lần nộp đầu và ngày nộp; các lần thu sau ghi ở trang Học phí học viên.",
+  "还没开收费单。填好课程包和已缴,再点「收费」开单。": "Chưa mở phiếu thu. Điền gói khóa học và số đã nộp, rồi bấm «Thu phí» để lập phiếu.",
+  "课程包来自学员档案,这里只读,要改回学员档案改。": "Gói khóa học lấy từ hồ sơ học viên, ở đây chỉ đọc; muốn đổi thì về hồ sơ học viên.",
   /* 顶栏 / 侧栏 / 云灯 */
   '业务部 · 中文教学运营':'Phòng Kinh doanh · Đào tạo tiếng Trung',
   '业务部':'Phòng Kinh doanh', '总览':'Tổng quan', '业务':'Kinh doanh', '市场':'Thị trường',
   '返回主端':'Về bảng chính', '← 主端':'← Bảng chính',
   '☁︎ 还没推送过':'☁︎ Chưa đẩy lần nào',
   '☁︎ 推学生给主端':'☁︎ Đẩy học viên sang bảng chính',
+  '☁︎ 推教室给主端':'☁︎ Đẩy phòng học sang bảng chính',
+  '☁︎ 推已缴费给财务':'☁︎ Đẩy tiền đã thu sang Kế toán',
+  '只推已收流水与单号（stN/B/P），给财务端待入账用':'Chỉ đẩy các lần thu đã nhận và mã liên quan (stN/B/P) để Kế toán đối chiếu',
+  '只推教室编号清单（code / 名称 / 地区 / 可用时段），给主端排课选教室用':'Chỉ đẩy danh sách mã phòng (code / tên / khu vực / khung giờ) để bảng chính chọn phòng xếp lớp',
   '☁︎ 还没备份过':'☁︎ Chưa sao lưu lần nào',
   '☁︎ 备份到云端':'☁︎ Sao lưu lên đám mây',
   '☁︎ 从云端恢复':'☁︎ Khôi phục từ đám mây',
@@ -2786,6 +3562,17 @@ var BIZ_VI = {
   '联系方式':'Liên hệ', '状态':'Trạng thái', '录入':'Ngày nhập',
   '还没有线索。点「+ 新线索」开始。':'Chưa có khách tiềm năng. Bấm «+ Khách tiềm năng mới» để bắt đầu.',
   '编辑':'Sửa', '删除':'Xóa', '取消':'Hủy', '保存':'Lưu', '新建':'Tạo mới',
+  /* ★ 2026-11-14（L-01 ② / ③）：线索转学员的新界面文案（动态串见 BIZ_VI_RE） */
+  '转成学员':'Chuyển thành học viên',
+  '找不到这条线索':'Không tìm thấy khách tiềm năng này',
+  '已经有学员来自这条线索，不能重复转':'Đã có học viên từ khách tiềm năng này, không thể chuyển lại',
+  '已从线索带出：姓名 / 类型 / 来源 / 联系方式 / 录入日期；介绍人与备注会随学员一起保存。':'Đã mang theo từ khách tiềm năng: họ tên / loại / nguồn / liên hệ / ngày nhập; người giới thiệu và ghi chú cũng được lưu cùng hồ sơ học viên.',
+  /* ★ 2026-11-14 深夜：编号规则与来源线索（看得见的证据） */
+  '来源线索：':'Nguồn: khách tiềm năng ',
+  '学员编号：':'Mã học viên: ',
+  '总览含已转出线索；侧栏只数待跟进的人。':'Tổng quan tính cả khách tiềm năng đã chuyển; thanh bên chỉ đếm người cần theo dõi.',
+  '下一个自动学员编号：':'Mã học viên tự động tiếp theo: ',
+  '保存后系统接着学员档案现有最大号自动发编号，不用手填，删过的号不回收。':'Khi lưu, hệ thống tự cấp mã tiếp theo sau mã lớn nhất đang có trong hồ sơ học viên; không nhập tay, mã đã xóa không dùng lại.',
   '没有匹配的线索':'Không có khách tiềm năng khớp', '没有匹配':'Không có kết quả',
   /* 学员档案 */
   '学员档案':'Hồ sơ học viên', '正式报名的学员 · 长期记录':'Học viên đăng ký chính thức · Lưu dài hạn',
@@ -2798,8 +3585,28 @@ var BIZ_VI = {
   '还没有学员。':'Chưa có học viên.', '没有匹配的学员。':'Không có học viên khớp.',
   '没有这个类型的学员。':'Không có học viên thuộc loại này.',
   '没有这个状态的学员。':'Không có học viên ở trạng thái này.',
-  /* 报价收费 */
-  '报价与收费':'Báo giá & Thu phí',
+  /* ★ P-154 学生收费：一张单 = 应收，多笔流水 = 实收 */
+  '收费':'Thu phí',
+  '已缴（VND） · 由流水算出':'Đã nộp (VND) · Tính từ các lần thu',
+  '已缴（VND） · 开单时已收':'Đã nộp (VND) · Đã thu lúc lập phiếu',
+  '开单以后每一笔收款都在「登记收款」里记流水：日期 / 金额 / 方式 / 备注；已缴由流水自动合计，不在这里改。':'Sau khi lập phiếu, mỗi lần thu đều ghi vào «Ghi nhận thu tiền»: ngày / số tiền / hình thức / ghi chú; Đã nộp được cộng tự động, không sửa ở đây.',
+  '学员编号来自学员档案，这里只读，不许手打或换人。':'Mã học viên lấy từ hồ sơ, chỉ đọc ở đây, không gõ tay hay đổi người.',
+  '名下收费单已缴合计':'Tổng đã nộp theo phiếu thu',
+  '收费以收费单为准,学员档案不再另记一份。':'Thu theo phiếu thu; hồ sơ học viên không ghi thêm bản nào.',
+  '还没开收费单。':'Chưa mở phiếu thu.',
+  '总额':'Tổng tiền',
+  '收款日期':'Ngày thu tiền', '本次收款金额（VND）':'Số tiền thu lần này (VND)',
+  '收款方式':'Hình thức thu', '选填':'Không bắt buộc',
+  '现金':'Tiền mặt', '转账':'Chuyển khoản', '期初已缴':'Đã nộp đầu kỳ',
+  '还没有收款流水。':'Chưa có lần thu nào.', '预缴':'Nộp trước',
+  '登记这笔收款':'Ghi lần thu này',
+  '收过头不拦，系统标「预缴」；待缴不会变负数。':'Thu vượt không chặn, hệ thống ghi «Nộp trước»; Còn nợ không thành số âm.',
+  '总金额要大于 0':'Tổng tiền phải lớn hơn 0',
+  '找不到这张收费单':'Không tìm thấy phiếu thu này',
+  '这张单已经有收款流水，不能删':'Phiếu này đã có lần thu, không xóa được',
+  /* 学生收费(P-155 / A1 改名:原名「报价与收费」) */
+  '学生收费':'Học phí học viên', '应收':'Phải thu', '下次应收':'Kỳ tới phải thu', '未开单':'Chưa mở phiếu',
+  '下次应收日期':'Ngày phải thu kỳ tới',
   '每个学员该交多少、什么时候交、交了没':'Mỗi học viên phải nộp bao nhiêu, khi nào, đã nộp chưa',
   '+ 新收费单':'+ Phiếu thu mới',
   '本月已收':'Đã thu tháng này', '待收':'Chưa thu', '总合同额':'Tổng giá trị hợp đồng',
@@ -2810,6 +3617,13 @@ var BIZ_VI = {
   '登记收款':'Ghi nhận thu tiền', '分期':'Trả góp', '进行中':'Đang xử lý',
   '一次性':'Trả một lần', '缴费方式':'Hình thức nộp tiền',
   '下次应收日期':'Ngày thu tiếp theo', '分期计划':'Kế hoạch trả góp',
+  /* 已删除学员 */
+  '已删除学员':'Học viên đã xóa', '退学/删除的学员记录 · 姓名、联系方式、报名日期、退学日期':'Hồ sơ học viên nghỉ/xóa · Tên, liên hệ, ngày đăng ký, ngày nghỉ',
+  '学号':'Mã học viên', '联系方式':'Liên hệ', '报名日期':'Ngày đăng ký', '退学日期':'Ngày nghỉ',
+  '原收费单数':'Số phiếu thu cũ', '原流水数':'Số dòng thu cũ',
+  '还没有已删除学员记录。':'Chưa có hồ sơ học viên đã xóa.',
+  '详情':'Chi tiết',
+  '该学员已于':'Học viên này đã bị xóa vào', '删除，原收费单':'lúc, phiếu thu cũ', '张，原流水':'張, dòng thu cũ', '笔。不可恢复。':'笔. Không thể khôi phục.',
   /* 市场调查 */
   '市场调查':'Khảo sát thị trường', '对市场的判断和结论':'Nhận định và kết luận về thị trường',
   '+ 新记录':'+ Bản ghi mới',
@@ -2993,6 +3807,8 @@ var BIZ_VI = {
   '如：分2期：5M + 5M':'Ví dụ: trả 2 đợt: 5M + 5M',
   '如：14.6 万考生 / 薪资溢价 10-40%':'Ví dụ: 14,6 vạn thí sinh / lương cao hơn 10-40%',
   '如：趋势,定价,渠道':'Ví dụ: Xu hướng, Giá, Kênh',
+  '如：50,000,000':'Ví dụ: 50,000,000',
+  '如：0':'Ví dụ: 0',
   '例：富美兴整层 / 第七郡教学点':'Ví dụ: Phú Mỹ Hưng nguyên tầng / Điểm dạy Quận 7',
   '例：D7 / 第七郡':'Ví dụ: D7 / Quận 7',
   '留空自动取地区，例：D7':'Để trống sẽ tự lấy khu vực, ví dụ: D7',
@@ -3005,10 +3821,103 @@ var BIZ_VI = {
   '你自己填，例：D7 / 第七郡':'Bạn tự điền, ví dụ: D7 / Quận 7',
   '例：18:00-21:00 / 全天':'Ví dụ: 18:00-21:00 / Cả ngày',
   '停车、电梯、门禁、限制…':'Chỗ đậu xe, thang máy, cửa ra vào, hạn chế…',
+  // 表头和筛选
+  '全部':'Tất cả',
+  '全部状态':'Trạng thái tất cả',
+  '全部来源':'Nguồn tất cả',
+  '全部类型':'Loại tất cả',
+  '手机号':'Số điện thoại',
+  '下次应交日':'Ngày phải thu lần sau',
+  '最近已缴日':'Ngày thu gần nhất',
+
+  // 视图页面标题和描述
+  '线索池':'Kho khách tiềm năng',
+  '学员档案':'Hồ sơ học viên',
+  '学生收费':'Thu phí học viên',
+  '正式报名的学员':'Học viên đã đăng ký chính thức',
+  '长期记录':'Hồ sơ dài hạn',
+  '删除的学员记录':'Hồ sơ học viên đã xóa',
+  '每个学员该交多少,什么时候交,交了没':'Mỗi học viên cần đóng bao nhiêu, khi nào, đã đóng chưa',
+
+  // 搜索和按钮
+  '搜索姓名':'Tìm tên',
+  '搜索学号':'Tìm học hiệu',
+  '新记录':'Ghi chú mới',
+  '费用':'Phí',
+
+  // 账单相关
+  '待开单':'Chưa mở đơn',
+  '进行中':'Đang xử lý',
+  '逾期':'Quá hạn',
+  '已结清':'Đã thanh toán',
+  '旧卡片视图':'Xem dạng thẻ cũ',
+  '隐藏':'Ẩn',
+  '供测试兼容':'Dùng để tương thích kiểm thử',
+  '展开':'Mở rộng',
+
+  '收费单号':'Số phiếu thu',
+  '学员编号':'Mã học viên',
+  '活动名称':'Tên sự kiện',
+  '参与人数':'Số người tham gia',
+  '场地名称 <span style="color:#e24b4a">*</span>':'Tên mặt bằng <span style="color:#e24b4a">*</span>',
+  '地区 <span style="color:#e24b4a">*</span>':'Khu vực <span style="color:#e24b4a">*</span>',
+  '这层有几间？ <span style="color:#e24b4a">*</span>':'Tầng này có mấy phòng? <span style="color:#e24b4a">*</span>',
+  '编辑线索 · ':'Sửa khách tiềm năng · ',
+  '编辑学员 · ':'Sửa học viên · ',
+  '编辑收费单 · ':'Sửa phiếu thu · ',
+  '编辑投放 · ':'Sửa chiến dịch · ',
+  '编辑素材 · ':'Sửa tài liệu · ',
+  '编辑活动 · ':'Sửa sự kiện · ',
+  '编辑教室 · ':'Sửa phòng học · ',
+  '编辑场地 · ':'Sửa mặt bằng · ',
+  '新':'Mới',
+  '新场地':'Mặt bằng mới',
+  '已删除学员记录。':'Danh sách học viên đã xóa.',
+  '该学员还没有收费记录。':'Học viên này chưa có ghi nhận thu phí.',
+  // 课堂使用
+  '场地使用':'Sử dụng địa điểm',
+  '上完课自动记一次':'Tự động ghi sau khi học',
+  '拉取使用记录':'Lấy ghi nhận sử dụng',
+  '会记一条冲销':'Sẽ ghi một khoản điều chỉnh',
+  '不会再出现在待开单里':'Không xuất hiện trong danh sách chờ nữa',
+
+  // 财务审批
+  '财务批':'Kế toán phê duyệt',
+  '付之后':'Sau khi thanh toán',
+  '点上面':'Bấm phía trên',
+  '回读状态':'Đọc lại trạng thái',
+  '谁产出':'Ai tạo ra',
+  '谁付钱':'Ai trả tiền',
+
+  // 其他UI字符串
+  '中文':'Tiếng Trung',
+  '内容':'Nội dung',
+  '试听':'Học thử',
+  '总览含已转出线索':'Tổng quan bao gồm khách đã chuyển',
+  '侧栏只数待跟进的人':'Thanh bên chỉ đếm người cần theo dõi',
+
+  // P-158 收款流水对账单：标签各自成串，数字 / 日期 / 备注走 data-raw
+  '明细':'Chi tiết',
+  '开这一单':'Lập phiếu này',
+  '应收总额':'Tổng phải thu',
+  '未收':'Chưa thu',
+  '方式':'Hình thức',
+  '本次收款':'Lần thu này',
+  '本笔后剩余':'Còn lại sau lần thu này',
+  '计划 · 未收':'Kế hoạch · Chưa thu',
 };
 
 /* ---- 带数字 / 带数据的整句规则：整串命中，数据原样带回 ---- */
 var BIZ_VI_RE = [
+  /* ★ 2026-11-14（L-01 ② / ③）：动态串一律整句命中，不逐词拆。 */
+  { re:/^转成学员 · (.+)$/, to:function(m){ return 'Chuyển thành học viên · ' + m[1]; } },
+  { re:/^已转 (\S+)$/, to:function(m){ return 'Đã chuyển ' + m[1]; } },
+  { re:/^这条线索已转成学员 (\S+)，不能重复转$/, to:function(m){ return 'Khách tiềm năng này đã chuyển thành học viên ' + m[1] + ', không thể chuyển lại'; } },
+  /* ★ 2026-11-14 深夜：关联已有学员（不发新号）的确认框与提示 */
+  { re:/^学员档案里已经有这位（(\S+)）。点「确定」= 关联到他，不发新号；点「取消」= 先不处理。$/,
+    to:function(m){ return 'Hồ sơ học viên đã có người này (' + m[1] + '). Bấm «OK» = liên kết, không cấp mã mới; «Hủy» = để sau.'; } },
+  { re:/^已关联到 (\S+)，没有新增学员、没有发新号$/,
+    to:function(m){ return 'Đã liên kết với ' + m[1] + ', không thêm học viên, không cấp mã mới'; } },
   { re:/^已推送 (\d+) 位学员到云端$/, to:function(m){ return 'Đã đẩy ' + m[1] + ' học viên lên đám mây'; } },
   { re:/^已把整份数据备份到云端（学员 (\d+) 位）$/, to:function(m){ return 'Đã sao lưu toàn bộ dữ liệu lên đám mây (' + m[1] + ' học viên)'; } },
   { re:/^已从云端恢复：学员 (\d+) 位$/, to:function(m){ return 'Đã khôi phục từ đám mây: ' + m[1] + ' học viên'; } },
@@ -3022,6 +3931,7 @@ var BIZ_VI_RE = [
   { re:/^连接断开（(.+)），点一下重连$/, to:function(m){ return 'Mất kết nối (' + m[1] + '), bấm để kết nối lại'; } },
   { re:/^☁︎ 连接断开（(.+)），点一下重连$/, to:function(m){ return '☁︎ Mất kết nối (' + m[1] + '), bấm để kết nối lại'; } },
   { re:/^(\d+) 单$/, to:function(m){ return m[1] + ' phiếu'; } },
+  { re:/^(\d+) 条$/, to:function(m){ return m[1] + ' bản ghi'; } },
   { re:/^提交财务请款（(\d+) 条）$/, to:function(m){ return 'Nộp đề nghị thanh toán (' + m[1] + ' phiếu)'; } },
   { re:/^已提交财务：(\d+) 条$/, to:function(m){ return 'Đã nộp Tài chính: ' + m[1] + ' phiếu'; } },
   { re:/^拉取到 (\d+) 条云端使用记录，合并 (\d+)$/, to:function(m){ return 'Kéo được ' + m[1] + ' bản ghi từ đám mây, gộp ' + m[2]; } },
@@ -3032,11 +3942,8 @@ var BIZ_VI_RE = [
   { re:/^来源：(.+)$/, to:function(m){ return 'Nguồn: ' + trText(m[1]); } },
   { re:/^场地：(.+)$/, to:function(m){ return 'Mặt bằng: ' + m[1]; } },
   { re:/^教室：(.+)$/, to:function(m){ return 'Phòng: ' + m[1]; } },
-  /* 收费抽屉 paidHint() 三种结局：整句一起翻，金额原样带回 */
-  { re:/^课程包 (.+) VND · 已缴 (.+) VND · 待缴 (.+) VND$/, to:function(m){ return 'Gói khóa học ' + m[1] + ' VND · Đã nộp ' + m[2] + ' VND · Còn nợ ' + m[3] + ' VND'; } },
-  { re:/^课程包 (.+) VND · 已缴 (.+) VND · 已缴超出 (.+) VND$/, to:function(m){ return 'Gói khóa học ' + m[1] + ' VND · Đã nộp ' + m[2] + ' VND · Đã nộp vượt ' + m[3] + ' VND'; } },
-  { re:/^课程包 (.+) VND · 已缴 (.+) VND · 已结清$/, to:function(m){ return 'Gói khóa học ' + m[1] + ' VND · Đã nộp ' + m[2] + ' VND · Đã thanh toán xong'; } },
-  /* 来源分布图例「朋友介绍 2」：中文来源名是系统枚举，数字是数据 */
+  /* ★ P-155(B1):原「课程包 / 已缴 / 待缴」联动行已拆除,它的三条越语整句规则一并拔掉。 */
+  /* 来源分布图例「朋友介绍 2」:中文来源名是系统枚举,数字是数据 */
   { re:/^(朋友介绍|讲座会|其他) (\d+)$/, to:function(m){ return (BIZ_VI[m[1]] || m[1]) + ' ' + m[2]; } },
   /* 课程包下拉的显示文字带参考价；只翻这个形状，不带价的演示数据原样中文 */
   { re:/^(HSK1 完整（60课时）|HSK2 完整（60课时）|HSK3 备考包（含考试费）|试听课|一对一（每小时）|小班（每课时）) \(([\d.,]+) VND\)$/, to:function(m){
@@ -3050,9 +3957,12 @@ var BIZ_VI_RE = [
       };
       return P[m[1]] + ' (' + m[2] + ' VND)';
   } },
-  { re:/^待缴 (.+)$/, to:function(m){ return 'Còn nợ ' + m[1]; } },
-  { re:/^已缴超出 (.+)$/, to:function(m){ return 'Đã nộp vượt ' + m[1]; } },
   { re:/^已登记收款 (.+)$/, to:function(m){ return 'Đã ghi nhận thu ' + m[1]; } },
+  /* ★ P-154 学生收费：动态串整句命中，编号 / 笔数原样带回 */
+  { re:/^登记收款 · (.+)$/, to:function(m){ return 'Ghi nhận thu tiền · ' + m[1]; } },
+  { re:/^收款流水 (\d+) 笔$/, to:function(m){ return m[1] + ' lần thu tiền'; } },
+  { re:/^找不到学员 (.*)，不能开收费单$/, to:function(m){ return 'Không tìm thấy học viên ' + m[1] + ', không lập được phiếu thu'; } },
+  { re:/^这位学员名下还有 (\d+) 张收费单，不能删$/, to:function(m){ return 'Học viên này còn ' + m[1] + ' phiếu thu, không xóa được'; } },
   { re:/^编码「(.+)」已经存在，换一个$/, to:function(m){ return 'Mã «' + m[1] + '» đã tồn tại, chọn mã khác'; } },
   { re:/^新编码从「(.+)-」往后接着排，已有的编码不重排、不覆盖。$/, to:function(m){ return 'Mã mới tiếp nối sau «' + m[1] + '-», mã cũ không xếp lại, không ghi đè.'; } },
   { re:/^这间属于场地「(.+)」，$/, to:function(m){ return 'Phòng này thuộc mặt bằng «' + m[1] + '», '; } },
@@ -3090,6 +4000,9 @@ var BIZ_VI_RE = [
         .split('点「确定」= 用云端覆盖本机（本机改动会丢）').join('Bấm «OK» = ghi đè máy này bằng đám mây (thay đổi trên máy sẽ mất)')
         .split('点「取消」= 保留本机，稍后本机会把它推上去').join('Bấm «Hủy» = giữ máy này, máy sẽ đẩy lên sau');
   } },
+  /* L-03 ②：推送结果与查号红线，数字 / 号原样带回 */
+  { re:/^已推送 (\d+) 笔收款给财务$/, to:function(m){ return 'Đã đẩy ' + m[1] + ' lần thu sang Kế toán'; } },
+  { re:/^查号不过：(.+)，没推$/, to:function(m){ return 'Không qua kiểm tra mã: ' + m[1] + ', không đẩy'; } },
 ];
 
 var BIZ_SKIP_SEL = 'textarea, [data-raw], script, style';        /* 文本节点跳过 */
@@ -3282,6 +4195,32 @@ function backMainFix(){
   });
 })();
 
+/* ---- 教室清单只读桥（2026-11-14 · L-06 ②）----
+   ⚠️ 手点，不挂 save()：教室编号是 Tony 手填的，不许自动推云来回盖。 */
+(function(){
+  var br = document.getElementById('btnBizRoomsPush');
+  if (!br) return;
+  br.addEventListener('click', function(){
+    br.disabled = true;
+    try { bizRoomsPush(); } finally {
+      setTimeout(function(){ br.disabled = false; }, 1500);
+    }
+  });
+})();
+
+/* ---- 已缴费 → 财务端（2026-11-16 · L-03 ②）----
+   ⚠️ 手点，不挂 save()：钱线永远 Tony 按最后一下，推错了可以靠 pid 查重兜住。 */
+(function(){
+  var bp = document.getElementById('btnBizPayPush');
+  if (!bp) return;
+  bp.addEventListener('click', function(){
+    bp.disabled = true;
+    try { bizPayPush(); } finally {
+      setTimeout(function(){ bp.disabled = false; }, 1500);
+    }
+  });
+})();
+
 /* ---- 整份云备份 / 恢复按钮（2026-11-08 · P-133）----
    ⚠️ 跟上面那颗「推学生给主端」是两件事：这里动的是整份 bizmaster。 */
 (function(){
@@ -3325,12 +4264,16 @@ window.__BIZ_TEST__ = {
   _seed: function(o){ var d = normalizeBiz(o); if (d) S = d; return !!d; },
   /* 备份状态（探针断言 bakMark 有没有真的变） */
   bak: function(){ return { state: BAK.state, at: BAK.at }; },
-  /* 两个云端文档名 —— 断言「推主端」和「备份」不是同一个 */
-  docs: function(){ return { students: BIZSTU_DOC, master: BIZMASTER_DOC, app: BIZ_CLOUD_TAG }; },
+  /* 三个云端文档名 —— 断言「推学生」「推教室」「整份备份」各走各的文档 */
+  docs: function(){ return { students: BIZSTU_DOC, rooms: BIZROOM_DOC, master: BIZMASTER_DOC, app: BIZ_CLOUD_TAG }; },
   /* 补字段口径（纯函数，不改 S） */
   normalize: function(o){ return normalizeBiz(o); },
   /* 只推给主端的那份载荷（纯函数）—— 用来断言它只有 5 个字段 */
   studentsPayload: function(){ return bizStudentsPayload(); },
+  /* 教室清单只读桥的载荷（纯函数）—— 断言字段白名单、code 原样、钱线字段不在内 */
+  roomsPayload: function(){ return bizRoomsPayload(); },
+  /* ★ P-154：只读收款流水（深拷贝），探针验「一笔钱一行 / paid 由流水求和」 */
+  payments: function(){ try { return JSON.parse(JSON.stringify(S.billPayments||[])); } catch(e){ return []; } },
   /* 备份载荷的字段清单（纯函数）—— 断言整份没被裁 */
   backupKeys: function(){
     var o = JSON.parse(JSON.stringify(S));
