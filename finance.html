@@ -3161,6 +3161,17 @@ window.__FIN_APPLY__ = function(o){
 window.__FIN_RERENDER__ = function(){
   try { if (typeof renderAll === 'function') renderAll(); } catch(e){}
 };
+/* L-03 ③ · 给 module 的只读写入口：bizpayments 只在内存更新 + 重画待入账区，
+   绝不存盘、绝不碰 S.income、绝不走 save()。IIFE 外的 module 拿不到 S / renderPending，
+   必须走这个口子（否则 onSnapshot 回调里 S is not defined）。 */
+window.__FIN_SET_BIZPAY__ = function(items, at){
+  try {
+    S.bizPayments = Array.isArray(items) ? items.slice() : [];
+    S.bizPaymentsAt = String(at || '');
+    if (typeof renderPending === 'function') renderPending();
+    return true;
+  } catch(e){ return false; }
+};
 })();
 </script>
 
@@ -3335,9 +3346,10 @@ function subscribeBizPayments(){
         if (Array.isArray(o && o.payments)) items = o.payments.slice();
       }
     } catch(e){ items = []; }
-    S.bizPayments = items;
-    S.bizPaymentsAt = String(snap.exists() ? (snap.data().at || '') : '');
-    renderPending();
+    /* ★ 走 IIFE 暴露的口子：module 作用域拿不到 S / renderPending（会 S is not defined） */
+    if (typeof window.__FIN_SET_BIZPAY__ === 'function'){
+      window.__FIN_SET_BIZPAY__(items, snap.exists() ? (snap.data().at || '') : '');
+    }
   }, err => {
     mark('bizpayments 订阅失败（' + (err && err.code ? err.code : '网络') + '），点一下重连', 'bad');
   });
@@ -3350,7 +3362,8 @@ window.__FIN_SYNC__ = {
   resub: subscribe
 };
 window.__FIN_BIZ_PAYMENTS__ = function(){
-  return JSON.parse(JSON.stringify(S.bizPayments));
+  var snap = window.__FIN_SNAPSHOT__ ? window.__FIN_SNAPSHOT__() : null;
+  return snap && Array.isArray(snap.bizPayments) ? snap.bizPayments : [];
 };
 
 boot();
