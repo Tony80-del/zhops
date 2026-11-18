@@ -165,7 +165,9 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-15">2026-11-15 · 今天<span class="c">1</span></button>
+    <button class="on" data-day="2026-11-18">2026-11-18 · 今天<span class="c">1</span></button>
+    <button data-day="2026-11-16">2026-11-16<span class="c">3</span></button>
+    <button data-day="2026-11-15">2026-11-15<span class="c">1</span></button>
     <button data-day="2026-11-12">2026-11-12<span class="c">4</span></button>
     <button data-day="2026-11-09">2026-11-09<span class="c">2</span></button>
     <button data-day="2026-11-08">2026-11-08<span class="c">2</span></button>
@@ -484,7 +486,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   </div>
 
   <!-- ============ 2026-11-15 ============ -->
-  <div class="day-panel on" data-day="2026-11-15">
+  <div class="day-panel" data-day="2026-11-15">
     <div class="card">
       <h2>2026-11-15 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
@@ -502,6 +504,76 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-15</td>
               <td class="mono nw">11-15</td>
               <td>delStudent() 重写为级联删除:先删 billPayments(按 bid 过滤)、再删 billing(按 sid 过滤)、再写墓碑 studentsDeleted(含 id/name/contact/enrollDate/deletedAt/billingCount/paymentCount)、最后从 students 移除。at+deletedAt 双字段兼容旧探针与新视图。侧栏新分组「归档」+ 导航项 data-v=deleted-students;新增 renderDeletedStudents()/expandDeletedStudent() 列表/详情(只留姓名/联系/报名/退学日期,不记金额汇总,不允许恢复)。BIZ_VI 追加 12 条键值。全套回归:p154运行时 54/54、静态 87/87、biz-core 36/36、biz-rooms 43/43、biz-push 46/46、p107 105/106(基线红)、p138 60/2(基线红),零新增红。反向控制副本破坏级联删除/墓碑/视图→探针报红。本地未发布,线上未变。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-11-16 ============ -->
+  <div class="day-panel" data-day="2026-11-16">
+    <div class="card">
+      <h2>2026-11-16 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-158</td>
+              <td><b>学生收费流水对账单：横表每行「明细」入口、逐笔结余、下次应收计划行</b><br><span style="color:#8899aa;font-size:12px">「看不到流水单」—— 两处根因：演示数据少 + 展开函数 now 未定义。</span></td>
+              <td class="nw">业务端 · 施工图 L-02</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-16</td>
+              <td class="mono nw">11-16</td>
+              <td>修 <code>expandBillingRow()</code> 里 <code>now</code> 未定义（点展开直接 ReferenceError）；横表每行都给「明细」入口（原来只给已开单行）；四数汇总取 <code>stuFee()</code>；<code>billPaymentRows()</code> 按日期排序、逐笔带本笔后剩余、末尾 dueDate 虚线计划行、预缴标「预缴」不出负数；8 条越语标签走 data-raw。静态 68/68 + 3 组副本反向控制全红。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-159</td>
+              <td><b>财务端清空演习收款记录（只清收入，支出/工资/班级不动）</b><br><span style="color:#8899aa;font-size:12px">「清除财务端那个演习的收款记录，记住只是财务端」</span></td>
+              <td class="nw">财务部 · 收入</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-16</td>
+              <td class="mono nw">11-16</td>
+              <td><code>demo()</code> 里 <code>income</code> 五条演示收款（苹果班/芒果班/柚子班/柠檬班/黎明俊）改空数组；expense/payroll/classes 一字不动。探针 32/0 前后一致，反向控制证明断言不依赖演示内容。浏览器 localStorage 里的真实数据不属代码改动范围，需在页面自行清除。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-160</td>
+              <td><b>L-03②③ 业务部已缴费 → 财务端待入账：独立云文档 + 只读订阅 + 三闸门入账</b><br><span style="color:#8899aa;font-size:12px">「业务部已推送到财务部，但财务端没收到」—— 根因财务端只订阅 finmaster。</span></td>
+              <td class="nw">跨端 · 施工图 L-03</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-16</td>
+              <td class="mono nw">11-18</td>
+              <td>开独立云文档 <code>zhops/bizpayments</code>（不复用 bizstudents/approvals/finmaster）。业务端手点推送：字段白名单 9 项、查号闸门（pid/bid/sid + 档案反查）、不推 <code>students[].paid</code>。财务端 <code>onSnapshot</code> 只读订阅 → 待入账卡片 → Tony 点 ✓ 才入 <code>S.income</code>，三闸门 sid 格式/金额/学员存在；忽略记录不删只过滤。静态 push 35/0、receive 18/0，反向控制全红。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2026-11-18 ============ -->
+  <div class="day-panel on" data-day="2026-11-18">
+    <div class="card">
+      <h2>2026-11-18 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-161</td>
+              <td><b>L-03④ 财务端收口：单据号 R-YYYYMM-NNN + 收款方式映射 + 修跨 script 作用域真根因</b><br><span style="color:#8899aa;font-size:12px">「弄了这么多次还没打通」—— 真根因是 module 里直接写 IIFE 的 S，每次快照即崩。</span></td>
+              <td class="nw">财务部 · 施工图 L-03</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-18</td>
+              <td class="mono nw">11-18</td>
+              <td>真 Chrome 抓 <code>Runtime.exceptionThrown</code> 才定位：finance.html 两个 script，module 拿不到 IIFE 里的 <code>S</code>/<code>renderPending</code>，改走 IIFE 口子 <code>__FIN_SET_BIZPAY__</code> 才打通（前四次改 tag/boot 顺序/函数位置都没抓控制台，全改错地方）。收口：入账时按收款月份生成单据号 <code>R-YYYYMM-NNN</code>、写 receiptSeq 水位（入账成功才写、重试不烧号）、收入表加单据号列；方式映射按 Tony 拍「不臆断渠道」——现金→现金，分期/第一次交/银行转账等→其他。静态 30/0、真浏览器运行时 10/0、反向控制 3 组报红副本逐字还原、回归支出 32/0+p103 148/148+指南 27/27。已发布上线，Pages 延迟 50s 后线上 sha 核一致、待入账显示正常零产品报错。</td>
             </tr>
           </tbody>
         </table>
