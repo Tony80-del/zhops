@@ -495,13 +495,13 @@ table.fmt td.bad{color:var(--neg)}
         <div class="tw">
         <table class="grid">
           <thead><tr>
-            <th style="width:112px">日期</th><th style="width:160px">学生 / 班级</th><th style="width:104px">类型</th>
+            <th style="width:118px">单据号</th><th style="width:112px">日期</th><th style="width:160px">学生 / 班级</th><th style="width:104px">类型</th>
             <th style="width:116px">金额</th><th style="width:92px">收款方式</th><th style="width:100px">发票号</th>
             <th style="width:70px">税率</th><th style="width:82px">税额</th><th style="width:44px"></th>
           </tr></thead>
           <tbody id="tb-income"></tbody>
           <tfoot><tr>
-            <td colspan="3" class="mu">合计</td>
+            <td colspan="4" class="mu">合计</td>
             <td class="num" id="sumIncome">0</td>
             <td colspan="2" class="mu sm" id="incNote">—</td>
             <td class="mu sm">—</td>
@@ -1752,7 +1752,10 @@ function blank(){
     /* ★ 2026-11-16（L-03 ③）：业务部推送的已缴费流水（只读）。
        点「✓ 确认入账」才并入 S.income；「× 忽略」移进 bizPaymentsIgnored。
        bizPayments 始终等于原始推送（含 ignored），用 bizIgnoredSet 过滤展示。 */
-    bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[]
+    bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[],
+    /* L-03 ④：收入单据号水位 R-YYYYMM-NNN。按入账那个月的 YYYYMM 独立计数，
+       删记录不回收、跨月归零重数。只在 Tony 点确认入账时 +1。 */
+    receiptSeq:{}
   };
 }
 function demo(){
@@ -1775,7 +1778,8 @@ function demo(){
       {name:'柚子班', lessons:'42', done:'5', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
       {name:'柠檬班', lessons:'42', done:'4', fee:'7140000',  teacher:'黎明俊', rate:'150000', own:true}
     ],
-    approvals:[], approvalsAt:'', placeApprovals:[], bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[]
+    approvals:[], approvalsAt:'', placeApprovals:[], bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[],
+    receiptSeq:{}
   };
 }
 var S = blank();
@@ -1868,6 +1872,8 @@ function load(){
     b.bizPayments = Array.isArray(o.bizPayments) ? o.bizPayments.slice() : [];
     b.bizPaymentsAt = String(o.bizPaymentsAt || '');
     b.bizPaymentsIgnored = Array.isArray(o.bizPaymentsIgnored) ? o.bizPaymentsIgnored.slice() : [];
+    /* L-03 ④：单据号水位，老存盘没有 → 空对象（按 YYYYMM 各自从 1 起） */
+    b.receiptSeq = (o.receiptSeq && typeof o.receiptSeq === 'object' && !Array.isArray(o.receiptSeq)) ? o.receiptSeq : {};
     /* 迁移（2026-10-31 · Phase 1）：老工资行没有 month → 归到当月。
        不归的话，加了月份选择器以后这些行会「一条都看不见」。 */
     b.payroll.forEach(function(p){
@@ -1982,11 +1988,12 @@ function emptyRow(cols, txt){
 function renderIncome(){
   var tb = document.getElementById('tb-income');
   if(!S.income.length){
-    tb.innerHTML = emptyRow(9, '还没有收入记录 —— 点右上角「+ 记一笔」');
+    tb.innerHTML = emptyRow(10, '还没有收入记录 —— 点右上角「+ 记一笔」');
   }else{
     tb.innerHTML = S.income.map(function(r,i){
       var tax = val(r.amt)*Number(r.vat||0)/100;
       return '<tr data-i="'+i+'">'+
+        '<td class="f">'+(r.rid ? esc(r.rid) : '<span class="dim">—</span>')+'</td>'+
         '<td><input class="w-date" data-k="income.'+i+'.d" type="date" value="'+esc(r.d)+'"></td>'+
         '<td><input class="w-mid" data-k="income.'+i+'.who" value="'+esc(r.who)+'" placeholder="学生 · 班级"></td>'+
         '<td><select data-k="income.'+i+'.type">'+
@@ -2056,6 +2063,24 @@ function renderPending(){
   });
 }
 
+/* L-03 ④ · 收入单据号 R-YYYYMM-NNN。
+   YYYYMM 取入账日期（不是今天）—— 业务部推来的收款日期是哪个月就归哪个月。
+   NNN 是当月三位序号，删记录不回收、跨月归零。只在确认入账时 +1，
+   重试同一笔不会烧两个号（号先算好、入账成功才写水位）。 */
+function nextReceiptId(dateStr){
+  var d = String(dateStr || today());
+  var ym = /^(\d{4})-(\d{2})/.test(d) ? d.slice(0,7).replace('-','') : today().slice(0,7).replace('-','');
+  if (!S.receiptSeq || typeof S.receiptSeq !== 'object') S.receiptSeq = {};
+  var n = Number(S.receiptSeq[ym]) || 0;
+  n += 1;
+  return 'R-' + ym + '-' + ('000' + n).slice(-3);
+}
+/* L-03 ④ · 收款方式映射（Tony 2026-11-18 拍：不臆断渠道）。
+   业务部的「分期 / 第一次交」是缴费阶段不是渠道，一律归「其他」；
+   只有明确的「现金」保持现金。财务下拉仍是 现金/银行转账/Momo/其他 四选一。 */
+function mapPayMethod(m){
+  return String(m || '') === '现金' ? '现金' : '其他';
+}
 function handleBizPayConfirm(idx){
   var ignoredSet = {};
   (S.bizPaymentsIgnored||[]).forEach(function(x){ if(x && x.pid) ignoredSet[x.pid]=true; });
@@ -2065,19 +2090,27 @@ function handleBizPayConfirm(idx){
   if (!p || Number(p.amount) <= 0) return;
   /* 三把闸门：sid 格式对、金额 > 0、学员档案能反查 */
   if (!/^st\d+$/.test(String(p.sid))) { alert('学员号格式不对（'+p.sid+'），不能入账'); return; }
+  var inDate = p.date || today();
+  var rid = nextReceiptId(inDate);
+  var ym = rid.slice(2, 8); /* R-YYYYMM-NNN → YYYYMM */
   var entry = {
-    d: p.date || today(),
+    d: inDate,
     who: p.sname || p.sid,
     type: '学费',
     amt: String(p.amount),
-    pay: p.method || '其他',
+    pay: mapPayMethod(p.method),
     inv: '',
     vat: '0',
-    /* L-03 ③：收入单关联字段，来源唯一指向 */
+    /* L-03 ③④：收入单号 + 关联字段，来源唯一指向 */
+    rid: rid,
     sid: p.sid, bid: p.bid||'', pid: p.pid||'', amount: p.amount,
     origin: 'bizpayments.'+p.pid,
   };
   S.income.push(entry);
+  /* 入账成功才写水位：同一笔重试不会重复烧号 */
+  if (!S.receiptSeq || typeof S.receiptSeq !== 'object') S.receiptSeq = {};
+  S.receiptSeq[ym] = Number(S.receiptSeq[ym]) || 0;
+  S.receiptSeq[ym] = Math.max(S.receiptSeq[ym], Number(rid.slice(-3)));
   S.bizPaymentsIgnored = (S.bizPaymentsIgnored||[]).concat([{pid:p.pid, at:new Date().toISOString()}]);
   save(); renderAll();
 }
@@ -3089,6 +3122,9 @@ function backMainFix(){
 if (typeof window !== 'undefined'){
   window.__FIN_TEST__ = {
     getS: function(){ return S; },
+    /* L-03 ④：单据号/映射两个纯函数给探针验运行时（只读，不改状态以外的东西） */
+    nextReceiptId: nextReceiptId,
+    mapPayMethod: mapPayMethod,
     calc: calc,
     payRows: payRows,
     voucherOfMonth: voucherOfMonth,
@@ -3152,6 +3188,7 @@ window.__FIN_APPLY__ = function(o){
     b.bizPayments = Array.isArray(o.bizPayments) ? o.bizPayments.slice() : [];
     b.bizPaymentsAt = String(o.bizPaymentsAt || '');
     b.bizPaymentsIgnored = Array.isArray(o.bizPaymentsIgnored) ? o.bizPaymentsIgnored.slice() : [];
+    b.receiptSeq = (o.receiptSeq && typeof o.receiptSeq === 'object' && !Array.isArray(o.receiptSeq)) ? o.receiptSeq : {};
     b.payroll.forEach(function(p){ if(!p.month) p.month = monthTag(); if(p.paidOn === undefined) p.paidOn = ''; });
     S = b;
     try { localStorage.setItem(KEY, JSON.stringify(b)); } catch(e){}
