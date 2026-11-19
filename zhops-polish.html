@@ -588,10 +588,19 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">P-163</td>
               <td><b>L-09 月租应付单：业务部开单 → 财务批准 → 业务回读</b><br><span style="color:var(--ink3);font-size:12px">一场地一单 · 走 L-07 同一条 approvals</span></td>
               <td class="nw">跨端</td>
-              <td><span class="b wait">等验收</span></td>
+              <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-19</td>
               <td class="mono nw">11-19</td>
               <td>Tony 拍板三件：<b>一个场地一个月一张单</b>、<b>本轮只做月租（投放费留 L-08）</b>、<b>单号业务部发</b>。<br>业务端：场地页新增「月租 · 每月应付」，按 <span class="mono">场地 × 月份</span> 开 <span class="mono">v-biz-rent-YYYY-MM-N</span>，写进 L-07 同一条 <span class="mono">zhops/approvals</span>（<span class="mono">dept:'biz' / type:'rent'</span>，<b>不新开云端文档</b>）；两道闸门 —— 场地没填月租不开、同月同场地<b>本机 + 云端各查一次</b>（已驳回可重开、单号顺延）；「已提交月租单」卡按 id 回读财务状态，<b>只覆盖财务字段、不改金额与场地</b>。<br>财务端：<span class="mono">S.rentApprovals</span> 单独收（不混工资单 <span class="mono">approvals</span>、不混场地单 <span class="mono">placeApprovals</span>），新增「月租应付单」列表 + 明细两张卡；批准 / 驳回 / 付款与场地单<b>共用一份 <span class="mono">voucherAct()</span></b>，没有再抄第三份状态机。<br>验收：新探针 <span class="mono">check-l09-rent.js</span> <b>63/63</b>（含端到端：开单 → 财务拉到 → 批准 → 业务回读），三组反向控制（砍本机闸门 / 砍云端闸门 / 把 rent 混进 placeApprovals）<b>全部报红</b>；施工图 L-09 工序 ①②③ 打勾、仍标红等 ④。<b>未做</b>：投放费（L-08 保持灰）、财务端支出表自动入账（本轮口径：单据 + 付款凭证在审批页，不改支出表 —— 与 P-103 ④ 同一口径）。<b>需 Tony 手点</b>：业务开一张 → 财务批准 → 付款 → 业务回读。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-164</td>
+              <td><b>L-09 真云端验收 + L-04 收口</b><br><span style="color:var(--ink3);font-size:12px">测试单自己删，不留痕</span></td>
+              <td class="nw">跨端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>探针只能证页面逻辑，证不了「真 Firestore 上跑一遍」。新写 <span class="mono">e2e-l09-live.js</span>（<b>不进 run.sh</b> —— 它会真写生产云端，只在验收时手动跑）：把测试场地只塞进本机 localStorage，走页面自己的函数开出 <span class="mono">v-biz-rent-2020-01-1</span>（1,000,000 ₫）→ 财务端 <span class="mono">fsPullApprovals → rnSelect → rnAct('ok') → rnAct('pay')</span> → 业务端回读，<b>13/13</b>；云端逐条核对状态 <span class="mono">已提交 → 已批 → 已付</span>、金额未被改、凭证号记上。<b>跑完把测试单从 approvals 摘掉并复核云端已无此单</b>（不把测试数据留在生产）。<br>据此收口：施工图 <b>L-09 4/4 绿</b>（钱线：月租应付单已通）、<b>L-04 4/4 绿</b>（教室 → 场地租金，等 L-09 的前提已满足）；头部统一到 <b>8 绿 / 2 红 / 0 待收口 / 1 灰 · 8/11 · 73%</b>，<span class="mono">check-map</span> 51/51。剩余：L-06（等 Tony 裁决教室 → 排课）、L-10（投放 → 线索归因未开）、L-08（投放费，灰）。</td>
             </tr>
           </tbody>
         </table>
