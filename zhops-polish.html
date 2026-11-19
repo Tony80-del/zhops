@@ -584,6 +584,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>施工图还停在 11-13：L-01/L-02/L-03 已在 11-15~11-18 收口（L-03 钱线 P-161），页面仍标红，且头部写「6 红」而卡片只有 5 红。本轮：① L-01/L-02/L-03 转绿、工序勾满、头部/筛选/页脚/进度条统一到 6 绿 / 3 红 / 1 待收口 / 1 灰（6/11 · 55%）；② 新增 <span class="mono">check-map.js</span>（51 项）并接进 run.sh —— 卡片状态 ≠ 头部统计 ≠ 筛选按钮 ≠ 页脚 ≠ 进度条就报红，看板不能再悄悄漂移；③ 修 5 条陈旧探针：P-103① 改认 <span class="mono">parseVND</span> 与 <span class="mono">[.,]</span> 千分位、P-103③ 费用框禁用改认新模板、P-107 改认 P-144b 点分隔符（跨端人事端仍逗号，待 Tony 拍）、P-51/53/89 版本号从写死 v10 改成 ≥ v10；④ 财务端补 5 条越语（P-160/P-161 新增文案漏翻，P-139 顶红）；⑤ 业务部教室月租/小时费空值不再显示 0（对齐 P-141「空值不写成 0」）。剩余红 2 条：P-142 / P-143 = 教师资料 10 项（wip/hr-profile-20261119 分支）未收口，属功能未完，不是回归。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-163</td>
+              <td><b>L-09 月租应付单：业务部开单 → 财务批准 → 业务回读</b><br><span style="color:var(--ink3);font-size:12px">一场地一单 · 走 L-07 同一条 approvals</span></td>
+              <td class="nw">跨端</td>
+              <td><span class="b wait">等验收</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony 拍板三件：<b>一个场地一个月一张单</b>、<b>本轮只做月租（投放费留 L-08）</b>、<b>单号业务部发</b>。<br>业务端：场地页新增「月租 · 每月应付」，按 <span class="mono">场地 × 月份</span> 开 <span class="mono">v-biz-rent-YYYY-MM-N</span>，写进 L-07 同一条 <span class="mono">zhops/approvals</span>（<span class="mono">dept:'biz' / type:'rent'</span>，<b>不新开云端文档</b>）；两道闸门 —— 场地没填月租不开、同月同场地<b>本机 + 云端各查一次</b>（已驳回可重开、单号顺延）；「已提交月租单」卡按 id 回读财务状态，<b>只覆盖财务字段、不改金额与场地</b>。<br>财务端：<span class="mono">S.rentApprovals</span> 单独收（不混工资单 <span class="mono">approvals</span>、不混场地单 <span class="mono">placeApprovals</span>），新增「月租应付单」列表 + 明细两张卡；批准 / 驳回 / 付款与场地单<b>共用一份 <span class="mono">voucherAct()</span></b>，没有再抄第三份状态机。<br>验收：新探针 <span class="mono">check-l09-rent.js</span> <b>63/63</b>（含端到端：开单 → 财务拉到 → 批准 → 业务回读），三组反向控制（砍本机闸门 / 砍云端闸门 / 把 rent 混进 placeApprovals）<b>全部报红</b>；施工图 L-09 工序 ①②③ 打勾、仍标红等 ④。<b>未做</b>：投放费（L-08 保持灰）、财务端支出表自动入账（本轮口径：单据 + 付款凭证在审批页，不改支出表 —— 与 P-103 ④ 同一口径）。<b>需 Tony 手点</b>：业务开一张 → 财务批准 → 付款 → 业务回读。</td>
+            </tr>
           </tbody>
         </table>
       </div>
