@@ -7102,7 +7102,13 @@ window.__CAL_TEST__ = {
    loadFixture() 显式重建内存 DB 再合流，绕开「同 URL navigate 不换执行上下文」
    的历史坑。产品在正常使用时没有任何代码会调这个口子。 */
 window.__ADMIN_HR_TEST__ = {
+  /* ★ 只在离线/探针模式可用（探针一律带 ?nocloud=1）——
+     线上普通打开时这个口子是关的，防止控制台误触把 DB 整体替换掉。 */
+  enabled: function(){
+    return !!(window.__NO_CLOUD__ || /[?&]nocloud=1/.test(location.search));
+  },
   loadFixture: function(obj){
+    if (!window.__ADMIN_HR_TEST__.enabled()) return false;
     try {
       DB = normalizeDB(obj);
       buildFacts();

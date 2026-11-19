@@ -701,6 +701,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>P-142 / P-143 长期红不是产品 bug —— 用 harness 同 fixture 验证产品逻辑<b>全部正确</b>（t2/t3/t4/t5 全收、t2 的 levels/rate 保留、t4 助教、t5 停用、不落盘）。<br><b>① P-142（真 Chrome 探针）根因</b>：注入 localStorage 后，同 URL 的 <span class="mono">Page.navigate</span> 不保证重建 JS 执行上下文，页面仍跑第一次加载的实例（DB=t1/t2/t3），而 <span class="mono">hrTeacherRoster()</span> 读的是新 fixture（t2/t3/t4/t5）→ 8 条假红。<b>修法</b>：主端加只读测试口 <span class="mono">window.__ADMIN_HR_TEST__.loadFixture()</span>（跟 __FIN_TEST__ 同款，产品正常使用不调用），探针注入后显式重建内存 + 合流。<b>77/0</b>。<br><b>② P-143 根因</b>：断言写死「8 个只读块」是 P-143 老口径；P-144 后实际 11 块（住址/紧急联系人/紧急电话三项入库）→ 假红。改成 ≥11。<b>136/0</b>。<br>反向控制：把产品合流里 hrRole 改坏 → harness 立刻报红，证明产品逻辑被真钉住。<b>全套 63/63，零失败</b>（第一次全绿）。还原点 <span class="mono">p175-before-20261119</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-176</td>
+              <td><b>探针稳定性：失败重试一次 + 两条 HR 探针改确定性前置</b><br><span style="color:var(--ink3);font-size:12px">技能自检跑出来的「偶发红」</span></td>
+              <td class="nw">验收 / 主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>按主端技能「改完自测」跑全套时发现：同一份代码，连跑三次有两次各红 1 条，红的位置还会变。<br><b>真因分三类，全是测试基础设施</b>：① <span class="mono">P-143</span> 与 <span class="mono">P-142</span> 注入 fixture 后靠同 URL <span class="mono">Page.navigate</span> 重建 —— 不保证换 JS 执行上下文，页面偶发仍跑旧实例（<span class="mono">DB=t1/t2/t3</span>）→ 假红；② <span class="mono">P-142</span> 的 <span class="mono">teacherSel</span> 断言依赖前序 B2 撤号的残留状态，偶发不同步；③ <span class="mono">check-hr-salary</span> 连续起 Chrome 时 launch 超时（单独跑 4/4 全过）。<br><b>修法</b>：① 两条探针改走主端只读口 <span class="mono">__ADMIN_HR_TEST__.loadFixture()</span> 显式重建，并轮询等页面就绪、拿不到就<b>提前结束</b>（不再用旧实例跑出一堆假红）；② <span class="mono">teacherSel</span> 断言自建前置（显式放一位 <span class="mono">fromHR + 已停用</span> 教师）—— 合流本身已由 B/B2/D 段覆盖；③ <span class="mono">hr-salary</span> launch 加三次重试；④ <span class="mono">run.sh</span> 的 <span class="mono">step()</span> 失败后<b>重试一次</b>：真回归两次都红仍是红，只有「首次红、第二次绿」记「重试后通过」并在汇总单列，不掩盖不稳定。<br>验证：P-142 连跑 <b>6/6</b>、P-143 <b>5/5</b> 稳定；全套连跑三次 <b>63/63</b>（第三次平板探针首次红、重试后过，已单列）。</td>
+            </tr>
           </tbody>
         </table>
       </div>
