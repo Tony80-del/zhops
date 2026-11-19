@@ -674,6 +674,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony：不分职业，时间固定几个格式，每节 90 分钟；先定 4 个（14:00/15:30/18:00/19:30 起）。<br><b>新增</b> <span class="mono">p1 下午一段 14:00–15:30</span>、<span class="mono">p2 下午二段 15:30–17:00</span>、<span class="mono">p3 晚间一段 18:00–19:30</span>、<span class="mono">p4 晚间二段 19:30–21:00</span>（主端 + 教师端 seed 一致）。<br><b>旧 s1–s4 保留 ID、标 <span class="mono">disabled:true</span> 与「旧·停用」</b> —— 老班 / 老学生 / 历史课次照常用，不迁移、不丢；时段表 UI 标「停用」且旧段不再给「编辑」入口。<br>学生编辑「可上课时段」：<b>新选择只列 4 个新格式</b>；已选中的旧段仍显示（老学生数据零改动）；仍按 slot ID 存 → 自动编班口径不变。<br><b>课程大纲先不管</b>：<span class="mono">lessonMin</span> 保持 45、42 课不变、教学六步不动（若要真把课时单位改 90，留第二步单独做）。<br>验收：<span class="mono">check-p172-slots.js</span> <b>33/33</b>，反向控制三组（旧段漏进新选择 / 删新格式 / 砍停用标记）全部报红；全套 <b>59/61</b>（只剩 P-142/143）。还原点 <span class="mono">p172-before-20261119</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-173</td>
+              <td><b>学生编辑保存后，刷新不再丢</b><br><span style="color:var(--ink3);font-size:12px">「设置好可班级，刷新就没了」</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony：「学生已设置好可班级，请保存；每次刷新就不会保存了。」<br><b>真因</b>：<span class="mono">load()</span> 里 11-12 为「清理脏数据」加的硬编码白名单 <span class="mono">keepIds = st1…st20</span> 是<b>常驻过滤</b> —— 每次刷新读盘都把 <span class="mono">st21+</span> 新建学生 / 业务部推来的新学员丢掉。<b>保存本身没问题</b>（<span class="mono">saveEdit() → save() → localStorage['zhops.sched.v3']</span> 写得好好的），是读的时候被人为过滤。<br><b>修法</b>：删掉那 4 行白名单（一次性清理本就不该做成常驻过滤）；<b>结构校验一律保留</b>（teachers/students/classes 是数组 + appTag 正确，坏数据仍回落种子）。合法 ID（stN / 导入别名）一律保留，不迁移、不删老数据。<br>验收：<span class="mono">check-p173-persist.js</span> <b>23/23</b>（save 写盘 → 共享 store 重启模拟刷新 → cls/slots/teacherId/city 全在；st21/st22/st99/alias 全保留；错 appTag / 缺 classes 仍回落 null）；反向控制把白名单加回 → <b>7 条报红</b>。全套 <b>60/62</b>（只剩 P-142/143）。还原点 <span class="mono">p173-before-20261119</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>

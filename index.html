@@ -1226,12 +1226,11 @@ function load(){
   /* ★ 全部校验都过了才算「真的用上了存盘」—— 半路 return null 的不能算 */
   loadedFromStore = true;
   lastSavedAt = at;
-  /* ★ 2026-11-12：只保留业务端同步的 20 位（st1-st20），清理残留脏数据 */
-  const keepIds = new Set(['st1','st2','st3','st4','st5','st6','st7','st8','st9','st10',
-                           'st11','st12','st13','st14','st15','st16','st17','st18','st19','st20']);
-  if (Array.isArray(o.students)) {
-    o.students = o.students.filter(s => keepIds.has(s.id));
-  }
+  /* ★ 2026-11-19（P-173）：删掉 11-12 的 st1-st20 白名单。
+     那段是「一次性清理脏数据」被误做成了**常驻过滤**：每次 load() 都把 st21+
+     新建学生 / 业务部推来的新学员丢掉 —— 表现为「编辑保存了，刷新就没了」。
+     ★ 清理动作只能做一次并留痕，不能放在每次读取里。这里只做结构校验，
+       所有合法 ID（stN / 导入的别名）一律保留。 */
   /* 剥元数据 + 补标量交给 normalizeDB —— 和「导入备份」走同一条路，口径不会漂 */
   return normalizeDB(o);
 }
