@@ -468,34 +468,79 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 
 /* ---------------- 排课矩阵 ---------------- */
 .mx-wrap{overflow-x:auto;}
-/* ★ 2026-11-19（P-168）：矩阵补「本周日期」+ 页内月历 */
+/* ★ 2026-11-19（P-168 v2）：月历（周一→周日 · 日期连续）+ 周历（每天一列） */
 .mx thead th .mx-d{display:block;margin-top:2px;font-size:11px;font-weight:600;
   color:var(--ink3);letter-spacing:0;text-transform:none;}
 .mx thead th.today .mx-d{color:var(--brand);}
-.chip .ld{display:block;font-size:11px;margin-top:3px;color:var(--ink3);}
-.chip .ld.done{color:var(--ok);}
-.chip .ld.today{color:var(--warn);}
-.chip .ld.bad{color:var(--bad);}
-.mcal-wrap{overflow-x:auto;}
-.mcal{border-collapse:collapse;width:100%;table-layout:fixed;min-width:820px;}
-.mcal th{padding:7px 4px;font-size:11px;color:var(--ink3);border:1px solid var(--line);
-  background:var(--surface-2);font-weight:650;text-align:center;}
-.mcal td{border:1px solid var(--line);vertical-align:top;height:106px;padding:4px 5px;}
-.mcal td.out{background:var(--surface-2);}
-.mcal td.today{background:var(--brand-soft);}
-.mcal td .d{font-size:11.5px;font-weight:650;color:var(--ink3);margin-bottom:3px;}
-.mcal td.today .d{color:var(--brand);}
-.mcal .mev{font-size:11px;line-height:1.35;margin:2px 0;padding:2px 4px;border-radius:4px;
-  background:var(--surface);border-left:3px solid var(--line);}
-.mcal .mev .tm{font-weight:650;}
-.mcal .mev a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--line);}
-.mcal .mev .rm{color:var(--ink3);}
-.mcal .mev .rm.bad{color:var(--bad);font-weight:650;}
-.mcal .mev.done{border-left-color:var(--ok);}
-.mcal .mev.today{border-left-color:var(--warn);}
-.mcal .mev.bad{border-left-color:var(--bad);text-decoration:line-through;opacity:.72;}
-.mcal .more{font-size:11px;color:var(--brand);cursor:pointer;font-weight:650;}
-.mcal-empty{padding:10px 12px;font-size:12px;color:var(--ink3);}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg2 button{border:0;background:transparent;padding:6px 12px;font:650 12px var(--ui);color:var(--ink2);cursor:pointer}
+.seg2 button+button{border-left:1px solid var(--line)}
+.seg2 button.on{background:var(--navy);color:#fff}
+.lg2{display:inline-flex;align-items:center;gap:4px;color:var(--ink3);font-size:11px;margin-right:6px}
+.dot2{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot2.done{background:var(--ok)} .dot2.today{background:var(--warn)}
+.dot2.plan{background:#b9c8d4} .dot2.cancel{background:var(--bad)}
+.sum2{display:flex;align-items:center;gap:14px;padding:9px 14px;border-bottom:1px solid var(--line);
+  background:var(--surface);font-size:12px;color:var(--ink2);flex-wrap:wrap}
+.sum2 b{color:var(--ink);font-size:12.5px}
+.sum2 .sp{flex:1}
+.sum2 .k{color:var(--ink3)}
+.sum2 .k i{font-style:normal;color:var(--ink);font-weight:700}
+.cal2{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.cal2 th{background:var(--surface-2);color:var(--ink3);font-size:11.5px;font-weight:650;
+  padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+.cal2 td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  vertical-align:top;padding:5px 6px 6px;height:108px}
+.cal2 td:last-child{border-right:0}
+.cal2 tr:last-child td{border-bottom:0}
+.cal2 td.today{background:#f4fbfd}
+.cal2 td.out{background:#f8fafc}
+.cal2 td.pick{outline:2px solid var(--brand);outline-offset:-2px}
+.cal2 td[data-cal-day]{cursor:pointer}
+.cal2 td[data-cal-day]:hover{background:#f6fafc}
+.cal2 .dn{font-size:12px;font-weight:650;color:var(--ink2);margin:0 0 4px;font-variant-numeric:tabular-nums}
+.cal2 td.today .dn{color:var(--brand-ink);font-weight:800}
+.cal2 td.out .dn{color:#b9c8d4;font-weight:500}
+.cal2 td.out .ev2{opacity:.55}
+.ev2{display:flex;align-items:center;gap:6px;margin:3px 0;padding:3px 6px;border-radius:5px;
+  background:var(--surface-2);border-left:3px solid var(--line);font-size:11.5px;line-height:1.35;overflow:hidden}
+.ev2 .tm{font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.ev2 .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev2 .rm{margin-left:auto;color:var(--ink3);font-size:10px;flex:0 0 auto}
+.ev2.done{border-left-color:var(--ok)} .ev2.today{border-left-color:var(--warn)}
+.ev2.cancel{border-left-color:var(--bad);opacity:.6;text-decoration:line-through}
+.more2{margin-top:2px;font-size:10.5px;color:var(--brand);font-weight:650;cursor:pointer;padding:1px 2px}
+.week7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.wcol{border-right:1px solid var(--line);min-height:300px;display:flex;flex-direction:column}
+.wcol:last-child{border-right:0}
+.wcol .wh{padding:8px 9px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.wcol.today .wh{background:var(--brand-soft)}
+.wcol .wh b{font-size:12px;color:var(--ink2);display:block}
+.wcol .wh .d{font-size:10.5px;color:var(--ink3)}
+.wcol.today .wh b,.wcol.today .wh .d{color:var(--brand-ink)}
+.wcol .wb{padding:6px;display:flex;flex-direction:column;gap:6px;flex:1}
+.wcard{border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:7px;
+  padding:6px 7px;background:var(--surface);cursor:pointer}
+.wcard:hover{background:var(--surface-2)}
+.wcard .l1{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:650;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wcard .tm{color:var(--ink2);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.wcard .l2{display:flex;align-items:center;gap:5px;margin-top:2px;font-size:10.5px;color:var(--ink3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wcard.done{border-left-color:var(--ok)} .wcard.today{border-left-color:var(--warn)}
+.wcard.cancel{border-left-color:var(--bad);opacity:.6;text-decoration:line-through}
+.wempty{color:#b9c8d4;font-size:11px;padding:6px 2px}
+.daysheet{border-top:1px solid var(--line);background:var(--surface)}
+.daysheet .dh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.daysheet .dh b{font-size:13px}
+.daysheet .dh .sp{flex:1}
+.daysheet .dl{padding:4px 14px 12px}
+.daysheet .row{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.daysheet .row:last-child{border-bottom:0}
+.daysheet .tm{font-weight:700;font-variant-numeric:tabular-nums;width:50px;flex:0 0 auto}
+.daysheet .nm{font-weight:650}
+.daysheet .meta{display:block;color:var(--ink3);font-size:11.5px;margin-top:1px}
+.daysheet .empty{padding:18px 0;color:var(--ink3);font-size:12px}
 .mx{border-collapse:collapse;font-size:12.5px;min-width:640px;width:100%;}
 .mx th,.mx td{border:1px solid var(--line);}
 .mx thead th{background:var(--surface-2);padding:8px 6px;font-size:10.5px;color:var(--ink3);
@@ -2515,17 +2560,18 @@ function vApply(){
      ③ 卡片可点 → 跳到「班级」子页签并点亮那一行（班级没有自己的抽屉，
         跟总览「差 N 人开班」那条走的是同一个思路，只是多了个聚焦）。 */
 /* ============================================================
-   P-168（2026-11-19 · Tony 拍板）· 周日期 + 矩阵页内月历
+   P-168 v2（2026-11-19 · Tony 拍板）· 月历（周一 → 周日）+ 周历（每天一列）
    ------------------------------------------------------------
-   ① 矩阵表头补本周日期（周一 11/17），卡片补「本节哪天 · 什么状态」；
-   ② 每个矩阵页下方长一张本月月历（线下页只看线下课、线上页只看线上课）；
-   ③ 线下缺教室 → 红标「未填教室」（矩阵卡 + 月历格）；
-   ④ 「日历」页签删除（Tony：那个页面不需要了）。
-   ★ 一切以 DB.lessons[].date 为准（事实表）；不改课次、不改存盘键。
+   ① 月历 = 真日历：周一→周日 7 等列、日期连续（上月尾/下月头淡色带课）、
+      每格最多 2 条，多的 +N；点格子看当天全部（页内清单，不开抽屉）。
+   ② 周历 = 每天一列、列内按时间堆叠 —— 同一时间两节课也上下排，永不出界。
+      （旧的「时段 × 星期」固定格子已弃用：两节课就溢出。）
+   ③ 状态只留色点；教师 / 教室进 title；取消默认隐藏，可开。
+   ★ 数据只读：不改课次、不改存盘键。
    ============================================================ */
 function weekMondayOf(dateStr){
   const d = new Date(dateStr + 'T00:00:00');
-  const di = d.getDay();                       /* 0=周日 */
+  const di = d.getDay();                        /* 0=周日 */
   return addDays(dateStr, -(di === 0 ? 6 : di - 1));
 }
 function lessonModeOf(l){
@@ -2538,188 +2584,189 @@ function lessonStatusText(l){
 }
 function lessonStatusCls(l){
   return l.status === 'done' ? 'done' : l.status === 'today' ? 'today'
-       : l.status === 'cancel' ? 'bad' : '';
+       : l.status === 'cancel' ? 'cancel' : 'plan';
 }
 function lessonRoomOf(l){
+  /* ★ 线上不占教室：线上课一律返回空 —— 班上误填了 roomCode 也不能显示，
+     否则「线上课不看教室」这条口径会被班级字段偷偷带回来。 */
+  if (lessonModeOf(l) === 'online') return { city: '', code: '' };
   const c = (typeof C === 'function' ? C(l.cid) : null) || {};
   return { city: String(l.city || c.room || ''), code: String(l.roomCode || c.roomCode || '') };
 }
-/* 月历状态：空 = 本月；两个矩阵页共用一份（切页不丢月份） */
-let calMonth = '';
-let calShowCancel = false;
-let calExpanded = {};
 const pad2 = n => String(n).padStart(2, '0');
-/* 探针口子（P-168）：月历的月份 / 显示已取消 / 展开状态，只读 + 可设，不改产品行为 */
-window.__CAL_TEST__ = {
-  state: function(){ return { month: calMonth, showCancel: calShowCancel, expanded: Object.keys(calExpanded) }; },
-  set: function(o){
-    o = o || {};
-    if (o.month !== undefined) calMonth = String(o.month || '');
-    if (o.showCancel !== undefined) calShowCancel = !!o.showCancel;
-    if (o.expanded !== undefined) calExpanded = o.expanded || {};
-  }
-};
 function mdText(dateStr){ return Number(dateStr.slice(5,7)) + '/' + Number(dateStr.slice(8,10)); }
+function dayName(dateStr){ return DAY_NAMES[new Date(dateStr + 'T00:00:00').getDay()]; }
 
-function bMonthCal(mode){
-  const isOn = mode === 'online';
-  const m = /^\d{4}-\d{2}$/.test(calMonth) ? calMonth : DB.todayDate.slice(0,7);
-  const yy = Number(m.slice(0,4)), mm = Number(m.slice(5,7));
-  const dim = new Date(yy, mm, 0).getDate();
-  const startDi = new Date(yy, mm - 1, 1).getDay();
-  const rows = Math.ceil((startDi + dim) / 7);
+/* 视图状态：只存内存，不落库（刷新回本月 / 本周） */
+let calAnchor = '';          /* 空 = 今天；月历换月 / 周历换周都改它 */
+let calView = 'month';       /* month | week */
+let calShowCancel = false;
+let calDay = '';             /* 选中日期（页内清单） */
 
-  const all = DB.lessons.filter(l => String(l.date || '').slice(0,7) === m
-    && lessonModeOf(l) === (isOn ? 'online' : 'offline'));
-  const list = all.filter(l => calShowCancel ? true : l.status !== 'cancel');
-  const counted = list.filter(l => l.status !== 'cancel');
-  const doneN = counted.filter(l => l.status === 'done').length;
-  const planN = counted.length - doneN;
-  const maxDate = DB.lessons.reduce((a, l) => (l.date || '') > a ? l.date : a, '');
-
-  const head = `<div class="card-h"><h3>本月月历 · ${m}</h3>
-    <span class="sub">${isOn ? '线上课' : '线下课'} · 一天超过 3 节折叠 · 点班级名看详情</span>
-    <span class="sp"></span>
-    <span class="tg off">本月 ${counted.length} 节 · 已上 ${doneN} / 待上 ${planN}</span>
-    <button class="btn" data-cal="prev" style="height:26px;padding:0 9px">‹ 上月</button>
-    <button class="btn" data-cal="today" style="height:26px;padding:0 9px">回到今天</button>
-    <button class="btn" data-cal="next" style="height:26px;padding:0 9px">下月 ›</button>
-    <button class="btn" data-cal="cancel" style="height:26px;padding:0 9px">${calShowCancel ? '隐藏已取消' : '显示已取消'}</button>
-  </div>`;
-
-  let cells = '';
-  for (let i = 0; i < rows * 7; i++){
-    const dayNo = i - startDi + 1;
-    if (dayNo < 1 || dayNo > dim){ cells += '<td class="out"></td>'; continue; }
-    const ds = m + '-' + pad2(dayNo);
-    const evs = list.filter(l => l.date === ds)
-      .sort((a, b) => toMin(slotStart(a.time)) - toMin(slotStart(b.time)));
-    const expanded = !!calExpanded[ds];
-    const show = expanded ? evs : evs.slice(0, 3);
-    const inner = show.map(l => {
-      const t = T(l.teacher) || {};
-      const c = C(l.cid) || {};
-      const r = lessonRoomOf(l);
-      const room = isOn ? '' : (r.code
-        ? ' · <span class="rm">' + esc(r.city) + ' · ' + esc(r.code) + '</span>'
-        : ' · <span class="rm bad">未填教室</span>');
-      return '<div class="mev ' + lessonStatusCls(l) + '">' +
-        '<span class="tm">' + slotStart(l.time) + '</span> ' +
-        '<a href="#" data-c-act="open" data-cid="' + l.cid + '">' + esc(l.cname || c.name || '') + '</a>' +
-        (t.name ? ' · ' + esc(t.name) : '') + room +
-        ' · ' + lessonStatusText(l) +
-      '</div>';
-    }).join('');
-    const more = !expanded && evs.length > 3
-      ? '<span class="more" data-cal="more" data-cal-date="' + ds + '">+' + (evs.length - 3) + ' 更多</span>' : '';
-    cells += '<td' + (ds === DB.todayDate ? ' class="today"' : '') + '>' +
-      '<div class="d">' + dayNo + '</div>' + inner + more + '</td>';
-  }
-
-  const empty = counted.length ? '' :
-    '<div class="mcal-empty">本月尚未排课' +
-    (maxDate ? '（课次只排到 ' + maxDate + '）' : '（还没有任何课次）') +
-    ' —— 排到那之后这里才会有课。</div>';
-
-  return `<div class="card marks" style="margin-top:14px">
-    ${head}
-    <div class="card-b tight">
-      ${empty}
-      <div class="mcal-wrap"><table class="mcal">
-        <thead><tr>${DAY_NAMES.map(d => '<th>' + d + '</th>').join('')}</tr></thead>
-        <tbody>${cells}</tbody>
-      </table></div>
-    </div>
-  </div>`;
+function calBase(){
+  return /^\d{4}-\d{2}-\d{2}$/.test(calAnchor) ? calAnchor : DB.todayDate;
 }
-
+function calLessons(mode){
+  const want = mode === 'online' ? 'online' : 'offline';
+  return DB.lessons.filter(l => lessonModeOf(l) === want);
+}
+function calDayEvents(date, mode){
+  return calLessons(mode)
+    .filter(l => l.date === date && (calShowCancel || l.status !== 'cancel'))
+    .sort((x, y) => toMin(slotStart(x.time)) - toMin(slotStart(y.time)));
+}
+function calMonthGrid(){
+  const m = calBase().slice(0,7);
+  const y = Number(m.slice(0,4)), mm = Number(m.slice(5,7));
+  const first = new Date(y, mm - 1, 1);
+  const shift = (first.getDay() + 6) % 7;            /* 周一为一周第一天 */
+  const start = new Date(y, mm - 1, 1 - shift);
+  const cells = [];
+  for (let i = 0; i < 42; i++){
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const date = ymd(d);
+    cells.push({ date: date, day: d.getDate(), inMonth: date.slice(0,7) === m });
+  }
+  const rows = cells.slice(35).some(c => c.inMonth) ? 6 : 5;
+  return cells.slice(0, rows * 7);
+}
+function calEventLine(l){
+  const c = (typeof C === 'function' ? C(l.cid) : null) || {};
+  const t = (typeof T === 'function' ? T(l.teacher || c.teacher) : null) || {};
+  const r = lessonRoomOf(l);
+  const rm = (lessonModeOf(l) === 'offline' && r.code) ? '<span class="rm">' + esc(r.code) + '</span>' : '';
+  const tip = (l.cname || c.name || '') + ' · ' + (t.name || '') +
+              (r.code ? ' · ' + r.city + ' · ' + r.code : '') + ' · ' + lessonStatusText(l);
+  return '<div class="ev2 ' + lessonStatusCls(l) + '" title="' + esc(tip) + '">' +
+    '<i class="dot2 ' + lessonStatusCls(l) + '"></i>' +
+    '<span class="tm">' + slotStart(l.time) + '</span>' +
+    '<span class="nm">' + esc(l.cname || c.name || '') + '</span>' + rm + '</div>';
+}
+function calWeekCard(l){
+  const c = (typeof C === 'function' ? C(l.cid) : null) || {};
+  const t = (typeof T === 'function' ? T(l.teacher || c.teacher) : null) || {};
+  const r = lessonRoomOf(l);
+  const room = (lessonModeOf(l) === 'offline' && r.code) ? ' · ' + esc(r.code) : '';
+  const tip = (l.cname || c.name || '') + ' · ' + (t.name || '') + (r.code ? ' · ' + r.city + ' · ' + r.code : '') + ' · ' + lessonStatusText(l);
+  return '<div class="wcard ' + lessonStatusCls(l) + '" data-cal-day="' + l.date + '" title="' + esc(tip) + '">' +
+    '<div class="l1"><i class="dot2 ' + lessonStatusCls(l) + '"></i>' +
+      '<span class="tm">' + slotStart(l.time) + '</span>' +
+      '<span>' + esc(l.cname || c.name || '') + '</span></div>' +
+    '<div class="l2">' + esc(t.name || '') + ' · ' +
+      (typeof classN === 'function' ? classN(c) : 0) + '/' + (c.cap || 0) + ' 人 · ' +
+      lessonStatusText(l) + room + '</div></div>';
+}
+function calMonthBody(mode){
+  const cells = calMonthGrid();
+  const head = ['周一','周二','周三','周四','周五','周六','周日'].map(w => '<th>' + w + '</th>').join('');
+  let rows = '';
+  for (let r = 0; r < cells.length / 7; r++){
+    rows += '<tr>';
+    for (let c = 0; c < 7; c++){
+      const cell = cells[r*7 + c];
+      const evs = calDayEvents(cell.date, mode);
+      const more = evs.length > 2 ? '<div class="more2">+' + (evs.length - 2) + ' 更多</div>' : '';
+      rows += '<td class="' + (cell.inMonth ? '' : 'out') +
+        (cell.date === DB.todayDate ? ' today' : '') +
+        (cell.date === calDay ? ' pick' : '') +
+        '" data-cal-day="' + cell.date + '"><div class="dn">' + cell.day + '</div>' +
+        evs.slice(0, 2).map(calEventLine).join('') + more + '</td>';
+    }
+    rows += '</tr>';
+  }
+  return '<table class="cal2"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+function calWeekBody(mode){
+  const mon = weekMondayOf(calBase());
+  const days = [0,1,2,3,4,5,6].map(i => addDays(mon, i));
+  const cols = days.map(d => {
+    const evs = calDayEvents(d, mode);
+    const body = evs.length ? evs.map(calWeekCard).join('') : '<div class="wempty">无课</div>';
+    return '<div class="wcol' + (d === DB.todayDate ? ' today' : '') + '">' +
+      '<div class="wh"><b>' + dayName(d) + '</b><span class="d">' + mdText(d) + '</span></div>' +
+      '<div class="wb">' + body + '</div></div>';
+  }).join('');
+  return '<div class="week7">' + cols + '</div>';
+}
+function calSheet(mode){
+  if (!calDay) return '';
+  const evs = calDayEvents(calDay, mode);
+  const rows = evs.length ? evs.map(l => {
+    const c = (typeof C === 'function' ? C(l.cid) : null) || {};
+    const t = (typeof T === 'function' ? T(l.teacher || c.teacher) : null) || {};
+    const r = lessonRoomOf(l);
+    const where = lessonModeOf(l) === 'offline' ? (r.code ? (r.city + ' · ' + r.code) : '未填教室') : '线上';
+    return '<div class="row"><span class="tm">' + slotStart(l.time) + '</span>' +
+      '<span><span class="nm">' + esc(l.cname || c.name || '') + '</span>' +
+      '<span class="meta">' + esc(t.name || '') + ' · ' +
+        (typeof classN === 'function' ? classN(c) : 0) + '/' + (c.cap || 0) + ' 人 · ' +
+        esc(where) + ' · ' + lessonStatusText(l) + '</span></span></div>';
+  }).join('') : '<div class="empty">这天没有排课</div>';
+  return '<div class="daysheet"><div class="dh"><b>' + mdText(calDay) + ' ' + dayName(calDay) +
+    ' · ' + evs.length + ' 节</b><span class="sp"></span>' +
+    '<button class="btn" data-cal-close="1">关闭</button></div><div class="dl">' + rows + '</div></div>';
+}
+function calLegend(){
+  return '<span class="lg2"><i class="dot2 done"></i>已上</span>' +
+         '<span class="lg2"><i class="dot2 today"></i>今天</span>' +
+         '<span class="lg2"><i class="dot2 plan"></i>待上</span>';
+}
 function bMatrix(mode){
-  /* ★ 2026-11-02（P-99）：矩阵拆成「线下 / 线上」两张（Tony 定：线上线下排课分开）。
-     为什么要拆：线下和线上是两套资源 —— 线下占教室（一间一间，不能撞时段），
-     线上不占教室、同一格能叠好几个班。混在一张表里，看的人分不清
-     「这一格空着」是「没教室了」还是「线上随便排」。
-     ★ 老数据兼容：只有 mode==='online' 才算线上，其余（含早期没写 mode 的班）
-       一律算线下 —— 宁可让它出现在线下矩阵，也不能两边都不出现（凭空消失最坏）。
-     参数不给 = 线下（bMatrix() 是历史调用方式，别让它变空页）。 */
   const isOn = mode === 'online';
-  const mine = DB.classes.filter(c => (c.mode === 'online') === isOn);
-  /* 列 = 周一 ~ 周六；**只有真有周日课的时候**才多排一列周日 ——
-     否则周日排的班在矩阵上会凭空消失（onDays 里那个 0 匹配不到任何一列）。
-     ⚠️ colDays 里存的是 DAY_NAMES 索引（0=周日 … 6=周六），不存列号，免得两套索引打架。 */
-  const hasSun = DB.slots.some(sl => slotDays(sl).indexOf(0) >= 0);
-  const colDays = hasSun ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6];
-  const todayDi = new Date(DB.todayDate + 'T00:00:00').getDay();   /* 0=周日 */
-  const todayInCols = colDays.indexOf(todayDi) >= 0;
-  /* ★ P-168：本周每一列到底是几号（周一 = weekMondayOf(today)，周日 = +6） */
-  const monday = weekMondayOf(DB.todayDate);
-  const colDate = {};
-  colDays.forEach(di => { colDate[di] = addDays(monday, (di + 6) % 7); });
-  /* 两张表各说各的话：标题 / 说明 / 图例 / 空态提示都分开写 */
-  const title = isOn ? '线上矩阵' : '线下矩阵';
-  const sub = isOn
-    ? '行 = 时段 · 列 = 星期 · 线上不占教室，同一格可以叠多个班'
-    : '行 = 时段 · 列 = 星期 · 琥珀 = 线下班 · 教师 · 教室市 · 教室编码';
-  const legend = isOn
-    ? '<span class="sub lg-donut"><span class="donut on live"></span>正在上课</span>'+
-      '<span class="sub lg-donut"><span class="donut on"></span>线上 · 未开始/已结束</span>'
-    : '<span class="sub lg-donut"><span class="donut"></span>线下 · 无色</span>';
+  const base = calBase();
+  const mine = calLessons(mode);
+  /* ★ 班级数是班级，不是课次 —— 之前写成 mine.length，4 节课会显示「共 4 个班」 */
+  const myClasses = DB.classes.filter(c => ((c.mode === 'online') === isOn));
+  const todayEvs = calDayEvents(DB.todayDate, mode);
+  const doneN = todayEvs.filter(l => l.status === 'done').length;
+  const mon = weekMondayOf(base);
+  const weekDays = [0,1,2,3,4,5,6].map(i => addDays(mon, i));
+  const weekN = mine.filter(l => weekDays.indexOf(l.date) >= 0 && l.status !== 'cancel').length;
+  const monthN = mine.filter(l => l.date.slice(0,7) === base.slice(0,7) && l.status !== 'cancel').length;
+  const title = calView === 'month'
+    ? '本月 · ' + calBase().slice(0,4) + ' 年 ' + Number(calBase().slice(5,7)) + ' 月'
+    : '本周 · ' + mdText(mon) + ' – ' + mdText(addDays(mon, 6));
+  const sub = calView === 'month'
+    ? '周一 → 周日 · 日期连续 · 每格 2 条，多的点开看当天'
+    : '每天一列 · 同一时间两节就上下排，不会出界';
+  const nav = calView === 'month'
+    ? '<button class="btn" data-cal-nav="-1">‹ 上月</button>' +
+      '<button class="btn" data-cal-nav="0">回到今天</button>' +
+      '<button class="btn" data-cal-nav="1">下月 ›</button>'
+    : '<button class="btn" data-cal-nav="-7">‹ 上一周</button>' +
+      '<button class="btn" data-cal-nav="0">回到今天</button>' +
+      '<button class="btn" data-cal-nav="7">下一周 ›</button>';
   const emptyTip = isOn
     ? '还没有线上班。开班时把上课方式选成线上，就会出现在这里。'
     : '还没有线下班。开班时把上课方式选成线下，就会出现在这里。';
-  return `<div class="card marks">
-    <div class="card-h"><h3>${title}</h3><span class="sub">${sub}</span><span class="sp"></span>
-      ${legend}
-      <span class="tg${mine.length ? ' off' : ''}">共 ${mine.length} 个班</span>
-      <span class="tg warn" title="今天 = ${DB.todayDate}${todayInCols ? '' : '（周日 · 矩阵里没有这一列）'}">今天 ${DAY_NAMES[todayDi]}</span></div>
-    <div class="card-b tight">
-      ${mine.length ? '' : '<div class="note" style="margin:0 0 10px">'+emptyTip+'</div>'}
-      <div class="mx-wrap"><table class="mx">
-      <thead><tr><th class="rowh">时段</th>${colDays.map(di =>
-        '<th'+(di===todayDi?' class="today"':'')+'>'+DAY_NAMES[di]+
-        '<span class="mx-d">'+mdText(colDate[di])+'</span>'+
-        (di===todayDi?'<span class="tday">今天</span>':'')+'</th>').join('')}</tr></thead>
-      <tbody>${DB.slots.map(sl=>{
-        const onDays = slotDays(sl);
-        return '<tr><th class="rowh">'+sl.name+'<span class="s">'+sl.time+'</span></th>'+
-          colDays.map(di=>{
-            const tdCls = 'cell' + (di===todayDi ? ' today' : '');
-            if (onDays.indexOf(di) < 0) return '<td class="'+tdCls+' empty"></td>';
-            const cs = mine.filter(c=>c.slot===sl.id);
-            if (!cs.length) return '<td class="'+tdCls+' empty"></td>';
-            return '<td class="'+tdCls+'">'+cs.map(c=>{
-              const t=T(c.teacher);
-              /* 环只对线上有意义（线上有没有在直播）；线下环恒无色，跟以前一样 */
-              const live = isOn && slotLive(S(c.slot).time);
-              const dotCls = isOn ? (live?'on live':'on') : '';
-              const dotTip = isOn ? (live ? '线上课 · 正在上课' : '线上课 · 未开始 / 已结束')
-                                  : '线下课 · 环无色';
-              /* 第三行两张表不一样：
-                 线下 = 教师 · 教室市 · 教室编码（排课的人要知道去哪间）
-                 线上 = 教师 · 人数（线上不占教室，人数才是要看的东西） */
-              const line3 = isOn
-                ? esc(t.name)+' · '+classN(c)+'/'+c.cap+' 人'
-                : esc(t.name)+(c.room?' · '+esc(c.room):'')+
-                  (c.roomCode?' · '+esc(c.roomCode):' · <span class="tg bad">未填教室</span>');
-              /* ★ P-168：这一列（本周这个星期几）这节课到底是哪天、上了没 */
-              const wl = DB.lessons.find(l => l.cid === c.id && l.date === colDate[di]);
-              const ldCls = wl ? lessonStatusCls(wl) : '';
-              const ldText = wl
-                ? mdText(wl.date) + ' ' + slotStart(wl.time) + ' · ' + lessonStatusText(wl)
-                : '本周无课';
-              /* ★ 卡片可点：去「班级」子页签看它的完整一行（级别 / 教室 / 人数 / 三个动作） */
-              return '<a href="#" class="chip '+(isOn?'':'off')+'"'+
-                     ' data-c-act="open" data-cid="'+c.id+'" title="点开看这个班">'+
-                     '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
-                     '<span class="nm">'+esc(c.name)+'</span></b>'+
-                     '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
-                     '<span class="tn">'+line3+'</span>'+
-                     '<span class="ld '+ldCls+'">'+ldText+'</span></a>';
-            }).join('')+'</td>';
-          }).join('')+'</tr>';
-      }).join('')}</tbody>
-    </table></div></div>
-  </div>` + bMonthCal(mode);
+  const maxDate = DB.lessons.reduce((a, l) => (l.date || '') > a ? l.date : a, '');
+  const noMonth = (calView === 'month' && monthN === 0)
+    ? '<div class="note" style="margin:12px">本月尚未排课' +
+      (maxDate ? '（课次只排到 ' + maxDate + '）' : '（还没有任何课次）') +
+      ' —— 排到那之后这里才会有课。</div>'
+    : '';
+  return '<div class="card marks">' +
+    '<div class="card-h"><h3>' + title + '</h3><span class="sub">' + sub + '</span>' +
+      '<span class="sp"></span>' +
+      '<div class="seg2">' +
+        '<button data-cal-view="month" class="' + (calView === 'month' ? 'on' : '') + '">本月</button>' +
+        '<button data-cal-view="week" class="' + (calView === 'week' ? 'on' : '') + '">本周</button>' +
+      '</div>' + calLegend() +
+      '<span class="tg off">共 ' + myClasses.length + ' 个班</span>' +
+      '<button class="btn" data-cal-cancel="1">' + (calShowCancel ? '隐藏已取消' : '显示已取消') + '</button>' +
+      nav +
+    '</div>' +
+    '<div class="sum2"><b>今天 ' + mdText(DB.todayDate) + ' ' + dayName(DB.todayDate) + '</b>' +
+      '<span class="k">今天 <i>' + todayEvs.length + '</i> 节 · 已上 <i>' + doneN + '</i> · 待上 <i>' + (todayEvs.length - doneN) + '</i></span>' +
+      '<span class="sp"></span>' +
+      '<span class="k">本周 <i>' + weekN + '</i> 节 · 本月 <i>' + monthN + '</i> 节</span></div>' +
+    (myClasses.length ? '' : '<div class="note" style="margin:12px">' + emptyTip + '</div>') +
+    noMonth +
+    (calView === 'month' ? calMonthBody(mode) : calWeekBody(mode)) +
+    calSheet(mode) +
+  '</div>';
 }
+
 function bClasses(){
   const rows = DB.classes.filter(c =>
     !fQ || c.name.includes(fQ) || c.code.includes(fQ));
@@ -6525,28 +6572,46 @@ document.addEventListener('change', e => {
   }
 });
 $('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
-/* ★ 2026-11-19（P-168）：矩阵页内月历的四个动作。
-   独立一条监听：不挤进那个巨型点击分发器，也不会被 [data-c-act] 抢走。 */
+/* ★ 2026-11-19（P-168 v2）：月历 / 周历的全部交互。
+   独立一条监听：不挤进那个巨型点击分发器，也不会被 [data-c-act] 抢走。
+   ⚠️ 只改内存里的视图状态（calAnchor / calView），任何存盘键都不碰。 */
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-cal]');
-  if (!b) return;
-  const act = b.getAttribute('data-cal');
-  if (act === 'prev' || act === 'next'){
-    const base = /^\d{4}-\d{2}$/.test(calMonth) ? calMonth : DB.todayDate.slice(0,7);
-    const y = Number(base.slice(0,4)), mm = Number(base.slice(5,7));
-    const d = new Date(y, mm - 1 + (act === 'prev' ? -1 : 1), 1);
-    calMonth = d.getFullYear() + '-' + pad2(d.getMonth() + 1);
-  } else if (act === 'today'){
-    calMonth = '';
-  } else if (act === 'cancel'){
-    calShowCancel = !calShowCancel;
-  } else if (act === 'more'){
-    const ds = b.getAttribute('data-cal-date');
-    calExpanded[ds] = !calExpanded[ds];
+  const v = e.target.closest('[data-cal-view]');
+  if (v){ calView = v.getAttribute('data-cal-view') === 'week' ? 'week' : 'month'; calDay = ''; render(); e.preventDefault(); return; }
+  const c = e.target.closest('[data-cal-cancel]');
+  if (c){ calShowCancel = !calShowCancel; render(); e.preventDefault(); return; }
+  const n = e.target.closest('[data-cal-nav]');
+  if (n){
+    const d = Number(n.getAttribute('data-cal-nav')) || 0;
+    if (!d){ calAnchor = ''; }
+    else if (calView === 'month'){
+      const base = calBase();
+      const y = Number(base.slice(0,4)), mm = Number(base.slice(5,7));
+      calAnchor = ymd(new Date(y, mm - 1 + d, 1));
+    } else {
+      calAnchor = addDays(calBase(), d);
+    }
+    calDay = ''; render(); e.preventDefault(); return;
   }
-  e.preventDefault();
-  render();
+  if (e.target.closest('[data-cal-close]')){ calDay = ''; render(); e.preventDefault(); return; }
+  const day = e.target.closest('[data-cal-day]');
+  if (day){
+    const ds = day.getAttribute('data-cal-day');
+    calDay = (calDay === ds) ? '' : ds;      /* 再点一次 = 收起 */
+    render(); e.preventDefault(); return;
+  }
 });
+/* 探针口子（P-168 v2）：视图状态只读 + 可设，不改产品行为 */
+window.__CAL_TEST__ = {
+  state: function(){ return { anchor: calAnchor, view: calView, showCancel: calShowCancel, day: calDay }; },
+  set: function(o){
+    o = o || {};
+    if (o.anchor !== undefined) calAnchor = String(o.anchor || '');
+    if (o.view !== undefined) calView = (o.view === 'week') ? 'week' : 'month';
+    if (o.showCancel !== undefined) calShowCancel = !!o.showCancel;
+    if (o.day !== undefined) calDay = String(o.day || '');
+  }
+};
 /* 重置为演示数据：抹掉本机存盘 → 回到 seedDB 那批数据。
    加一句确认 —— 存盘里可能有他刚录的东西，误点代价太大 */
 $('#btnReset').addEventListener('click', () => {

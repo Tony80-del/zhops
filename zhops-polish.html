@@ -638,6 +638,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony 三问：<b>①</b>「矩阵没有日期，我怎么知道这课是几号？」<b>②</b>「线上矩阵看不到周天」<b>③</b>「线下矩阵要看到教室」。查代码：矩阵本来就是<b>周模板</b>（行=时段、列=星期），不绑定日期；周天列只在某时段有周日课时才出现 —— 不是 bug。<br>拍板后的做法：<b>①</b> 表头补本周日期（<span class="mono">周一 11/16</span>），卡片补一行「<span class="mono">11/18 19:00 · 已上</span>」/「本周无课」；<b>②</b> 每个矩阵页下方长一张<b>本月月历</b>（7 列网格、今天高亮、上下月切换、一天超 3 节折叠 <span class="mono">+N</span>、取消默认隐藏 + 开关、空月提示「只排到 X」），线下页只看线下课、线上页只看线上课；<b>③</b> 线下缺教室挂红标「未填教室」，有教室显示「市 · 编码」（<span class="mono">D7 · D7-01</span>）。<br><b>「日历」页签删除</b>（Tony：那个页面不需要了），排课子页签 6 → 5，无死链（全库查过）。存盘键、课次事实表一字未动。<br>验收：<span class="mono">check-matrix-date.js</span> 18/18、<span class="mono">check-month-calendar.js</span> 22/22；反向控制三组（砍表头日期 / 改教室红标文案 / 取消课默认显示）全部报红。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-169</td>
+              <td><b>月历改真日历（周一→周日）+ 周历改「每天一列」</b><br><span style="color:var(--ink3);font-size:12px">周历同一时间两节不再出界</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony 看了 P-168 的页面后：「本月月历满意；周历方格拥挤，同一时间两节课字体就出界」。<br><b>月历</b>：改成真日历 —— <b>周一 → 周日</b> 7 等列（原来是日→六）、<b>日期连续</b>（上月尾 / 下月头淡色显示并带各自的课，跨月那周不断档）、每格 2 条 + 「+N 更多」、点格子看当天清单（页内展开，不开抽屉）、教室显示编码、缺教室红字、取消默认隐藏。<br><b>周历</b>：放弃「时段 × 星期」固定格子（两节课必溢出），改成<b>每天一列、列内按时间堆叠</b> —— 同一时间两节就是两张卡上下排，永远装得下；列头 = 星期 + 日期，今天整列浅底；卡片 = 时间 + 班名 + 教师 + 状态（线下带教室）。<br><b>一屏一个视图</b>：顶部「本月 / 本周」切换，不再上下堆两张大表；摘要条显示今天 / 本周 / 本月的节数。<br>数据零改动：只读 <span class="mono">DB.lessons</span>，存盘键、课次、班级一个字没动；视图状态（月份 / 视图 / 选中日）只存内存。<br>验收：<span class="mono">check-matrix-date.js</span> 30/30、<span class="mono">check-month-calendar.js</span> 26/26；反向控制三组（砍 +N / 周历只画第一节 / 砍空月提示）全部报红。</td>
+            </tr>
           </tbody>
         </table>
       </div>
