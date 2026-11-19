@@ -1331,7 +1331,13 @@ function markCloudIfIdle(){
   if (cloudState === 'syncing') return;
   const el = $('#stCloud');
   if (!el) return;
-  if (cloudDirty){ el.textContent = '☁︎ 有未推送的改动'; el.className = 'bad'; return; }
+  /* ★ P-174：把这些改动只在本机、刷新不丢说清楚 —— 上云必须手动点推送。 */
+  if (cloudDirty){
+    el.textContent = '☁︎ 有未推送的改动';
+    el.className = 'bad';
+    if (el.title === undefined || el.title === '') el.title = '这些改动只在本机，刷新不会丢；点「推送到云端」才上云';
+    return;
+  }
   markCloud(cloudState);
 }
 /* Firestore 类型化值 → JS（本系统只用一个字符串字段 payload） */
@@ -1436,29 +1442,28 @@ function mergeBizStudents(list){
 }
 
 /* 推到云端。cb(ok) —— ★ 只有用户手动点按钮才会走到这里（2026-10-17 全手动）
-   ★ 2026-10-30：加 at 防冲撞（S1.3 已知残留）。
-   推之前先 GET 看云端 at；若云端比本机 lastSavedAt 新 → 先落本机再推。
-   ⚠️ 不是逐条 merge：先拉后推仍以本机为准，但保证"看过了对方改什么"。 */
+   ★★ 2026-11-19（P-174）：本地为主，云端**绝不**反向覆盖本地。
+      旧版在推之前发现云端 at 更新，就把云端整份 normalizeDB 套回本机内存 +
+      写回 localStorage —— 结果「点推送」变成了「本机被云端盖掉，再把云端旧数据推上去」。
+      这正是 Tony 说的「本地保存不了，必须从云端拉」的代码级真因。
+      新版：推 = 推我本机这一份。云端新且本机 dirty → 只弹一次确认（默认本机赢），
+      绝不读云端 payload 内容；用户自己点「从云端拉取」才可能覆盖本机。 */
 function fsPush(cb){
   if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
   markCloud('syncing');
   fetch(fsUrl()).then(r => r.ok ? r.json() : null).then(raw => {
     let remoteAt = null;
     if (raw && raw.fields) remoteAt = fsDec(raw.fields.at);
-    if (remoteAt && lastSavedAt && remoteAt > lastSavedAt){
-      const p = fsDec(raw.fields.payload);
-      if (p){
-        try {
-          const o = JSON.parse(p);
-          if (o && typeof o === 'object' && appTagOk(o)){
-            DB = normalizeDB(o);
-            lastSavedAt = o.__at || remoteAt;
-            try { localStorage.setItem(KEY, p); } catch(e){}
-            toast('☁︎ 推送前先并入云端的最新版本');
-            render();
-          }
-        } catch(e){ /* 云端坏了 → 不并入，照旧推 */ }
-      }
+    if (remoteAt && lastSavedAt && remoteAt > lastSavedAt && cloudDirty){
+      /* 有冲突：告诉用户本机改动会保留并覆盖云端，让他再确认一次。
+         ★ 不读 raw.fields.payload —— 绝不把云端那份塞回本机。 */
+      const yes = (typeof window.confirm === 'function')
+        ? window.confirm('云端这份比本机新，但你本机还有未推送的改动。\n\n' +
+            '点「确定」= 用本机覆盖云端（你的改动会保留并推上去）\n' +
+            '点「取消」= 先不推，要去用云端那份请点「从云端拉取」')
+        : true;
+      if (!yes){ markCloud('idle'); if (cb) cb(false); return; }
+      toast('☁︎ 本机改动保留，即将覆盖云端');
     }
     doPush(cb);
   }).catch(() => { doPush(cb); });
@@ -7487,7 +7492,9 @@ function subscribe(){
     const r = window.__ADMIN_LIVE_ARRIVE__(d.payload || '', d.at || '');
     if (r === 'applied')      mark('已收到更新 · ' + hhmmNow(d.at || ''), 'ok');
     else if (r === 'self')    mark('实时接收中 · ' + hhmmNow(new Date().toISOString()), 'ok');
-    else if (r === 'dirty')   mark('云端有更新，本机也有改动 → 请手动点「从云端拉取」', 'bad');
+    /* ★ P-174：不再诱导「去拉云端」—— 那会把用户刚保存的本地改动丢掉。
+       本地已保住；推 = 本机覆盖云端，只有主动点「从云端拉取」才放弃本机。 */
+    else if (r === 'dirty')   mark('云端有更新 · 本机改动已保住（点「推送到云端」覆盖它 / 点「从云端拉取」放弃它）', 'bad');
     else if (r === 'stale')   mark('实时接收中 · ' + hhmmNow(new Date().toISOString()), 'ok');
     else                      mark('实时接收中', 'ok');
   }, err => {

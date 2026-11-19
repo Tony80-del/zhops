@@ -683,6 +683,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony：「学生已设置好可班级，请保存；每次刷新就不会保存了。」<br><b>真因</b>：<span class="mono">load()</span> 里 11-12 为「清理脏数据」加的硬编码白名单 <span class="mono">keepIds = st1…st20</span> 是<b>常驻过滤</b> —— 每次刷新读盘都把 <span class="mono">st21+</span> 新建学生 / 业务部推来的新学员丢掉。<b>保存本身没问题</b>（<span class="mono">saveEdit() → save() → localStorage['zhops.sched.v3']</span> 写得好好的），是读的时候被人为过滤。<br><b>修法</b>：删掉那 4 行白名单（一次性清理本就不该做成常驻过滤）；<b>结构校验一律保留</b>（teachers/students/classes 是数组 + appTag 正确，坏数据仍回落种子）。合法 ID（stN / 导入别名）一律保留，不迁移、不删老数据。<br>验收：<span class="mono">check-p173-persist.js</span> <b>23/23</b>（save 写盘 → 共享 store 重启模拟刷新 → cls/slots/teacherId/city 全在；st21/st22/st99/alias 全保留；错 appTag / 缺 classes 仍回落 null）；反向控制把白名单加回 → <b>7 条报红</b>。全套 <b>60/62</b>（只剩 P-142/143）。还原点 <span class="mono">p173-before-20261119</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-174</td>
+              <td><b>推送 = 推本机（本地为主，云端不再反向覆盖）</b><br><span style="color:var(--ink3);font-size:12px">「本地保存不了，必须从云端拉？」</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony：「本地保存，再推到云端才对，为什么要从云端拉？」<br><b>真因两条</b>：① <span class="mono">fsPush()</span> 推之前先 GET 云端，一旦发现云端 at 更新，就把云端整份 <span class="mono">normalizeDB</span> 套回本机内存 <b>并写回 localStorage</b> —— 「点推送」变成「本机被云端盖掉，再把云端旧数据推上去」；② 实时订阅的 dirty 提示写「请手动点从云端拉取」，把用户往<b>丢掉本地改动</b>的方向引导。<br><b>修法</b>：推 = 推本机这一份。冲突（云端新 + 本机 dirty）只弹一次确认，文案明确「确定 = 本机覆盖云端；取消 = 先不推」，<b>完全不读云端 payload 内容</b>，绝不写回本机；取消则 dirty 保留、本机改动不丢。dirty 提示改成「本机改动已保住（推送覆盖它 / 拉取放弃它）」；云灯 title 补「只在本机，刷新不会丢」。<br>验收：<span class="mono">check-p174-pushlocal.js</span> <b>26/26</b>（源码不反向覆盖 + 运行时端到端：云端旧数据 st99 推不上去、本机 st21 推得上去、取消分支不推且 dirty 保留）；反向控制两组（把覆盖逻辑加回 / 误导文案加回）报红。全套 <b>61/63</b>（只剩 P-142/143）。还原点 <span class="mono">p174-before-20261119</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>
