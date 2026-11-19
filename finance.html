@@ -385,7 +385,7 @@ table.fmt td.bad{color:var(--neg)}
       <button data-v="expense"><span class="k">2</span>支出</button>
       <button data-v="settle"><span class="k">3</span>结算<span class="hot">核心</span></button>
       <button data-v="report"><span class="k">4</span>报表</button>
-      <button data-v="approve"><span class="k">5</span>审批<span class="hot">新</span></button>
+      <button data-v="approve"><span class="k">5</span>审批<span class="hot" id="apprHot">新</span></button>
       <button data-v="config"><span class="k">6</span>配置</button>
       <button data-v="export"><span class="k">7</span>导出</button>
     </nav>
@@ -1910,6 +1910,14 @@ function save(){
      没接上（断网 / SDK 没起来）就静默跳过 —— 存盘本身绝不能因云端失败。 */
   try{ if (typeof window.__FIN_AUTOPUSH__ === 'function') window.__FIN_AUTOPUSH__(); }catch(e){}
 }
+/* ★ 2026-11-19（P-165）：只落本机、不触发 finmaster 外推的存盘口。
+   审批单是**别人文档的镜像**（approvals 由人事/业务写），套进来时不该反过来
+   把财务整份推上去 —— 否则会与回流快照撞车，弹出「覆盖本机？」确认框，
+   无头 Chrome 里直接卡死渲染线程（P-136 实测）。 */
+function saveLocal(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); markSaved(); }catch(e){}
+}
+
 function load(){
   try{
     var raw = localStorage.getItem(KEY);
@@ -2278,6 +2286,69 @@ function renderExpense(){
    ★ 财务不改数字：应发 / 社保个人 / 个税全部来自人事单据，这里只认、只批、只付。 */
 
 /* 拉云端整份 approvals → 覆盖本地缓存。人事那边每提交一次，这里拉一次就同步。 */
+/* ============================================================
+   审批单据「唯一分流口」（2026-11-19 · P-165）
+   ------------------------------------------------------------
+   手动拉取（fsPullApprovals）和实时订阅（__FIN_SET_APPROVALS__）都走这里，
+   绝不允许两份过滤逻辑各说各话 —— 之前工资单 / 场地单就是各写一遍。
+   ============================================================ */
+function applyApprovalVouchers(vouchers, at){
+  vouchers = Array.isArray(vouchers) ? vouchers : [];
+  S.approvals      = vouchers.filter(function(v){ return v && v.dept === 'hr'; });
+  S.placeApprovals = vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'place'; });
+  S.rentApprovals  = vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'rent'; });
+  S.approvalsAt = at || new Date().toISOString();
+  saveLocal();                 /* ★ 镜像数据不反推 finmaster —— 见 saveLocal 注释 */
+  renderApprove(); renderPay(); refreshDerived();
+  refreshApprBadge();
+  return { hr:S.approvals.length, place:S.placeApprovals.length, rent:S.rentApprovals.length };
+}
+/* 待审批角标：三张表加起来还没处理的（只数「已提交」） */
+function pendingApprovalCount(){
+  var n = 0;
+  function cnt(list){ (list || []).forEach(function(v){ if(v && (v.state || ST_WAIT) === ST_WAIT) n++; }); }
+  cnt(S.approvals); cnt(S.placeApprovals); cnt(S.rentApprovals);
+  return n;
+}
+function refreshApprBadge(){
+  var el = document.getElementById('apprHot');
+  if(!el) return;
+  var n = pendingApprovalCount();
+  el.textContent = n > 0 ? String(n) : '';
+  el.style.display = n > 0 ? '' : 'none';
+}
+/* ============================================================
+   付款 → 写进支出表（2026-11-19 · P-166 · Tony 拍板 P2A）
+   ------------------------------------------------------------
+   以前：批完付完只留在审批页，支出表看不到这笔租金 —— 财务对账时找不到。
+   现在：付款成功那一刻写一条支出（类别「场地租金 / 场地费」，带 voucherId）。
+   ★ 幂等：同一张单据（voucherId）只写一次；重试 / 重放 / 手滑再点都不重复。
+   ★ 只对业务部单据（工资单已经在 payroll 里，写支出会双算）。
+   ============================================================ */
+function voucherExpenseExists(id){
+  return (S.expense || []).some(function(e){ return e && e.voucherId === id; });
+}
+function postVoucherExpense(v){
+  if(!v || !v.id) return false;
+  if(voucherExpenseExists(v.id)) return false;
+  var it = (v.items || [])[0] || {};
+  var amt = Number(v.paidAmt) || Number(v.total && v.total.net) || 0;
+  if(!(amt > 0)) return false;
+  S.expense = S.expense || [];
+  S.expense.push({
+    d: v.paidOn || today(),
+    cat: v.type === 'rent' ? '场地租金' : '场地费',
+    payee: it.placeName || v.title || '',
+    amt: amt,
+    inv: v.voucherNo || '',
+    note: '审批单 ' + v.id,
+    voucherId: v.id,
+  });
+  save();
+  renderExpense(); refreshDerived();
+  return true;
+}
+
 function fsPullApprovals(cb){
   if(typeof fetch !== 'function'){ if(cb) cb(false, '这个环境不支持网络'); return; }
   var el = document.getElementById('apState');
@@ -2290,16 +2361,7 @@ function fsPullApprovals(cb){
     try{ o = JSON.parse(p); }catch(e){ if(cb) cb(false, 'payload 不是 JSON'); return; }
     if(!o || !Array.isArray(o.vouchers)){ if(cb) cb(false, '云端结构不认识（没有 vouchers）'); return; }
     /* 只收人事的工资单。以后市场 / 其他部门的单据混进来也不影响财务这页。 */
-    S.approvals = o.vouchers.filter(function(v){ return v && v.dept === 'hr'; });
-    /* ★ 2026-11-05（P-103 ④）：业务部场地请款单走同一个文档，但单独存一份。
-       绝不塞进 S.approvals —— 工资表、人工成本、月份列表都按 dept==='hr' 过滤，
-       混进去会把工资单多算一张、报表口径当场歪掉。 */
-    S.placeApprovals = o.vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'place'; });
-    /* ★ 2026-11-19（L-09）：月租应付单也走同一个文档，单独收一份。 */
-    S.rentApprovals = o.vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'rent'; });
-    S.approvalsAt = new Date().toISOString();
-    save();
-    renderApprove(); renderPay(); refreshDerived();
+    applyApprovalVouchers(o.vouchers);
     if(cb) cb(true, S.approvals.length);
   }).catch(function(e){ if(cb) cb(false, String((e && e.message) || e)); });
 }
@@ -2677,7 +2739,10 @@ function voucherAct(act, v, label, after){
     fsPatchVoucher(v.id, { state:ST_PAID, paidOn:d, paidAmt:amt, voucherNo:vno, paidAt:now, paidBy:'finance' }, function(ok, msg){
       if(!ok){ alert('付款没记上：' + msg); return; }
       v.state = ST_PAID; v.paidOn = d; v.paidAmt = amt; v.voucherNo = vno; v.paidAt = now; v.paidBy = 'finance';
-      save(); after();
+      save();
+      /* ★ P-166：业务部单据付款后写一条支出（幂等，工资单不走这里） */
+      if(v.dept === 'biz') postVoucherExpense(v);
+      after();
     });
     return;
   }
@@ -3324,6 +3389,12 @@ if (typeof window !== 'undefined'){
     rnGetSel: function(){ return RN_SEL; },
     renderRentApprove: renderRentApprove,
     renderRentApDetail: renderRentApDetail,
+    /* ★ P-165/P-166：实时分流口 + 角标 + 支出联动，给探针验 */
+    applyApprovalVouchers: applyApprovalVouchers,
+    pendingApprovalCount: pendingApprovalCount,
+    refreshApprBadge: refreshApprBadge,
+    postVoucherExpense: postVoucherExpense,
+    voucherExpenseExists: voucherExpenseExists,
     renderPlaceApprove: renderPlaceApprove,
     renderPlaceApDetail: renderPlaceApDetail,
     fsPullApprovals: fsPullApprovals,
@@ -3396,6 +3467,12 @@ window.__FIN_SET_BIZPAY__ = function(items, at){
     if (typeof renderPending === 'function') renderPending();
     return true;
   } catch(e){ return false; }
+};
+/* ★ 2026-11-19（P-165）：approvals 实时订阅的落地点。
+   跟手动拉取走同一个 applyApprovalVouchers()，口径只有一份。 */
+window.__FIN_SET_APPROVALS__ = function(vouchers, at){
+  try { return applyApprovalVouchers(vouchers, at); }
+  catch(e){ return null; }
 };
 })();
 </script>
@@ -3530,7 +3607,11 @@ function boot(){
     return;
   }
   subscribe();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) subscribe(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    subscribe();
+    if (typeof subscribeApprovals === 'function') subscribeApprovals();
+  });
   const el = document.getElementById('finSync');
   if (el){
     el.addEventListener('click', subscribe);
@@ -3538,6 +3619,8 @@ function boot(){
   }
   /* L-03 ③：bizpayments 只读订阅 —— 不碰 S.income、不调 save */
   if (typeof subscribeBizPayments === 'function' && db) subscribeBizPayments();
+  /* ★ P-165：审批单实时收（业务开单 / 人事交单 → 这里自动出现） */
+  if (typeof subscribeApprovals === 'function' && db) subscribeApprovals();
   const elBizPay = document.getElementById('finBizPay');
   if (elBizPay){
     elBizPay.addEventListener('click', () => { if (typeof subscribeBizPayments === 'function' && db) subscribeBizPayments(); });
@@ -3580,6 +3663,37 @@ function subscribeBizPayments(){
   });
 }
 let unsubBiz = null;
+
+/* ============================================================
+   P-165 · approvals 实时订阅（业务 / 人事 → 财务审批页）
+   ------------------------------------------------------------
+   以前：审批页只有「☁︎ 从云端拉取」，业务开了月租单，财务不点就看不到。
+   现在：同一个 onSnapshot 通道，收到就套进本机 + 重画 + 刷角标。
+   ★ approvals 是三方共写（人事写工资单、业务写场地/月租单），
+     所以这里**不能**按 app 来源校验（跟 bizpayments 不一样）。
+   ★ 只读订阅：不写 approvals，只改本机 S.*。
+   ============================================================ */
+const APPROVAL_DOC = 'approvals';
+let unsubAppr = null;
+function subscribeApprovals(){
+  if (!db) return;
+  if (unsubAppr){ try { unsubAppr(); } catch(e){} unsubAppr = null; }
+  unsubAppr = onSnapshot(doc(db, FB.coll, APPROVAL_DOC), snap => {
+    let vouchers = [];
+    if (snap.exists()){
+      const d = snap.data() || {};
+      try {
+        const o = JSON.parse(d.payload || '{}');
+        if (o && Array.isArray(o.vouchers)) vouchers = o.vouchers.slice();
+      } catch(e){ vouchers = []; }
+    }
+    if (typeof window.__FIN_SET_APPROVALS__ === 'function'){
+      window.__FIN_SET_APPROVALS__(vouchers, snap.exists() ? (snap.data().at || '') : '');
+    }
+  }, err => {
+    mark('审批订阅失败（' + (err && err.code ? err.code : '网络') + '），点上面「☁︎ 从云端拉取」兜底', 'bad');
+  });
+}
 
 window.__FIN_SYNC__ = {
   state: () => ({ hasDb: !!db, hasSub: !!unsub, lastPushedAt, pending: !!pendingLocalAt }),

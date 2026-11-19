@@ -602,6 +602,24 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>探针只能证页面逻辑，证不了「真 Firestore 上跑一遍」。新写 <span class="mono">e2e-l09-live.js</span>（<b>不进 run.sh</b> —— 它会真写生产云端，只在验收时手动跑）：把测试场地只塞进本机 localStorage，走页面自己的函数开出 <span class="mono">v-biz-rent-2020-01-1</span>（1,000,000 ₫）→ 财务端 <span class="mono">fsPullApprovals → rnSelect → rnAct('ok') → rnAct('pay')</span> → 业务端回读，<b>13/13</b>；云端逐条核对状态 <span class="mono">已提交 → 已批 → 已付</span>、金额未被改、凭证号记上。<b>跑完把测试单从 approvals 摘掉并复核云端已无此单</b>（不把测试数据留在生产）。<br>据此收口：施工图 <b>L-09 4/4 绿</b>（钱线：月租应付单已通）、<b>L-04 4/4 绿</b>（教室 → 场地租金，等 L-09 的前提已满足）；头部统一到 <b>8 绿 / 2 红 / 0 待收口 / 1 灰 · 8/11 · 73%</b>，<span class="mono">check-map</span> 51/51。剩余：L-06（等 Tony 裁决教室 → 排课）、L-10（投放 → 线索归因未开）、L-08（投放费，灰）。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-165</td>
+              <td><b>财务端审批单实时接收 + 待审批角标</b><br><span style="color:var(--ink3);font-size:12px">业务开单，财务不用再手点</span></td>
+              <td class="nw">财务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony：「业务推了 20,000,000 租金，财务没收到。」查云端：单据在 <span class="mono">zhops/approvals</span>（<span class="mono">v-biz-rent-2026-11-1</span> / 已提交 / 20,000,000）—— <b>推送没坏，是财务端只认手动拉取</b>（<span class="mono">approvals</span> 一直没有 onSnapshot，只有 finmaster / bizpayments 是实时的；人事那张 <span class="mono">v-hr-2026-10</span> 也一起躺在云端没被拉过）。<br>修法：<b>approvals 加实时订阅</b>（module 里 <span class="mono">subscribeApprovals()</span>，走 <span class="mono">__FIN_SET_APPROVALS__</span> 口子，避开 P-161 踩过的 module 作用域坑）；<b>分流只留一份</b> <span class="mono">applyApprovalVouchers()</span>，手动拉取与实时订阅同一条口径；审批导航加<b>待审批角标</b>（只数「已提交」，批完就减，切回页面自动重连）；订阅失败仍保留手动拉取兜底。探针 <span class="mono">check-fin-approvals-live.js</span> <b>35/35</b>，反向控制砍角标刷新 → 报红。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-166</td>
+              <td><b>业务单据付款 → 写进支出表（voucherId 幂等）</b><br><span style="color:var(--ink3);font-size:12px">钱付了，支出里得看得见</span></td>
+              <td class="nw">财务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>原口径（P-103 ④）是「单据只活在审批页，不改写支出表」—— 结果 Tony 付完款在「支出」里找不到这笔租金。<br>修法：付款成功那一刻写一条支出（<span class="mono">cat</span> 月租单→「场地租金」、场地单→「场地费」，<span class="mono">payee</span> 取场地名，<span class="mono">amt</span> 取付款金额，<span class="mono">inv</span> 取凭证号，<span class="mono">note</span> 记审批单号，另带 <span class="mono">voucherId</span>）。<b>同一张单据只写一次</b>（重试 / 重放 / 手滑再点都不重复）；<b>工资单不走这条路</b>（它在 payroll 里，写了会双算）。探针同文件，反向控制砍幂等 → 支出表立刻变 3 条报红。</td>
+            </tr>
           </tbody>
         </table>
       </div>
