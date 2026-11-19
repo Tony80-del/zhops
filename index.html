@@ -468,6 +468,34 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 
 /* ---------------- 排课矩阵 ---------------- */
 .mx-wrap{overflow-x:auto;}
+/* ★ 2026-11-19（P-168）：矩阵补「本周日期」+ 页内月历 */
+.mx thead th .mx-d{display:block;margin-top:2px;font-size:11px;font-weight:600;
+  color:var(--ink3);letter-spacing:0;text-transform:none;}
+.mx thead th.today .mx-d{color:var(--brand);}
+.chip .ld{display:block;font-size:11px;margin-top:3px;color:var(--ink3);}
+.chip .ld.done{color:var(--ok);}
+.chip .ld.today{color:var(--warn);}
+.chip .ld.bad{color:var(--bad);}
+.mcal-wrap{overflow-x:auto;}
+.mcal{border-collapse:collapse;width:100%;table-layout:fixed;min-width:820px;}
+.mcal th{padding:7px 4px;font-size:11px;color:var(--ink3);border:1px solid var(--line);
+  background:var(--surface-2);font-weight:650;text-align:center;}
+.mcal td{border:1px solid var(--line);vertical-align:top;height:106px;padding:4px 5px;}
+.mcal td.out{background:var(--surface-2);}
+.mcal td.today{background:var(--brand-soft);}
+.mcal td .d{font-size:11.5px;font-weight:650;color:var(--ink3);margin-bottom:3px;}
+.mcal td.today .d{color:var(--brand);}
+.mcal .mev{font-size:11px;line-height:1.35;margin:2px 0;padding:2px 4px;border-radius:4px;
+  background:var(--surface);border-left:3px solid var(--line);}
+.mcal .mev .tm{font-weight:650;}
+.mcal .mev a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--line);}
+.mcal .mev .rm{color:var(--ink3);}
+.mcal .mev .rm.bad{color:var(--bad);font-weight:650;}
+.mcal .mev.done{border-left-color:var(--ok);}
+.mcal .mev.today{border-left-color:var(--warn);}
+.mcal .mev.bad{border-left-color:var(--bad);text-decoration:line-through;opacity:.72;}
+.mcal .more{font-size:11px;color:var(--brand);cursor:pointer;font-weight:650;}
+.mcal-empty{padding:10px 12px;font-size:12px;color:var(--ink3);}
 .mx{border-collapse:collapse;font-size:12.5px;min-width:640px;width:100%;}
 .mx th,.mx td{border:1px solid var(--line);}
 .mx thead th{background:var(--surface-2);padding:8px 6px;font-size:10.5px;color:var(--ink3);
@@ -2419,7 +2447,7 @@ function vBoard(){
   /* 开班申请 2026-10-03 已拆成独立板块（vApply），排课这里只剩 6 个子页
      （2026-10-14 加「教室」—— 按省份看教师 + 学生名单；
        2026-11-02 P-99 把「矩阵」拆成线下 / 线上两个 —— Tony 定：线上线下排课分开） */
-  const tabs = [['matrix','线下矩阵'],['matrixOn','线上矩阵'],['classes','班级'],['pool','候选池'],['calendar','日历'],['rooms','教室']];
+  const tabs = [['matrix','线下矩阵'],['matrixOn','线上矩阵'],['classes','班级'],['pool','候选池'],['rooms','教室']];
   /* 从别处带着旧的 bTab 进来（比如以前从侧栏点过「开班申请」）→ 兜回矩阵，
      否则下面全不匹配，会渲染出一张空页 */
   if (!tabs.some(t => t[0] === bTab)) bTab = 'matrix';
@@ -2436,8 +2464,7 @@ function vBoard(){
   else if (bTab === 'matrixOn') body = bMatrix('online');
   else if (bTab === 'classes')  body = bClasses();
   else if (bTab === 'pool')     body = bPool();
-  else if (bTab === 'rooms')    body = bRooms();
-  else                          body = bCalendar();
+  else                          body = bRooms();
   /* ★ 2026-10-17（Tony 定）：候选池用「Excel 冻结窗格」—— 页头 + 页签固定，表格自己滚 */
   const freeze = (bTab === 'pool');
   if (freeze){
@@ -2445,7 +2472,7 @@ function vBoard(){
     <div class="freeze-page">
     <div class="freeze-head">
     <div class="page-h">
-      <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
+      <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 教室 —— 动手编排的地方</p></div>
       <div class="sp"></div>
       <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
     </div>
@@ -2459,7 +2486,7 @@ function vBoard(){
   }
   return `
   <div class="page-h">
-    <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 日历 · 教室 —— 动手编排的地方</p></div>
+    <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 教室 —— 动手编排的地方</p></div>
     <div class="sp"></div>
     <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
   </div>
@@ -2487,6 +2514,125 @@ function vApply(){
      ② 标出「今天」那一列。日历页一直有今天高亮，矩阵一直没有，看的人得自己数今天周几。
      ③ 卡片可点 → 跳到「班级」子页签并点亮那一行（班级没有自己的抽屉，
         跟总览「差 N 人开班」那条走的是同一个思路，只是多了个聚焦）。 */
+/* ============================================================
+   P-168（2026-11-19 · Tony 拍板）· 周日期 + 矩阵页内月历
+   ------------------------------------------------------------
+   ① 矩阵表头补本周日期（周一 11/17），卡片补「本节哪天 · 什么状态」；
+   ② 每个矩阵页下方长一张本月月历（线下页只看线下课、线上页只看线上课）；
+   ③ 线下缺教室 → 红标「未填教室」（矩阵卡 + 月历格）；
+   ④ 「日历」页签删除（Tony：那个页面不需要了）。
+   ★ 一切以 DB.lessons[].date 为准（事实表）；不改课次、不改存盘键。
+   ============================================================ */
+function weekMondayOf(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const di = d.getDay();                       /* 0=周日 */
+  return addDays(dateStr, -(di === 0 ? 6 : di - 1));
+}
+function lessonModeOf(l){
+  const c = (typeof C === 'function' ? C(l.cid) : null) || {};
+  return (l.cmode || c.mode) === 'online' ? 'online' : 'offline';
+}
+function lessonStatusText(l){
+  return l.status === 'done' ? '已上' : l.status === 'today' ? '今天'
+       : l.status === 'cancel' ? '已取消' : '待上';
+}
+function lessonStatusCls(l){
+  return l.status === 'done' ? 'done' : l.status === 'today' ? 'today'
+       : l.status === 'cancel' ? 'bad' : '';
+}
+function lessonRoomOf(l){
+  const c = (typeof C === 'function' ? C(l.cid) : null) || {};
+  return { city: String(l.city || c.room || ''), code: String(l.roomCode || c.roomCode || '') };
+}
+/* 月历状态：空 = 本月；两个矩阵页共用一份（切页不丢月份） */
+let calMonth = '';
+let calShowCancel = false;
+let calExpanded = {};
+const pad2 = n => String(n).padStart(2, '0');
+/* 探针口子（P-168）：月历的月份 / 显示已取消 / 展开状态，只读 + 可设，不改产品行为 */
+window.__CAL_TEST__ = {
+  state: function(){ return { month: calMonth, showCancel: calShowCancel, expanded: Object.keys(calExpanded) }; },
+  set: function(o){
+    o = o || {};
+    if (o.month !== undefined) calMonth = String(o.month || '');
+    if (o.showCancel !== undefined) calShowCancel = !!o.showCancel;
+    if (o.expanded !== undefined) calExpanded = o.expanded || {};
+  }
+};
+function mdText(dateStr){ return Number(dateStr.slice(5,7)) + '/' + Number(dateStr.slice(8,10)); }
+
+function bMonthCal(mode){
+  const isOn = mode === 'online';
+  const m = /^\d{4}-\d{2}$/.test(calMonth) ? calMonth : DB.todayDate.slice(0,7);
+  const yy = Number(m.slice(0,4)), mm = Number(m.slice(5,7));
+  const dim = new Date(yy, mm, 0).getDate();
+  const startDi = new Date(yy, mm - 1, 1).getDay();
+  const rows = Math.ceil((startDi + dim) / 7);
+
+  const all = DB.lessons.filter(l => String(l.date || '').slice(0,7) === m
+    && lessonModeOf(l) === (isOn ? 'online' : 'offline'));
+  const list = all.filter(l => calShowCancel ? true : l.status !== 'cancel');
+  const counted = list.filter(l => l.status !== 'cancel');
+  const doneN = counted.filter(l => l.status === 'done').length;
+  const planN = counted.length - doneN;
+  const maxDate = DB.lessons.reduce((a, l) => (l.date || '') > a ? l.date : a, '');
+
+  const head = `<div class="card-h"><h3>本月月历 · ${m}</h3>
+    <span class="sub">${isOn ? '线上课' : '线下课'} · 一天超过 3 节折叠 · 点班级名看详情</span>
+    <span class="sp"></span>
+    <span class="tg off">本月 ${counted.length} 节 · 已上 ${doneN} / 待上 ${planN}</span>
+    <button class="btn" data-cal="prev" style="height:26px;padding:0 9px">‹ 上月</button>
+    <button class="btn" data-cal="today" style="height:26px;padding:0 9px">回到今天</button>
+    <button class="btn" data-cal="next" style="height:26px;padding:0 9px">下月 ›</button>
+    <button class="btn" data-cal="cancel" style="height:26px;padding:0 9px">${calShowCancel ? '隐藏已取消' : '显示已取消'}</button>
+  </div>`;
+
+  let cells = '';
+  for (let i = 0; i < rows * 7; i++){
+    const dayNo = i - startDi + 1;
+    if (dayNo < 1 || dayNo > dim){ cells += '<td class="out"></td>'; continue; }
+    const ds = m + '-' + pad2(dayNo);
+    const evs = list.filter(l => l.date === ds)
+      .sort((a, b) => toMin(slotStart(a.time)) - toMin(slotStart(b.time)));
+    const expanded = !!calExpanded[ds];
+    const show = expanded ? evs : evs.slice(0, 3);
+    const inner = show.map(l => {
+      const t = T(l.teacher) || {};
+      const c = C(l.cid) || {};
+      const r = lessonRoomOf(l);
+      const room = isOn ? '' : (r.code
+        ? ' · <span class="rm">' + esc(r.city) + ' · ' + esc(r.code) + '</span>'
+        : ' · <span class="rm bad">未填教室</span>');
+      return '<div class="mev ' + lessonStatusCls(l) + '">' +
+        '<span class="tm">' + slotStart(l.time) + '</span> ' +
+        '<a href="#" data-c-act="open" data-cid="' + l.cid + '">' + esc(l.cname || c.name || '') + '</a>' +
+        (t.name ? ' · ' + esc(t.name) : '') + room +
+        ' · ' + lessonStatusText(l) +
+      '</div>';
+    }).join('');
+    const more = !expanded && evs.length > 3
+      ? '<span class="more" data-cal="more" data-cal-date="' + ds + '">+' + (evs.length - 3) + ' 更多</span>' : '';
+    cells += '<td' + (ds === DB.todayDate ? ' class="today"' : '') + '>' +
+      '<div class="d">' + dayNo + '</div>' + inner + more + '</td>';
+  }
+
+  const empty = counted.length ? '' :
+    '<div class="mcal-empty">本月尚未排课' +
+    (maxDate ? '（课次只排到 ' + maxDate + '）' : '（还没有任何课次）') +
+    ' —— 排到那之后这里才会有课。</div>';
+
+  return `<div class="card marks" style="margin-top:14px">
+    ${head}
+    <div class="card-b tight">
+      ${empty}
+      <div class="mcal-wrap"><table class="mcal">
+        <thead><tr>${DAY_NAMES.map(d => '<th>' + d + '</th>').join('')}</tr></thead>
+        <tbody>${cells}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+
 function bMatrix(mode){
   /* ★ 2026-11-02（P-99）：矩阵拆成「线下 / 线上」两张（Tony 定：线上线下排课分开）。
      为什么要拆：线下和线上是两套资源 —— 线下占教室（一间一间，不能撞时段），
@@ -2504,6 +2650,10 @@ function bMatrix(mode){
   const colDays = hasSun ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6];
   const todayDi = new Date(DB.todayDate + 'T00:00:00').getDay();   /* 0=周日 */
   const todayInCols = colDays.indexOf(todayDi) >= 0;
+  /* ★ P-168：本周每一列到底是几号（周一 = weekMondayOf(today)，周日 = +6） */
+  const monday = weekMondayOf(DB.todayDate);
+  const colDate = {};
+  colDays.forEach(di => { colDate[di] = addDays(monday, (di + 6) % 7); });
   /* 两张表各说各的话：标题 / 说明 / 图例 / 空态提示都分开写 */
   const title = isOn ? '线上矩阵' : '线下矩阵';
   const sub = isOn
@@ -2526,6 +2676,7 @@ function bMatrix(mode){
       <div class="mx-wrap"><table class="mx">
       <thead><tr><th class="rowh">时段</th>${colDays.map(di =>
         '<th'+(di===todayDi?' class="today"':'')+'>'+DAY_NAMES[di]+
+        '<span class="mx-d">'+mdText(colDate[di])+'</span>'+
         (di===todayDi?'<span class="tday">今天</span>':'')+'</th>').join('')}</tr></thead>
       <tbody>${DB.slots.map(sl=>{
         const onDays = slotDays(sl);
@@ -2547,19 +2698,27 @@ function bMatrix(mode){
                  线上 = 教师 · 人数（线上不占教室，人数才是要看的东西） */
               const line3 = isOn
                 ? esc(t.name)+' · '+classN(c)+'/'+c.cap+' 人'
-                : esc(t.name)+(c.room?' · '+esc(c.room):'')+(c.roomCode?' · '+esc(c.roomCode):'');
+                : esc(t.name)+(c.room?' · '+esc(c.room):'')+
+                  (c.roomCode?' · '+esc(c.roomCode):' · <span class="tg bad">未填教室</span>');
+              /* ★ P-168：这一列（本周这个星期几）这节课到底是哪天、上了没 */
+              const wl = DB.lessons.find(l => l.cid === c.id && l.date === colDate[di]);
+              const ldCls = wl ? lessonStatusCls(wl) : '';
+              const ldText = wl
+                ? mdText(wl.date) + ' ' + slotStart(wl.time) + ' · ' + lessonStatusText(wl)
+                : '本周无课';
               /* ★ 卡片可点：去「班级」子页签看它的完整一行（级别 / 教室 / 人数 / 三个动作） */
               return '<a href="#" class="chip '+(isOn?'':'off')+'"'+
                      ' data-c-act="open" data-cid="'+c.id+'" title="点开看这个班">'+
                      '<b><span class="donut '+dotCls+'" title="'+dotTip+'"></span>'+
                      '<span class="nm">'+esc(c.name)+'</span></b>'+
                      '<span class="ln">'+lessonLabel(c.lv,classLesson(c))+'</span>'+
-                     '<span class="tn">'+line3+'</span></a>';
+                     '<span class="tn">'+line3+'</span>'+
+                     '<span class="ld '+ldCls+'">'+ldText+'</span></a>';
             }).join('')+'</td>';
           }).join('')+'</tr>';
       }).join('')}</tbody>
     </table></div></div>
-  </div>`;
+  </div>` + bMonthCal(mode);
 }
 function bClasses(){
   const rows = DB.classes.filter(c =>
@@ -2974,45 +3133,7 @@ function roomSupplyCard(r){
   '</div>';
 }
 
-/* 本周日历（2026-10-12 第 ③ 步：从硬编码改成读事实表）
-   ⚠️ 以前这里是一整块手写的文字（「周一 07:30 苹果班 AP-01 …」），跟真实课次毫无关系 ——
-      改班名、推进课次、加新班，它都不会变。现在按 date 从 lessons 里查出来。 */
-function bCalendar(){
-  const w = weekRange(DB.todayDate);
-  const list = DB.lessons
-    .filter(l => l.date >= w.from && l.date <= w.to)
-    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1
-                    : toMin(slotStart(a.time)) - toMin(slotStart(b.time)));
-  const shown = list.filter(l => l.status !== 'cancel');
-  const rows = shown.map(l => {
-    const c = C(l.cid);
-    const cn = l.cname || c.name, cc = l.ccode || c.code, clv = l.clv || c.lv;
-    const cm = l.cmode || c.mode, ctc = l.ctch || c.teacher;
-    const t = T(l.teacher || ctc);
-    const isToday = l.date === DB.todayDate;
-    const st = l.status === 'done'  ? '<span class="tg on">已上</span>'
-             : l.status === 'today' ? '<span class="tg warn">今天</span>'
-             :                        '<span class="tg off">待上</span>';
-    return '<tr'+(isToday ? ' style="background:var(--brand-soft)"' : '')+'>'+
-      '<td class="m nowrap">'+l.date+' <span style="color:var(--ink3)">'+weekdayText(l.date)+'</span>'+
-        (isToday ? ' <span class="tg on">今天</span>' : '')+'</td>'+
-      '<td class="m nowrap">'+slotStart(l.time)+'<span style="color:var(--ink3)">–'+endOf(slotStart(l.time))+'</span></td>'+
-      '<td><b>'+esc(cn)+'</b></td>'+
-      lessonCell(clv, l.no)+
-      '<td>'+modeTag(cm)+'</td>'+
-      '<td>'+esc(t.name)+'</td>'+
-      '<td>'+st+'</td>'+
-    '</tr>';
-  }).join('');
 
-  return `<div class="card marks"><div class="card-h"><h3>本周日历</h3>
-    <span class="sub">${w.from} ~ ${w.to} · 按天看这一周排了什么</span><span class="sp"></span>
-    <span class="tg off">共 ${shown.length} 节</span></div>
-  <div class="card-b tight"><div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>日期</th><th>时间</th><th>班级</th><th>进度</th><th>形态</th><th>教师</th><th>状态</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="7" class="empty">本周没有排课</td></tr>'}</tbody>
-  </table></div></div></div>`;
-}
 /* ================= 视图：课次记录（按月回看） =================
    ★ Tony 2026-10-03 定案的四条：
      ① 独立侧栏页，不并在总览 —— 总览永远「当下」，这里专门「回看」
@@ -6404,6 +6525,28 @@ document.addEventListener('change', e => {
   }
 });
 $('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
+/* ★ 2026-11-19（P-168）：矩阵页内月历的四个动作。
+   独立一条监听：不挤进那个巨型点击分发器，也不会被 [data-c-act] 抢走。 */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-cal]');
+  if (!b) return;
+  const act = b.getAttribute('data-cal');
+  if (act === 'prev' || act === 'next'){
+    const base = /^\d{4}-\d{2}$/.test(calMonth) ? calMonth : DB.todayDate.slice(0,7);
+    const y = Number(base.slice(0,4)), mm = Number(base.slice(5,7));
+    const d = new Date(y, mm - 1 + (act === 'prev' ? -1 : 1), 1);
+    calMonth = d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+  } else if (act === 'today'){
+    calMonth = '';
+  } else if (act === 'cancel'){
+    calShowCancel = !calShowCancel;
+  } else if (act === 'more'){
+    const ds = b.getAttribute('data-cal-date');
+    calExpanded[ds] = !calExpanded[ds];
+  }
+  e.preventDefault();
+  render();
+});
 /* 重置为演示数据：抹掉本机存盘 → 回到 seedDB 那批数据。
    加一句确认 —— 存盘里可能有他刚录的东西，误点代价太大 */
 $('#btnReset').addEventListener('click', () => {

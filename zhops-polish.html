@@ -629,6 +629,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony：「为什么时间不对？（上次拉取 07:25）」。真因：存的是 <span class="mono">new Date().toISOString()</span>（UTC），显示时直接 <span class="mono">slice(11,16)</span> / <span class="mono">slice(0,16)</span> 取字符 —— 越南 UTC+7 就整整慢 7 小时（14:25 显示成 07:25）。<br>修法：三个页面各加本地时间助手（财务 <span class="mono">locHM/locDT</span>、业务 <span class="mono">dtLocal</span>、主端 <span class="mono">locDT</span>），<b>9 处显示全部改走它</b>：审批页 3 张卡的「上次拉取」、场地/月租/工资单的「已批 / 已驳」时间、业务端 2 处云端更新确认框、主端封账时间。<b>存盘口径不动</b> —— 仍存 UTC ISO，只改显示。<br>探针：<span class="mono">check-fin-approvals-live.js</span> 加 6 项（含「给定 08:25Z 必须显示 15:25」），41/41；反向控制：把 locHM 换回 slice 立刻报红。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-168</td>
+              <td><b>矩阵补本周日期 + 页内月历 + 线下缺教室红标</b><br><span style="color:var(--ink3);font-size:12px">「日历」页签删除，月历长进两个矩阵页</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony 三问：<b>①</b>「矩阵没有日期，我怎么知道这课是几号？」<b>②</b>「线上矩阵看不到周天」<b>③</b>「线下矩阵要看到教室」。查代码：矩阵本来就是<b>周模板</b>（行=时段、列=星期），不绑定日期；周天列只在某时段有周日课时才出现 —— 不是 bug。<br>拍板后的做法：<b>①</b> 表头补本周日期（<span class="mono">周一 11/16</span>），卡片补一行「<span class="mono">11/18 19:00 · 已上</span>」/「本周无课」；<b>②</b> 每个矩阵页下方长一张<b>本月月历</b>（7 列网格、今天高亮、上下月切换、一天超 3 节折叠 <span class="mono">+N</span>、取消默认隐藏 + 开关、空月提示「只排到 X」），线下页只看线下课、线上页只看线上课；<b>③</b> 线下缺教室挂红标「未填教室」，有教室显示「市 · 编码」（<span class="mono">D7 · D7-01</span>）。<br><b>「日历」页签删除</b>（Tony：那个页面不需要了），排课子页签 6 → 5，无死链（全库查过）。存盘键、课次事实表一字未动。<br>验收：<span class="mono">check-matrix-date.js</span> 18/18、<span class="mono">check-month-calendar.js</span> 22/22；反向控制三组（砍表头日期 / 改教室红标文案 / 取消课默认显示）全部报红。</td>
+            </tr>
           </tbody>
         </table>
       </div>
