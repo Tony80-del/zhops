@@ -3188,8 +3188,9 @@ function roomForm(r){
       '<div class="fld"><label>电话</label><input id="f-rm-tel" value="'+esc(r.tel||'')+'" placeholder="房东 / 管理员"></div>'+
     '</div>'+
     '<div class="fld-row">'+
-      '<div class="fld"><label>月租费（VND / 月）</label><input type="text" inputmode="numeric" id="f-rm-rent" value="'+fmtVND(r.rent||0)+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"'+(fromPlace?' disabled':'')+'></div>'+
-      '<div class="fld"><label>小时费（VND / 小时）</label><input type="text" inputmode="numeric" id="f-rm-hourly" value="'+fmtVND(r.hourly||0)+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"'+(fromPlace?' disabled':'')+'></div>'+
+      /* ★ 2026-11-19：没填过的费用显示空，不显示 0 —— 跟 P-141 人事端「空值不写成 0」同一口径。 */
+      '<div class="fld"><label>月租费（VND / 月）</label><input type="text" inputmode="numeric" id="f-rm-rent" value="'+(r.rent?fmtVND(r.rent):'')+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"'+(fromPlace?' disabled':'')+'></div>'+
+      '<div class="fld"><label>小时费（VND / 小时）</label><input type="text" inputmode="numeric" id="f-rm-hourly" value="'+(r.hourly?fmtVND(r.hourly):'')+'" placeholder="如：0" onblur="this.value=fmtVND(parseVND(this.value))"'+(fromPlace?' disabled':'')+'></div>'+
     '</div>'+
     '<div class="fld"><label>备注</label><textarea id="f-rm-note" placeholder="停车、电梯、门禁、限制…">'+esc(r.note||'')+'</textarea></div>'+
     (isNew ? '' :

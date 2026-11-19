@@ -575,6 +575,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-18</td>
               <td>真 Chrome 抓 <code>Runtime.exceptionThrown</code> 才定位：finance.html 两个 script，module 拿不到 IIFE 里的 <code>S</code>/<code>renderPending</code>，改走 IIFE 口子 <code>__FIN_SET_BIZPAY__</code> 才打通（前四次改 tag/boot 顺序/函数位置都没抓控制台，全改错地方）。收口：入账时按收款月份生成单据号 <code>R-YYYYMM-NNN</code>、写 receiptSeq 水位（入账成功才写、重试不烧号）、收入表加单据号列；方式映射按 Tony 拍「不臆断渠道」——现金→现金，分期/第一次交/银行转账等→其他。静态 30/0、真浏览器运行时 10/0、反向控制 3 组报红副本逐字还原、回归支出 32/0+p103 148/148+指南 27/27。已发布上线，Pages 延迟 50s 后线上 sha 核一致、待入账显示正常零产品报错。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-162</td>
+              <td><b>施工图回真 + 探针去陈旧红</b><br><span style="color:var(--ink3);font-size:12px">看板 11-13 → 11-19</span></td>
+              <td class="nw">验收</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>施工图还停在 11-13：L-01/L-02/L-03 已在 11-15~11-18 收口（L-03 钱线 P-161），页面仍标红，且头部写「6 红」而卡片只有 5 红。本轮：① L-01/L-02/L-03 转绿、工序勾满、头部/筛选/页脚/进度条统一到 6 绿 / 3 红 / 1 待收口 / 1 灰（6/11 · 55%）；② 新增 <span class="mono">check-map.js</span>（51 项）并接进 run.sh —— 卡片状态 ≠ 头部统计 ≠ 筛选按钮 ≠ 页脚 ≠ 进度条就报红，看板不能再悄悄漂移；③ 修 5 条陈旧探针：P-103① 改认 <span class="mono">parseVND</span> 与 <span class="mono">[.,]</span> 千分位、P-103③ 费用框禁用改认新模板、P-107 改认 P-144b 点分隔符（跨端人事端仍逗号，待 Tony 拍）、P-51/53/89 版本号从写死 v10 改成 ≥ v10；④ 财务端补 5 条越语（P-160/P-161 新增文案漏翻，P-139 顶红）；⑤ 业务部教室月租/小时费空值不再显示 0（对齐 P-141「空值不写成 0」）。剩余红 2 条：P-142 / P-143 = 教师资料 10 项（wip/hr-profile-20261119 分支）未收口，属功能未完，不是回归。</td>
+            </tr>
           </tbody>
         </table>
       </div>
