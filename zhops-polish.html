@@ -656,6 +656,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony 三问：①「班底（教师/教室/学生）怎么继续下星期」②「下周不一定是周二，可能周三」③「这一个月每周三同班同教室怎么设」④「时段表能不能自己加」。<br><b>查代码发现真因</b>：上课日挂在<b>共享时段</b>上（全系统 4 个写死：s1 周一/周三、s2 周一/周五、s3 周二/周四、s4 周六），不可编辑；班没有自己的上课日；也没有单节改期入口。<br><b>① 班上课日</b>：<span class="mono">class.days</span>（多选 0–6）优先，没设回落时段（老班零迁移）。班级行加「上课日」→ 勾选周一…周日；保存后<b>只重排未来未上的课</b>，已上 / 今天 / 已取消不动。<br><b>② 时段表</b>：班级页底部新增时段表（时段 / 时间 / 默认上课日 / 在用班数），可「新增 / 编辑」；改时段只影响以后新排的课（已有课次是快照）。<br><b>③ 单节改期</b>：当天清单里每节「改期」→ 改日期；<b>原定日期留痕</b>（<span class="mono">lesson.origDate</span>，二次改期不覆盖），清单显示「原定 X」；撞课（同班同一天两节）拦下、日期格式校验。<br>验收：<span class="mono">check-p170-schedule.js</span> <b>30/30</b>；反向控制三组（砍班上课日优先 / 砍原定留痕 / 砍时段校验）全部报红；全套 <b>57/59</b>（只剩 P-142/143）。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-171</td>
+              <td><b>班级页改「教师 → 市 → 班」分组</b><br><span style="color:var(--ink3);font-size:12px">点老师，才看到他的班在哪几个市、什么时候上</span></td>
+              <td class="nw">主端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony：「每位教师要知道自己的哪一个班级、还在哪个时候；每个市的班级都能编辑时间日期和天。」<br><b>纯视图重构，数据零改动</b>：班级本来就带 <span class="mono">teacher</span> / <span class="mono">room</span>，学生本来就挂在 <span class="mono">students[].cls</span> 上 —— 不迁移、不改存盘键、不改关系。<br>左栏 = 教师（<b>含 0 班的</b>，按班数降序；没指定教师的班单独一组，不吞掉）；主区 = 该教师的班按<b>市</b>分组（<span class="mono">room</span> 为空进「未填市」组），组头显示班数与合计人数；点班展开 = <b>学生名单</b>（仍留在班里）+ 每周上课日 + 时段 + 单节改期 + 推进一课 / 点名 / 删班。<b>「按教师 / 全部班级」子切换</b>：平表保留成第二页签，老探针（P-47/P-48/P-98）与班名 <span class="mono">href=#room/&lt;cid&gt;</span> 一字未动。<br>顺手补回两个回归：无班时空态文案「还没有班级」、班级名资料库链接（点班名仍进 42 课全表）。<br>验收：<span class="mono">check-p171-classgroup.js</span> <b>32/32</b>，反向控制三组（砍 0 班教师 / 砍未填市 / 砍学生过滤）全部报红；全套 <b>58/59</b>（只剩 P-142/143）。方案与 Demo 在 <span class="mono">docs/class-page-by-teacher-plan.md</span> / <span class="mono">demo/classes-by-teacher-demo.html</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>

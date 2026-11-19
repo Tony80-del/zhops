@@ -468,6 +468,51 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 
 /* ---------------- 排课矩阵 ---------------- */
 .mx-wrap{overflow-x:auto;}
+/* ★ P-171：班级页「教师 → 市 → 班」分组 */
+.clsWrap{display:grid;grid-template-columns:236px 1fr;gap:14px;align-items:start}
+.teaBox{border-right:1px solid var(--line);padding-right:10px}
+.teaIt{display:flex;align-items:center;gap:9px;padding:9px;border-radius:9px;cursor:pointer}
+.teaIt:hover{background:var(--surface-2)}
+.teaIt.on{background:var(--brand-soft);box-shadow:inset 2px 0 0 var(--brand)}
+.teaAv{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;
+  font-size:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.teaIt .nm{font-weight:650;font-size:12.5px}
+.teaIt .mt{color:var(--ink3);font-size:10.5px}
+.teaIt .n{margin-left:auto;font-size:10.5px;color:var(--ink3);border:1px solid var(--line);
+  background:var(--surface-2);border-radius:20px;padding:0 7px}
+.cty{border-bottom:1px solid var(--line)}
+.cty:last-child{border-bottom:0}
+.cty-h{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2)}
+.cty-h b{font-size:12.5px}
+.cty-h .sp{flex:1}
+.cty-h .mt{color:var(--ink3);font-size:11px}
+.crow{border-bottom:1px solid var(--line)}
+.crow:last-child{border-bottom:0}
+.crow-h{display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer}
+.crow-h:hover{background:#f8fbfd}
+.caret{width:14px;color:var(--ink3);font-size:10px;flex:0 0 auto;transition:transform .15s}
+.crow.open .caret{transform:rotate(90deg)}
+.crow-h .nm{font-weight:700;font-size:12.5px}
+.crow-h .when{color:var(--ink2);font-size:11.5px}
+.crow-h .sp{flex:1}
+.crow-h .num{font-size:11.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.crow-h .bar{width:60px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.crow-h .bar i{display:block;height:100%;background:var(--brand)}
+.crow-b{display:none;padding:2px 12px 14px 34px;background:#fbfdfe}
+.crow.open .crow-b{display:block}
+.csec{margin-top:10px}
+.csec .t{font-size:11.5px;color:var(--ink3);font-weight:650;margin-bottom:6px}
+.stus{display:flex;flex-wrap:wrap;gap:6px}
+.stu{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:20px;
+  padding:3px 9px;font-size:11.5px;background:var(--surface)}
+.stu i{width:16px;height:16px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);
+  display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-style:normal;color:var(--ink3)}
+.days{display:flex;gap:5px;flex-wrap:wrap}
+.dayc{border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;
+  background:var(--surface);user-select:none}
+.dayc.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:650}
+.crow-b .rowact{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:9px}
+
 /* ★ 2026-11-19（P-168 v2）：月历（周一→周日 · 日期连续）+ 周历（每天一列） */
 .mx thead th .mx-d{display:block;margin-top:2px;font-size:11px;font-weight:600;
   color:var(--ink3);letter-spacing:0;text-transform:none;}
@@ -2541,6 +2586,7 @@ function updateBatchBar(){
 
 /* ---------- 视图：排课 ---------- */
 let bTab = 'matrix';
+let clsMode = 'byTeacher';
 /* 从排课矩阵点班级卡片跳过来时，要聚焦哪一个班（只活一次 render，见 render() 末尾） */
 let bFocus = null;
 function vBoard(){
@@ -2562,7 +2608,7 @@ function vBoard(){
   let body = '';
   if (bTab === 'matrix')        body = bMatrix('offline');
   else if (bTab === 'matrixOn') body = bMatrix('online');
-  else if (bTab === 'classes')  body = bClasses();
+  else if (bTab === 'classes')  body = clsMode === 'byTeacher' ? bClassesByTeacher() : bClasses();
   else if (bTab === 'pool')     body = bPool();
   else                          body = bRooms();
   /* ★ 2026-10-17（Tony 定）：候选池用「Excel 冻结窗格」—— 页头 + 页签固定，表格自己滚 */
@@ -2573,6 +2619,7 @@ function vBoard(){
     <div class="freeze-head">
     <div class="page-h">
       <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 教室 —— 动手编排的地方</p></div>
+      <div class="seg2"><button data-clsmode="byTeacher" class="${clsMode === 'byTeacher' ? 'on' : ''}">按教师</button><button data-clsmode="flat" class="${clsMode === 'flat' ? 'on' : ''}">全部班级</button></div>
       <div class="sp"></div>
       <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
     </div>
@@ -2587,6 +2634,7 @@ function vBoard(){
   return `
   <div class="page-h">
     <div><h2>排课</h2><p class="desc">线下矩阵 · 线上矩阵 · 班级 · 候选池 · 教室 —— 动手编排的地方</p></div>
+      <div class="seg2"><button data-clsmode="byTeacher" class="${clsMode === 'byTeacher' ? 'on' : ''}">按教师</button><button data-clsmode="flat" class="${clsMode === 'flat' ? 'on' : ''}">全部班级</button></div>
     <div class="sp"></div>
     <button class="btn" data-act="auto">自动编班</button><button class="btn pri" data-act="new">＋ 开班</button>
   </div>
@@ -2823,6 +2871,116 @@ function bMatrix(mode){
     (calView === 'month' ? calMonthBody(mode) : calWeekBody(mode)) +
     calSheet(mode) +
   '</div>';
+}
+
+/* ============================================================
+   P-171（2026-11-19）· 班级按「教师 → 市 → 班」分组
+   ------------------------------------------------------------
+   ★ 纯视图重构：班级本来就带 teacher / room，学生本来就挂在班 cls 上。
+     这里只做分组，不改存盘、不迁移数据。
+   ★ 一个班只认 class.teacher；代课是课次级（lesson.teacher），不参与分组。
+   ============================================================ */
+let clsTeacher = '';        /* 当前选中的教师；空 = 第一个有班的 */
+let clsOpen = '';           /* 当前展开的班 */
+let clsQ = '';              /* 搜索：教师 / 班级 / 市 */
+
+function teachersWithClasses(){
+  const out = DB.teachers.slice().map(t => ({
+    t: t,
+    classes: DB.classes.filter(c => c.teacher === t.id),
+    cities: []
+  }));
+  out.forEach(x => { x.cities = Array.from(new Set(x.classes.map(c => String(c.room || '').trim() || '未填市'))); });
+  /* 没指定教师的班，归到一个虚拟组（不吞掉） */
+  const orphan = DB.classes.filter(c => !DB.teachers.some(t => t.id === c.teacher));
+  if (orphan.length){
+    out.push({ t: { id: '', name: '未指定教师', phone: '' }, classes: orphan,
+               cities: Array.from(new Set(orphan.map(c => String(c.room || '').trim() || '未填市'))) });
+  }
+  out.sort((a, b) => (b.classes.length - a.classes.length) || String(a.t.name || '').localeCompare(String(b.t.name || '')));
+  return out;
+}
+function groupsFor(tid){
+  const cs = DB.classes.filter(c => (tid ? c.teacher === tid : !DB.teachers.some(t => t.id === c.teacher)));
+  const buckets = {};
+  cs.forEach(c => {
+    const city = String(c.room || '').trim() || '未填市';
+    (buckets[city] = buckets[city] || []).push(c);
+  });
+  return Object.keys(buckets).sort((a, b) => {
+    if (a === '未填市') return 1; if (b === '未填市') return -1;
+    return a.localeCompare(b);
+  }).map(city => ({ city: city, classes: buckets[city].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))) }));
+}
+function studentsOfClass(cid){ return DB.students.filter(s => s.cls === cid); }
+function matchCls(qq, ...fields){
+  if (!qq) return true;
+  const q = String(qq).toLowerCase();
+  return fields.some(f => String(f || '').toLowerCase().indexOf(q) >= 0);
+}
+
+function bClassesByTeacher(){
+  const groups = teachersWithClasses();
+  const q = clsQ;
+  const list = groups.filter(g => matchCls(q, g.t.name, g.t.phone, ...g.classes.map(c => c.name), ...g.cities));
+  if (!list.length){
+    /* ★ 没有班也没教师时，沿用老平表的空态文案（P-48 探针钉住了这句话） */
+    return '<div class="card"><div class="empty">' +
+      (DB.classes.length ? '没有匹配的教师 / 班级 / 市' :
+        '<div class="big">还没有班级</div>开班要先走「开班申请」审批；教师请先在人事端花名册建档并填「排课ID」。') +
+      '</div></div>';
+  }
+  if (!clsTeacher || !list.some(g => g.t.id === clsTeacher)) clsTeacher = list[0].t.id;
+  const cur = list.find(g => g.t.id === clsTeacher) || list[0];
+  const left = list.map(g => '<div class="teaIt' + (g.t.id === clsTeacher ? ' on' : '') + '" data-tea="' + esc(g.t.id) + '">' +
+    '<div class="teaAv">' + esc(String(g.t.name || '?').slice(0, 1)) + '</div>' +
+    '<div><div class="nm">' + esc(g.t.name || '') + '</div>' +
+      '<div class="mt">' + esc(g.cities.slice(0, 2).join(' · ')) + (g.cities.length > 2 ? ' …' : '') + '</div></div>' +
+    '<span class="n">' + g.classes.length + '</span></div>').join('');
+  const groupsShown = groupsFor(cur.t.id).filter(g =>
+    matchCls(q, cur.t.name, g.city, ...g.classes.map(c => c.name)));
+  const right = groupsShown.map(g => {
+    const total = g.classes.reduce((a, c) => a + studentsOfClass(c.id).length, 0);
+    const rows = g.classes.map(c => {
+      const sl = S(c.slot), st = studentsOfClass(c.id);
+      const pct = c.cap ? Math.round(st.length / c.cap * 100) : 0;
+      const open = clsOpen === c.id;
+      const days = Array.isArray(c.days) && c.days.length ? c.days : slotDays(sl);
+      return '<div class="crow' + (open ? ' open' : '') + '" data-crow="' + c.id + '">' +
+        '<div class="crow-h" data-copen="' + c.id + '"><span class="caret">▶</span>' +
+          '<a class="room-link nm" href="#room/' + c.id + '" title="点进去看这个班的资料库">' + esc(c.name || '') + '</a>' +
+          '<span class="tg off">' + esc(c.lv || '') + '</span>' +
+          '<span class="when">' + esc(days.map(d => DAY_NAMES[d]).join('、')) + ' · ' + esc(sl.time) + '</span>' +
+          '<span class="sp"></span><span class="num">' + st.length + '/' + (c.cap || 0) + ' 人</span>' +
+          '<span class="bar"><i style="width:' + pct + '%"></i></span></div>' +
+        '<div class="crow-b">' +
+          '<div class="csec"><div class="t">学生（' + st.length + '）—— 一直留在这个班</div><div class="stus">' +
+            (st.length ? st.map(x => '<span class="stu"><i>' + esc(String(x.name || '?').slice(0, 1)) + '</i>' + esc(x.name || '') + '</span>').join('') : '<span class="mu">还没有学生</span>') +
+          '</div></div>' +
+          '<div class="csec"><div class="t">每周上课日（可多选，留空 = 跟时段）</div><div class="days" data-days="' + c.id + '">' +
+            [1,2,3,4,5,6,0].map(d => '<span class="dayc' + (days.indexOf(d) >= 0 ? ' on' : '') + '" data-day="' + d + '">' + DAY_NAMES[d] + '</span>').join('') +
+          '</div>' +
+          '<div class="rowact"><span class="mu">时段</span>' +
+            '<select class="sel" data-cslot="' + c.id + '">' + DB.slots.map(sl2 => '<option value="' + sl2.id + '"' + (sl2.id === c.slot ? ' selected' : '') + '>' + esc(sl2.name) + ' ' + esc(sl2.time) + '</option>').join('') + '</select>' +
+            '<button class="btn pri" data-csave="' + c.id + '">保存</button>' +
+            '<button class="btn" data-cresched="' + c.id + '">单节改期…</button>' +
+            '<button class="btn" data-c-act="advance" data-cid="' + c.id + '">推进一课</button>' +
+            '<button class="btn" data-c-act="roll" data-cid="' + c.id + '">点名</button>' +
+            '<button class="btn" data-c-act="del" data-cid="' + c.id + '">删班</button>' +
+          '</div></div>' +
+        '</div></div>';
+    }).join('');
+    return '<div class="cty"><div class="cty-h"><b>' + esc(g.city) + '</b>' +
+      '<span class="mt">' + g.classes.length + ' 个班</span><span class="sp"></span>' +
+      '<span class="mt">合计 ' + total + ' 人</span></div>' + rows + '</div>';
+  }).join('');
+  return '<div class="card"><div class="card-h"><h3>' + esc(cur.t.name) + '</h3>' +
+    '<span class="mu">' + esc(cur.t.phone || '') + '</span><span class="sp"></span>' +
+    '<span class="tag">' + cur.classes.length + ' 个班</span>' +
+    '<span class="tag">' + cur.cities.length + ' 个市</span></div>' +
+    '<div class="card-b"><div class="clsWrap"><div class="teaBox">' + left + '</div>' +
+      '<div><input class="sel" data-clsq value="' + esc(q) + '" placeholder="搜教师 / 班级 / 市" style="width:100%;margin-bottom:10px">' + right + '</div>' +
+    '</div></div></div>';
 }
 
 function bClasses(){
@@ -6795,6 +6953,78 @@ function openRescheduleModal(lid){
       toast('已改到 ' + document.getElementById('zm-new-date').value);
     });
 }
+
+/* ★ P-171：班级「按教师」视图的交互。独立监听，不挤进巨型分发器。 */
+document.addEventListener('click', e => {
+  /* ★ P-48 顺序敏感：班级资料库链接必须原样放行，交给浏览器改 hash，
+     否则会被下面 [data-copen] 吞掉（点班名变成展开卡片，跳不过去）。 */
+  if (e.target.closest('a[href^="#room/"]')) return;
+  const m = e.target.closest('[data-clsmode]');
+  if (m){ clsMode = m.getAttribute('data-clsmode') === 'flat' ? 'flat' : 'byTeacher'; render(); e.preventDefault(); return; }
+  const t = e.target.closest('[data-tea]');
+  if (t){ clsTeacher = t.getAttribute('data-tea'); clsOpen = ''; render(); e.preventDefault(); return; }
+  const c = e.target.closest('[data-copen]');
+  if (c){ const id = c.getAttribute('data-copen'); clsOpen = (clsOpen === id ? '' : id); render(); e.preventDefault(); return; }
+  const d = e.target.closest('[data-day]');
+  if (d && d.closest('[data-days]')){
+    const cid = d.closest('[data-days]').getAttribute('data-days');
+    const cl = DB.classes.find(x => x.id === cid);
+    if (cl){
+      const day = Number(d.getAttribute('data-day'));
+      const own = Array.isArray(cl.days) ? cl.days.slice() : slotDays(S(cl.slot));
+      const i = own.indexOf(day);
+      if (i >= 0) own.splice(i, 1); else own.push(day);
+      cl.days = own;
+      const r = (typeof applyClassDays === 'function') ? applyClassDays(cid, own) : { ok: true, removed: 0 };
+      if (!r.ok) toast(r.error || '保存失败', true);
+      else toast(r.removed ? ('上课日已更新，重排未来 ' + r.removed + ' 节') : '上课日已更新');
+    }
+    e.preventDefault(); return;
+  }
+  const sv = e.target.closest('[data-csave]');
+  if (sv){
+    const cid = sv.getAttribute('data-csave');
+    const sel = document.querySelector('[data-cslot="' + cid + '"]');
+    const sl = sel && sel.value;
+    if (sl){ const c = DB.classes.find(x => x.id === cid); if (c){ c.slot = sl; save(); } }
+    toast('时段已保存');
+    e.preventDefault(); return;
+  }
+  const rs = e.target.closest('[data-cresched]');
+  if (rs){
+    /* 找这个班的第一节未来课，打开改期弹窗 */
+    const cid = rs.getAttribute('data-cresched');
+    const l = DB.lessons.find(x => x.cid === cid && x.status === 'plan' && x.date > DB.todayDate) ||
+              DB.lessons.find(x => x.cid === cid);
+    if (l && typeof openRescheduleModal === 'function') openRescheduleModal(l.id);
+    e.preventDefault(); return;
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-clsq')){
+    const q = e.target.value.trim();
+    /* 不整页 render（会丢焦点）—— 只写状态，输入结束 / 失焦后生效 */
+    clsQ = q;
+  }
+});
+document.addEventListener('change', e => {
+  if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-clsq')){ clsQ = e.target.value.trim(); render(); }
+});
+/* 探针口子 */
+window.__CLS_TEST__ = {
+  state: function(){ return { teacher: clsTeacher, open: clsOpen, q: clsQ, mode: clsMode }; },
+  set: function(o){
+    o = o || {};
+    if (o.teacher !== undefined) clsTeacher = String(o.teacher || '');
+    if (o.open !== undefined) clsOpen = String(o.open || '');
+    if (o.q !== undefined) clsQ = String(o.q || '');
+    if (o.mode !== undefined) clsMode = (o.mode === 'flat' ? 'flat' : 'byTeacher');
+  },
+  teachersWithClasses: teachersWithClasses,
+  groupsFor: groupsFor,
+  studentsOfClass: studentsOfClass,
+  renderGrouped: bClassesByTeacher,
+};
 
 /* ★ 2026-11-19（P-168 v2）：月历 / 周历的全部交互。
    独立一条监听：不挤进那个巨型点击分发器，也不会被 [data-c-act] 抢走。
