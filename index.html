@@ -1024,10 +1024,16 @@ const SYL_SEED = {
 function seedDB(){
   return {
   slots:[
-    {id:'s1', name:'早班',   time:'07:30–08:15', days:'周一 / 周三'},
-    {id:'s2', name:'午间',   time:'12:00–12:45', days:'周一 / 周五'},
-    {id:'s3', name:'晚班',   time:'19:00–19:45', days:'周二 / 周四'},
-    {id:'s4', name:'周末',   time:'09:00–10:30', days:'周六'},
+    /* ★ P-172：旧 4 个时段保留 ID（老班 / 老学生 / 历史课次照常用），只标停用 */
+    {id:'s1', name:'早班（旧·停用）',   time:'07:30–08:15', days:'周一 / 周三', disabled:true},
+    {id:'s2', name:'午间（旧·停用）',   time:'12:00–12:45', days:'周一 / 周五', disabled:true},
+    {id:'s3', name:'晚班（旧·停用）',   time:'19:00–19:45', days:'周二 / 周四', disabled:true},
+    {id:'s4', name:'周末（旧·停用）',   time:'09:00–10:30', days:'周六',           disabled:true},
+    /* ★ P-172：4 个 90 分钟标准格式（下午 + 晚间） */
+    {id:'p1', name:'下午一段', time:'14:00–15:30', days:'周二 / 周四'},
+    {id:'p2', name:'下午二段', time:'15:30–17:00', days:'周二 / 周四'},
+    {id:'p3', name:'晚间一段', time:'18:00–19:30', days:'周一 / 周三'},
+    {id:'p4', name:'晚间二段', time:'19:30–21:00', days:'周一 / 周三'},
   ],
   /* 教师档案：前 9 个字段给列表用；后 6 个（lang/exp/rateUnit/perfScore/perfNote/note）
      只给右侧抽屉的「个人档案」用，字段规格对齐老系统 schedule.html 的教师档案 11 项 */
@@ -1511,7 +1517,7 @@ function publicPayload(){
   });
   const st = sylOf('HSK1');
   return {
-    slots: (DB.slots || []).map(s => ({ id: s.id, name: s.name, time: s.time, days: s.days })),
+    slots: (DB.slots || []).map(s => ({ id: s.id, name: s.name, time: s.time, days: s.days, disabled: !!s.disabled })),
     catalog: catalog,
     stages: ((st && st.stages) || []).map(x => ({ id: x.id, no: x.no, zh: x.zh, vi: x.vi, short: x.short })),
     rooms: ROOMS.map(p => ({ prov: p, cities: (CITIES[p] || []).slice() })),
@@ -3023,10 +3029,13 @@ function bClasses(){
 function bSlotCard(){
   const rows = DB.slots.map(sl => {
     const n = DB.classes.filter(c => c.slot === sl.id).length;
-    return '<tr><td><b>' + esc(sl.name) + '</b></td><td class="m nowrap">' + esc(sl.time) + '</td>' +
+    return '<tr><td><b>' + esc(sl.name) + '</b>' +
+      (sl.disabled ? ' <span class="tg bad" style="font-size:10px">停用</span>' : '') + '</td>' +
+      '<td class="m nowrap">' + esc(sl.time) + '</td>' +
       '<td>' + esc(sl.days || '未设') + '</td>' +
       '<td class="num">' + n + '</td>' +
-      '<td class="nw"><a href="#" class="act" data-slot-edit="' + sl.id + '">编辑</a></td></tr>';
+      '<td class="nw">' + (sl.disabled ? '<span class="mu">旧格式</span>'
+        : '<a href="#" class="act" data-slot-edit="' + sl.id + '">编辑</a>') + '</td></tr>';
   }).join('');
   return '<div class="card" style="margin-top:14px">' +
     '<div class="card-h"><h3>时段表</h3><span class="sub">时间 + 默认上课日 · 班没单独设上课日时用它</span>' +
@@ -4349,7 +4358,12 @@ function picks(f, arr, list){
   }).join('')+'</div>';
 }
 function slotPicks(f, arr){
-  return picks(f, arr, DB.slots.map(s => [s.id, s.name+' '+s.time]));
+  /* ★ P-172：新选择只列「未停用」的 90 分钟格式；
+     已选中的旧时段仍显示（老学生不丢数据），但新学生选不到。 */
+  const chosen = Array.isArray(arr) ? arr : [];
+  const list = DB.slots.filter(s => !s.disabled || chosen.indexOf(s.id) >= 0)
+    .map(s => [s.id, s.name + ' ' + s.time]);
+  return picks(f, arr, list);
 }
 /* ★ 2026-10-17（Tony 定）：省份 = 教师固定 ID
    —— 还没选过 → 可以选（单选，被其他教师占的灰色）

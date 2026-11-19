@@ -665,6 +665,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony：「每位教师要知道自己的哪一个班级、还在哪个时候；每个市的班级都能编辑时间日期和天。」<br><b>纯视图重构，数据零改动</b>：班级本来就带 <span class="mono">teacher</span> / <span class="mono">room</span>，学生本来就挂在 <span class="mono">students[].cls</span> 上 —— 不迁移、不改存盘键、不改关系。<br>左栏 = 教师（<b>含 0 班的</b>，按班数降序；没指定教师的班单独一组，不吞掉）；主区 = 该教师的班按<b>市</b>分组（<span class="mono">room</span> 为空进「未填市」组），组头显示班数与合计人数；点班展开 = <b>学生名单</b>（仍留在班里）+ 每周上课日 + 时段 + 单节改期 + 推进一课 / 点名 / 删班。<b>「按教师 / 全部班级」子切换</b>：平表保留成第二页签，老探针（P-47/P-48/P-98）与班名 <span class="mono">href=#room/&lt;cid&gt;</span> 一字未动。<br>顺手补回两个回归：无班时空态文案「还没有班级」、班级名资料库链接（点班名仍进 42 课全表）。<br>验收：<span class="mono">check-p171-classgroup.js</span> <b>32/32</b>，反向控制三组（砍 0 班教师 / 砍未填市 / 砍学生过滤）全部报红；全套 <b>58/59</b>（只剩 P-142/143）。方案与 Demo 在 <span class="mono">docs/class-page-by-teacher-plan.md</span> / <span class="mono">demo/classes-by-teacher-demo.html</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-172</td>
+              <td><b>4 个 90 分钟标准时段（下午 + 晚间）</b><br><span style="color:var(--ink3);font-size:12px">旧时段保留 ID 标停用，老数据照常用</span></td>
+              <td class="nw">主端 / 教师端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony：不分职业，时间固定几个格式，每节 90 分钟；先定 4 个（14:00/15:30/18:00/19:30 起）。<br><b>新增</b> <span class="mono">p1 下午一段 14:00–15:30</span>、<span class="mono">p2 下午二段 15:30–17:00</span>、<span class="mono">p3 晚间一段 18:00–19:30</span>、<span class="mono">p4 晚间二段 19:30–21:00</span>（主端 + 教师端 seed 一致）。<br><b>旧 s1–s4 保留 ID、标 <span class="mono">disabled:true</span> 与「旧·停用」</b> —— 老班 / 老学生 / 历史课次照常用，不迁移、不丢；时段表 UI 标「停用」且旧段不再给「编辑」入口。<br>学生编辑「可上课时段」：<b>新选择只列 4 个新格式</b>；已选中的旧段仍显示（老学生数据零改动）；仍按 slot ID 存 → 自动编班口径不变。<br><b>课程大纲先不管</b>：<span class="mono">lessonMin</span> 保持 45、42 课不变、教学六步不动（若要真把课时单位改 90，留第二步单独做）。<br>验收：<span class="mono">check-p172-slots.js</span> <b>33/33</b>，反向控制三组（旧段漏进新选择 / 删新格式 / 砍停用标记）全部报红；全套 <b>59/61</b>（只剩 P-142/143）。还原点 <span class="mono">p172-before-20261119</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>

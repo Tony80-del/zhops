@@ -562,10 +562,15 @@ const DB_VER = 1;
 function seedDB(){
   return {
   slots:[
-    {id:'s1', name:'早班',   time:'07:30–08:15', days:'周一 / 周三'},
-    {id:'s2', name:'午间',   time:'12:00–12:45', days:'周一 / 周五'},
-    {id:'s3', name:'晚班',   time:'19:00–19:45', days:'周二 / 周四'},
-    {id:'s4', name:'周末',   time:'09:00–10:30', days:'周六'},
+    /* ★ P-172：与主端一致 —— 旧 4 个保留 ID 标停用，新增 4 个 90 分钟格式 */
+    {id:'s1', name:'早班（旧·停用）',   time:'07:30–08:15', days:'周一 / 周三', disabled:true},
+    {id:'s2', name:'午间（旧·停用）',   time:'12:00–12:45', days:'周一 / 周五', disabled:true},
+    {id:'s3', name:'晚班（旧·停用）',   time:'19:00–19:45', days:'周二 / 周四', disabled:true},
+    {id:'s4', name:'周末（旧·停用）',   time:'09:00–10:30', days:'周六',           disabled:true},
+    {id:'p1', name:'下午一段', time:'14:00–15:30', days:'周二 / 周四'},
+    {id:'p2', name:'下午二段', time:'15:30–17:00', days:'周二 / 周四'},
+    {id:'p3', name:'晚间一段', time:'18:00–19:30', days:'周一 / 周三'},
+    {id:'p4', name:'晚间二段', time:'19:30–21:00', days:'周一 / 周三'},
   ],
   teachers:[],
   classes:[],
