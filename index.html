@@ -541,6 +541,19 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 .daysheet .nm{font-weight:650}
 .daysheet .meta{display:block;color:var(--ink3);font-size:11.5px;margin-top:1px}
 .daysheet .empty{padding:18px 0;color:var(--ink3);font-size:12px}
+.zm{position:fixed;inset:0;background:rgba(13,36,54,.38);display:none;z-index:60}
+.zm.on{display:flex;align-items:center;justify-content:center;padding:20px}
+.zm-box{background:var(--surface);border-radius:12px;width:460px;max-width:96vw;max-height:86vh;
+  display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(13,36,54,.25)}
+.zm-h{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.zm-h b{font-size:14px}
+.zm-h .sp{flex:1}
+.zm-b{padding:14px 16px;overflow:auto}
+.zm-f{display:flex;justify-content:flex-end;gap:8px;padding:11px 16px;border-top:1px solid var(--line)}
+.zm-days{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.zm-day{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:7px;
+  padding:5px 9px;font-size:12px;cursor:pointer;background:var(--surface-2)}
+.zm-day input{accent-color:var(--brand)}
 .mx{border-collapse:collapse;font-size:12.5px;min-width:640px;width:100%;}
 .mx th,.mx td{border:1px solid var(--line);}
 .mx thead th{background:var(--surface-2);padding:8px 6px;font-size:10.5px;color:var(--ink3);
@@ -1903,10 +1916,20 @@ function addDays(iso, n){ const d = new Date(iso + 'T00:00:00'); d.setDate(d.get
 /* 单班版：只给一个班生成课表。
    ★ 每条记录带「班信息快照」（cname / ccode / clv / cmode / croom / ctch）：
      班将来改名或被删掉，历史记录不能跟着变 —— 同 lessons.time 冗余存一份的理由。 */
+/* ★ P-170：班可以有自己的「每周上课日」。
+   优先级：class.days（多选，0=周日…6=周六）→ 没设就回落到时段的 days。
+   老班没有这个字段 → 行为一个字不变。 */
+function classDaysOf(c){
+  const own = Array.isArray(c.days)
+    ? c.days.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6)
+    : [];
+  if (own.length) return own.slice();
+  return slotDays(S(c.slot));
+}
 function seedLessonsOf(c){
   const out = [];
   const sl = S(c.slot);
-  const days = slotDays(sl);
+  const days = classDaysOf(c);
   if (!days.length || !c.startedAt) return out;
   /* 往后排 45 天 —— 排到六周后，这样月份条上会出现「未来月份」（边界 #8：
      可选中，但要标「未开始」）。真实系统里就是排课排到几周之后的样子。 */
@@ -1938,6 +1961,38 @@ function seedLessonsOf(c){
     d = addDays(d, 1);
   }
   return out;
+}
+
+/* ★ P-170：改完上课日，把「未来还没上的课」按新日子重排。
+   已上 / 今天 / 已取消 一律不动 —— 历史不能重写。 */
+function regenFutureLessons(c){
+  const today = DB.todayDate;
+  const keep = DB.lessons.filter(l => !(l.cid === c.id && l.date > today && l.status === 'plan'));
+  const removed = DB.lessons.length - keep.length;
+  DB.lessons = keep;
+  const days = classDaysOf(c);
+  if (!days.length) return removed;
+  const sl = S(c.slot);
+  const snap = {
+    cname: c.name, ccode: c.code, clv: c.lv, cmode: c.mode,
+    croom: c.room || '', ctch: c.teacher,
+    city: c.city || c.room || '',
+    roomCode: c.mode === 'online' ? '' : (c.roomCode || ''),
+  };
+  const taken = {};
+  DB.lessons.forEach(l => { if (l.cid === c.id) taken[l.date] = 1; });
+  let no = DB.lessons.filter(l => l.cid === c.id).reduce((a, l) => Math.max(a, l.no || 0), 0);
+  let d = addDays(today, 1), guard = 0;
+  const stop = addDays(today, 45);
+  while (d <= stop && no < (c.plannedLessons || 42) && guard++ < 900){
+    if (days.indexOf(new Date(d + 'T00:00:00').getDay()) >= 0 && !taken[d]){
+      no++;
+      DB.lessons.push(Object.assign({ id: c.id + '#' + no, cid: c.id, no: no, date: d, time: sl.time, status: 'plan' }, snap));
+    }
+    d = addDays(d, 1);
+  }
+  DB.lessons.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  return removed;
 }
 
 function seedLessons(){
@@ -2636,7 +2691,8 @@ function calEventLine(l){
   const r = lessonRoomOf(l);
   const rm = (lessonModeOf(l) === 'offline' && r.code) ? '<span class="rm">' + esc(r.code) + '</span>' : '';
   const tip = (l.cname || c.name || '') + ' · ' + (t.name || '') +
-              (r.code ? ' · ' + r.city + ' · ' + r.code : '') + ' · ' + lessonStatusText(l);
+              (r.code ? ' · ' + r.city + ' · ' + r.code : '') + ' · ' + lessonStatusText(l) +
+              (l.origDate ? ' · 原定 ' + l.origDate : '');
   return '<div class="ev2 ' + lessonStatusCls(l) + '" title="' + esc(tip) + '">' +
     '<i class="dot2 ' + lessonStatusCls(l) + '"></i>' +
     '<span class="tm">' + slotStart(l.time) + '</span>' +
@@ -2700,7 +2756,9 @@ function calSheet(mode){
       '<span><span class="nm">' + esc(l.cname || c.name || '') + '</span>' +
       '<span class="meta">' + esc(t.name || '') + ' · ' +
         (typeof classN === 'function' ? classN(c) : 0) + '/' + (c.cap || 0) + ' 人 · ' +
-        esc(where) + ' · ' + lessonStatusText(l) + '</span></span></div>';
+        esc(where) + ' · ' + lessonStatusText(l) +
+        (l.origDate ? ' · <b>原定 ' + esc(l.origDate) + '</b>' : '') + '</span></span>' +
+      '<button class="btn" style="height:24px;padding:0 8px;margin-left:auto" data-lesson="' + l.id + '">改期</button></div>';
   }).join('') : '<div class="empty">这天没有排课</div>';
   return '<div class="daysheet"><div class="dh"><b>' + mdText(calDay) + ' ' + dayName(calDay) +
     ' · ' + evs.length + ' 节</b><span class="sp"></span>' +
@@ -2790,6 +2848,7 @@ function bClasses(){
         '<td>'+(classLesson(c)<=1?'<span class="tg on">刚开班</span>':'<span class="tg off">上课中</span>')+'</td>'+
         '<td class="nowrap">'+
           '<a href="#" class="act" data-c-act="advance" data-cid="'+c.id+'">推进一课</a>'+
+          '<a href="#" class="act" data-c-act="days" data-cid="'+c.id+'">上课日</a>'+
           '<a href="#" class="act" data-c-act="roll" data-cid="'+c.id+'">点名</a>'+
           '<a href="#" class="act danger" data-c-act="del" data-cid="'+c.id+'">删班</a></td>'+
       '</tr>';}).join('')
@@ -2799,7 +2858,24 @@ function bClasses(){
               '开班要先走「开班申请」审批；教师请先在人事端花名册建档并填「排课ID」。')+
           '</td></tr>'}</tbody>
     </table></div></div>
-  </div>`;
+  </div>` + bSlotCard();
+}
+/* ★ P-170：时段表 —— 可以新增 / 编辑。改时段只影响以后新排的课，
+   已经生成的课次是快照（不会跟着变）。 */
+function bSlotCard(){
+  const rows = DB.slots.map(sl => {
+    const n = DB.classes.filter(c => c.slot === sl.id).length;
+    return '<tr><td><b>' + esc(sl.name) + '</b></td><td class="m nowrap">' + esc(sl.time) + '</td>' +
+      '<td>' + esc(sl.days || '未设') + '</td>' +
+      '<td class="num">' + n + '</td>' +
+      '<td class="nw"><a href="#" class="act" data-slot-edit="' + sl.id + '">编辑</a></td></tr>';
+  }).join('');
+  return '<div class="card" style="margin-top:14px">' +
+    '<div class="card-h"><h3>时段表</h3><span class="sub">时间 + 默认上课日 · 班没单独设上课日时用它</span>' +
+    '<span class="sp"></span><button class="btn" data-slot-new="1">＋ 新增时段</button></div>' +
+    '<div class="card-b tight"><div class="tbl-wrap"><table class="tbl">' +
+    '<thead><tr><th>时段</th><th>时间</th><th>默认上课日</th><th class="num">在用班数</th><th></th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div></div></div>';
 }
 /* ==================== 教室资料库（P-47 · 2026-10-19）====================
    一间教室 = 一个班。入口：排课 › 班级 › 点班名（#room/<cid>）。
@@ -6317,7 +6393,8 @@ document.addEventListener('click', e => {
   if (ca){
     e.preventDefault();
     const k = ca.dataset.cAct, cid = ca.dataset.cid;
-    if (k === 'advance')      advanceClass(cid);
+    if (k === 'days')         openDaysModal(cid);
+    else if (k === 'advance') advanceClass(cid);
     else if (k === 'roll')    openRollDrawer(cid);
     else if (k === 'del')     delClass(cid);
     /* ---- 排课 › 矩阵的班级卡片 → 跳到「班级」子页签并点亮那一行（2026-10-12 第 ③ 步收尾）----
@@ -6572,6 +6649,153 @@ document.addEventListener('change', e => {
   }
 });
 $('#scrim').addEventListener('click', ()=>{ $('#side').classList.remove('open'); $('#scrim').classList.remove('on'); });
+/* ============================================================
+   P-170（2026-11-19）· 轻量模态框 + 三个编辑入口
+   ------------------------------------------------------------
+   ① 班级「每周上课日」② 时段表编辑/新增 ③ 单节改期（保留原定日期）
+   不复用那个巨型 #drawer（它绑死在 teacher/student/app 三类档案上），
+   这里用一个独立小浮层，互不干扰。
+   ============================================================ */
+function openModal(title, bodyHtml, onOk){
+  let m = document.getElementById('zModal');
+  if (!m){
+    m = document.createElement('div');
+    m.id = 'zModal';
+    m.className = 'zm';
+    m.innerHTML = '<div class="zm-box">' +
+      '<div class="zm-h"><b id="zmTitle"></b><span class="sp"></span>' +
+        '<button class="btn" data-zm="close">关闭</button></div>' +
+      '<div class="zm-b" id="zmBody"></div>' +
+      '<div class="zm-f"><button class="btn" data-zm="close">取消</button>' +
+        '<button class="btn pri" data-zm="ok">保存</button></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', e => {
+      if (e.target === m){ closeModal(); return; }
+      const b = e.target.closest('[data-zm]');
+      if (!b) return;
+      const k = b.getAttribute('data-zm');
+      if (k === 'close'){ closeModal(); return; }
+      if (k === 'ok'){
+        const fn = m.__onOk;
+        if (typeof fn === 'function' && fn() === false) return;
+        closeModal();
+      }
+    });
+  }
+  document.getElementById('zmTitle').textContent = title;
+  document.getElementById('zmBody').innerHTML = bodyHtml;
+  m.__onOk = onOk;
+  m.classList.add('on');
+}
+function closeModal(){
+  const m = document.getElementById('zModal');
+  if (m) m.classList.remove('on');
+}
+function dayChecks(cur, name){
+  return '<div class="zm-days">' + [1,2,3,4,5,6,0].map(di =>
+    '<label class="zm-day"><input type="checkbox" ' + name + ' value="' + di + '"' +
+    (cur.indexOf(di) >= 0 ? ' checked' : '') + '> ' + DAY_NAMES[di] + '</label>').join('') + '</div>';
+}
+function checkedDays(name){
+  return Array.prototype.slice.call(document.querySelectorAll('#zmBody input[' + name + ']:checked'))
+    .map(x => Number(x.value));
+}
+
+/* ---- 三个「保存动作」的纯函数：模态框保存和探针都走这里，避免两份逻辑 ---- */
+function applyClassDays(cid, days){
+  const c = DB.classes.find(x => x.id === cid);
+  if (!c) return { ok: false, error: '找不到班级' };
+  c.days = (days || []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6);
+  const n = regenFutureLessons(c);
+  save(); render();
+  return { ok: true, removed: n };
+}
+function applySlot(sid, name, time, days){
+  name = String(name || '').trim(); time = String(time || '').trim();
+  if (!name || !time) return { ok: false, error: '时段名和时间都要填' };
+  const ds = (days || []).map(d => DAY_NAMES[d]).join('、');
+  if (sid){
+    const x = DB.slots.find(v => v.id === sid);
+    if (!x) return { ok: false, error: '找不到时段' };
+    x.name = name; x.time = time; x.days = ds;
+  } else {
+    let n = 1; while (DB.slots.some(v => v.id === 's' + n)) n++;
+    DB.slots.push({ id: 's' + n, name: name, time: time, days: ds });
+  }
+  save(); render();
+  return { ok: true };
+}
+function applyReschedule(lid, nd){
+  const l = DB.lessons.find(x => x.id === lid);
+  if (!l) return { ok: false, error: '找不到课次' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nd)) return { ok: false, error: '日期格式要 YYYY-MM-DD' };
+  if (DB.lessons.some(x => x !== l && x.cid === l.cid && x.date === nd))
+    return { ok: false, error: '这个班那天已经有一节课了' };
+  if (nd !== l.date && !l.origDate) l.origDate = l.date;
+  l.date = nd;
+  DB.lessons.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  save(); render();
+  return { ok: true };
+}
+
+/* ① 班级 · 每周上课日 */
+function openDaysModal(cid){
+  const c = DB.classes.find(x => x.id === cid);
+  if (!c) return;
+  const cur = classDaysOf(c);
+  openModal('每周上课日 · ' + c.name,
+    dayChecks(cur, 'data-day') +
+    '<p class="sm mu" style="margin:8px 0 0">勾选这个班<b>每周固定上课</b>的日子（可多选）。' +
+    '留空 = 跟时段一致（' + esc(S(c.slot).days || '时段未设') + '）。<br>' +
+    '保存后：<b>未来还没上的课按新日子重排</b>；已上 / 今天 / 已取消的课次不动。</p>',
+    function(){
+      const r = applyClassDays(c.id, checkedDays('data-day'));
+      if (!r.ok){ toast(r.error, true); return false; }
+      toast(r.removed ? ('上课日已更新，重排未来 ' + r.removed + ' 节') : '上课日已更新');
+    });
+}
+
+/* ② 时段表 · 新增 / 编辑 */
+function openSlotModal(sid){
+  const sl = sid ? (DB.slots.find(x => x.id === sid) || {}) : { id: '', name: '', time: '', days: '' };
+  const cur = sid ? slotDays(S(sid)) : [];
+  openModal((sid ? '编辑时段 · ' + sl.name : '新增时段'),
+    '<div class="g2">' +
+      '<div class="fld"><label>时段名</label><input id="zm-slot-name" value="' + esc(sl.name || '') + '" placeholder="例：晚班"></div>' +
+      '<div class="fld"><label>时间</label><input id="zm-slot-time" value="' + esc(sl.time || '') + '" placeholder="19:00–19:45"></div>' +
+    '</div>' +
+    '<div class="fld"><label>默认上课日（班没单独设时用它）</label></div>' +
+    dayChecks(cur, 'data-slot-day') +
+    '<p class="sm mu" style="margin:8px 0 0">改时段只影响<b>以后新排的课</b>；已经生成的课次是快照，不会跟着变。</p>',
+    function(){
+      const r = applySlot(sid,
+        document.getElementById('zm-slot-name').value,
+        document.getElementById('zm-slot-time').value,
+        checkedDays('data-slot-day'));
+      if (!r.ok){ toast(r.error, true); return false; }
+      toast('时段已保存');
+    });
+}
+
+/* ③ 单节改期（保留原定日期） */
+function openRescheduleModal(lid){
+  const l = DB.lessons.find(x => x.id === lid);
+  if (!l) return;
+  const c = (typeof C === 'function' ? C(l.cid) : null) || {};
+  openModal('改期 · ' + (l.cname || c.name || '') + ' 第 ' + l.no + ' 课',
+    '<div class="g2">' +
+      '<div class="fld"><label>原定日期</label><div class="ro">' + esc(l.date) + '</div></div>' +
+      '<div class="fld"><label>改到哪天</label><input type="date" id="zm-new-date" value="' + esc(l.date) + '"></div>' +
+    '</div>' +
+    '<p class="sm mu" style="margin:8px 0 0">只改这一节的日期；教师 / 教室 / 学生不动（它们挂在班上）。' +
+    '原定日期会留痕，月历里显示「原定 · 改期」。</p>',
+    function(){
+      const r = applyReschedule(l.id, document.getElementById('zm-new-date').value);
+      if (!r.ok){ toast(r.error, true); return false; }
+      toast('已改到 ' + document.getElementById('zm-new-date').value);
+    });
+}
+
 /* ★ 2026-11-19（P-168 v2）：月历 / 周历的全部交互。
    独立一条监听：不挤进那个巨型点击分发器，也不会被 [data-c-act] 抢走。
    ⚠️ 只改内存里的视图状态（calAnchor / calView），任何存盘键都不碰。 */
@@ -6594,6 +6818,11 @@ document.addEventListener('click', e => {
     calDay = ''; render(); e.preventDefault(); return;
   }
   if (e.target.closest('[data-cal-close]')){ calDay = ''; render(); e.preventDefault(); return; }
+  const ls = e.target.closest('[data-lesson]');
+  if (ls){ openRescheduleModal(ls.getAttribute('data-lesson')); e.preventDefault(); return; }
+  const se = e.target.closest('[data-slot-edit]');
+  if (se){ openSlotModal(se.getAttribute('data-slot-edit')); e.preventDefault(); return; }
+  if (e.target.closest('[data-slot-new]')){ openSlotModal(''); e.preventDefault(); return; }
   const day = e.target.closest('[data-cal-day]');
   if (day){
     const ds = day.getAttribute('data-cal-day');
@@ -6602,6 +6831,14 @@ document.addEventListener('click', e => {
   }
 });
 /* 探针口子（P-168 v2）：视图状态只读 + 可设，不改产品行为 */
+window.__SCHED_TEST__ = {
+  classDaysOf: classDaysOf,
+  applyClassDays: applyClassDays,
+  applySlot: applySlot,
+  applyReschedule: applyReschedule,
+  regenFutureLessons: regenFutureLessons,
+  lessonsOf: function(cid){ return DB.lessons.filter(l => l.cid === cid); },
+};
 window.__CAL_TEST__ = {
   state: function(){ return { anchor: calAnchor, view: calView, showCancel: calShowCancel, day: calDay }; },
   set: function(o){
