@@ -692,6 +692,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>Tony：「本地保存，再推到云端才对，为什么要从云端拉？」<br><b>真因两条</b>：① <span class="mono">fsPush()</span> 推之前先 GET 云端，一旦发现云端 at 更新，就把云端整份 <span class="mono">normalizeDB</span> 套回本机内存 <b>并写回 localStorage</b> —— 「点推送」变成「本机被云端盖掉，再把云端旧数据推上去」；② 实时订阅的 dirty 提示写「请手动点从云端拉取」，把用户往<b>丢掉本地改动</b>的方向引导。<br><b>修法</b>：推 = 推本机这一份。冲突（云端新 + 本机 dirty）只弹一次确认，文案明确「确定 = 本机覆盖云端；取消 = 先不推」，<b>完全不读云端 payload 内容</b>，绝不写回本机；取消则 dirty 保留、本机改动不丢。dirty 提示改成「本机改动已保住（推送覆盖它 / 拉取放弃它）」；云灯 title 补「只在本机，刷新不会丢」。<br>验收：<span class="mono">check-p174-pushlocal.js</span> <b>26/26</b>（源码不反向覆盖 + 运行时端到端：云端旧数据 st99 推不上去、本机 st21 推得上去、取消分支不推且 dirty 保留）；反向控制两组（把覆盖逻辑加回 / 误导文案加回）报红。全套 <b>61/63</b>（只剩 P-142/143）。还原点 <span class="mono">p174-before-20261119</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-175</td>
+              <td><b>教师资料两条探针收口：全套 63/63 全绿</b><br><span style="color:var(--ink3);font-size:12px">「唯一长期基线红」清零</span></td>
+              <td class="nw">主端 / 验收</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>P-142 / P-143 长期红不是产品 bug —— 用 harness 同 fixture 验证产品逻辑<b>全部正确</b>（t2/t3/t4/t5 全收、t2 的 levels/rate 保留、t4 助教、t5 停用、不落盘）。<br><b>① P-142（真 Chrome 探针）根因</b>：注入 localStorage 后，同 URL 的 <span class="mono">Page.navigate</span> 不保证重建 JS 执行上下文，页面仍跑第一次加载的实例（DB=t1/t2/t3），而 <span class="mono">hrTeacherRoster()</span> 读的是新 fixture（t2/t3/t4/t5）→ 8 条假红。<b>修法</b>：主端加只读测试口 <span class="mono">window.__ADMIN_HR_TEST__.loadFixture()</span>（跟 __FIN_TEST__ 同款，产品正常使用不调用），探针注入后显式重建内存 + 合流。<b>77/0</b>。<br><b>② P-143 根因</b>：断言写死「8 个只读块」是 P-143 老口径；P-144 后实际 11 块（住址/紧急联系人/紧急电话三项入库）→ 假红。改成 ≥11。<b>136/0</b>。<br>反向控制：把产品合流里 hrRole 改坏 → harness 立刻报红，证明产品逻辑被真钉住。<b>全套 63/63，零失败</b>（第一次全绿）。还原点 <span class="mono">p175-before-20261119</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>

@@ -7097,6 +7097,27 @@ window.__CAL_TEST__ = {
     if (o.day !== undefined) calDay = String(o.day || '');
   }
 };
+/* ★ P-175 测试口：教师合流端到端断言专用（跟其它端 __FIN_TEST__ 同款，
+   只读 + 可重建，不改产品行为）。真 Chrome 探针注入 localStorage 后调
+   loadFixture() 显式重建内存 DB 再合流，绕开「同 URL navigate 不换执行上下文」
+   的历史坑。产品在正常使用时没有任何代码会调这个口子。 */
+window.__ADMIN_HR_TEST__ = {
+  loadFixture: function(obj){
+    try {
+      DB = normalizeDB(obj);
+      buildFacts();
+      mergeHRTeachers();
+      render();
+      return true;
+    } catch(e){ return false; }
+  },
+  roster: function(){ return hrTeacherRoster(); },
+  ids: function(){ return DB.teachers.map(function(t){ return t.id; }); },
+  get: function(id){ return DB.teachers.find(function(t){ return t.id === id; }) || null; },
+  dirty: function(){ return cloudDirty; },
+  adText: function(){ return localStorage.getItem(KEY); },
+};
+
 /* 重置为演示数据：抹掉本机存盘 → 回到 seedDB 那批数据。
    加一句确认 —— 存盘里可能有他刚录的东西，误点代价太大 */
 $('#btnReset').addEventListener('click', () => {
