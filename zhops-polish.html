@@ -620,6 +620,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>原口径（P-103 ④）是「单据只活在审批页，不改写支出表」—— 结果 Tony 付完款在「支出」里找不到这笔租金。<br>修法：付款成功那一刻写一条支出（<span class="mono">cat</span> 月租单→「场地租金」、场地单→「场地费」，<span class="mono">payee</span> 取场地名，<span class="mono">amt</span> 取付款金额，<span class="mono">inv</span> 取凭证号，<span class="mono">note</span> 记审批单号，另带 <span class="mono">voucherId</span>）。<b>同一张单据只写一次</b>（重试 / 重放 / 手滑再点都不重复）；<b>工资单不走这条路</b>（它在 payroll 里，写了会双算）。探针同文件，反向控制砍幂等 → 支出表立刻变 3 条报红。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-167</td>
+              <td><b>时间显示按本机时区（不再把 UTC 当本地）</b><br><span style="color:var(--ink3);font-size:12px">「上次拉取 07:25」实际是 14:25</span></td>
+              <td class="nw">全端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-19</td>
+              <td class="mono nw">11-19</td>
+              <td>Tony：「为什么时间不对？（上次拉取 07:25）」。真因：存的是 <span class="mono">new Date().toISOString()</span>（UTC），显示时直接 <span class="mono">slice(11,16)</span> / <span class="mono">slice(0,16)</span> 取字符 —— 越南 UTC+7 就整整慢 7 小时（14:25 显示成 07:25）。<br>修法：三个页面各加本地时间助手（财务 <span class="mono">locHM/locDT</span>、业务 <span class="mono">dtLocal</span>、主端 <span class="mono">locDT</span>），<b>9 处显示全部改走它</b>：审批页 3 张卡的「上次拉取」、场地/月租/工资单的「已批 / 已驳」时间、业务端 2 处云端更新确认框、主端封账时间。<b>存盘口径不动</b> —— 仍存 UTC ISO，只改显示。<br>探针：<span class="mono">check-fin-approvals-live.js</span> 加 6 项（含「给定 08:25Z 必须显示 15:25」），41/41；反向控制：把 locHM 换回 slice 立刻报红。</td>
+            </tr>
           </tbody>
         </table>
       </div>

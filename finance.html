@@ -1903,6 +1903,22 @@ function moneyU(n){ return money(n) + '<span class="un">₫</span>'; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function today(){ var d=new Date(),p=function(n){return (n<10?'0':'')+n;}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
 
+/* ★ 2026-11-19（P-167）：时间一律按**本机时区**显示。
+   原来直接对 ISO 串 slice —— 那是 UTC；越南 UTC+7 会整整慢 7 小时
+   （14:25 的拉取显示成 07:25）。所有「上次拉取 / 已批 / 已驳」都走这两个函数。 */
+function locHM(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  var p = function(n){ return (n<10?'0':'')+n; };
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function locDT(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  var p = function(n){ return (n<10?'0':'')+n; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
 /* ================= 持久化 ================= */
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); markSaved(); }catch(e){}
@@ -2441,7 +2457,7 @@ function renderApprove(){
   }
   var el = document.getElementById('apState');
   if(el){
-    el.textContent = S.approvalsAt ? ('上次拉取 ' + String(S.approvalsAt).slice(11,16)) : '还没拉取';
+    el.textContent = S.approvalsAt ? ('上次拉取 ' + locHM(S.approvalsAt)) : '还没拉取';
     el.className = 'tag ' + (S.approvalsAt ? 'has' : 'pending');
   }
   renderApDetail();
@@ -2501,13 +2517,13 @@ function renderApDetail(){
   var info = '';
   if(st === ST_NO){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--neg)"><b>已驳回</b>：'+esc(v.reason || '（没写理由）')+
-      '<br><span class="mu">'+esc(String(v.rejectedAt || '').slice(0,16).replace('T',' '))+'　人事会原样看到这段</span></p>';
+      '<br><span class="mu">'+esc(locDT(v.rejectedAt))+'　人事会原样看到这段</span></p>';
   }else if(st === ST_PAID){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已付款</b>　'+money(v.paidAmt)+' ₫　·　日期 '+
       esc(v.paidOn || '—')+'　·　凭证 '+esc(v.voucherNo || '—')+'</p>';
   }else if(st === ST_OK){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已批准</b>　'+
-      esc(String(v.approvedAt || '').slice(0,16).replace('T',' '))+'　可以付款了</p>';
+      esc(locDT(v.approvedAt))+'　可以付款了</p>';
   }else{
     info = '<p class="sm mu" style="margin:12px 0 0">人事已提交，等财务核对。核对数字无误点「批准」；数字不对点「驳回」并写理由。</p>';
   }
@@ -2619,7 +2635,7 @@ function renderPlaceApprove(){
   }
   var el = document.getElementById('plState');
   if(el){
-    el.textContent = S.approvalsAt ? ('上次拉取 ' + String(S.approvalsAt).slice(11,16)) : '还没拉取';
+    el.textContent = S.approvalsAt ? ('上次拉取 ' + locHM(S.approvalsAt)) : '还没拉取';
     el.className = 'tag ' + (S.approvalsAt ? 'has' : 'pending');
   }
   renderPlaceApDetail();
@@ -2661,13 +2677,13 @@ function renderPlaceApDetail(){
   var info = '';
   if(st === ST_NO){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--neg)"><b>已驳回</b>：'+esc(v.reason || '（没写理由）')+
-      '<br><span class="mu">'+esc(String(v.rejectedAt || '').slice(0,16).replace('T',' '))+'　业务部会原样看到这段</span></p>';
+      '<br><span class="mu">'+esc(locDT(v.rejectedAt))+'　业务部会原样看到这段</span></p>';
   }else if(st === ST_PAID){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已付款</b>　'+money(v.paidAmt)+' ₫　·　日期 '+
       esc(v.paidOn || '—')+'　·　凭证 '+esc(v.voucherNo || '—')+'</p>';
   }else if(st === ST_OK){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已批准</b>　'+
-      esc(String(v.approvedAt || '').slice(0,16).replace('T',' '))+'　可以付款了</p>';
+      esc(locDT(v.approvedAt))+'　可以付款了</p>';
   }else{
     info = '<p class="sm mu" style="margin:12px 0 0">业务部已提交，等财务核对。数字不对点「驳回」并写理由，业务部会原样看到。</p>';
   }
@@ -2782,7 +2798,7 @@ function renderRentApprove(){
   }
   var el = document.getElementById('rnState');
   if(el){
-    el.textContent = S.approvalsAt ? ('上次拉取 ' + String(S.approvalsAt).slice(11,16)) : '还没拉取';
+    el.textContent = S.approvalsAt ? ('上次拉取 ' + locHM(S.approvalsAt)) : '还没拉取';
     el.className = 'tag ' + (S.approvalsAt ? 'has' : 'pending');
   }
   renderRentApDetail();
@@ -2821,13 +2837,13 @@ function renderRentApDetail(){
   var info = '';
   if(st === ST_NO){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--neg)"><b>已驳回</b>：'+esc(v.reason || '（没写理由）')+
-      '<br><span class="mu">'+esc(String(v.rejectedAt || '').slice(0,16).replace('T',' '))+'　业务部会原样看到这段</span></p>';
+      '<br><span class="mu">'+esc(locDT(v.rejectedAt))+'　业务部会原样看到这段</span></p>';
   }else if(st === ST_PAID){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已付款</b>　'+money(v.paidAmt)+' ₫　·　日期 '+
       esc(v.paidOn || '—')+'　·　凭证 '+esc(v.voucherNo || '—')+'</p>';
   }else if(st === ST_OK){
     info = '<p class="sm" style="margin:12px 0 0;color:var(--ok)"><b>已批准</b>　'+
-      esc(String(v.approvedAt || '').slice(0,16).replace('T',' '))+'　可以付款了</p>';
+      esc(locDT(v.approvedAt))+'　可以付款了</p>';
   }else{
     info = '<p class="sm mu" style="margin:12px 0 0">业务部已提交，等财务核对。数字不对点「驳回」并写理由，业务部会原样看到。</p>';
   }

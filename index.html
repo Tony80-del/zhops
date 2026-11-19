@@ -1001,6 +1001,13 @@ let lastSavedAt = null;             /* 上次存盘时间（从载荷的 __at �
 function hhmm(d){
   return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
+/* ★ 2026-11-19（P-167）：带日期的本地时间。ISO 串直接 slice 拿到的是 UTC（越南慢 7 小时）。 */
+function locDT(iso){
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
 
 /* 把一份外来的数据（本机存盘 / 导入的备份）补成「完整可用的 DB」。
    ★ 以种子为底：缺的标量字段（todayDate / now / lessonMin / money / set）用默认值补上。
@@ -3584,7 +3591,7 @@ function sealsCard(){
   const seals = (DB.seals || []);
   const body = seals.length
     ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>统计截至</th><th>封存时间</th><th class="num">已上课次</th><th class="num">课酬成本 VND</th><th></th></tr></thead><tbody>'+
-      seals.slice().reverse().map(s => '<tr><td><b>'+esc(s.period)+'</b></td><td class="m">'+esc((s.sealedAt||'').slice(0,16).replace('T',' '))+'</td><td class="num">'+s.doneAll+'</td><td class="num"><b>'+Number(s.cost||0).toLocaleString('en-US')+'</b></td><td><span class="tg off">已冻结</span></td></tr>').join('')+
+      seals.slice().reverse().map(s => '<tr><td><b>'+esc(s.period)+'</b></td><td class="m">'+esc(locDT(s.sealedAt))+'</td><td class="num">'+s.doneAll+'</td><td class="num"><b>'+Number(s.cost||0).toLocaleString('en-US')+'</b></td><td><span class="tg off">已冻结</span></td></tr>').join('')+
       '</tbody></table></div>'
     : '<div class="empty" style="padding:14px">还没有封存记录 —— 封存后这里显示<b>冻结</b>的结算，之后改单价 / 加课次都不会动到它（解决「单价没有快照」）。</div>';
   return '<div class="card"><div class="card-h"><h3>已封存快照</h3><span class="sub">点「封存本月」冻结当前结算</span></div><div class="card-b tight">'+body+'</div></div>';

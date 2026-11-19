@@ -1347,7 +1347,7 @@ function bizBakPull(){
       if (!d){ bakMark('idle'); toast('云端备份结构不认识，拒绝覆盖', true); return; }
 
       var msg = '用云端备份覆盖本机？\n\n' +
-        '云端那份（' + String(at).slice(0,16).replace('T',' ') + '）：' +
+        '云端那份（' + dtLocal(at) + '）：' +
         '线索 ' + d.leads.length + ' / 学员 ' + d.students.length +
         ' / 收费 ' + d.billing.length + ' / 教室 ' + d.rooms.length + '\n' +
         '本机现有：' +
@@ -1516,6 +1516,15 @@ function updateCounts(){
 /* HTML 转义：教室 / 学生等用户手填的内容要进 innerHTML，必须转。
    ★ 2026-11-02（P-91）补：以前这个页面没有 esc()，所有渲染都是直接拼字符串。
      教室的编码 / 地址 / 备注是手填的自由文本，不转义会把表结构搞坏。 */
+/* ★ 2026-11-19（P-167）：主脚本自己的本地时间助手。
+   ⚠️ 不能跟 module 里的 dtLocal 共用 —— 两个 script 作用域不通（P-161 踩过同一个坑）。 */
+function dtLocal(iso){
+  var d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return '';
+  var p = function(n){ return (n<10?'0':'')+n; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
 function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
@@ -4556,6 +4565,13 @@ function hhmm(iso){
   const p = n => String(n).padStart(2, '0');
   return p(d.getHours()) + ':' + p(d.getMinutes());
 }
+/* ★ 2026-11-19（P-167）：带日期的本地时间。原来对 ISO 串 slice = 直接显示 UTC（慢 7 小时）。 */
+function dtLocal(iso){
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
 
 /* 取一份「要推的」整份快照 */function snapshotForPush(){
   const S = window.__BIZ_TEST__ && window.__BIZ_TEST__.snapshot ? window.__BIZ_TEST__.snapshot() : null;
@@ -4617,7 +4633,7 @@ function applyRemote(raw){
   /* ★ 冲突保险：本机有改动没推出去，云端又更新了 → 问一次 */
   if (pendingLocalAt && remoteAt > lastPushedAt){
     const ok = window.confirm(TR(
-      '云端有更新的数据（' + String(o.__at||'').slice(0,16).replace('T',' ') + '），' +
+      '云端有更新的数据（' + dtLocal(o.__at) + '），' +
       '本机也有还没推上去的改动。\n\n' +
       '点「确定」= 用云端覆盖本机（本机改动会丢）\n' +
       '点「取消」= 保留本机，稍后本机会把它推上去'
