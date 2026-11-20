@@ -290,7 +290,10 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
     '经营报告':'Báo cáo kinh doanh','财务健康度':'Sức khỏe tài chính','业务转化':'Chuyển đổi kinh doanh',
     '收入':'Doanh thu','支出（已批）':'Chi phí (đã duyệt)','毛利':'Lợi nhuận gộp','线索':'Khách hàng tiềm năng','转学员':'Chuyển thành học viên','转化率':'Tỷ lệ chuyển đổi',
     '班级盈亏':'Lãi/lỗ theo lớp','朝阳班':'Lớp Triều Dương','丰通班':'Lớp Phong Thông','浦东班':'Lớp Phố Đông',
-    '业务部尚未开通此单据类型<br>路口已预留 · 后续接入':'Bộ phận Kinh doanh chưa mở loại chứng từ này<br>Đã để sẵn cổng · Sẽ kết nối sau',
+    '业务部尚未开通此单据类型':'Bộ phận Kinh doanh chưa mở loại chứng từ này',
+    '路口已预留 · 后续接入':'Đã để sẵn cổng · Sẽ kết nối sau',
+    '✅ 已批 / 已付':'✅ Đã duyệt / Đã thanh toán','微信':'WeChat','提交方':'Bên gửi',
+    '上次驳回：':'Từ chối trước đó: ','状态已变,不能重复驳回':'Trạng thái đã thay đổi, không thể từ chối lại',
     /* 监督 / AI */
     '监督流水':'Nhật ký giám sát','谁提交 · 谁审批 · 驳回理由':'Ai gửi · Ai duyệt · Lý do từ chối',
     '提交 ':'Gửi ','批准 ':'Duyệt ','驳回 ':'Từ chối ','理由：':'Lý do: ',
@@ -309,7 +312,7 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
     return out;
   }
   var memo=new WeakMap(), attrMemo=new WeakMap();
-  var SKIP='script,style,textarea,select,option,[data-blang],.themes';
+  var SKIP='script,style,textarea,select,option,[data-blang]';
   function walk(root){
     if(!root||typeof document.createTreeWalker!=='function'||typeof NodeFilter==='undefined')return;
     var vi=(LANG==='vi');

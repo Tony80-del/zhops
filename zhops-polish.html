@@ -737,6 +737,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-20</td>
               <td>Tony：「boss.html 需要越南语和中文，加切换按钮。」<br>照四端同口径做：顶栏加 🇨🇳 中文 / 🇻🇳 Tiếng Việt 按钮，共用 <span class="mono">localStorage['zhops.lang']</span>（跟主端/人事/财务/业务一致，换语言跨端同步）；字典覆盖顶栏 / KPI / 页签 / 单据卡 / 按钮 / 驳回弹层 / 报告 / 监督 / AI 简报全量中文文案。<br>机制：TreeWalker 遍历文字节点 + WeakMap 记原文，<b>切回中文逐字还原</b>；跳过 script/style/textarea/select/选项与按钮自身（数据与输入不翻）；动态重绘（KPI / AI 简报）用 MutationObserver 补翻，每次用当前中文刷新原文，不锁死首次值。真 Chrome 实测：中文「老板指挥中心 / 待我审批」→ 越语「Trung tâm điều hành / Chờ tôi phê duyệt」→ 切回中文逐字还原。<br>验收：<span class="mono">check-boss-console.js</span> <b>40/40</b>（原 31 + 双语 9 项）+ 反向控制两组（换存盘键 / 砍字典项）报红；全套 <b>64/64</b>。还原点 <span class="mono">boss-i18n-before-20261120</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-180</td>
+              <td><b>补齐老板端越语漏翻</b><br><span style="color:var(--ink3);font-size:12px">UI 仍含中文 0 处</span></td>
+              <td class="nw">boss</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-20</td>
+              <td class="mono nw">11-20</td>
+              <td>Tony 反馈「还有没翻译的」。用真 Chrome 切越语后遍历全部四个页签、扫文字节点定位真因：<br>① <b>主题按钮</b>（青墨/黛蓝/绛紫）被 SKIP 选择器 <span class="mono">.themes</span> 排除 → 移出 SKIP；<br>② <b>占位卡</b>字典 key 写成带 <span class="mono">&lt;br&gt;</span> 的整句，但 DOM 里被拆成两个文字节点，整句匹配失败只做逐段替换 → 拆成两条真实 key；<br>③ 补 6 条词：✅ 已批 / 已付、微信、提交方、上次驳回：、状态已变不能重复驳回、占位卡两句。<br>复扫：切越语后四个页签 UI 仍含中文 <b>0 处</b>（SCRIPT 源码注释不算 UI）。<span class="mono">check-boss-console.js</span> 由 40→<b>43 项</b>（钉住补翻词 + 主题参与翻译）；全套 <b>64/64</b>。</td>
+            </tr>
           </tbody>
         </table>
       </div>
