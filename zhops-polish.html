@@ -746,6 +746,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-20</td>
               <td>Tony 反馈「还有没翻译的」。用真 Chrome 切越语后遍历全部四个页签、扫文字节点定位真因：<br>① <b>主题按钮</b>（青墨/黛蓝/绛紫）被 SKIP 选择器 <span class="mono">.themes</span> 排除 → 移出 SKIP；<br>② <b>占位卡</b>字典 key 写成带 <span class="mono">&lt;br&gt;</span> 的整句，但 DOM 里被拆成两个文字节点，整句匹配失败只做逐段替换 → 拆成两条真实 key；<br>③ 补 6 条词：✅ 已批 / 已付、微信、提交方、上次驳回：、状态已变不能重复驳回、占位卡两句。<br>复扫：切越语后四个页签 UI 仍含中文 <b>0 处</b>（SCRIPT 源码注释不算 UI）。<span class="mono">check-boss-console.js</span> 由 40→<b>43 项</b>（钉住补翻词 + 主题参与翻译）；全套 <b>64/64</b>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-181</td>
+              <td><b>施工地图第 2 层箭头按状态上色 + 修 L-06 过时文案</b><br><span style="color:var(--ink3);font-size:12px">绿=已通 / 红=未通，一眼可见</span></td>
+              <td class="nw">看板</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-20</td>
+              <td class="mono nw">11-20</td>
+              <td>Tony 问「第 2 层为什么没连起来」。解释：第 2 层是结构示意，箭头只表业务先后、原本不画通断；真实缺口是最后一截（教室→排课）对应 <b>L-06 红（3/4，差 ④ 端到端验收）</b>。Tony 要箭头带颜色。<br><b>改动</b>：三个箭头按对应线上色并标线号 —— 线索→学员（L-01 绿）、学员→收费（L-02 绿）、收费→教室（L-06 <b>红</b>，经它接入排课）；说明段补颜色图例。<b>修两处过时文案</b>：教室节点「手填 code」→「code 下拉+查号（P-147）」；L-06 卡片「钱线 L-09 未通，即使 4/4 仍待收口」→「L-09 已于 P-163 收口转绿，做完 ④ 即可转绿」（原话是事实错误，L-09 已绿）。<br>check-map.js <b>51/51</b>（统计/筛选/进度条/页脚一字未动）、零报错。</td>
+            </tr>
           </tbody>
         </table>
       </div>
