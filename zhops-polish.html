@@ -728,6 +728,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-20</td>
               <td>Tony：「新板块必须更新在施工地图和系统生态地图。」<br><b>施工地图 flow-map.html</b>：结构图 ext-row 加「老板端 · 监督审批（boss.html · P-177）」节点；在「二 · 11 条连线」之后插入独立板块「二·B · 老板端 · 监督端」，写清四页签 / 悬浮球 AI / 三色主题 / 审批写回口径 / 人事联动 / 市场预算路口 / 4-4 工序。<b>关键</b>：作为<b>独立板块</b>加，<b>不计入 11 条连线统计</b> —— 探针 check-map.js（51 项）把线数钉死 11，加 L-12 会全红；联动统计、筛选、进度条、页脚一个不动，复跑 <b>51/51</b> 全过。<br><b>生态地图 system-ecosystem-map.html</b>：岗位架构图加「⑤ 老板端 · 监督端（boss.html · P-177）」说明块，写清「算第五个端、归总管执行、不单独建技能」与「总管不是第五个部门（技能岗位层）」不冲突；技能清单行补「老板端已上线」。check-guide-consistency / check-p102-ecofold <b>36/36</b> 全过。<br>还原点 <code>boss-map-before-20261120</code>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-179</td>
+              <td><b>老板端越 / 中双语切换</b><br><span style="color:var(--ink3);font-size:12px">🇨🇳 中文 / 🇻🇳 Tiếng Việt</span></td>
+              <td class="nw">boss</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-20</td>
+              <td class="mono nw">11-20</td>
+              <td>Tony：「boss.html 需要越南语和中文，加切换按钮。」<br>照四端同口径做：顶栏加 🇨🇳 中文 / 🇻🇳 Tiếng Việt 按钮，共用 <span class="mono">localStorage['zhops.lang']</span>（跟主端/人事/财务/业务一致，换语言跨端同步）；字典覆盖顶栏 / KPI / 页签 / 单据卡 / 按钮 / 驳回弹层 / 报告 / 监督 / AI 简报全量中文文案。<br>机制：TreeWalker 遍历文字节点 + WeakMap 记原文，<b>切回中文逐字还原</b>；跳过 script/style/textarea/select/选项与按钮自身（数据与输入不翻）；动态重绘（KPI / AI 简报）用 MutationObserver 补翻，每次用当前中文刷新原文，不锁死首次值。真 Chrome 实测：中文「老板指挥中心 / 待我审批」→ 越语「Trung tâm điều hành / Chờ tôi phê duyệt」→ 切回中文逐字还原。<br>验收：<span class="mono">check-boss-console.js</span> <b>40/40</b>（原 31 + 双语 9 项）+ 反向控制两组（换存盘键 / 砍字典项）报红；全套 <b>64/64</b>。还原点 <span class="mono">boss-i18n-before-20261120</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>

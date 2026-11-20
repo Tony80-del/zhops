@@ -42,6 +42,13 @@ body{
 .wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:16px}
 .glass{background:rgba(255,255,255,.76);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);
   border:1px solid rgba(255,255,255,.6);box-shadow:0 8px 32px rgba(10,25,40,.22)}
+/* 语言切换（跟四端共用 zhops.lang） */
+.langsw{display:flex;align-items:stretch;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.55);
+  border-radius:20px;padding:3px;gap:2px;flex:0 0 auto}
+.langsw button{border:0;background:transparent;border-radius:17px;padding:4px 10px;font:11px var(--ui);
+  color:#5b7185;cursor:pointer;white-space:nowrap;transition:.2s}
+.langsw button.on{background:#fff;color:var(--accent);font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.langsw .fl{font-size:12px;margin-right:3px}
 header{border-radius:18px;padding:15px 20px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
 .logo{width:45px;height:45px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
   display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 6px 18px rgba(0,0,0,.25);
@@ -182,6 +189,10 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <div class="logo">◆</div>
   <div><h1>老板指挥中心</h1><div class="sub">Boss Command · 审批 · 报告 · 监督 · 研发版（未设口令）</div></div>
   <div class="sp"></div>
+  <div class="langsw" id="bossLang">
+    <button data-blang="zh" class="on"><span class="fl">🇨🇳</span>中文</button>
+    <button data-blang="vi"><span class="fl">🇻🇳</span>Tiếng Việt</button>
+  </div>
   <div class="themes">
     <button data-th="teal" class="on"><span class="sw"></span>青墨</button>
     <button data-th="navy"><span class="sw"></span>黛蓝</button>
@@ -231,6 +242,137 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <button data-t="report"><span class="ic">📊</span>报告</button>
   <button data-t="log"><span class="ic">🔍</span>监督</button>
 </div>
+<script>
+/* ============================================================
+   Boss 越/中双语（跟财务/业务端同口径：共用 localStorage['zhops.lang']）
+   - 字典：中文原文 → Tiếng Việt
+   - TreeWalker 遍历文字节点；WeakMap 记原文，切回中文逐字还原
+   - 跳过 script/style/textarea/select（数据/输入不翻）
+   - 动态文本（KPI / AI 简报 / 状态）会被重写 → 每次用当前中文刷新原文
+   ============================================================ */
+(function(){
+  var KEY='zhops.lang', LANG='zh';
+  try{ LANG = (localStorage.getItem(KEY)==='vi') ? 'vi':'zh'; }catch(e){}
+  var DICT = {
+    /* 品牌 / 顶栏 */
+    '老板指挥中心':'Trung tâm điều hành','Boss Command · 审批 · 报告 · 监督 · 研发版（未设口令）':'Boss Command · Phê duyệt · Báo cáo · Giám sát · Bản phát triển (chưa đặt mật khẩu)',
+    '青墨':'Xanh mực','黛蓝':'Xanh lam','绛紫':'Tím sẫm','↻ 刷新':'↻ Làm mới',
+    '实时同步中':'Đang đồng bộ','● 实时同步中':'● Đang đồng bộ','● 连接断开 · 重试中':'● Mất kết nối · Đang thử lại',
+    /* KPI */
+    '待我审批':'Chờ tôi phê duyệt','本月已批':'Đã duyệt tháng này','审批金额 ₫':'Số tiền duyệt ₫','本月驳回':'Từ chối tháng này',
+    /* 页签 */
+    '待批':'Chờ duyệt','已处理':'Đã xử lý','报告':'Báo cáo','监督':'Giám sát',
+    /* 视图头 */
+    '各端提交 · 自动到达':'Các bộ phận gửi · Tự động nhận','全部处理完 🎉':'Đã xử lý hết 🎉',
+    '云端未连接 · 点右上角刷新':'Chưa kết nối đám mây · Nhấn "Làm mới"',
+    '还没有已处理单据':'Chưa có chứng từ đã xử lý','云端还没有单据流水':'Chưa có nhật ký chứng từ trên cloud',
+    /* 单据卡 */
+    '工资单':'Bảng lương','教室月租':'Tiền thuê lớp','场地使用费':'Phí địa điểm','市场宣传预算':'Ngân sách Marketing','单据':'Chứng từ',
+    '来自':'Từ','月份':'Tháng','审批':'Phê duyệt','待审批':'Chờ phê duyệt','已批准':'Đã phê duyệt','已驳回':'Đã từ chối','已付款':'Đã thanh toán',
+    '上次驳回':'Từ chối trước đó','人':'người','人事部':'Nhân sự','业务部':'Kinh doanh',
+    /* 按钮 / 弹层 */
+    '✓ 批准':'✓ Duyệt','✕ 驳回':'✕ Từ chối','驳回单据':'Từ chối chứng từ',
+    '必填：驳回理由（写回单据，提交方会看到）':'Bắt buộc: lý do từ chối (ghi lại vào chứng từ, bên gửi sẽ thấy)',
+    '取消':'Hủy','确认驳回':'Xác nhận từ chối',
+    '驳回理由必填 —— 提交方要知道改哪里':'Phải nhập lý do từ chối — bên gửi cần biết chỗ cần sửa',
+    '云端找不到这张单据（可能已被重提覆盖），请刷新':'Không tìm thấy chứng từ trên cloud (có thể đã gửi lại), vui lòng làm mới',
+    '云端没有 approvals 文档':'Không có tài liệu approvals trên cloud','云端文档里没有 payload':'Tài liệu cloud không có payload',
+    '云端那份不是 JSON，拒绝覆盖':'Dữ liệu cloud không phải JSON, từ chối ghi đè',
+    '云端文档结构不认识，拒绝覆盖':'Không nhận dạng cấu trúc tài liệu cloud, từ chối ghi đè',
+    '这个环境不支持网络':'Môi trường này không hỗ trợ mạng',
+    '这张单据现在是「':'Chứng từ này hiện là "','」,不能重复批准':'", không thể duyệt lại',
+    '」,不能重复驳回':'", không thể từ chối lại',
+    '批准 ':'Duyệt ','？\n\n请款 ':'?\n\nSố tiền đề nghị ','\n\n批准后会写回单据，付款仍由财务端操作。':'\n\nSau khi duyệt sẽ ghi lại vào chứng từ; thanh toán vẫn do bộ phận Tài chính thực hiện.',
+    '批准失败：':'Duyệt thất bại: ','已批准 ':'Đã duyệt ','（已写回云端，财务端可见）':'(Đã ghi lên cloud, bộ phận Tài chính thấy được)',
+    '驳回失败：':'Từ chối thất bại: ','已驳回 ':'Đã từ chối ','（理由写回单据，提交方会看到）':'(Lý do đã ghi vào chứng từ, bên gửi sẽ thấy)',
+    '已刷新云端单据':'Đã làm mới chứng từ trên cloud',
+    /* 报告 */
+    '经营报告':'Báo cáo kinh doanh','财务健康度':'Sức khỏe tài chính','业务转化':'Chuyển đổi kinh doanh',
+    '收入':'Doanh thu','支出（已批）':'Chi phí (đã duyệt)','毛利':'Lợi nhuận gộp','线索':'Khách hàng tiềm năng','转学员':'Chuyển thành học viên','转化率':'Tỷ lệ chuyển đổi',
+    '班级盈亏':'Lãi/lỗ theo lớp','朝阳班':'Lớp Triều Dương','丰通班':'Lớp Phong Thông','浦东班':'Lớp Phố Đông',
+    '业务部尚未开通此单据类型<br>路口已预留 · 后续接入':'Bộ phận Kinh doanh chưa mở loại chứng từ này<br>Đã để sẵn cổng · Sẽ kết nối sau',
+    /* 监督 / AI */
+    '监督流水':'Nhật ký giám sát','谁提交 · 谁审批 · 驳回理由':'Ai gửi · Ai duyệt · Lý do từ chối',
+    '提交 ':'Gửi ','批准 ':'Duyệt ','驳回 ':'Từ chối ','理由：':'Lý do: ',
+    '点我听 AI 简报':'Nhấn để nghe báo cáo AI','AI 简报':'Báo cáo AI','您好，Tony ✨':'Xin chào, Tony ✨',
+    '现在有 ':'Hiện có ',' 张单据等您审批，合计 ':' chứng từ chờ phê duyệt, tổng ','。':'.',
+    '最急':'Khẩn nhất','连接':'Kết nối','正常':'Bình thường','断开':'Mất kết nối','无':'Không có'
+  };
+  function tr(s){
+    s=String(s==null?'':s);
+    if (LANG!=='vi') return s;
+    var hit=DICT[s];
+    if (hit) return hit;
+    /* 整句没命中 → 逐段替换（长句里夹的动态文本，如金额/单号） */
+    var out=s, keys=Object.keys(DICT).sort(function(a,b){return b.length-a.length;});
+    keys.forEach(function(k){ if(out.indexOf(k)>=0) out=out.split(k).join(DICT[k]); });
+    return out;
+  }
+  var memo=new WeakMap(), attrMemo=new WeakMap();
+  var SKIP='script,style,textarea,select,option,[data-blang],.themes';
+  function walk(root){
+    if(!root||typeof document.createTreeWalker!=='function'||typeof NodeFilter==='undefined')return;
+    var vi=(LANG==='vi');
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+      acceptNode:function(n){
+        var p=n.parentElement; if(!p)return NodeFilter.FILTER_REJECT;
+        if(p.nodeName==='SCRIPT'||p.nodeName==='STYLE')return NodeFilter.FILTER_REJECT;
+        if(p.closest&&p.closest(SKIP))return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var n;
+    while((n=w.nextNode())){
+      var raw=n.nodeValue; if(!raw||!raw.trim())continue;
+      if(vi){
+        var o=tr(raw);
+        if(o!==raw){ if(/[\u4e00-\u9fff]/.test(raw))memo.set(n,raw); n.nodeValue=o; }
+      }else if(memo.has(n)){ n.nodeValue=memo.get(n); }
+    }
+    if(!root.querySelectorAll)return;
+    ['placeholder','title'].forEach(function(attr){
+      Array.prototype.forEach.call(root.querySelectorAll('['+attr+']'),function(el){
+        if(el.closest&&el.closest(SKIP))return;
+        var v=el.getAttribute(attr); if(v===null)return;
+        if(!attrMemo.has(el))attrMemo.set(el,{});
+        var m=attrMemo.get(el);
+        if(vi){ if(/[\u4e00-\u9fff]/.test(v))m[attr]=v; if(m[attr]!==undefined)el.setAttribute(attr,tr(m[attr])); }
+        else if(m[attr]!==undefined)el.setAttribute(attr,m[attr]);
+      });
+    });
+  }
+  function apply(){
+    walk(document.body);
+    if(LANG==='vi'){
+      if(!document.__bossTitleOrig)document.__bossTitleOrig=document.title;
+      document.title=tr(document.__bossTitleOrig);
+    }else if(document.__bossTitleOrig){ document.title=document.__bossTitleOrig; }
+    document.querySelectorAll('[data-blang]').forEach(function(b){b.classList.toggle('on',b.dataset.blang===LANG)});
+    var zh=document.querySelector('[data-blang="zh"]');
+    if(zh){ var t=zh.lastChild; if(t&&t.nodeType===3)t.nodeValue=(LANG==='vi')?'Tiếng Trung':'中文'; }
+  }
+  function set(l){
+    LANG=(l==='vi')?'vi':'zh';
+    try{localStorage.setItem(KEY,LANG)}catch(e){}
+    apply();
+  }
+  document.querySelectorAll('[data-blang]').forEach(function(b){
+    b.addEventListener('click',function(){set(b.dataset.blang)});
+  });
+  /* 主脚本每次 render 后可能重写中文 → 用 MutationObserver 轻量补翻（避开 script/style 与按钮） */
+  var busy=false;
+  try{
+    var mo=new MutationObserver(function(){
+      if(busy||LANG!=='vi')return;
+      busy=true; walk(document.body); busy=false;
+    });
+    mo.observe(document.body,{childList:true,subtree:true,characterData:true});
+  }catch(e){}
+  window.__BOSS_LANG__={ get:function(){return LANG;}, set:set, tr:tr, apply:apply, dict:DICT };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);
+  else apply();
+})();
+</script>
 <script>
 /* ============================================================
    Boss Console · 老板管理系统（监督端）· 真系统脚本
