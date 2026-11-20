@@ -710,6 +710,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-19</td>
               <td>按主端技能「改完自测」跑全套时发现：同一份代码，连跑三次有两次各红 1 条，红的位置还会变。<br><b>真因分三类，全是测试基础设施</b>：① <span class="mono">P-143</span> 与 <span class="mono">P-142</span> 注入 fixture 后靠同 URL <span class="mono">Page.navigate</span> 重建 —— 不保证换 JS 执行上下文，页面偶发仍跑旧实例（<span class="mono">DB=t1/t2/t3</span>）→ 假红；② <span class="mono">P-142</span> 的 <span class="mono">teacherSel</span> 断言依赖前序 B2 撤号的残留状态，偶发不同步；③ <span class="mono">check-hr-salary</span> 连续起 Chrome 时 launch 超时（单独跑 4/4 全过）。<br><b>修法</b>：① 两条探针改走主端只读口 <span class="mono">__ADMIN_HR_TEST__.loadFixture()</span> 显式重建，并轮询等页面就绪、拿不到就<b>提前结束</b>（不再用旧实例跑出一堆假红）；② <span class="mono">teacherSel</span> 断言自建前置（显式放一位 <span class="mono">fromHR + 已停用</span> 教师）—— 合流本身已由 B/B2/D 段覆盖；③ <span class="mono">hr-salary</span> launch 加三次重试；④ <span class="mono">run.sh</span> 的 <span class="mono">step()</span> 失败后<b>重试一次</b>：真回归两次都红仍是红，只有「首次红、第二次绿」记「重试后通过」并在汇总单列，不掩盖不稳定。<br>验证：P-142 连跑 <b>6/6</b>、P-143 <b>5/5</b> 稳定；全套连跑三次 <b>63/63</b>（第三次平板探针首次红、重试后过，已单列）。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-177</td>
+              <td><b>老板管理系统 boss.html（第五端 · 监督端）</b><br><span style="color:var(--ink3);font-size:12px">统一收审批 + 报告 + 监督，顶端悬浮球 AI</span></td>
+              <td class="nw">boss / 人事</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-20</td>
+              <td class="mono nw">11-20</td>
+              <td>Tony 定路线 2（系统自动）+ 自建老板端 + 课次实时收无兜底 + 第五端归总管执行（不单独建技能）。<br><b>页面</b>：`docs/boss.html` = 玻璃指挥中心 v3（三色主题青墨/黛蓝/绛紫、顶端 ③ 悬浮球 AI 与 DSH 插件同款、四页签待批/已处理/报告/监督、手机 iPad 自适应、研发版未设口令）。<br><b>审批</b>：`onSnapshot` 用 20s 轻量 GET 比对 at 自动到单（REST 无真 onSnapshot）；批准/驳回**逐字对齐财务 `fsPatchVoucher`**（读整份→按 id 改→PATCH→`app:'zhops.fin'` 不抢标记）；驳回必填理由、非「已提交」不能重复批/驳；理由写回单据给提交方。<br><b>边界</b>：只读四端存盘，不算薪资/不重算报告；市场宣传预算只留占位路口（业务部未开通）。<br><b>人事 S5</b>：加 `watchDoneLive()` 实时收 done_*（20s 比对 at、变了才合流），**无手动兜底按钮**（Tony 定），口径仍走 `mergeDoneRecords`。<br>验收：`check-boss-console.js` <b>31/31</b> + 3 组反向控制（写口改 master / 砍驳回必填 / 砍 HR 实时）报红；全页面零报错。发布清单加 boss.html + verify PAIRS。还原点 `boss-before-20261120`。方案 `docs/boss-console-plan.md`。</td>
+            </tr>
           </tbody>
         </table>
       </div>
