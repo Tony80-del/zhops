@@ -1399,12 +1399,18 @@
         <div class="rsi-chief-note">
           <b>总管 zhops-chief</b> 不是第五个部门，不下场做业务，只管调度 / 跨端裁决 / 探针 / 工作台账 / 发布闸门。技能文件已落地（工作台账 P-120，<code>~/.workbuddy-ai/skills/zhops-chief/SKILL.md</code>）；跨端裁决叫总管，它不下场做业务、也不自动执行，拿不准仍问 Tony。<b>发布与推云永远 Tony 手点。</b>四端拿不准上交总管，总管也拿不准就问 Tony。
         </div>
+        <div class="rsi-chief-note" style="border-left:3px solid #a78bfa;padding-left:10px;margin-top:10px">
+          <b>⑤ 老板端 · 监督端（boss.html · P-177）</b>：Tony 2026-11-20 定为<b>第五个端</b>，归总管执行，<b>不单独建技能</b>（与「总管不是第五个部门」不冲突 —— 那是技能岗位层，这里是页面端）。四页签：待批 / 已处理 / 报告 / 监督；顶端悬浮球 AI 与 DSH 插件同款；三色主题；研发期未设口令。<br>
+          <b>口径</b>：只读四端存盘；唯一写 = <code>zhops/approvals</code> 状态字段，逐字对齐财务 <code>fsPatchVoucher</code>（app 保持 <code>zhops.fin</code>）；驳回必填理由；不算薪资、不重算报告。20s 比对 at 自动到单，<b>无外部 webhook</b>。<br>
+          <b>联动</b>：人事端 <code>watchDoneLive()</code> 实时收 <code>done_*</code>（20s 比对 at、无手动兜底）。<b>市场宣传预算</b>只留占位路口（业务部未开通）。<br>
+          <b>线上</b>：<code>https://tony80-del.github.io/zhops/boss.html</code>；探针 <code>check-boss-console.js</code> 31/31（3 组反向控制）。
+        </div>
       </div>
     </div>
     <div class="field">
       <div class="field-label">位置（现状）</div>
       <div class="field-value multi">
-        <div><b>正式版</b>　<span class="loc">~/.workbuddy-ai/skills/</span>（用户级；Tony 2026-11-07 授权跨界写入）—— <b class="yes">zhops-sales 已落地</b>（工作台账 P-116），总管 <b class="yes">zhops-chief 已落地</b>（工作台账 P-120），主端 <b class="yes">zhops-admin 已落地</b>、人事端 <b class="yes">zhops-hr 已落地</b>、财务端 <b class="yes">zhops-finance 已落地</b>（工作台账 P-118）—— <b class="yes">4 端 + 总管全部已落地</b></div>
+        <div><b>正式版</b>　<span class="loc">~/.workbuddy-ai/skills/</span>（用户级；Tony 2026-11-07 授权跨界写入）—— <b class="yes">zhops-sales 已落地</b>（工作台账 P-116），总管 <b class="yes">zhops-chief 已落地</b>（工作台账 P-120），主端 <b class="yes">zhops-admin 已落地</b>、人事端 <b class="yes">zhops-hr 已落地</b>、财务端 <b class="yes">zhops-finance 已落地</b>（工作台账 P-118）—— <b class="yes">4 端 + 总管全部已落地</b>；<b class="yes">老板端 boss.html 已上线</b>（P-177 · 第五端监督端，归总管执行、不单独建技能）</div>
         <div><b>草稿</b>　<span class="loc">docs/zhops-skill-sales-draft.md</span>（业务部样板，正式版以其为准；草稿本身不是安装版）</div>
         <div><b>线上</b>　<span class="status-badge s-wait" style="font-size:10px;">无</span> <span style="color:var(--hint);">技能是本地 AI 岗位，不随 publish-zhops.sh 上线</span></div>
       </div>

@@ -719,6 +719,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-20</td>
               <td>Tony 定路线 2（系统自动）+ 自建老板端 + 课次实时收无兜底 + 第五端归总管执行（不单独建技能）。<br><b>页面</b>：`docs/boss.html` = 玻璃指挥中心 v3（三色主题青墨/黛蓝/绛紫、顶端 ③ 悬浮球 AI 与 DSH 插件同款、四页签待批/已处理/报告/监督、手机 iPad 自适应、研发版未设口令）。<br><b>审批</b>：`onSnapshot` 用 20s 轻量 GET 比对 at 自动到单（REST 无真 onSnapshot）；批准/驳回**逐字对齐财务 `fsPatchVoucher`**（读整份→按 id 改→PATCH→`app:'zhops.fin'` 不抢标记）；驳回必填理由、非「已提交」不能重复批/驳；理由写回单据给提交方。<br><b>边界</b>：只读四端存盘，不算薪资/不重算报告；市场宣传预算只留占位路口（业务部未开通）。<br><b>人事 S5</b>：加 `watchDoneLive()` 实时收 done_*（20s 比对 at、变了才合流），**无手动兜底按钮**（Tony 定），口径仍走 `mergeDoneRecords`。<br>验收：`check-boss-console.js` <b>31/31</b> + 3 组反向控制（写口改 master / 砍驳回必填 / 砍 HR 实时）报红；全页面零报错。发布清单加 boss.html + verify PAIRS。还原点 `boss-before-20261120`。方案 `docs/boss-console-plan.md`。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-178</td>
+              <td><b>老板端同步进施工地图 + 系统生态地图</b><br><span style="color:var(--ink3);font-size:12px">新板块必须在两张图上可见</span></td>
+              <td class="nw">看板</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-20</td>
+              <td class="mono nw">11-20</td>
+              <td>Tony：「新板块必须更新在施工地图和系统生态地图。」<br><b>施工地图 flow-map.html</b>：结构图 ext-row 加「老板端 · 监督审批（boss.html · P-177）」节点；在「二 · 11 条连线」之后插入独立板块「二·B · 老板端 · 监督端」，写清四页签 / 悬浮球 AI / 三色主题 / 审批写回口径 / 人事联动 / 市场预算路口 / 4-4 工序。<b>关键</b>：作为<b>独立板块</b>加，<b>不计入 11 条连线统计</b> —— 探针 check-map.js（51 项）把线数钉死 11，加 L-12 会全红；联动统计、筛选、进度条、页脚一个不动，复跑 <b>51/51</b> 全过。<br><b>生态地图 system-ecosystem-map.html</b>：岗位架构图加「⑤ 老板端 · 监督端（boss.html · P-177）」说明块，写清「算第五个端、归总管执行、不单独建技能」与「总管不是第五个部门（技能岗位层）」不冲突；技能清单行补「老板端已上线」。check-guide-consistency / check-p102-ecofold <b>36/36</b> 全过。<br>还原点 <code>boss-map-before-20261120</code>。</td>
+            </tr>
           </tbody>
         </table>
       </div>
