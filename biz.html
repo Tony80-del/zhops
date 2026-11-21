@@ -2336,14 +2336,94 @@ function renderResearchSources(){
         '<span class="sm" style="color:var(--ink3)">'+(_v
           ? (' · mỗi '+src.cycVi+' một lần · lần trước '+src.last+' · đã '+days+' ngày'+(due?' (quá '+src.days+' ngày)':''))
           : (' · 每'+src.cycle+'一次 · 上次 '+src.last+' · 已 '+days+' 天'+(due?'（超 '+src.days+' 天）':'')))+'</span></span>'+
-      '<a class="btn sm" href="'+src.url+'" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">去查 ↗</a>'+
-      '<button class="btn sm" onclick="markSourceChecked(\''+src.id+'\')">已查过</button>'+
+      '<a class="btn sm" href="'+src.url+'" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">'+(_v?'Đi kiểm tra ↗':'去查 ↗')+'</a>'+
+      '<button class="btn sm" onclick="crawlSource(\''+src.id+'\')" id="crawl-'+src.id+'">'+(_v?'Lấy dữ liệu':'抓取')+'</button>'+
+      '<button class="btn sm" onclick="markSourceChecked(\''+src.id+'\')">'+(_v?'Đã kiểm tra':'已查过')+'</button>'+
     '</div>';
   }).join('') +
   '<p class="sm" style="color:var(--ink3);margin:9px 0 0">'+((typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi')
      ? 'Bấm «Đi kiểm tra» sẽ mở trang chính thức (không tự động lấy dữ liệu); xem xong bấm «Đã kiểm tra», hoặc bấm «+ Bản ghi mới» để ghi kết luận.'
      : '点「去查」会新开官方页面（不自动抓取）；看完回来点「已查过」，或直接「+ 新记录」把结论录进来。')+'</p>';
 }
+/* ============================================================================
+   C1 真抓取（2026-11-21 · P-188）：调 Firebase Function 抓白名单源，
+   拿回结构化原始情报 → 人看 → 点「用这条」预填市场调查表单。
+   ★ 失败静默（只在源行提示，不弹红字、不卡页面）；抓到不自动入库。
+   ============================================================================ */
+var CRAWL_FN = 'https://asia-southeast1-hsk-class-v1.cloudfunctions.net/fetchSource';
+var _crawlCache = {};
+function crawlSource(id){
+  var src = RESEARCH_SOURCES.find(function(x){ return x.id === id; });
+  if(!src) return;
+  var btn = document.getElementById('crawl-' + id);
+  if(btn){ btn.disabled = true; btn.textContent = '抓取中…'; }
+  function done(msg){
+    if(btn){ btn.disabled = false; btn.textContent = '抓取'; }
+    if(msg) toast(msg, true);
+  }
+  if(typeof fetch !== 'function'){ done('这个环境不支持网络'); return; }
+  fetch(CRAWL_FN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: src.url })
+  }).then(function(r){ return r.ok ? r.json() : null; }).then(function(o){
+    if(!o){ done('抓取失败（函数没响应，可能还没部署）'); return; }
+    if(o.error){ done('抓取失败：' + o.error); return; }
+    _crawlCache[id] = o;
+    done('');
+    showCrawlResult(id, o);
+  }).catch(function(){ done('抓取失败（网络或函数未部署）'); });
+}
+function showCrawlResult(id, o){
+  var src = RESEARCH_SOURCES.find(function(x){ return x.id === id; });
+  var h = '<div class="qhead"><div class="qt">抓取结果 · '+escCmp(src?src.name:id)+'</div>'+
+    '<div class="qm">'+escCmp(o.url||'')+' · '+escCmp(o.fetchedAt||'')+' · 正文 '+escCmp(o.textLength||0)+' 字</div></div>';
+  if(o.title) h += '<div class="sm" style="margin-bottom:6px"><b>标题：</b>'+escCmp(o.title)+'</div>';
+  if(o.description) h += '<div class="sm" style="margin-bottom:8px;color:var(--ink2)"><b>摘要：</b>'+escCmp(o.description)+'</div>';
+  if(o.headings && o.headings.length){
+    h += '<div class="sm" style="margin:10px 0 5px;font-weight:700;color:var(--brand)">页面标题（点一条可预填）</div>';
+    h += o.headings.slice(0,14).map(function(x,i){
+      return '<div class="sm" style="padding:5px 8px;border-left:3px solid var(--brand);background:var(--surface-2);'+
+        'border-radius:4px;margin-bottom:4px;cursor:pointer" onclick="useCrawlText('+JSON.stringify(id)+','+JSON.stringify(x.text)+')">'+
+        'H'+x.level+' · '+escCmp(x.text)+'</div>';
+    }).join('');
+  }
+  if(o.links && o.links.length){
+    h += '<div class="sm" style="margin:12px 0 5px;font-weight:700;color:var(--brand)">页面链接（前 12 条）</div>';
+    h += o.links.slice(0,12).map(function(x){
+      return '<div class="sm" style="padding:4px 0;border-bottom:1px solid var(--line)">'+
+        '<a href="'+escCmp(x.href)+'" target="_blank" rel="noopener" style="color:var(--brand)">'+escCmp(x.text)+'</a></div>';
+    }).join('');
+  }
+  if(o.text){
+    h += '<div class="sm" style="margin:12px 0 5px;font-weight:700;color:var(--brand)">正文前 6000 字</div>'+
+      '<div class="sm" style="max-height:220px;overflow:auto;background:var(--surface-2);padding:9px;border-radius:6px;'+
+      'white-space:pre-wrap;line-height:1.7">'+escCmp(o.text.slice(0,6000))+'</div>';
+  }
+  h += '<div class="sm" style="margin-top:10px;color:var(--ink3)">★ 抓到的是原始情报，不自动入库；点上面的标题预填，或自己「+ 新记录」写结论。</div>';
+  var t=document.getElementById('qTitle'), bo=document.getElementById('qBody');
+  if(!t||!bo){ return; }
+  t.textContent = '抓取结果 · ' + (src?src.name:id);
+  bo.innerHTML = h;
+  document.getElementById('qmask').classList.add('on');
+}
+/* 点某条标题 → 预填市场调查表单（人确认后才存） */
+function useCrawlText(id, text){
+  var src = RESEARCH_SOURCES.find(function(x){ return x.id === id; });
+  var kindMap = { hsk:'官方政策', moe:'官方政策', cham:'商会活动', job:'市场趋势' };
+  closeQuote();
+  addResearch();
+  setTimeout(function(){
+    var t = document.getElementById('f-topic'); if(t) t.value = String(text||'').slice(0,80);
+    var k = document.getElementById('f-kind'); if(k) k.value = kindMap[id] || '市场趋势';
+    var s2 = document.getElementById('f-source'); if(s2) s2.value = (src?src.name:'') + '（抓取）';
+    var d = document.getElementById('f-date'); if(d) d.value = new Date().toISOString().slice(0,10);
+    var c = document.getElementById('f-content');
+    if(c && !c.value) c.value = '来自 '+(src?src.url:'')+' 的抓取结果，待补充判断与结论。';
+    toast('已预填主题/类型/来源 —— 请补结论后保存');
+  }, 120);
+}
+
 function markSourceChecked(id){
   var src = RESEARCH_SOURCES.find(function(x){ return x.id === id; });
   if(!src) return;
