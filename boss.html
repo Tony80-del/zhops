@@ -229,6 +229,10 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <div class="rep"><h4>📢 市场宣传预算</h4><div class="ph">业务部尚未开通此单据类型<br>路口已预留 · 后续接入</div></div>
 </div></section>
 <section class="view" id="v-log"><div class="vhdr"><b>🔍 监督流水</b></div><div class="log" id="logList"></div></section>
+<section class="view" id="v-market">
+  <div class="vhdr"><b>🛰️ 市场周报</b><span class="sp"></span><span class="mini" id="mMeta">云端每周一自动抓</span></div>
+  <div id="mBody"><div class="ph">加载中…</div></div>
+</section>
 </div>
 <div class="qmodal" id="qmodal" onclick="if(event.target===this)closeQ()">
   <div class="qbox"><div class="qh"><b id="qTitle">报价单明细</b><span class="sp"></span><button class="btn ghost" onclick="closeQ()">✕ 关闭</button></div>
@@ -258,6 +262,7 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <button data-t="done"><span class="ic">✅</span>已处理</button>
   <button data-t="report"><span class="ic">📊</span>报告</button>
   <button data-t="log"><span class="ic">🔍</span>监督</button>
+  <button data-t="market"><span class="ic">🛰️</span>市场周报<span class="b" id="mbdg" style="display:none">0</span></button>
 </div>
 <script>
 /* ============================================================
@@ -706,7 +711,139 @@ window.__BOSS_TEST__={
   render:render,
 };
 
-render(); countUp(); startLive();
+/* ============================================================
+   🛰️ 市场周报（P-189 · 2026-11-21）
+   - 数据源：zhops/marketreport（云端每周一由 GitHub Actions 写入）
+   - 只读，不写任何东西（跟老板端铁律一致）
+   ============================================================ */
+var MR = { doc:null, ok:false };
+
+function mrUrl(){
+  return 'https://firestore.googleapis.com/v1/projects/'+FS.pid+
+    '/databases/(default)/documents/'+FS.coll+'/marketreport?key='+encodeURIComponent(FS.key);
+}
+
+function fetchMarketReport(cb){
+  if (typeof fetch !== 'function'){ cb && cb(false); return; }
+  fetch(mrUrl()).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    if (!raw || !raw.fields){ cb && cb(false); return; }
+    var p = raw.fields.payload && raw.fields.payload.stringValue;
+    if (!p){ cb && cb(false); return; }
+    var o; try{ o = JSON.parse(p); }catch(e){ cb && cb(false); return; }
+    MR.doc = o; MR.ok = true;
+    renderMarket();
+    cb && cb(true);
+  }).catch(function(){ cb && cb(false); });
+}
+
+function mrEsc(x){
+  return String(x==null?'':x).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+
+function renderMarket(){
+  var el = document.getElementById('mBody');
+  if (!el) return;
+  if (!MR.doc){
+    el.innerHTML = '<div class="ph">云端还没有周报<br><span style="font-size:12px;color:#94a3b8">每周一 08:00 自动抓取后出现</span></div>';
+    return;
+  }
+  var d = MR.doc;
+  var sum = d.summary || {};
+  var meta = document.getElementById('mMeta');
+  if (meta) meta.textContent = d.date + (d.prevDate ? ' · 对比 ' + d.prevDate : ' · 首次抓取');
+
+  var h = '';
+
+  /* 手机一屏版优先 */
+  if (d.compact){
+    h += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;'+
+      'padding:14px;margin-bottom:14px;font-size:13px;line-height:1.85;white-space:pre-wrap;'+
+      'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#1e293b">'+
+      mrEsc(d.compact)+'</div>';
+  }
+
+  h += '<div class="repgrid" style="margin-bottom:14px">'+
+    '<div class="repcard"><div class="k">在投广告</div><div class="n">'+(sum.total||0)+'</div></div>'+
+    '<div class="repcard"><div class="k">本周新增</div><div class="n" style="color:#059669">'+(sum.added||0)+'</div></div>'+
+    '<div class="repcard"><div class="k">本周停投</div><div class="n" style="color:#e11d48">'+(sum.gone||0)+'</div></div>'+
+    '<div class="repcard"><div class="k">带促销</div><div class="n" style="color:#d97706">'+(sum.promo||0)+'</div></div>'+
+  '</div>';
+
+  var nd = d.needDecision || [];
+  if (nd.length){
+    h += '<div class="sec-t" style="color:#e11d48;font-weight:700;margin:16px 0 8px;font-size:14px">🔴 要你拍板（'+nd.length+' 条）</div>';
+    nd.forEach(function(a, i){
+      h += '<div class="mcard" style="background:#fff;border:1px solid #e2e8f0;border-left:3px solid #e11d48;'+
+        'border-radius:8px;padding:12px;margin-bottom:10px">'+
+        '<div style="font-weight:700;font-size:13px;margin-bottom:4px">'+(i+1)+'. '+mrEsc(a.owner)+'</div>'+
+        '<div style="font-size:11px;color:#94a3b8;margin-bottom:6px">开始投放 '+mrEsc(a.started)+'</div>'+
+        (a.reason?'<div style="font-size:11.5px;color:#d97706;margin-bottom:6px">'+mrEsc(a.reason)+'</div>':'')+
+        '<div style="font-size:12.5px;line-height:1.65;color:#334155;max-height:96px;overflow:hidden">'+mrEsc(a.text)+'</div>'+
+        '<div style="font-size:10.5px;color:#cbd5e1;margin-top:6px;font-family:monospace">'+mrEsc(a.id)+'</div>'+
+      '</div>';
+    });
+  }
+
+  var bo = d.byOwner || {};
+  var keys = Object.keys(bo);
+  if (keys.length){
+    h += '<div class="sec-t" style="font-weight:700;margin:16px 0 8px;font-size:14px">📋 按对手</div>';
+    h += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">'+
+      '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+      '<tr style="background:#f8fafc;color:#64748b">'+
+      '<th style="text-align:left;padding:8px 10px;font-weight:600">对手</th>'+
+      '<th style="text-align:right;padding:8px 10px;font-weight:600">在投</th>'+
+      '<th style="text-align:right;padding:8px 10px;font-weight:600">新增</th>'+
+      '<th style="text-align:right;padding:8px 10px;font-weight:600">促销</th></tr>';
+    keys.forEach(function(k){
+      var o = bo[k];
+      h += '<tr style="border-top:1px solid #f1f5f9">'+
+        '<td style="padding:8px 10px">'+mrEsc(o.name)+'</td>'+
+        '<td style="padding:8px 10px;text-align:right">'+(o.count||0)+'</td>'+
+        '<td style="padding:8px 10px;text-align:right;color:#059669">'+(o.addedCount||0)+'</td>'+
+        '<td style="padding:8px 10px;text-align:right;color:#d97706">'+(o.promoCount||0)+'</td></tr>';
+    });
+    h += '</table></div>';
+  }
+
+  var pr = d.promo || [];
+  if (pr.length){
+    h += '<div class="sec-t" style="font-weight:700;margin:16px 0 8px;font-size:14px">💰 促销雷达</div>';
+    pr.slice(0,6).forEach(function(a){
+      h += '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:8px">'+
+        '<div style="font-size:12px;font-weight:700;margin-bottom:3px">'+mrEsc(a.owner)+'</div>'+
+        '<div style="font-size:11px;color:#b45309;margin-bottom:5px">'+mrEsc((a.promo||[]).join(' / '))+'</div>'+
+        '<div style="font-size:12px;color:#44403c;line-height:1.6;max-height:60px;overflow:hidden">'+
+          mrEsc((a.text||'').slice(0,180))+'</div>'+
+      '</div>';
+    });
+  }
+
+  var lr = d.longRunners || [];
+  if (lr.length){
+    h += '<div class="sec-t" style="font-weight:700;margin:16px 0 8px;font-size:14px">🕰️ 长期在投（主力打法）</div>';
+    lr.slice(0,5).forEach(function(a){
+      h += '<div style="font-size:12px;color:#475569;padding:6px 0;border-bottom:1px solid #f1f5f9">'+
+        '· <b>'+mrEsc(a.owner)+'</b> 从 '+mrEsc(a.started)+' 投到现在</div>';
+    });
+  }
+
+  h += '<div style="font-size:10.5px;color:#cbd5e1;margin:16px 0 8px;line-height:1.6">'+
+    '数据源：Meta 广告库（公开页面 · 未登录 · 未用任何个人账号）<br>'+
+    '抓取时间 '+mrEsc((d.at||'').replace('T',' ').slice(0,16))+'</div>';
+
+  el.innerHTML = h;
+}
+
+document.querySelectorAll('.tabs button').forEach(function(b){
+  if (b.dataset.t === 'market'){
+    b.addEventListener('click', function(){ fetchMarketReport(); });
+  }
+});
+
+render(); countUp(); startLive(); fetchMarketReport();
 })();
 </script>
 </body>
