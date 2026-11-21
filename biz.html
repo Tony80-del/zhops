@@ -803,6 +803,11 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
         <b>越南中文教学市场 · 关键数据（2025–2026）</b><br>
         HSK 考生 14.6 万（全球第一） · 中文岗薪资溢价 10–40% · 500+ 家培训机构 · HSK3 备考 <1000 万 VND · Zalo 触达率 40%（Facebook 的 4–8 倍）
       </div>
+      <!-- ★ 2026-11-21（P-186 / S4-A）：情报源清单 + 一键去查 + 过期提醒（不自动抓取） -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-h"><h3>情报源 · 该去查了</h3><span class="sub">点「去查」新开官方页面，看完回来录一条调查</span></div>
+        <div class="card-b"><div id="research-sources"></div></div>
+      </div>
       <div id="research-list"></div>
     </div>
 
@@ -1567,7 +1572,7 @@ function render(v){
   if(v==='leads') renderLeads();
   if(v==='students') renderStudents();
   if(v==='billing') renderBilling();
-  if(v==='research') renderResearch();
+  if(v==='research'){ renderResearchSources(); renderResearch(); }
   if(v==='campaigns') renderCampaigns();
   if(v==='assets') renderAssets();
   if(v==='events') renderEvents();
@@ -2201,18 +2206,100 @@ function billPaymentRows(bid){
 /* ============================================================
    市场调查
    ============================================================ */
+/* 情报源清单（S4-A）：只做「提醒 + 一键打开」，不自动抓取（抓取留 C 阶段） */
+var RESEARCH_SOURCES = [
+  { id:'hsk',   name:'HSK 官网（考试日历 / 大纲）', vn:'Trang HSK (lịch thi / đề cương)', url:'https://www.chinesetest.cn/',   cycle:'季', cycVi:'quý', days:90,  last:'2026-10-01' },
+  { id:'moe',   name:'越南教育部（政策 / 资质）',   vn:'Bộ GD Việt Nam (chính sách / giấy phép)', url:'https://moet.gov.vn/', cycle:'年', cycVi:'năm', days:365, last:'2026-09-15' },
+  { id:'cham',  name:'越南中国商会（活动 / 讲座）', vn:'Hiệp hội Doanh nghiệp TQ (sự kiện / hội thảo)', url:'http://www.vn-cn.org/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-01' },
+  { id:'job',   name:'招聘平台（中文岗薪资）',      vn:'Trang tuyển dụng (lương việc tiếng Trung)', url:'https://www.vietnamworks.com/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-05' },
+];
+function renderResearchSources(){
+  var el = document.getElementById('research-sources');
+  if(!el) return;
+  var today = new Date();
+  el.innerHTML = RESEARCH_SOURCES.map(function(src){
+    var lastD = new Date(src.last + 'T00:00:00');
+    var days = Math.floor((today - lastD) / 86400000);
+    var due = days >= src.days;
+    var _v = (typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">'+
+      '<span class="tg '+(due?'bad':'off')+'" style="flex:0 0 auto">'+(_v?(due?'Cần kiểm tra':'Bình thường'):(due?'该查了':'正常'))+'</span>'+
+      '<span style="flex:1;font-size:12.5px">'+escCmp(_v?src.vn:src.name)+
+        '<span class="sm" style="color:var(--ink3)">'+(_v
+          ? (' · mỗi '+src.cycVi+' một lần · lần trước '+src.last+' · đã '+days+' ngày'+(due?' (quá '+src.days+' ngày)':''))
+          : (' · 每'+src.cycle+'一次 · 上次 '+src.last+' · 已 '+days+' 天'+(due?'（超 '+src.days+' 天）':'')))+'</span></span>'+
+      '<a class="btn sm" href="'+src.url+'" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">去查 ↗</a>'+
+      '<button class="btn sm" onclick="markSourceChecked(\''+src.id+'\')">已查过</button>'+
+    '</div>';
+  }).join('') +
+  '<p class="sm" style="color:var(--ink3);margin:9px 0 0">'+((typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi')
+     ? 'Bấm «Đi kiểm tra» sẽ mở trang chính thức (không tự động lấy dữ liệu); xem xong bấm «Đã kiểm tra», hoặc bấm «+ Bản ghi mới» để ghi kết luận.'
+     : '点「去查」会新开官方页面（不自动抓取）；看完回来点「已查过」，或直接「+ 新记录」把结论录进来。')+'</p>';
+}
+function markSourceChecked(id){
+  var src = RESEARCH_SOURCES.find(function(x){ return x.id === id; });
+  if(!src) return;
+  src.last = new Date().toISOString().slice(0,10);
+  try{ localStorage.setItem('zhops.biz.srclast', JSON.stringify(RESEARCH_SOURCES.map(function(x){return [x.id,x.last];}))); }catch(e){}
+  renderResearchSources();
+  toast('已记下：'+src.name+' 今天查过');
+}
+function loadSourceChecked(){
+  try{
+    var raw = localStorage.getItem('zhops.biz.srclast');
+    if(!raw) return;
+    var arr = JSON.parse(raw);
+    if(!Array.isArray(arr)) return;
+    arr.forEach(function(p){
+      var src = RESEARCH_SOURCES.find(function(x){ return x.id === p[0]; });
+      if(src && p[1]) src.last = p[1];
+    });
+  }catch(e){}
+}
+
 function renderResearch(){
   var el = document.getElementById('research-list');
-  if(!S.research.length){ el.innerHTML = '<div class="empty">还没有记录。</div>'; return; }
-  el.innerHTML = S.research.map(function(r){
-    var tags = (r.tags||'').split(',').filter(Boolean).map(function(t){ return '<span class="tg amber">'+t.trim()+'</span>'; }).join(' ');
-    return '<div class="card marks"><div class="card-h"><h3>'+r.topic+'</h3>'+
-      '<span class="sub">'+fmtDate(r.date)+'</span><div class="sp"></div>'+tags+'</div>'+
-      '<div class="card-b">'+
-        '<p style="margin:0 0 10px">'+r.content+'</p>'+
-        (r.data?'<p class="sm mono" style="color:var(--brand-ink);background:var(--brand-soft);padding:8px 10px;border-radius:4px;margin:0 0 8px">'+r.data+'</p>':'')+
-        '<p class="sm" style="color:var(--ink3);margin:0">来源：'+(r.source||'—')+'</p>'+
-      '</div></div>';
+  if(!el) return;
+  /* ★ P-186：按情报类型分组显示（官方/商会/竞品/趋势/客户），未分类归一组 */
+  var today = new Date().toISOString().slice(0,10);
+  var groups = {};
+  (S.research||[]).forEach(function(r){
+    var k = r.kind || '未分类';
+    (groups[k] = groups[k] || []).push(r);
+  });
+  var order = RESEARCH_KINDS.concat(['未分类']);
+  var keys = order.filter(function(k){ return groups[k]; });
+  if(!keys.length){ el.innerHTML = '<div class="empty">还没有记录。</div>'; return; }
+  var impactCls = { '高':'bad', '中':'warn', '低':'off' };
+  el.innerHTML = keys.map(function(k){
+    var rows = groups[k].map(function(r){
+      var tags = (r.tags||'').split(',').filter(Boolean).map(function(t){ return '<span class="tg amber">'+escCmp(t.trim())+'</span>'; }).join(' ');
+      var overdue = r.reviewAt && r.reviewAt <= today;
+      var links = [];
+      if(r.campaignId) links.push('投放 '+r.campaignId);
+      if(r.eventId) links.push('活动 '+r.eventId);
+      return '<div class="card marks" style="margin-bottom:10px"><div class="card-h">'+
+        '<h3>'+escCmp(r.topic||'(无主题)')+'</h3>'+
+        '<span class="sub">'+fmtDate(r.date)+'</span>'+
+        (r.impact?'<span class="tg '+(impactCls[r.impact]||'off')+'">影响'+escCmp(r.impact)+'</span>':'')+
+        '<div class="sp"></div>'+tags+'</div>'+
+        '<div class="card-b">'+
+          '<p style="margin:0 0 10px">'+escCmp(r.content||'')+'</p>'+
+          (r.data?'<p class="sm mono" style="color:var(--brand-ink);background:var(--brand-soft);padding:8px 10px;border-radius:4px;margin:0 0 8px">'+escCmp(r.data)+'</p>':'')+
+          (r.action||r.outcome?'<div class="sm" style="background:var(--ok-soft);border-left:3px solid var(--ok);padding:8px 10px;border-radius:4px;margin:0 0 8px">'+
+             (r.action?'<b>动作：'+escCmp(r.action)+'</b>':'')+
+             (r.outcome?'<div style="margin-top:4px">'+escCmp(r.outcome)+'</div>':'')+'</div>':'')+
+          '<p class="sm" style="color:var(--ink3);margin:0">来源：'+escCmp(r.source||'—')+
+            (links.length?'　·　关联：'+links.join(' / '):'')+
+            (r.reviewAt?'　·　复核：<span style="color:'+(overdue?'var(--bad)':'var(--ink3)')+'">'+fmtDate(r.reviewAt)+(overdue?' ⚠️ 已到期':'')+'</span>':'')+
+          '</p>'+
+        '</div></div>';
+    }).join('');
+    return '<div style="margin-bottom:16px"><div class="sec-h" style="font-size:12px;font-weight:700;color:var(--brand);'+
+      'padding:6px 0 8px;border-bottom:1px dashed var(--line2);margin-bottom:10px">'+
+      ((typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi')
+        ? escCmp(k === '未分类' ? 'Chưa phân loại' : k)+' · '+groups[k].length+' bản'
+        : escCmp(k)+' · '+groups[k].length+' 条')+'</div>'+rows+'</div>';
   }).join('');
 }
 
@@ -2875,14 +2962,42 @@ function editResearch(id){
   if(!r) return;
   openDrawer('编辑 · '+r.topic, researchForm(r));
 }
+/* ★ 2026-11-21（P-186 / L-08）：市场调查从「手写台账」升级成「情报 → 判断 → 动作」闭环。
+   5 类情报：官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈。
+   每条要能追到「因此我们做了什么」，否则就是废纸。 */
+var RESEARCH_KINDS = ['官方政策','商会活动','竞品动态','市场趋势','客户反馈'];
+var RESEARCH_IMPACT = ['高','中','低'];
+var RESEARCH_ACTIONS = ['加投','减投','改价','办活动','去参会','观望'];
 function researchForm(r){
   r = r || {};
-  return '<div class="fld"><label>主题</label><input id="f-topic" value="'+(r.topic||'')+'"></div>'+
-    '<div class="fld"><label>内容（你的判断和结论）</label><textarea id="f-content" style="min-height:100px">'+(r.content||'')+'</textarea></div>'+
-    '<div class="fld"><label>关键数据</label><input id="f-data" value="'+(r.data||'')+'" placeholder="如：14.6 万考生 / 薪资溢价 10-40%"></div>'+
-    '<div class="fld-row"><div class="fld"><label>来源</label><input id="f-source" value="'+(r.source||'')+'"></div>'+
+  var _v = (typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi');
+  var VIMAP = { '官方政策':'Chính sách chính thức','商会活动':'Hoạt động hiệp hội','竞品动态':'Động thái đối thủ',
+    '市场趋势':'Xu hướng thị trường','客户反馈':'Phản hồi khách hàng','高':'Cao','中':'Trung bình','低':'Thấp',
+    '加投':'Tăng chi','减投':'Giảm chi','改价':'Đổi giá','办活动':'Tổ chức sự kiện','去参会':'Tham dự','观望':'Chờ xem' };
+  var L = function(x){ return _v ? (VIMAP[x]||x) : x; };
+  var opt = function(list, cur){ return list.map(function(x){ return '<option value="'+x+'"'+(x===cur?' selected':'')+'>'+L(x)+'</option>'; }).join(''); };
+  var campOpts = '<option value="">'+(_v?'(Không liên kết)':'（不关联）')+'</option>' + (S.campaigns||[]).map(function(c){
+    return '<option value="'+c.id+'"'+(r.campaignId===c.id?' selected':'')+' data-raw>'+c.id+' · '+c.platform+' '+fmtDate(c.date)+'</option>';
+  }).join('');
+  var evtOpts = '<option value="">'+(_v?'(Không liên kết)':'（不关联）')+'</option>' + (S.events||[]).map(function(e){
+    return '<option value="'+e.id+'"'+(r.eventId===e.id?' selected':'')+' data-raw>'+e.id+' · '+e.name+'</option>';
+  }).join('');
+  return '<div class="fld-row"><div class="fld"><label>情报类型</label><select id="f-kind">'+
+      '<option value="">'+(_v?'(Chưa phân loại)':'（未分类）')+'</option>'+opt(RESEARCH_KINDS, r.kind)+'</select></div>'+
+    '<div class="fld"><label>影响等级</label><select id="f-impact">'+opt(RESEARCH_IMPACT, r.impact)+'</select></div></div>'+
+    '<div class="fld"><label>主题</label><input id="f-topic" value="'+escCmp(r.topic||'')+'"></div>'+
+    '<div class="fld"><label>内容（你的判断和结论）</label><textarea id="f-content" style="min-height:100px">'+escCmp(r.content||'')+'</textarea></div>'+
+    '<div class="fld"><label>关键数据</label><input id="f-data" value="'+escCmp(r.data||'')+'" placeholder="如：14.6 万考生 / 薪资溢价 10-40%"></div>'+
+    '<div class="fld-row"><div class="fld"><label>来源</label><input id="f-source" value="'+escCmp(r.source||'')+'"></div>'+
     '<div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(r.date||new Date().toISOString().slice(0,10))+'"></div></div>'+
-    '<div class="fld"><label>标签（逗号分隔）</label><input id="f-tags" value="'+(r.tags||'')+'" placeholder="如：趋势,定价,渠道"></div>'+
+    '<div class="fld-row"><div class="fld"><label>建议动作</label><select id="f-action">'+
+      '<option value="">'+(_v?'(Chưa quyết)':'（还没定）')+'</option>'+opt(RESEARCH_ACTIONS, r.action)+'</select></div>'+
+    '<div class="fld"><label>复核日期（到期提醒再看一次）</label><input type="date" id="f-review" value="'+(r.reviewAt||'')+'"></div></div>'+
+    '<div class="fld"><label>结论带来的动作 / 结果（这条情报让我们做了什么）</label>'+
+      '<textarea id="f-outcome" style="min-height:56px" placeholder="'+(_v?'VD: Zalo tiếp cận gấp 4-8 lần FB → tháng 11 tăng chi 500K vào Zalo':'例：Zalo 触达率是 FB 的 4-8 倍 → 11 月加投 500K 到 Zalo')+'">'+escCmp(r.outcome||'')+'</textarea></div>'+
+    '<div class="fld-row"><div class="fld"><label>关联投放</label><select id="f-camp">'+campOpts+'</select></div>'+
+    '<div class="fld"><label>关联活动</label><select id="f-evt">'+evtOpts+'</select></div></div>'+
+    '<div class="fld"><label>标签（逗号分隔）</label><input id="f-tags" value="'+escCmp(r.tags||'')+'" placeholder="如：趋势,定价,渠道"></div>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
       '<button class="btn pri" onclick="saveResearch('+(r.id?"'"+r.id+"'":"null")+')">保存</button>'+
       (r.id?'<button class="btn danger" onclick="delResearch(\''+r.id+'\')">删除</button>':'')+
@@ -2890,8 +3005,15 @@ function researchForm(r){
     '</div>';
 }
 function saveResearch(id){
-  var data = { topic: val('f-topic'), content: val('f-content'), data: val('f-data'), source: val('f-source'), date: val('f-date'), tags: val('f-tags') };
+  var data = { topic: val('f-topic'), content: val('f-content'), data: val('f-data'),
+               source: val('f-source'), date: val('f-date'), tags: val('f-tags'),
+               /* ★ P-186：情报 5 类 + 动作闭环 */
+               kind: val('f-kind'), impact: val('f-impact') || '中',
+               action: val('f-action'), reviewAt: val('f-review'),
+               outcome: val('f-outcome'),
+               campaignId: val('f-camp'), eventId: val('f-evt') };
   if(!data.topic){ toast('请填主题', true); return; }
+  if(!data.kind){ toast('请选情报类型（官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈）', true); return; }
   if(id){ Object.assign(S.research.find(function(x){return x.id===id;}), data); }
   else { data.id = 'R-' + String(S.seq.res++).padStart(3,'0'); S.research.unshift(data); }
   save(); closeDrawer(); render('research');
@@ -4224,6 +4346,19 @@ var BIZ_VI = {
   '转化':'Chuyển đổi','相对上一层':'so với tầng trên','线索':'Khách hàng tiềm năng',
   '已联系':'Đã liên hệ','已试听':'Đã học thử','已报名':'Đã ghi danh','在读':'Đang học',
   '只算从线索转化的学员':'chỉ tính học viên chuyển từ khách tiềm năng',
+  /* ★ 2026-11-21（P-186 市场调查） */
+  '情报源 · 该去查了':'Nguồn tin · Đã đến lúc kiểm tra',
+  '点「去查」新开官方页面，看完回来录一条调查':'Bấm «Đi kiểm tra» để mở trang chính thức; xem xong quay lại ghi một bản khảo sát',
+  '情报类型':'Loại thông tin','影响等级':'Mức ảnh hưởng','建议动作':'Hành động đề xuất',
+  '复核日期（到期提醒再看一次）':'Ngày rà soát lại (nhắc khi đến hạn)',
+  '结论带来的动作 / 结果（这条情报让我们做了什么）':'Hành động / kết quả từ kết luận (thông tin này khiến ta làm gì)',
+  '关联投放':'Chiến dịch liên quan','关联活动':'Sự kiện liên quan',
+  '官方政策':'Chính sách chính thức','商会活动':'Hoạt động hiệp hội','竞品动态':'Động thái đối thủ',
+  '市场趋势':'Xu hướng thị trường','客户反馈':'Phản hồi khách hàng','未分类':'Chưa phân loại',
+  '加投':'Tăng chi','减投':'Giảm chi','改价':'Đổi giá','办活动':'Tổ chức sự kiện','去参会':'Tham dự','观望':'Chờ xem',
+  '影响':'Ảnh hưởng','动作：':'Hành động: ','复核：':'Rà soát: ','已到期':'Đã quá hạn','该查了':'Cần kiểm tra','正常':'Bình thường',
+  '去查 ↗':'Đi kiểm tra ↗','已查过':'Đã kiểm tra','已记下：':'Đã ghi: ',' 今天查过':' đã kiểm tra hôm nay',
+  '请选情报类型（官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈）':'Vui lòng chọn loại thông tin (Chính sách / Hiệp hội / Đối thủ / Xu hướng / Phản hồi khách hàng)',
   '（线索 ':'(Khách tiềm năng ',' → 已报名 ':' → Đã ghi danh ',' · 只算从线索转化的学员）':' · chỉ tính học viên chuyển từ khách tiềm năng)',
   '1 项 · 看明细':'1 mục · Xem chi tiết', '看明细':'Xem chi tiết',
   '合同/报价号':'Số hợp đồng/báo giá', '备注 / 说明':'Ghi chú / Giải thích',
@@ -5047,6 +5182,8 @@ function boot(){
   /* 本机一打开、云端若比本机新 → 首屏就对上。等主脚本 load() 跑完再订阅（上面已 load）。 */
 }
 
+/* ★ P-186：开机恢复「情报源上次查过」的日期 */
+try{ loadSourceChecked(); }catch(e){}
 boot();
 
 /* 探针出口（只读） */

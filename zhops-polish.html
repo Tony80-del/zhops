@@ -791,6 +791,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-21</td>
               <td>Tony 选 A+B（真漏斗形 + 全部 6 种动效），保留 P-153 口径说明。<br><b>形态</b>：从 5 行等宽横条改成<b>上宽下窄真梯形</b>（clip-path polygon，宽度按数值比例，窄层保底 22% 不消失）；层间加<b>流失人数 + 相对上一层转化率</b>；底部加<b>总转化率</b>（线索→已报名）。<br><b>6 种动效</b>：① 入场逐层下滑 ② 错峰 animation-delay ③ 数字 count-up 滚动 ④ 悬停放大 1.02 + 亮度 ⑤ 纵向流动光带（水往下流）⑥ 底层绿色呼吸。全部尊重 <span class="mono">prefers-reduced-motion</span>（系统关动画时静态呈现）。<br><b>顺手修一个真 bug</b>：已报名原来直接数 <span class="mono">S.students.length</span>，而业务部推来的学员没有 <span class="mono">leadId</span> → 种子数据下出现 <b>400% 总转化率倒挂</b>。改成只数<b>有 leadId 的学员</b>（跟 L-01 转化口径一致），并在总转化率旁注明「只算从线索转化的学员」。<br><b>越语</b>：漏斗文案是动态拼接，<span class="mono">trText</span> 整句匹配不到 → 改成生成时按 <span class="mono">BIZ_LANG</span> 用 <span class="mono">FT(zh,vi)</span> 直接出对应语言；P-138 <b>68/68</b> 恢复全绿。<br>验收：<span class="mono">check-funnel.js</span> <b>20/20</b> + 反向控制 3 组（砍梯形/改回全量学员/砍无障碍）报红；顺手把 P-143 那条偶发假红改成确定性前置（3/3 稳定）；全套 <b>66/66</b>。还原点 <span class="mono">funnel-before-20261121</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-186</td>
+              <td><b>市场调查升级：情报 5 类 + 动作闭环 + 情报源清单（L-08 收口）</b><br><span style="color:var(--ink3);font-size:12px">施工图 9/11 · 82%</span></td>
+              <td class="nw">业务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-21</td>
+              <td class="mono nw">11-21</td>
+              <td>Tony：市场调查怎么接、要不要联网、报告怎么做。诊断出真正的市场挑战是「需求大（HSK 14.6 万）、供给散（500+ 家）、客户无法判断质量」→ 不是拉不到线索，是在 500 家里被认出来。<br><b>S1 情报闭环</b>：加 <b>5 类情报</b>（官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈，<b>kind 必填</b>）+ 影响等级（高/中/低）+ <b>建议动作</b>（加投/减投/改价/办活动/去参会/观望）+ <b>结论带来的动作与结果</b>（outcome，情报必须能追到"做了什么"）+ 复核日期（过期标红 ⚠️ 已到期）+ <b>关联投放 / 关联活动</b>（<b>L-08 就此收口</b>）。列表按类型分组、显示动作/结果/关联/复核状态。<br><b>S4-A 情报源清单</b>：4 个白名单源（HSK 官网 / 越南教育部 / 越南中国商会 / 招聘平台），显示周期与"已 N 天"、超期标「该查了」，<b>「去查 ↗」新窗口打开官方页（不自动抓取）</b>、「已查过」记本地日期。<br><b>联网口径</b>：Tony 选「先 A 再 C」—— 本轮只做 A（提醒 + 一键去查）；真抓取（C）需后端 Firebase Functions / Blaze，留第二轮。技能 <span class="mono">zhops-sales</span> 加 <b>§14 白名单抓取授权</b>（只抓白名单 / 失败静默 / 抓到不自动写入，须人确认）。<br>越语：市场调查全部新文案 + 源名 + 周期 + 分组标题按 <span class="mono">BIZ_LANG</span> 内联双语；业务数据（活动名/投放名）加 <span class="mono">data-raw</span> 不翻。P-138 <b>68/68</b>。<br>验收：<span class="mono">check-research.js</span> <b>22/22</b> + 反向控制 3 组（砍 kind 必填 / 砍关联 L-08 断 / 砍过期提醒）报红；施工图 <b>9 绿 / 2 红 / 0 待收口 / 0 灰 · 82%</b>（L-08 转绿，check-map 51/51）；全套 <b>67/67</b>。还原点 <span class="mono">research-before-20261121</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>
