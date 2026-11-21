@@ -770,11 +770,14 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
                 <th>类型</th>
                 <th>日期</th>
                 <th>花费</th>
+                <th>明细</th>
                 <th>线索</th>
                 <th>转化</th>
                 <th>单线索成本</th>
                 <th>单个学员</th>
                 <th>评价</th>
+                <th>审批</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="tb-campaigns"></tbody>
@@ -943,6 +946,8 @@ var S = { leads:[], students:[], studentsDeleted:[], billing:[], research:[], ca
   usage:[], placeVouchers:[], usageAmt:{},
   /* ★ 2026-11-19（L-09）：月租应付单（本地留档；状态由云端回读覆盖） */
   rentVouchers:[],
+  /* ★ 2026-11-21（L-09 投放费）：投放应付单本地留档；状态由云端 approvals 回读覆盖 */
+  adVouchers:[],
   seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1} };
 
 /* ============================================================
@@ -1197,6 +1202,7 @@ function normalizeBiz(o){
     usage:[], placeVouchers:[], usageAmt:{},
   /* ★ 2026-11-19（L-09）：月租应付单（本地留档；状态由云端回读覆盖） */
   rentVouchers:[],
+  adVouchers:[],
     seq:{lead:1,stu:1,bill:1,res:1,cmp:1,ast:1,evt:1,room:1,place:1},
   };
   /* ★ 先把来料整份抄过来（含以后可能新增、这里还不认识的字段），
@@ -1217,6 +1223,7 @@ function normalizeBiz(o){
   if (!Array.isArray(d.usage)) d.usage = [];
   if (!Array.isArray(d.placeVouchers)) d.placeVouchers = [];
   if (!Array.isArray(d.rentVouchers)) d.rentVouchers = [];
+  if (!Array.isArray(d.adVouchers)) d.adVouchers = [];
   if (!d.usageAmt || typeof d.usageAmt !== 'object') d.usageAmt = {};
   if (!d.seq || typeof d.seq !== 'object') d.seq = {};
   ['lead','stu','bill','res','cmp','ast','evt','room','place'].forEach(function(x){
@@ -1403,6 +1410,7 @@ function load(){
   if(!Array.isArray(S.usage)) S.usage = [];
   if(!Array.isArray(S.placeVouchers)) S.placeVouchers = [];
   if(!Array.isArray(S.rentVouchers)) S.rentVouchers = [];
+  if(!Array.isArray(S.adVouchers)) S.adVouchers = [];
   if(!S.usageAmt || typeof S.usageAmt !== 'object') S.usageAmt = {};
   /* ★ 2026-11-02（P-93）：把老的 S-001 编号迁成 st 编号（幂等，跑一次就够）。
      放在 seed() 之后 —— 种子数据本身已经用 st 编号，不会重复迁。 */
@@ -2113,7 +2121,7 @@ function renderCampaigns(){
   document.getElementById('cmp-conv').textContent = totalConv;
   document.getElementById('cmp-cpl').innerHTML = (totalLeads?fmtVND(totalCost/totalLeads):'0')+'<small>VND</small>';
 
-  if(!S.campaigns.length){ tb.innerHTML = '<tr><td colspan="9" class="empty">还没有投放。</td></tr>'; return; }
+  if(!S.campaigns.length){ tb.innerHTML = '<tr><td colspan="12" class="empty">还没有投放。</td></tr>'; return; }
   tb.innerHTML = S.campaigns.map(function(c){
     var cpl = c.leads ? Math.round(c.cost/c.leads) : 0;
     var cpa = c.conv ? Math.round(c.cost/c.conv) : 0;
@@ -2124,11 +2132,15 @@ function renderCampaigns(){
       '<td>'+(c.type||'—')+'</td>'+
       '<td class="m">'+fmtDate(c.date)+'</td>'+
       '<td class="num">'+fmtVND(c.cost)+'</td>'+
+      '<td><span class="det-link" onclick="openCampaignQuote(\''+c.id+'\')">'+campaignItems(c).length+' 项 · 看明细</span></td>'+
       '<td class="num">'+c.leads+'</td>'+
       '<td class="num">'+c.conv+' <span class="sm" style="color:var(--ink3)">('+rate+'%)</span></td>'+
       '<td class="num">'+fmtVND(cpl)+'</td>'+
       '<td class="num">'+fmtVND(cpa)+'</td>'+
       '<td>'+evalTag+'</td>'+
+      '<td>'+campaignStateTag(c)+'</td>'+
+      '<td>'+(campaignCanSubmit(c)?'<button class="mini" onclick="submitCampaignVoucher(\''+c.id+'\')">提交财务</button>':'')+
+        '<button class="mini" onclick="editCampaign(\''+c.id+'\')">编辑</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -2785,30 +2797,78 @@ function delResearch(id){
 /* ---- 投放表单 ---- */
 function addCampaign(){
   openDrawer('新投放', campaignForm());
+  cmpItemsDraw();
 }
 function editCampaign(id){
   var c = S.campaigns.find(function(x){return x.id===id;});
   if(!c) return;
   openDrawer('编辑投放 · '+c.id, campaignForm(c));
+  cmpItemsDraw();
+}
+/* ★ 2026-11-21（L-09 投放费）：投放表单改「报价单式」—— 主信息 + N 条费用明细（含详细说明）。
+   ★ 老数据没有 items → 显示时包一条「旧记录」，不迁移原存盘。 */
+var _cmpEditItems = [];
+function escCmp(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function campaignItems(c){
+  if (c && Array.isArray(c.items) && c.items.length) return c.items;
+  return [{ desc:'旧记录 · 投放费', qty:1, unit:Number(c&&c.cost||0), amt:Number(c&&c.cost||0), detail:'' }];
 }
 function campaignForm(c){
   c = c || {};
+  _cmpEditItems = campaignItems(c).map(function(x){ return { desc:x.desc||'', qty:Number(x.qty||1), unit:Number(x.unit||0), amt:Number(x.amt||0), detail:x.detail||'' }; });
+  if(!_cmpEditItems.length) _cmpEditItems.push({desc:'',qty:1,unit:0,amt:0,detail:''});
   return '<div class="fld-row"><div class="fld"><label>平台</label><select id="f-platform">'+['Zalo','Facebook','TikTok','Google'].map(function(t){return '<option '+(c.platform===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
     '<div class="fld"><label>类型</label><select id="f-type">'+['广告','帖子','私信群发','KOL合作'].map(function(t){return '<option '+(c.type===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
     '<div class="fld-row"><div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(c.date||new Date().toISOString().slice(0,10))+'"></div>'+
-    '<div class="fld"><label>花费（VND）</label><input type="number" id="f-cost" value="'+(c.cost||0)+'"></div></div>'+
+    '<div class="fld"><label>合同号 / 报价单号（自动记账的凭证号）</label><input id="f-refno" value="'+escCmp(c.refNo||'')+'" placeholder="VD: HD-2026-011"></div></div>'+
+    '<div style="font-size:11px;font-weight:700;color:var(--brand);margin:12px 0 7px;padding-bottom:5px;border-bottom:1px dashed var(--line2)">费用明细（数量 × 单价 = 金额；每项必须写详细说明）</div>'+
+    '<div id="cmpItems"></div>'+
+    '<button type="button" class="btn sm" onclick="cmpItemAdd()">＋ 加一行</button>'+
+    '<div style="display:flex;justify-content:flex-end;gap:10px;margin:10px 0;font-weight:700">合计 <span id="cmpTotal" style="font-family:var(--mono);color:var(--brand)">0</span> ₫</div>'+
     '<div class="fld-row"><div class="fld"><label>引来线索</label><input type="number" id="f-leads" value="'+(c.leads||0)+'"></div>'+
     '<div class="fld"><label>转化报名</label><input type="number" id="f-conv" value="'+(c.conv||0)+'"></div></div>'+
+    '<div class="fld"><label>备注 / 说明</label><textarea id="f-note" style="height:48px">'+escCmp(c.note||'')+'</textarea></div>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
       '<button class="btn pri" onclick="saveCampaign('+(c.id?"'"+c.id+"'":"null")+')">保存</button>'+
       (c.id?'<button class="btn danger" onclick="delCampaign(\''+c.id+'\')">删除</button>':'')+
       '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
     '</div>';
 }
+function cmpItemAdd(){ _cmpEditItems.push({desc:'',qty:1,unit:0,amt:0,detail:''}); cmpItemsDraw(); }
+function cmpItemDel(i){ if(_cmpEditItems.length<=1){ toast('至少保留一行'); return; } _cmpEditItems.splice(i,1); cmpItemsDraw(); }
+function cmpItemsDraw(){
+  var box = document.getElementById('cmpItems'); if(!box) return;
+  box.innerHTML = _cmpEditItems.map(function(r,i){
+    return '<div style="border:1px solid var(--line);border-radius:7px;padding:8px;margin-bottom:8px">'+
+      '<div style="display:grid;grid-template-columns:1fr 62px 110px 100px 26px;gap:6px;align-items:end">'+
+        '<div class="fld" style="margin:0"><label>项目</label><input value="'+escCmp(r.desc)+'" oninput="_cmpEditItems['+i+'].desc=this.value"></div>'+
+        '<div class="fld" style="margin:0"><label>数量</label><input type="number" min="1" value="'+r.qty+'" oninput="_cmpEditItems['+i+'].qty=Number(this.value)||0;cmpItemCalc()"></div>'+
+        '<div class="fld" style="margin:0"><label>单价 ₫</label><input type="number" min="0" value="'+r.unit+'" oninput="_cmpEditItems['+i+'].unit=Number(this.value)||0;cmpItemCalc()"></div>'+
+        '<div class="fld" style="margin:0"><label>金额 ₫</label><input value="'+fmtVND(r.qty*r.unit)+'" disabled style="font-family:var(--mono);color:var(--ink3)"></div>'+
+        '<button type="button" class="btn sm" style="padding:0 6px" onclick="cmpItemDel('+i+')">✕</button>'+
+      '</div>'+
+      '<div class="fld" style="margin:6px 0 0"><label>详细说明（必填：做什么 / 对象 / 周期 / 预期）</label>'+
+        '<textarea style="height:50px" oninput="_cmpEditItems['+i+'].detail=this.value" placeholder="VD: Bài Zalo, đối tượng 18-35 tuổi tại TP.HCM, 20-27/11, kỳ vọng 15 lead">'+escCmp(r.detail)+'</textarea></div>'+
+    '</div>';
+  }).join('');
+  cmpItemCalc();
+}
+function cmpItemCalc(){
+  var t=0; _cmpEditItems.forEach(function(r){ r.amt=(Number(r.qty)||0)*(Number(r.unit)||0); t+=r.amt; });
+  var el=document.getElementById('cmpTotal'); if(el) el.textContent=fmtVND(t);
+  return t;
+}
 function saveCampaign(id){
-  var data = { platform: val('f-platform'), type: val('f-type'), date: val('f-date'), cost: parseInt(val('f-cost')||'0'), leads: parseInt(val('f-leads')||'0'), conv: parseInt(val('f-conv')||'0') };
+  cmpItemCalc();
+  if(_cmpEditItems.some(function(r){ return !r.desc.trim() || !(r.unit>0) || !r.detail.trim(); })){
+    toast('每行都要填项目、单价（>0）和详细说明', true); return;
+  }
+  var items = _cmpEditItems.map(function(r){ return {desc:r.desc,qty:r.qty,unit:r.unit,amt:r.amt,detail:r.detail}; });
+  var sum = items.reduce(function(a,r){return a+r.amt},0);
+  var data = { platform: val('f-platform'), type: val('f-type'), date: val('f-date'), refNo: val('f-refno'),
+               note: val('f-note'), items:items, cost:sum, leads: parseInt(val('f-leads')||'0'), conv: parseInt(val('f-conv')||'0') };
   if(id){ Object.assign(S.campaigns.find(function(x){return x.id===id;}), data); }
-  else { data.id = 'C-' + String(S.seq.cmp++).padStart(3,'0'); S.campaigns.unshift(data); }
+  else { data.id = 'C-' + String(S.seq.cmp++).padStart(3,'0'); data.state='待提交'; S.campaigns.unshift(data); }
   save(); closeDrawer(); render('campaigns');
 }
 function delCampaign(id){
@@ -3439,6 +3499,95 @@ var USAGE_TAG = 'zhops.usage';
 var USAGE_DOC_PREFIX = 'usage_';
 var USAGE_KEY = 'zhops.usage.v1';
 var APPROVAL_DOC = 'approvals';
+/* ============================================================================
+   L-09 投放费（2026-11-21）：一条投放一张单，明细+说明做快照，送财务核对 →
+   Boss 批准 → 财务自动付款记账 → 业务端 onSnapshot 自动回读状态。
+   ★ 单据号业务部发：v-biz-ad-YYYY-MM-N；app 标记走 zhops.biz（不抢财务的）。
+   ============================================================================ */
+function adVoucherId(m){
+  var used = {};
+  (S.adVouchers||[]).forEach(function(v){ if(v && v.id) used[v.id]=1; });
+  var i=1; while(used['v-biz-ad-'+m+'-'+i]) i++;
+  return 'v-biz-ad-'+m+'-'+i;
+}
+function adVoucherOf(campId, m){
+  return (S.adVouchers||[]).find(function(v){ return v && v.campaignId===campId && v.month===m && v.state!=='已驳'; }) || null;
+}
+function campaignStateTag(c){
+  var v = adVoucherOf(c.id, String(c.date||'').slice(0,7));
+  if(!v) return '<span class="tg">未提交</span>';
+  var st = v.state||'已提交';
+  return '<span class="tg '+(st==='已驳'?'bad':(st==='已付'||st==='已批'?'on':'warn'))+'">'+
+    escCmp(VOUCHER_STATES[st]||st)+(v.financeChecked?' · 财务已核对':'')+'</span>';
+}
+function campaignCanSubmit(c){
+  var m = String(c.date||'').slice(0,7);
+  return !adVoucherOf(c.id, m);
+}
+function submitCampaignVoucher(id){
+  var c = S.campaigns.find(function(x){return x.id===id}); if(!c) return;
+  var items = campaignItems(c);
+  /* 三道闸门：明细非空、金额对得上、每项说明必填、同月未重复 */
+  if(!items.length || items.some(function(it){ return !(it.amt>0) || !String(it.detail||'').trim(); })){
+    toast('每项都要有金额和详细说明', true); return false;
+  }
+  var sum = items.reduce(function(a,it){return a+(Number(it.amt)||0)},0);
+  if(Math.abs(sum - Number(c.cost||0)) > 1){ toast('明细合计 ≠ 花费，先修正', true); return false; }
+  if(!campaignCanSubmit(c)){ toast('这个月这条投放已提交过', true); return false; }
+  var m = String(c.date||'').slice(0,7);
+  var v = {
+    id: adVoucherId(m), type:'ad', dept:'biz', month:m,
+    campaignId:c.id, platform:c.platform, campaignType:c.type, date:c.date,
+    refNo:c.refNo||'', note:c.note||'',
+    items: items.map(function(it){ return {desc:it.desc,qty:it.qty,unit:it.unit,amt:it.amt,detail:it.detail}; }),
+    total:{gross:sum,net:sum,siEmp:0,pit:0,tch:0},
+    state:'已提交', submittedAt:new Date().toISOString(), by:'业务部'
+  };
+  fsPushVoucherGeneric(v, function(ok,msg){
+    if(!ok){ toast('提交失败：'+(msg||'断网'), true); return; }
+    S.adVouchers = S.adVouchers||[]; S.adVouchers.unshift(v);
+    save(); renderCampaigns(); toast('已提交财务 · '+v.id);
+  });
+}
+/* 通用 voucher 推送（照 fsPushPlaceVoucher 口径，type 不限） */
+function fsPushVoucherGeneric(v, cb){
+  if(typeof fetch !== 'function'){ cb && cb(false,'这个环境不支持网络'); return; }
+  fetch(fsUrlOf(APPROVAL_DOC)).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+    var full = { vouchers: [] };
+    if(raw && raw.fields){
+      var p = raw.fields.payload ? raw.fields.payload.stringValue : null;
+      if(p){ try{ var o=JSON.parse(p); if(o&&typeof o==='object') full=o; }
+             catch(e){ cb&&cb(false,'云端那份不是 JSON，拒绝覆盖'); return; } }
+      if(!Array.isArray(full.vouchers)){ cb&&cb(false,'云端文档结构不认识，拒绝覆盖'); return; }
+    }
+    var idx=-1;
+    for(var i=0;i<full.vouchers.length;i++){ if(full.vouchers[i]&&full.vouchers[i].id===v.id){idx=i;break} }
+    if(idx>=0) full.vouchers[idx]=v; else full.vouchers.push(v);
+    var body={fields:{ payload:{stringValue:JSON.stringify(full)},
+      at:{stringValue:new Date().toISOString()}, app:{stringValue:BIZ_CLOUD_TAG} }};
+    return fetch(fsUrlOf(APPROVAL_DOC),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  }).then(function(res){ if(!res)return; cb&&cb(res.ok,res.ok?'':('HTTP '+res.status)); })
+    .catch(function(e){ cb&&cb(false,String((e&&e.message)||e)); });
+}
+/* 报价单只读视图（业务部看自己提交的明细快照） */
+function openCampaignQuote(id){
+  var c=S.campaigns.find(function(x){return x.id===id}); if(!c)return;
+  var v=adVoucherOf(c.id,String(c.date||'').slice(0,7));
+  var items=campaignItems(c);
+  var st=v?(VOUCHER_STATES[v.state]||v.state):'未提交';
+  var h='<div class="quote-h"><div class="qt">投放报价单 · '+c.id+'</div>'+
+    '<div class="qm">'+escCmp(c.platform)+' · '+escCmp(c.type||'')+' · '+escCmp(c.date||'')+' · 状态：'+escCmp(st)+'</div>'+
+    (c.refNo?'<div class="qm">合同/报价号：'+escCmp(c.refNo)+'</div>':'')+'</div>';
+  items.forEach(function(it,i){
+    h+='<div class="qline"><div class="ql-top"><span class="ql-name">'+(i+1)+'. '+escCmp(it.desc)+'</span>'+
+      '<span class="ql-amt">'+fmtVND(it.amt)+' ₫</span></div>'+
+      '<div class="ql-meta">数量 '+it.qty+' × 单价 '+fmtVND(it.unit)+' ₫</div>'+
+      (it.detail?'<div class="ql-desc">'+escCmp(it.detail)+'</div>':'<div class="ql-none">（无详细说明）</div>')+'</div>';
+  });
+  h+='<div class="quote-total"><span>合计</span><b>'+fmtVND(c.cost)+' ₫</b></div>';
+  window.alert(h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
+}
+
 var VOUCHER_STATES = {'已提交':'待审批','已批':'已批准','已驳':'已驳回','已付':'已付款'};
 
 function usageMonths(){
@@ -3606,6 +3755,21 @@ function applyVoucherStates(vouchers){
     });
     n++;
   });
+  /* ★ 2026-11-21（L-09 投放费）：投放单按 id 回读状态（含财务核对标记/驳回理由/付款信息），
+     明细与金额是提交时快照，云端谁都不许改。 */
+  var adHit = {};
+  (vouchers||[]).forEach(function(v){
+    if(v && v.dept === 'biz' && v.type === 'ad') adHit[v.id] = v;
+  });
+  (S.adVouchers||[]).forEach(function(v){
+    var c = adHit[v.id];
+    if(!c) return;
+    ['state','reason','financeChecked','financeCheckedAt','financeCheckedBy',
+     'approvedAt','approvedBy','rejectedAt','rejectedBy','paidOn','paidAmt','voucherNo','paidAt'].forEach(function(k){
+      if(c[k] !== undefined) v[k] = c[k];
+    });
+    n++;
+  });
   return n;
 }
 function pullVoucherStates(){
@@ -3616,7 +3780,7 @@ function pullVoucherStates(){
     try{ full = JSON.parse(pl); }catch(e){ return; }
     if(!full || !Array.isArray(full.vouchers)) return;
     applyVoucherStates(full.vouchers);
-    save(); renderUsage(); renderRent();
+    save(); renderUsage(); renderRent(); renderCampaigns();
   }).catch(function(){});
 }
 function renderUsage(){
@@ -3922,6 +4086,22 @@ var BIZ_VI = {
   /* 请款 / 状态 */
   '已提交':'Đã nộp', '待审批':'Chờ duyệt', '已批':'Đã duyệt', '已批准':'Đã phê duyệt',
   '已驳':'Đã từ chối', '已驳回':'Đã từ chối', '已付':'Đã chi', '已付款':'Đã thanh toán',
+  /* ★ 2026-11-21（L-09 投放费） */
+  '未提交':'Chưa nộp', '提交财务':'Gửi tài chính', '审批':'Duyệt', '查看':'Xem', '编辑':'Sửa',
+  '项 · 看明细':'mục · Xem chi tiết', '明细':'Chi tiết', '费用明细':'Chi tiết chi phí',
+  '合同号 / 报价单号（自动记账的凭证号）':'Số hợp đồng / báo giá (số chứng từ khi ghi sổ)',
+  '费用明细（数量 × 单价 = 金额；每项必须写详细说明）':'Chi tiết chi phí (số lượng × đơn giá = thành tiền; mỗi mục phải có giải thích chi tiết)',
+  '＋ 加一行':'+ Thêm dòng', '合计':'Tổng cộng', '详细说明（必填：做什么 / 对象 / 周期 / 预期）':'Giải thích chi tiết (bắt buộc: làm gì / đối tượng / thời gian / kỳ vọng)',
+  '每行都要填项目、单价（>0）和详细说明':'Mỗi dòng phải có hạng mục, đơn giá (>0) và giải thích chi tiết',
+  '明细合计 ≠ 花费，先修正':'Tổng chi tiết ≠ chi phí, vui lòng sửa',
+  '这个月这条投放已提交过':'Chiến dịch tháng này đã được gửi',
+  '每项都要有金额和详细说明':'Mỗi mục cần có số tiền và giải thích chi tiết',
+  '已提交财务 · ':'Đã gửi tài chính · ', '至少保留一行':'Giữ ít nhất một dòng',
+  '项目':'Hạng mục', '数量':'Số lượng', '单价 ₫':'Đơn giá ₫', '金额 ₫':'Thành tiền ₫',
+  '1 项 · 看明细':'1 mục · Xem chi tiết', '看明细':'Xem chi tiết',
+  '合同/报价号':'Số hợp đồng/báo giá', '备注 / 说明':'Ghi chú / Giải thích',
+  '引来线索':'Khách hàng tiềm năng', '转化报名':'Chuyển đổi ghi danh',
+  '（自动记账的凭证号）':'(số chứng từ khi ghi sổ)',
   '这个月没有待开单的使用记录':'Tháng này không có bản ghi sử dụng chờ lập phiếu',
   '有使用记录没填请款金额（小时费参考为 0 时要手填）':'Có bản ghi chưa nhập số tiền đề nghị (phí giờ tham khảo bằng 0 thì phải nhập tay)',
   '按小时场地费':'Phí mặt bằng theo giờ', '这个环境不支持网络':'Môi trường này không hỗ trợ mạng',
@@ -4678,6 +4858,38 @@ function subscribe(){
   });
 }
 
+/* ★ 2026-11-21（L-09 投放费 · Tony 定「自动回读」）：第二个实时订阅，专听 approvals。
+   收到后只把审批状态字段合进本机（place / rent / ad），不覆盖业务正文，不顶 cloudDirty。
+   断网静默，重连 onSnapshot 自动补发快照。 */
+var unsubAppr = null;
+/* ★ 2026-11-21（L-09 投放费 · Tony 定「自动回读」）：20s 轻量 GET 比对 approvals 的 at，
+   变了才回读状态字段；不覆盖业务正文，不顶 cloudDirty。
+   ★ 用 GET 不用 onSnapshot：探针/离线环境里 GET 失败静默，不会把 CDP 卡住。 */
+var _apprAt = null;
+function subscribeApprovals(){
+  if (typeof fetch !== 'function') return;
+  if (window.__NO_CLOUD__ || /[?&]nocloud=1/.test(location.search)) return;
+  function tick(){
+    fsUrlOf(APPROVAL_DOC);
+    fetch(fsUrlOf(APPROVAL_DOC)).then(function(r){ return r.ok ? r.json() : null; }).then(function(raw){
+      var at = raw && raw.fields && raw.fields.at ? raw.fields.at.stringValue : null;
+      if (at && at !== _apprAt){
+        _apprAt = at;
+        var pl = raw.fields.payload ? raw.fields.payload.stringValue : null;
+        if(!pl) return;
+        var o=null; try{ o=JSON.parse(pl); }catch(e){ return; }
+        if(!o || !Array.isArray(o.vouchers)) return;
+        applyVoucherStates(o.vouchers);
+        save();
+        if(typeof renderUsage==='function') renderUsage();
+        if(typeof renderRent==='function') renderRent();
+        if(typeof renderCampaigns==='function') renderCampaigns();
+      }
+    }).catch(function(){ /* 断网静默，下轮重试 */ });
+  }
+  if (typeof setInterval === 'function') setInterval(tick, 20000);
+}
+
 function boot(){
   /* ★ 2026-11-08（P-136）：离线开关 —— 探针/调试用。
      带 ?nocloud=1 或先设 window.__NO_CLOUD__ = true 就完全不碰云端。 */
@@ -4688,11 +4900,13 @@ function boot(){
   try {
     app = initializeApp({ projectId: FB.pid, apiKey: FB.key, authDomain: FB.pid + '.firebaseapp.com' }, 'biz-sync');
     db = getFirestore(app);
+    window.__BIZ_FIRE_READY__ = true;   /* 真 Firestore 就绪，才允许 approve 实时回读订阅 */
   } catch(e){
     MARK.set('bad', '云端没起来（SDK 加载失败），本机照常可用');
     return;
   }
   subscribe();
+    if (typeof subscribeApprovals === "function") subscribeApprovals();
   /* 切回标签页 → 立刻重订阅一次（手机锁屏久了连接会断） */
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) subscribe();

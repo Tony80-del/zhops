@@ -764,6 +764,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-20</td>
               <td>Tony：「方框也要有颜色，不只是箭头。」第 2 层四个节点按<b>进入该节点的线状态</b>上色：线索池=蓝（根）、学员档案=绿（L-01 已通）、学生收费=绿（L-02 已通）、教室=红（L-06 红 3/4）；各节点右上同色圆点、左侧色条、边框与柔和底色随状态走；节点 sub 标出对应线号与颜色。图例补「方框颜色 = 进入该节点的线状态（蓝=根/绿=已通/红=未通）」。check-map.js <b>51/51</b>、零报错。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-183</td>
+              <td><b>L-09 投放费：报价单 → 财务核对 → Boss 批准 → 自动记账 → 业务回读</b><br><span style="color:var(--ink3);font-size:12px">明细是整条链的证据</span></td>
+              <td class="nw">业务/财务/Boss</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-21</td>
+              <td class="mono nw">11-21</td>
+              <td>Tony 定：投放记录要像 Quotation 一样有明细+说明，审批链 财务→总管提醒→Boss(总经理=老板)→财务自动付款记账→业务自动回读；凭证号用合同号兜底、批准即自动付款记账(不真打钱)。<br><b>业务端</b>：投放表单改报价单式（平台/类型/日期/合同号 + N 条明细：项目/数量/单价/金额自动算/详细说明必填🔴）+「提交财务」生成 <span class="mono">v-biz-ad-YYYY-MM-N</span>（三道闸门：明细合计=花费/每项说明非空/同月不重复）+ onSnapshot 自动回读审批状态（只盖状态字段、不动金额明细）。<br><b>财务端</b>：加 adApprovals 分流 + 报价单逐行核对视图 + 「核对无误送老板」（只写 financeChecked，<b>财务不批</b>）+ Boss 批准后自动付款写 state=已付 + 自动写支出「渠道投放」（voucherId 幂等，inv=合同号兜底）。<br><b>Boss 端</b>：TYPE 加 biz:ad + 卡片「查看报价单明细」弹层 + <b>未财务核对不给批准</b> + 批准前明细/金额重算闸门。<br><b>总管技能</b>：加 §12 审批提醒规则（会话内提醒、不按键、不发外部消息）。<br>验收：<span class="mono">check-l09-ad.js</span> <b>29/29</b> + 反向控制 3 组（砍支出分类/砍核对闸门/砍自动回读）报红；四页零报错。还原点 <span class="mono">ad-before-20261121</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>

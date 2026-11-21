@@ -832,6 +832,35 @@ table.fmt td.bad{color:var(--neg)}
           <p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示这个场地这个月该付多少。</p>
         </div>
       </div>
+      <!-- ★ 2026-11-21（L-09 投放费）：业务部投放报价单，逐行核对明细 → 送老板审批；
+           Boss 批准后财务端自动付款 + 自动写支出「渠道投放」。 -->
+      <div class="card">
+        <div class="card-h">
+          <h3>业务部 · 投放费（报价单）</h3>
+          <span class="sp"></span>
+          <span class="tag pending" id="adState">还没拉取</span>
+        </div>
+        <div class="tw">
+          <table class="grid">
+            <thead><tr>
+              <th style="width:92px">月份</th><th style="width:170px">单据号</th>
+              <th>投放 / 平台</th><th style="width:120px">金额</th>
+              <th style="width:96px">状态</th><th style="width:80px"></th>
+            </tr></thead>
+            <tbody id="tb-ad-appr"></tbody>
+          </table>
+        </div>
+        <p class="sm mu" style="margin:9px 0 0">
+          报价单明细由业务部提交时快照在这里；<b>财务只核对、不批</b> —— 核对无误点「送老板」，
+          批准权在 <b>Boss（老板 / 总经理）</b>。Boss 批准后这里会自动付款并记账。
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>投放报价单明细（逐行核对）</h3><span class="sp"></span><span class="tag pending" id="adTitle">还没选单据</span></div>
+        <div id="adApDetail">
+          <p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示每条费用项目和详细说明。</p>
+        </div>
+      </div>
     </section>
 
     <!-- ================= 6 配置 ================= -->
@@ -1458,6 +1487,37 @@ var VI_FIN = {
   "点上面列表里某张单据的「查看」，这里显示这个场地这个月该付多少。": "Bấm \"Xem\" ở một phiếu trong danh sách trên, ở đây hiện địa điểm này tháng này phải trả bao nhiêu.",
   "还没有月租应付单 —— 业务部在「场地 · 整层租赁」点「开月租单」": "Chưa có phiếu thuê — Kinh doanh bấm \"Lập phiếu thuê\" trong \"Địa điểm · Thuê cả tầng\"",
   "租期": "Kỳ thuê",
+  /* ★ 2026-11-21（L-09 投放费） */
+  "业务部 · 投放费（报价单）": "Kinh doanh · Chi phí quảng cáo (Báo giá)",
+  "投放 / 平台": "Chiến dịch / Nền tảng",
+  "还没有投放费单据 —— 业务部在「投放记录」点「提交财务」": "Chưa có phiếu chi phí quảng cáo — Kinh doanh bấm «Gửi tài chính» trong «Nhật ký quảng cáo»",
+  "报价单明细由业务部提交时快照在这里；": "Chi tiết báo giá được lưu lại đây lúc Kinh doanh gửi;",
+  "财务只核对、不批": "Tài chính chỉ đối chiếu, không phê duyệt",
+  "核对无误点「送老板」": "Đối chiếu xong bấm «Gửi sếp»",
+  "批准权在": "Quyền phê duyệt thuộc về",
+  "Boss 批准后这里会自动付款并记账": "Sau khi Boss duyệt, ở đây sẽ tự động đánh dấu thanh toán và ghi sổ",
+  "投放报价单明细（逐行核对）": "Chi tiết báo giá quảng cáo (đối chiếu từng dòng)",
+  "点上面列表里某张单据的「查看」，这里显示每条费用项目和详细说明。": "Bấm «Xem» một phiếu trong danh sách trên, ở đây hiện từng hạng mục chi phí và giải thích chi tiết.",
+  "还没选单据": "Chưa chọn chứng từ",
+  "已核对 · 待批": "Đã đối chiếu · Chờ duyệt",
+  "核对无误 · 送老板审批": "Đối chiếu xong · Gửi sếp duyệt",
+  "财务已核对 · 等 Boss 批准": "Tài chính đã đối chiếu · Chờ Boss duyệt",
+  "Boss 已批准 · 财务自动付款记账中/已完成": "Boss đã duyệt · Tài chính đang/tự động thanh toán và ghi sổ",
+  "已驳回 · ": "Đã từ chối · ",
+  "已付款 · ": "Đã thanh toán · ",
+  "张": "phiếu",
+  "—— 核对无误点「送老板」，": "— đối chiếu xong bấm «Gửi sếp»,",
+  "Boss（老板 / 总经理）": "Boss (Chủ tịch / Tổng giám đốc)",
+  "。Boss 批准后这里会自动付款并记账。": ". Sau khi Boss duyệt, ở đây tự động thanh toán và ghi sổ.",
+  "批准权在": "Quyền phê duyệt thuộc về",
+  "明细缺项或详细说明为空 — 不能送老板": "Thiếu chi tiết hoặc giải thích chi tiết trống — không gửi sếp",
+  "有明细行金额≤0 或详细说明为空 —— 不能送老板": "Có dòng chi tiết ≤0 hoặc giải thích trống — không gửi sếp",
+  "明细合计 ≠ 单据金额，不能送老板": "Tổng chi tiết ≠ số tiền chứng từ, không gửi sếp",
+  "没有费用明细，无法逐行核对": "Không có chi tiết chi phí, không thể đối chiếu",
+  "找不到单据": "Không tìm thấy chứng từ",
+  "已送老板审批 · 总管技能会提醒 Tony": "Đã gửi sếp duyệt · Kỹ năng Tổng quản sẽ nhắc Tony",
+  "投放单 ": "Phiếu quảng cáo ",
+  " 已自动付款记账 · 支出「渠道投放」": " đã tự động thanh toán và ghi sổ · Chi phí «Quảng cáo kênh»",
 };
 
 /* 整句规则：带数字 / 月份 / 时间 / 金额的文案，整串命中后只换中文片段，
@@ -1805,6 +1865,7 @@ function blank(){
        跟场地请款单同一个 zhops/approvals 文档、同一套状态机，但分开存、分开显示 ——
        混进 placeApprovals 会让「场地请款单」的条数 / 金额口径当场多算。 */
     rentApprovals:[],
+    adApprovals:[],
     /* ★ 2026-11-16（L-03 ③）：业务部推送的已缴费流水（只读）。
        点「✓ 确认入账」才并入 S.income；「× 忽略」移进 bizPaymentsIgnored。
        bizPayments 始终等于原始推送（含 ignored），用 bizIgnoredSet 过滤展示。 */
@@ -1834,7 +1895,7 @@ function demo(){
       {name:'柚子班', lessons:'42', done:'5', fee:'10500000', teacher:'阮氏兰', rate:'100000', own:true},
       {name:'柠檬班', lessons:'42', done:'4', fee:'7140000',  teacher:'黎明俊', rate:'150000', own:true}
     ],
-    approvals:[], approvalsAt:'', placeApprovals:[], rentApprovals:[], bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[],
+    approvals:[], approvalsAt:'', placeApprovals:[], rentApprovals:[], adApprovals:[], bizPayments:[], bizPaymentsAt:'', bizPaymentsIgnored:[],
     receiptSeq:{}
   };
 }
@@ -1941,7 +2002,7 @@ function load(){
     var o = JSON.parse(raw);
     if(!o || typeof o !== 'object') return blank();
     var b = blank();
-    ['income','expense','payroll','classes','approvals','placeApprovals','rentApprovals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    ['income','expense','payroll','classes','approvals','placeApprovals','rentApprovals','adApprovals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
     b.cfg = Object.assign(b.cfg, o.cfg || {});
     b.income = o.income; b.expense = o.expense; b.payroll = o.payroll; b.classes = o.classes;
     b.approvals = o.approvals;
@@ -1950,6 +2011,7 @@ function load(){
     b.placeApprovals = o.placeApprovals;
     /* ★ 2026-11-19（L-09）：老存盘没有这个集合 → 补空数组，不迁移、不清零 */
     b.rentApprovals = Array.isArray(o.rentApprovals) ? o.rentApprovals.slice() : [];
+    b.adApprovals = Array.isArray(o.adApprovals) ? o.adApprovals.slice() : [];
     /* L-03 ③：业务部推送的待入账流水。老存盘没有这三项 → 默认空。 */
     b.bizPayments = Array.isArray(o.bizPayments) ? o.bizPayments.slice() : [];
     b.bizPaymentsAt = String(o.bizPaymentsAt || '');
@@ -2313,17 +2375,20 @@ function applyApprovalVouchers(vouchers, at){
   S.approvals      = vouchers.filter(function(v){ return v && v.dept === 'hr'; });
   S.placeApprovals = vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'place'; });
   S.rentApprovals  = vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'rent'; });
+  S.adApprovals    = vouchers.filter(function(v){ return v && v.dept === 'biz' && v.type === 'ad'; });
   S.approvalsAt = at || new Date().toISOString();
   saveLocal();                 /* ★ 镜像数据不反推 finmaster —— 见 saveLocal 注释 */
   renderApprove(); renderPay(); refreshDerived();
   refreshApprBadge();
-  return { hr:S.approvals.length, place:S.placeApprovals.length, rent:S.rentApprovals.length };
+  /* ★ Boss 批准后财务端自动付款 + 记账（Tony 11-21 定），幂等防重复。 */
+  if(typeof autoPayAdIfApproved==='function') autoPayAdIfApproved();
+  return { hr:S.approvals.length, place:S.placeApprovals.length, rent:S.rentApprovals.length, ad:S.adApprovals.length };
 }
 /* 待审批角标：三张表加起来还没处理的（只数「已提交」） */
 function pendingApprovalCount(){
   var n = 0;
   function cnt(list){ (list || []).forEach(function(v){ if(v && (v.state || ST_WAIT) === ST_WAIT) n++; }); }
-  cnt(S.approvals); cnt(S.placeApprovals); cnt(S.rentApprovals);
+  cnt(S.approvals); cnt(S.placeApprovals); cnt(S.rentApprovals); cnt(S.adApprovals);
   return n;
 }
 function refreshApprBadge(){
@@ -2353,10 +2418,10 @@ function postVoucherExpense(v){
   S.expense = S.expense || [];
   S.expense.push({
     d: v.paidOn || today(),
-    cat: v.type === 'rent' ? '场地租金' : '场地费',
-    payee: it.placeName || v.title || '',
+    cat: v.type === 'rent' ? '场地租金' : (v.type === 'ad' ? '渠道投放' : '场地费'),
+    payee: it.placeName || (v.type==='ad' ? (v.platform||'投放') : '') || v.title || '',
     amt: amt,
-    inv: v.voucherNo || '',
+    inv: v.voucherNo || v.refNo || v.id || '',   /* 投放费自动记账：合同号兜底凭证号（Tony 11-21 定 B） */
     note: '审批单 ' + v.id,
     voucherId: v.id,
   });
@@ -2433,6 +2498,101 @@ function apFind(id){
   return hit;
 }
 
+/* ============================================================================
+   L-09 投放费（2026-11-21）：财务只核对 + 送老板；Boss 批准后自动付款 + 记账。
+   ★ 明细逐行核对（金额重算 / 说明必填 / 无重复），三道闸门不过不给送审。
+   ============================================================================ */
+var AD_SEL = '';
+function adFind(id){ return (S.adApprovals||[]).find(function(v){return v&&v.id===id}) || null; }
+function adGate(v){
+  if(!v) return '找不到单据';
+  var items = v.items||[];
+  if(!items.length) return '没有费用明细，无法逐行核对';
+  if(items.some(function(it){ return !(Number(it.amt)>0) || !String(it.detail||'').trim(); }))
+    return '有明细行金额≤0 或详细说明为空 —— 不能送老板';
+  var sum = items.reduce(function(a,it){return a+(Number(it.amt)||0)},0);
+  if(Math.abs(sum - Number((v.total||{}).net||0)) > 1) return '明细合计 ≠ 单据金额，不能送老板';
+  return '';
+}
+function renderAdApprove(){
+  var tb = document.getElementById('tb-ad-appr');
+  var stEl = document.getElementById('adState');
+  if(!tb) return;
+  var list = (S.adApprovals||[]).slice().sort(function(a,b){ return String(b.month||'').localeCompare(String(a.month||'')); });
+  if(stEl){ stEl.textContent = S.approvalsAt ? (locHM(S.approvalsAt)+' · '+list.length+' phiếu') : '还没拉取';
+            stEl.className = 'tag ' + (list.length?'has':'pending'); }
+  if(!list.length){ tb.innerHTML = emptyRow(6,'还没有投放费单据 —— 业务部在「投放记录」点「提交财务」'); renderAdDetail(); return; }
+  tb.innerHTML = list.map(function(v){
+    var t = apTotals(v), state = v.state||ST_WAIT, bad = adGate(v);
+    var tag = state===ST_WAIT ? (v.financeChecked?'<span class="tag has">已核对 · 待批</span>':'<span class="tag pending">待核对</span>')
+            : '<span class="tag '+(ST_CLS[state]||'has')+'">'+esc(ST_TXT[state]||state)+'</span>';
+    var btn = state===ST_WAIT
+      ? '<button class="mini" data-ad="'+esc(v.id)+'">查看/核对</button>'
+      : '<button class="mini" data-ad="'+esc(v.id)+'">查看</button>';
+    return '<tr><td>'+esc(v.month||'—')+'</td><td class="sm">'+esc(v.id)+'</td>'+
+      '<td>'+esc(v.platform||'')+' · '+esc((v.items||[]).length)+' 项'+(bad?' <span class="tag bad">!</span>':'')+'</td>'+
+      '<td class="num">'+money(t.net)+'</td><td>'+tag+'</td><td>'+btn+'</td></tr>';
+  }).join('');
+  renderAdDetail();
+}
+function renderAdDetail(){
+  var box = document.getElementById('adApDetail'), ttl = document.getElementById('adTitle');
+  if(!box) return;
+  var v = AD_SEL ? adFind(AD_SEL) : null;
+  if(!v){ if(ttl)ttl.textContent='还没选单据'; box.innerHTML='<p class="sm mu" style="margin:0">点上面列表里某张单据的「查看」，这里显示每条费用项目和详细说明。</p>'; return; }
+  if(ttl) ttl.textContent = v.id;
+  var bad = adGate(v), st = v.state||ST_WAIT;
+  var h = '<div class="kv" style="margin-bottom:8px"><b>投放单 '+esc(v.id)+'</b> · '+esc(v.platform||'')+' · '+esc(v.date||'')+
+          ' · 合同/报价号 '+esc(v.refNo||'—')+' · 状态 '+esc(ST_TXT[st]||st)+'</div>';
+  (v.items||[]).forEach(function(it,i){
+    h += '<div class="qline" style="border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:7px">'+
+      '<div style="display:flex;justify-content:space-between"><b>'+(i+1)+'. '+esc(it.desc||'')+'</b><span class="num">'+money(it.amt)+'</span></div>'+
+      '<div class="sm mu">数量 '+esc(it.qty||0)+' × 单价 '+money(it.unit||0)+'</div>'+
+      '<div class="sm" style="margin-top:6px;padding:7px 9px;background:var(--surf2);border-left:3px solid var(--amber)">'+esc(it.detail||'（无说明）')+'</div></div>';
+  });
+  h += '<div style="display:flex;justify-content:flex-end;font-weight:700;margin:8px 0">合计 '+money(apTotals(v).net)+'</div>';
+  if(bad) h += '<div class="tag bad" style="margin-bottom:8px">⛔ '+esc(bad)+'</div>';
+  if(st===ST_WAIT && !v.financeChecked)
+    h += '<button class="btn pri" data-ad-check="'+esc(v.id)+'" '+(bad?'disabled':'')+'>✓ 核对无误 · 送老板审批</button>';
+  else if(st===ST_WAIT && v.financeChecked)
+    h += '<div class="tag has">✓ 财务已核对 · 等 Boss 批准（'+esc(locHM(v.financeCheckedAt||''))+'）</div>';
+  else if(st===ST_OK) h += '<div class="tag has">Boss 已批准 · 财务自动付款记账中/已完成</div>';
+  else if(st===ST_NO) h += '<div class="tag bad">已驳回 · '+esc(v.reason||'')+'</div>';
+  else if(st===ST_PAID) h += '<div class="tag has">已付款 · '+esc(v.paidOn||'')+' · 凭证 '+esc(v.voucherNo||v.refNo||v.id||'')+'</div>';
+  box.innerHTML = h;
+}
+/* 财务核对：只写 financeChecked，不批、不改金额 */
+function financeCheckAd(id){
+  var v = adFind(id); if(!v) return;
+  var bad = adGate(v); if(bad){ toast(bad); return; }
+  fsPatchVoucher(v.id, { financeChecked:true, financeCheckedAt:new Date().toISOString(), financeCheckedBy:'finance' }, function(ok,msg){
+    if(!ok){ alert('送老板没成功：'+msg); return; }
+    v.financeChecked=true; v.financeCheckedAt=new Date().toISOString(); v.financeCheckedBy='finance';
+    save(); renderAdApprove(); toast('已送老板审批 · 总管技能会提醒 Tony');
+  });
+}
+/* ★ Boss 批准后自动付款 + 自动记账（Tony 11-21 定）：财务端 onSnapshot 收到 state=已批 &&
+   type=ad && 未付 → 自动写 state=已付 + 支付信息 + postVoucherExpense（幂等）。
+   ★ 不真的打钱 —— 只标记已付 + 记账，线下付款仍由人做。 */
+function autoPayAdIfApproved(){
+  var ran = false;
+  (S.adApprovals||[]).forEach(function(v){
+    if(!v || v.state!==ST_OK || !v.financeChecked) return;
+    if(v.autoPayTried) return;
+    v.autoPayTried = true; ran = true;
+    var now = new Date().toISOString(), d = now.slice(0,10);
+    var amt = Number((v.total||{}).net||0), inv = v.refNo || v.id;
+    fsPatchVoucher(v.id, { state:ST_PAID, paidOn:d, paidAmt:amt, voucherNo:inv, paidAt:now, paidBy:'finance-auto' }, function(ok){
+      if(!ok){ v.autoPayTried=false; return; }
+      v.state=ST_PAID; v.paidOn=d; v.paidAmt=amt; v.voucherNo=inv;
+      postVoucherExpense(v);       /* 支出「渠道投放」，voucherId 幂等 */
+      save(); renderAdApprove(); renderPay(); refreshDerived();
+      toast('投放单 '+v.id+' 已自动付款记账 · 支出「渠道投放」');
+    });
+  });
+  return ran;
+}
+
 function renderApprove(){
   var tb = document.getElementById('tb-appr');
   if(!tb) return;
@@ -2463,6 +2623,7 @@ function renderApprove(){
   renderApDetail();
   renderPlaceApprove();       /* ★ P-103 ④：场地请款单列表，跟工资单同时刷新 */
   renderRentApprove();        /* ★ L-09：月租应付单列表 */
+  renderAdApprove();          /* ★ L-09 投放费：逐行核对 + 送老板 */
 }
 
 function renderApDetail(){
@@ -2710,6 +2871,14 @@ function rnAct(act){
 /* ★ 2026-11-19（L-09）：批准 / 驳回 / 付款的**唯一实现**。
    原来这段写死在 plAct 里；月租应付单要一模一样的状态机，抄一份必然会改歪一边，
    所以抽出来：label 只影响弹窗文字，after 只决定刷哪个页。 */
+/* 投放费单据事件（核对 / 查看）*/
+function adClick(e){
+  var chk=e.target.closest('[data-ad-check]');
+  if(chk){ financeCheckAd(chk.getAttribute('data-ad-check')); return true; }
+  var vw=e.target.closest('[data-ad]');
+  if(vw){ AD_SEL=vw.getAttribute('data-ad'); renderAdDetail(); return true; }
+  return false;
+}
 function voucherAct(act, v, label, after){
   var st = v.state || ST_WAIT;
   var now = new Date().toISOString();
@@ -3173,6 +3342,10 @@ document.getElementById('rentApDetail').addEventListener('click', function(e){
   if(!b) return;
   rnAct(b.getAttribute('data-rn-act'));
 });
+/* ★ 2026-11-21（L-09 投放费）：核对/查看事件，跟 rent/pl 分开，互不误触发。 */
+var _adTb=document.getElementById('tb-ad-appr'), _adD=document.getElementById('adApDetail');
+if(_adTb) _adTb.addEventListener('click', function(e){ adClick(e); });
+if(_adD) _adD.addEventListener('click', function(e){ adClick(e); });
 document.getElementById('addClass').addEventListener('click', function(){
   S.classes.push({name:'', lessons:'42', done:'0', fee:'', teacher:'', rate:'', own:true});
   save(); renderSettle(); refreshDerived();
@@ -3451,7 +3624,7 @@ window.__FIN_APPLY__ = function(o){
   try {
     if (!o || typeof o !== 'object') return false;
     var b = blank();
-    ['income','expense','payroll','classes','approvals','placeApprovals','rentApprovals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
+    ['income','expense','payroll','classes','approvals','placeApprovals','rentApprovals','adApprovals'].forEach(function(k){ if(!Array.isArray(o[k])) o[k] = []; });
     b.cfg = Object.assign(b.cfg, o.cfg || {});
     b.income = o.income; b.expense = o.expense; b.payroll = o.payroll; b.classes = o.classes;
     b.approvals = o.approvals;
@@ -3459,6 +3632,7 @@ window.__FIN_APPLY__ = function(o){
     b.placeApprovals = o.placeApprovals;
     /* ★ 2026-11-19（L-09）：老存盘没有这个集合 → 补空数组，不迁移、不清零 */
     b.rentApprovals = Array.isArray(o.rentApprovals) ? o.rentApprovals.slice() : [];
+    b.adApprovals = Array.isArray(o.adApprovals) ? o.adApprovals.slice() : [];
     /* L-03 ③：业务部推送（只读，不覆盖 bizIgnored） */
     b.bizPayments = Array.isArray(o.bizPayments) ? o.bizPayments.slice() : [];
     b.bizPaymentsAt = String(o.bizPaymentsAt || '');

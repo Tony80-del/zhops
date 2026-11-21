@@ -143,6 +143,19 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
 .tabs button.on .ic{transform:translateY(-2px) scale(1.1)}
 .tabs button .b{position:absolute;top:5px;right:calc(50% - 20px);background:#e11d48;color:#fff;border-radius:9px;font-size:10px;padding:0 5px;animation:softpulse 2s infinite}
 
+.qmodal{display:none;position:fixed;inset:0;background:rgba(10,25,40,.55);backdrop-filter:blur(4px);z-index:55;align-items:center;justify-content:center;padding:20px}
+.qmodal.on{display:flex}
+.qbox{background:#fff;border-radius:16px;width:100%;max-width:620px;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 16px 50px rgba(0,0,0,.3)}
+.qbox .qh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.qbox .qh b{font-size:14px}.qbox .qh .sp{flex:1}
+.qbox .qb{padding:18px;overflow:auto}
+.qline{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px}
+.qline .t{display:flex;justify-content:space-between;gap:10px}
+.qline .t b{font-size:13px}.qline .t span{font:700 13px var(--mono);color:var(--accent)}
+.qline .m{font-size:11px;color:var(--ink3);margin-top:3px}
+.qline .d{font-size:12px;color:var(--ink2);margin-top:7px;padding:7px 9px;background:var(--surf2);border-left:3px solid var(--warn);border-radius:4px;white-space:pre-wrap}
+.qtotal{display:flex;justify-content:flex-end;gap:12px;align-items:baseline;padding:12px 14px;background:var(--brandSoft);border-radius:9px;margin-top:12px}
+.qtotal b{font:800 19px var(--mono);color:var(--accent)}
 .mask{display:none;position:fixed;inset:0;background:rgba(10,25,40,.5);backdrop-filter:blur(5px);z-index:50;align-items:flex-end;justify-content:center}
 .mask.on{display:flex}.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px;box-shadow:0 -10px 40px #0004;animation:slideup .3s ease}
 @keyframes slideup{from{transform:translateY(100%)}}
@@ -216,6 +229,10 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <div class="rep"><h4>📢 市场宣传预算</h4><div class="ph">业务部尚未开通此单据类型<br>路口已预留 · 后续接入</div></div>
 </div></section>
 <section class="view" id="v-log"><div class="vhdr"><b>🔍 监督流水</b></div><div class="log" id="logList"></div></section>
+</div>
+<div class="qmodal" id="qmodal" onclick="if(event.target===this)closeQ()">
+  <div class="qbox"><div class="qh"><b id="qTitle">报价单明细</b><span class="sp"></span><button class="btn ghost" onclick="closeQ()">✕ 关闭</button></div>
+  <div class="qb" id="qBody"></div></div>
 </div>
 <div class="mask" id="mask"><div class="sheet"><h3>驳回单据</h3><p id="rt"></p><textarea id="reason" placeholder="必填：驳回理由（写回单据，提交方据此修正）"></textarea><div class="r"><button class="btn ghost" id="cancelBtn">取消</button><button class="btn no" id="rejBtn">确认驳回</button></div></div></div>
 
@@ -408,7 +425,8 @@ var TYPE = {
   'hr':        { name:'工资单',     icon:'💰', cls:'salary' },
   'biz:rent':  { name:'教室月租',   icon:'🏠', cls:'rent' },
   'biz:place': { name:'场地使用费', icon:'📍', cls:'place' },
-  'biz:budget':{ name:'市场宣传预算',icon:'📢', cls:'place' }
+  'biz:budget':{ name:'市场宣传预算',icon:'📢', cls:'place' },
+  'biz:ad':    { name:'投放费 · 报价单',icon:'📣', cls:'salary' }
 };
 function metaOf(v){
   var k = (v.dept || '') + ':' + (v.type || '');
@@ -416,7 +434,7 @@ function metaOf(v){
 }
 function amountOf(v){
   /* 只展示各端算好的数，不重算；字段可能在 net / amount / total 里 */
-  var n = v.net || v.amount || v.total || v.payable || 0;
+  var n = v.net || v.amount || (v.total && v.total.net) || v.payable || 0;
   return Number(String(n).replace(/[^\d.\-]/g,'')) || 0;
 }
 function money(n){ return Number(n||0).toLocaleString('en-US') + ' ₫'; }
@@ -490,6 +508,14 @@ function approve(id){
   var v = S.vouchers.find(function(x){ return x.id===id; });
   if (!v) return;
   if ((v.state||ST_WAIT) !== ST_WAIT){ toast('这张单据现在是「'+(ST_TXT[v.state]||v.state)+'」,不能重复批准'); return; }
+  if (v.type==='ad'){
+    if(!v.financeChecked){ toast('财务还没核对，不能批准'); return; }
+    var items=v.items||[], sum=items.reduce(function(a,it){return a+(Number(it.amt)||0)},0);
+    if(!items.length || items.some(function(it){return !(it.amt>0)||!String(it.detail||'').trim()})){
+      toast('明细缺项或说明为空，不能批准'); return;
+    }
+    if(Math.abs(sum-Number((v.total||{}).net||0))>1){ toast('明细合计 ≠ 单据金额，不能批准'); return; }
+  }
   if (!confirm('批准 '+metaOf(v).name+' '+id+'？\n\n请款 '+money(amountOf(v))+
       '\n\n批准后会写回单据，付款仍由财务端操作。')) return;
   var now = new Date().toISOString();
@@ -529,8 +555,15 @@ function card(v,done){
     (v.month?'<span>月份 '+esc(v.month)+'</span>':'')+
     (done&&v.approvedBy?'<span>审批 '+esc(v.approvedBy)+'</span>':'')+'</div>';
   if (!done && v.reason) h += '<div class="meta" style="color:#e11d48;margin-top:5px">上次驳回：'+esc(v.reason)+'</div>';
-  if (!done) h += '<div class="acts"><button class="btn ok" data-a="'+esc(v.id)+'">✓ 批准</button>'+
-    '<button class="btn no" data-r="'+esc(v.id)+'">✕ 驳回</button></div>';
+  if (v.type==='ad' && Array.isArray(v.items))
+    h += '<div style="margin-top:8px"><button class="btn sm" data-q="'+esc(v.id)+'" style="height:28px;padding:0 11px;font-size:11.5px">📄 查看报价单明细（'+v.items.length+' 项）</button></div>';
+  if (!done){
+    var gated = (v.type==='ad' && !v.financeChecked);
+    h += '<div class="acts">'+
+      (gated ? '<span style="font-size:11px;color:var(--warn)">⏳ 等财务核对后才能批准</span>' :
+        '<button class="btn ok" data-a="'+esc(v.id)+'">✓ 批准</button>')+
+      '<button class="btn no" data-r="'+esc(v.id)+'">✕ 驳回</button></div>';
+  }
   return h+'</div>';
 }
 function render(){
@@ -584,6 +617,24 @@ function renderReports(){
 }
 
 /* ---------- 交互 ---------- */
+/* 报价单只读明细（Boss 批准前逐行核对，跟财务看到的是同一份快照） */
+function openQ(id){
+  var v=S.vouchers.find(function(x){return x.id===id}); if(!v)return;
+  var h='<div class="meta" style="margin-bottom:10px">'+esc(metaOf(v).name)+' · '+esc(id)+' · '+esc(v.platform||'')+' · '+
+    (v.financeChecked?'<span style="color:var(--ok)">✓ 财务已核对</span>':'<span style="color:var(--warn)">待财务核对</span>')+
+    (v.refNo?' · 合同/报价号 '+esc(v.refNo):'')+'</div>';
+  (v.items||[]).forEach(function(it,i){
+    h+='<div class="qline"><div class="t"><b>'+(i+1)+'. '+esc(it.desc||'')+'</b><span>'+money(it.amt)+'</span></div>'+
+      '<div class="m">数量 '+esc(it.qty||0)+' × 单价 '+money(it.unit||0)+'</div>'+
+      (it.detail?'<div class="d">'+esc(it.detail)+'</div>':'<div class="m" style="color:var(--bad)">（无详细说明）</div>')+'</div>';
+  });
+  h+='<div class="qtotal"><span>合计</span><b>'+money(amountOf(v))+'</b></div>';
+  document.getElementById('qTitle').textContent='报价单明细 · '+id;
+  document.getElementById('qBody').innerHTML=h;
+  document.getElementById('qmodal').classList.add('on');
+}
+function closeQ(){ document.getElementById('qmodal').classList.remove('on'); }
+
 function closeMask(){ document.getElementById('mask').classList.remove('on'); }
 function toast(t){
   var el=document.getElementById('toast'); el.textContent=t; el.classList.add('on');
@@ -598,6 +649,8 @@ document.querySelectorAll('.tabs button').forEach(function(b){
   });
 });
 document.getElementById('pList').addEventListener('click',function(e){
+  var q=e.target.closest('[data-q]');
+  if(q){ openQ(q.getAttribute('data-q')); return; }
   var a=e.target.closest('[data-a]'), r=e.target.closest('[data-r]');
   if(a){ approve(a.dataset.a); return; }
   if(r){ S.rejId=r.dataset.r; document.getElementById('rt').textContent='单据：'+S.rejId;
