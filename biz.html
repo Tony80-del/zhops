@@ -497,6 +497,10 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 14h13"/><path d="M3 14V4l5-2.5L13 4v10"/><rect x="6.2" y="8" width="3.6" height="6"/></svg>
       教室 <span class="cnt" id="cnt-rooms">0</span>
     </a>
+    <a data-v="report">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>
+      经营报告
+    </a>
   </nav>
   <div class="side-foot">
     数据键 <b>zhops.biz.v1</b><br>
@@ -809,6 +813,18 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
         <div class="card-b"><div id="research-sources"></div></div>
       </div>
       <div id="research-list"></div>
+    </div>
+
+    <!-- ====== 经营报告（S3 · 2026-11-21）====== -->
+    <div class="view" data-view="report">
+      <div class="page-h">
+        <h2>经营报告</h2>
+        <p class="desc">内部两份 · 市场月报 + 经营月报（数字全自动算，不另填）</p>
+        <div class="sp"></div>
+        <select id="rep-month" onchange="renderReport()" style="height:32px;border:1px solid var(--line2);border-radius:6px;padding:0 8px"></select>
+        <button class="btn pri" onclick="window.print()">打印 / 存 PDF</button>
+      </div>
+      <div id="report-body"></div>
     </div>
 
     <!-- ====== 投放记录 ====== -->
@@ -1560,7 +1576,7 @@ function seed(){
 function nav(v){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===v));
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on', el.dataset.view===v));
-  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'学生收费', research:'市场调查', campaigns:'投放记录', assets:'宣传素材', events:'讲座活动', rooms:'教室', 'deleted-students':'已删除学员' };
+  var titles = { overview:'业务总览', leads:'线索池', students:'学员档案', billing:'学生收费', research:'市场调查', campaigns:'投放记录', report:'经营报告', assets:'宣传素材', events:'讲座活动', rooms:'教室', 'deleted-students':'已删除学员' };
   document.getElementById('crumb-sub').textContent = titles[v]||'';
   render(v);
 }
@@ -1573,6 +1589,7 @@ function render(v){
   if(v==='students') renderStudents();
   if(v==='billing') renderBilling();
   if(v==='research'){ renderResearchSources(); renderResearch(); }
+  if(v==='report') renderReport();
   if(v==='campaigns') renderCampaigns();
   if(v==='assets') renderAssets();
   if(v==='events') renderEvents();
@@ -2213,6 +2230,97 @@ var RESEARCH_SOURCES = [
   { id:'cham',  name:'越南中国商会（活动 / 讲座）', vn:'Hiệp hội Doanh nghiệp TQ (sự kiện / hội thảo)', url:'http://www.vn-cn.org/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-01' },
   { id:'job',   name:'招聘平台（中文岗薪资）',      vn:'Trang tuyển dụng (lương việc tiếng Trung)', url:'https://www.vietnamworks.com/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-05' },
 ];
+/* ============================================================================
+   S3 经营报告（2026-11-21）：内部两份 —— 市场月报 + 经营月报。
+   ★ 数字全部从现有数据自动算（线索/学员/收费/投放/活动/调查），不另填。
+   ★ 客户报告（对外专业度）本轮不做，Tony 定「只做内部两份」。
+   ============================================================================ */
+function reportMonths(){
+  var set = {};
+  var push = function(d){ if(d) set[String(d).slice(0,7)] = 1; };
+  (S.leads||[]).forEach(function(x){ push(x.date); });
+  (S.students||[]).forEach(function(x){ push(x.enrollDate); });
+  (S.campaigns||[]).forEach(function(x){ push(x.date); });
+  (S.events||[]).forEach(function(x){ push(x.date); });
+  (S.research||[]).forEach(function(x){ push(x.date); });
+  push(new Date().toISOString().slice(0,7));
+  return Object.keys(set).sort().reverse();
+}
+function renderReport(){
+  var sel = document.getElementById('rep-month');
+  var body = document.getElementById('report-body');
+  if(!sel || !body) return;
+  var months = reportMonths();
+  if(!sel.options.length){
+    sel.innerHTML = months.map(function(m){ return '<option>'+m+'</option>'; }).join('');
+  }
+  var m = sel.value || months[0] || new Date().toISOString().slice(0,7);
+  var inM = function(d){ return String(d||'').slice(0,7) === m; };
+
+  /* ---- 经营月报：数字自动算 ---- */
+  var leadsM = (S.leads||[]).filter(function(x){ return inM(x.date); });
+  var stuM = (S.students||[]).filter(function(x){ return inM(x.enrollDate); });
+  var campM = (S.campaigns||[]).filter(function(x){ return inM(x.date); });
+  var evtM = (S.events||[]).filter(function(x){ return inM(x.date); });
+  var costM = campM.reduce(function(a,x){ return a + (Number(x.cost)||0); },0)
+            + evtM.reduce(function(a,x){ return a + (Number(x.cost)||0); },0);
+  var leadsFromCamp = campM.reduce(function(a,x){ return a + (Number(x.leads)||0); },0);
+  var convFromCamp = campM.reduce(function(a,x){ return a + (Number(x.conv)||0); },0);
+  var cpl = leadsFromCamp ? Math.round(costM / leadsFromCamp) : 0;
+  var cpa = convFromCamp ? Math.round(costM / convFromCamp) : 0;
+  /* 收费：本月应收 / 已收 */
+  var billM = (S.billing||[]).filter(function(b){ return inM(b.date); });
+  var recv = billM.reduce(function(a,b){ return a + (Number(b.amount)||0); },0);
+  var paid = (S.billPayments||[]).filter(function(p){ return inM(p.date); })
+              .reduce(function(a,p){ return a + (Number(p.amount)||0); },0);
+  /* 漏斗转化（跟总览同口径） */
+  var fLeads = (S.leads||[]).length;
+  var fWon = (S.students||[]).filter(function(x){ return x && x.leadId; }).length;
+  var fRate = fLeads ? (fWon / fLeads * 100).toFixed(1) : '0.0';
+
+  /* ---- 市场月报：本月情报摘要 ---- */
+  var resM = (S.research||[]).filter(function(x){ return inM(x.date); });
+  var byKind = {};
+  resM.forEach(function(r){ var k = r.kind||'未分类'; (byKind[k]=byKind[k]||[]).push(r); });
+  var kindKeys = (typeof RESEARCH_KINDS!=='undefined'?RESEARCH_KINDS:[]).filter(function(k){ return byKind[k]; });
+
+  var h = '<div class="card marks" style="margin-bottom:14px"><div class="card-h"><h3>① 经营月报 · '+m+'</h3>'+
+    '<span class="sub">数字全自动算，不另填</span></div><div class="card-b">'+
+    '<div class="stats" style="margin-bottom:12px">'+
+      '<div class="stat acc"><div class="k">本月新增线索</div><div class="v">'+leadsM.length+'</div></div>'+
+      '<div class="stat ok"><div class="k">本月报名</div><div class="v">'+stuM.length+'</div></div>'+
+      '<div class="stat amber"><div class="k">投放+活动成本</div><div class="v">'+fmtVND(costM)+'<small>VND</small></div></div>'+
+      '<div class="stat bad"><div class="k">单线索成本</div><div class="v">'+(cpl?fmtVND(cpl):'—')+'<small>VND</small></div></div>'+
+    '</div>'+
+    '<table class="tbl"><tbody>'+
+      '<tr><td>线索 → 报名（全期）</td><td class="num"><b>'+fLeads+' → '+fWon+'（'+fRate+'%）</b></td></tr>'+
+      '<tr><td>本月投放 / 活动</td><td class="num">'+campM.length+' 次投放 · '+evtM.length+' 场活动</td></tr>'+
+      '<tr><td>投放带来线索 / 转化</td><td class="num">'+leadsFromCamp+' / '+convFromCamp+(cpa?' · 单个学员 '+fmtVND(cpa)+' VND':'')+'</td></tr>'+
+      '<tr><td>本月应收 / 已收</td><td class="num">'+fmtVND(recv)+' / '+fmtVND(paid)+' VND</td></tr>'+
+    '</tbody></table></div></div>';
+
+  h += '<div class="card marks"><div class="card-h"><h3>② 市场月报 · '+m+'</h3>'+
+    '<span class="sub">本月 '+resM.length+' 条情报</span></div><div class="card-b">';
+  if(!resM.length){
+    h += '<p class="sm" style="color:var(--ink3);margin:0">本月还没有市场调查记录 —— 去「市场调查」补一条（记得选情报类型）。</p>';
+  } else {
+    h += kindKeys.map(function(k){
+      return '<div style="margin-bottom:10px"><div class="sm" style="font-weight:700;color:var(--brand);margin-bottom:5px">'+
+        k+'（'+byKind[k].length+'）</div>'+
+        byKind[k].map(function(r){
+          return '<div class="sm" style="padding:6px 9px;border-left:3px solid var(--brand);background:var(--surface-2);border-radius:4px;margin-bottom:5px">'+
+            '<b>'+escCmp(r.topic||'')+'</b>'+(r.impact?' <span class="tg '+(r.impact==='高'?'bad':'warn')+'">影响'+r.impact+'</span>':'')+
+            (r.action?'<span class="tg own">'+escCmp(r.action)+'</span>':'')+
+            '<div style="color:var(--ink2);margin-top:3px">'+escCmp((r.content||'').slice(0,90))+'</div>'+
+            (r.outcome?'<div style="color:var(--ok);margin-top:3px">→ '+escCmp(r.outcome)+'</div>':'')+
+          '</div>';
+        }).join('')+'</div>';
+    }).join('');
+  }
+  h += '</div></div>';
+  body.innerHTML = h;
+}
+
 function renderResearchSources(){
   var el = document.getElementById('research-sources');
   if(!el) return;
@@ -2244,6 +2352,32 @@ function markSourceChecked(id){
   renderResearchSources();
   toast('已记下：'+src.name+' 今天查过');
 }
+/* ★ 2026-11-21（P-187 / S2）：商会活动情报 → 候选活动（进 events 板块，标 external）
+   双向关联：research.eventId ↔ event.researchId，避免重复转。 */
+function researchToEvent(rid){
+  var r = (S.research||[]).find(function(x){ return x.id === rid; });
+  if(!r) return;
+  if(r.eventId){ toast('这条情报已经转成活动了：'+r.eventId); return; }
+  var evt = {
+    id: 'E-' + String(S.seq.evt++).padStart(3,'0'),
+    name: r.topic || '外部活动',
+    type: '沙龙',                    /* 外部活动默认沙龙，可在活动页改 */
+    date: r.reviewAt || r.date || new Date().toISOString().slice(0,10),
+    loc: '',
+    reg: 0, att: 0, conv: 0, cost: 0,
+    host: r.source || '',            /* 主办方 = 情报来源 */
+    external: true,                  /* ★ 参加别人的 */
+    goal: r.outcome || '',           /* 去了要做什么 */
+    note: '来自市场调查 '+r.id+'：'+(r.content||'').slice(0,60),
+    researchId: r.id                 /* 反向指回情报 */
+  };
+  S.events.unshift(evt);
+  r.eventId = evt.id;                /* 正向指回活动 */
+  save();
+  renderResearch();
+  toast('已转成候选活动 '+evt.id+'（去「讲座活动」看）');
+}
+
 function loadSourceChecked(){
   try{
     var raw = localStorage.getItem('zhops.biz.srclast');
@@ -2289,6 +2423,9 @@ function renderResearch(){
           (r.action||r.outcome?'<div class="sm" style="background:var(--ok-soft);border-left:3px solid var(--ok);padding:8px 10px;border-radius:4px;margin:0 0 8px">'+
              (r.action?'<b>动作：'+escCmp(r.action)+'</b>':'')+
              (r.outcome?'<div style="margin-top:4px">'+escCmp(r.outcome)+'</div>':'')+'</div>':'')+
+          (r.kind === '商会活动' && !r.eventId
+            ? '<div style="margin:0 0 8px"><button class="btn sm" onclick="researchToEvent(\''+r.id+'\')">→ 转成候选活动</button></div>'
+            : '')+
           '<p class="sm" style="color:var(--ink3);margin:0">来源：'+escCmp(r.source||'—')+
             (links.length?'　·　关联：'+links.join(' / '):'')+
             (r.reviewAt?'　·　复核：<span style="color:'+(overdue?'var(--bad)':'var(--ink3)')+'">'+fmtDate(r.reviewAt)+(overdue?' ⚠️ 已到期':'')+'</span>':'')+
@@ -2399,7 +2536,10 @@ function renderEvents(){
     var attRate = e.reg ? Math.round(e.att/e.reg*100) : 0;
     var convRate = e.att ? Math.round(e.conv/e.att*100) : 0;
     return '<div class="evt-card">'+
-      '<div class="eh"><b>'+e.name+'</b><span class="tg amber">'+e.type+'</span><div class="sp"></div><span class="sm" style="color:var(--ink3)">'+fmtDate(e.date)+'</span></div>'+
+      '<div class="eh"><b>'+e.name+'</b><span class="tg amber">'+e.type+'</span>'+
+        (e.external?'<span class="tg off">外部 · 参加</span>':'<span class="tg own">自己办</span>')+
+        (e.host?'<span class="sm" style="color:var(--ink3)">'+e.host+'</span>':'')+
+        '<div class="sp"></div><span class="sm" style="color:var(--ink3)">'+fmtDate(e.date)+'</span></div>'+
       '<div class="em">'+
         '<span>地点 <b>'+(e.loc||'—')+'</b></span>'+
         '<span>报名 <b>'+(e.reg||0)+'</b></span>'+
@@ -2407,6 +2547,7 @@ function renderEvents(){
         '<span>转化 <b>'+(e.conv||0)+'</b> ('+convRate+'%)</span>'+
         '<span>成本 <b>'+fmtVND(e.cost||0)+' VND</b></span>'+
       '</div>'+
+      (e.goal?'<p class="sm" style="margin:8px 0 0;color:var(--brand-ink)"><b>目标：</b>'+e.goal+'</p>':'')+
       (e.note?'<p class="sm" style="margin:8px 0 0;color:var(--ink2)">'+e.note+'</p>':'')+
       '<div style="margin-top:8px"><a class="act" onclick="editEvent(\''+e.id+'\')">编辑</a></div>'+
     '</div>';
@@ -3162,6 +3303,10 @@ function eventForm(e){
     '<div class="fld"><label>实到人数</label><input type="number" id="f-att" value="'+(e.att||0)+'"></div></div>'+
     '<div class="fld-row"><div class="fld"><label>现场转化</label><input type="number" id="f-conv" value="'+(e.conv||0)+'"></div>'+
     '<div class="fld"><label>成本（VND）</label><input type="number" id="f-cost" value="'+(e.cost||0)+'"></div></div>'+
+    '<div class="fld-row"><div class="fld"><label>主办方</label><input id="f-host" value="'+(e.host||'')+'" placeholder="Tự tổ chức / Hiệp hội / Trường học"></div>'+
+    '<div class="fld"><label>类型来源</label><select id="f-external"><option value="">自己办</option>'+
+      '<option value="1"'+(e.external?' selected':'')+'>参加别人的（外部）</option></select></div></div>'+
+    '<div class="fld"><label>去了要做什么 / 目标</label><input id="f-goal" value="'+(e.goal||'')+'" placeholder="VD: phát 50 tờ rơi / làm quen 10 HR"></div>'+
     '<div class="fld"><label>备注</label><textarea id="f-note">'+(e.note||'')+'</textarea></div>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
       '<button class="btn pri" onclick="saveEvent('+(e.id?"'"+e.id+"'":"null")+')">保存</button>'+
@@ -3172,7 +3317,9 @@ function eventForm(e){
 function saveEvent(id){
   var data = { name: val('f-name'), type: val('f-type'), date: val('f-date'), loc: val('f-loc'),
     reg: parseInt(val('f-reg')||'0'), att: parseInt(val('f-att')||'0'), conv: parseInt(val('f-conv')||'0'),
-    cost: parseInt(val('f-cost')||'0'), note: val('f-note') };
+    cost: parseInt(val('f-cost')||'0'), note: val('f-note'),
+    /* ★ 2026-11-21（P-187 / S2）：外部活动（参加别人的） */
+    host: val('f-host'), external: !!val('f-external'), goal: val('f-goal') };
   if(!data.name){ toast('请填活动名', true); return; }
   if(id){ Object.assign(S.events.find(function(x){return x.id===id;}), data); }
   else { data.id = 'E-' + String(S.seq.evt++).padStart(3,'0'); S.events.unshift(data); }
@@ -4348,6 +4495,18 @@ var BIZ_VI = {
   '只算从线索转化的学员':'chỉ tính học viên chuyển từ khách tiềm năng',
   /* ★ 2026-11-21（P-186 市场调查） */
   '情报源 · 该去查了':'Nguồn tin · Đã đến lúc kiểm tra',
+  '经营报告':'Báo cáo kinh doanh',
+  '内部两份 · 市场月报 + 经营月报（数字全自动算，不另填）':'Hai bản nội bộ · Báo cáo thị trường + Báo cáo kinh doanh (số tự động tính)',
+  '打印 / 存 PDF':'In / Lưu PDF','① 经营月报':'① Báo cáo kinh doanh','② 市场月报':'② Báo cáo thị trường',
+  '数字全自动算，不另填':'Số tự động tính, không nhập thêm','本月新增线索':'Khách tiềm năng mới tháng này',
+  '本月报名':'Ghi danh tháng này','投放+活动成本':'Chi phí quảng cáo + sự kiện','单线索成本':'Chi phí mỗi khách tiềm năng',
+  '线索 → 报名（全期）':'Khách tiềm năng → Ghi danh (toàn kỳ)','本月投放 / 活动':'Quảng cáo / Sự kiện tháng này',
+  '投放带来线索 / 转化':'Khách tiềm năng / chuyển đổi từ quảng cáo','本月应收 / 已收':'Phải thu / Đã thu tháng này',
+  '本月还没有市场调查记录 —— 去「市场调查」补一条（记得选情报类型）。':'Tháng này chưa có bản khảo sát — vào «Khảo sát thị trường» ghi thêm (nhớ chọn loại thông tin).',
+  ' 条情报':' thông tin','本月 ':'Tháng này ',' 次投放 · ':' lần quảng cáo · ',' 场活动':' sự kiện',
+  '外部 · 参加':'Bên ngoài · Tham dự','自己办':'Tự tổ chức','主办方':'Đơn vị tổ chức',
+  '去了要做什么 / 目标':'Đi để làm gì / Mục tiêu','类型来源':'Nguồn loại',
+  '参加别人的（外部）':'Tham dự của người khác (bên ngoài)','→ 转成候选活动':'→ Chuyển thành sự kiện dự kiến','目标：':'Mục tiêu: ',
   '点「去查」新开官方页面，看完回来录一条调查':'Bấm «Đi kiểm tra» để mở trang chính thức; xem xong quay lại ghi một bản khảo sát',
   '情报类型':'Loại thông tin','影响等级':'Mức ảnh hưởng','建议动作':'Hành động đề xuất',
   '复核日期（到期提醒再看一次）':'Ngày rà soát lại (nhắc khi đến hạn)',

@@ -800,6 +800,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-21</td>
               <td>Tony：市场调查怎么接、要不要联网、报告怎么做。诊断出真正的市场挑战是「需求大（HSK 14.6 万）、供给散（500+ 家）、客户无法判断质量」→ 不是拉不到线索，是在 500 家里被认出来。<br><b>S1 情报闭环</b>：加 <b>5 类情报</b>（官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈，<b>kind 必填</b>）+ 影响等级（高/中/低）+ <b>建议动作</b>（加投/减投/改价/办活动/去参会/观望）+ <b>结论带来的动作与结果</b>（outcome，情报必须能追到"做了什么"）+ 复核日期（过期标红 ⚠️ 已到期）+ <b>关联投放 / 关联活动</b>（<b>L-08 就此收口</b>）。列表按类型分组、显示动作/结果/关联/复核状态。<br><b>S4-A 情报源清单</b>：4 个白名单源（HSK 官网 / 越南教育部 / 越南中国商会 / 招聘平台），显示周期与"已 N 天"、超期标「该查了」，<b>「去查 ↗」新窗口打开官方页（不自动抓取）</b>、「已查过」记本地日期。<br><b>联网口径</b>：Tony 选「先 A 再 C」—— 本轮只做 A（提醒 + 一键去查）；真抓取（C）需后端 Firebase Functions / Blaze，留第二轮。技能 <span class="mono">zhops-sales</span> 加 <b>§14 白名单抓取授权</b>（只抓白名单 / 失败静默 / 抓到不自动写入，须人确认）。<br>越语：市场调查全部新文案 + 源名 + 周期 + 分组标题按 <span class="mono">BIZ_LANG</span> 内联双语；业务数据（活动名/投放名）加 <span class="mono">data-raw</span> 不翻。P-138 <b>68/68</b>。<br>验收：<span class="mono">check-research.js</span> <b>22/22</b> + 反向控制 3 组（砍 kind 必填 / 砍关联 L-08 断 / 砍过期提醒）报红；施工图 <b>9 绿 / 2 红 / 0 待收口 / 0 灰 · 82%</b>（L-08 转绿，check-map 51/51）；全套 <b>67/67</b>。还原点 <span class="mono">research-before-20261121</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-187</td>
+              <td><b>市场调查 S2+S3：外部活动情报 → 候选活动 + 经营报告（内部两份）</b><br><span style="color:var(--ink3);font-size:12px">情报能变成动作，动作能出报告</span></td>
+              <td class="nw">业务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-21</td>
+              <td class="mono nw">11-21</td>
+              <td>Tony 选「先 S2 再 S3；客户报告先不做，只做内部两份」。<br><b>S2 外部活动情报 → 候选活动</b>：「商会活动」类情报列表出现「→ 转成候选活动」，一点生成活动（<span class="mono">external:true</span> + 主办方=情报来源 + 目标=情报结论 + 备注带来源情报号）；<b>双向关联</b> <span class="mono">event.researchId ↔ research.eventId</span>，重复转拦截；活动表单加「主办方 / 类型来源（自己办 vs 参加别人的）/ 去了要做什么」三格；活动列表显示「外部·参加 / 自己办」标记与目标。<br><b>S3 经营报告</b>（新视图 + 侧栏项）：① <b>经营月报</b>——本月新增线索 / 报名 / 投放+活动成本 / 单线索成本 / 线索→报名全期转化 / 投放带来线索与转化（含单个学员成本）/ 本月应收与已收，<b>数字全部从现有数据自动算，不另填</b>；② <b>市场月报</b>——本月情报按 5 类分组，每条显示影响等级 / 动作 / 结论摘要 / 结果。月份下拉切换 + 「打印 / 存 PDF」（浏览器打印）。<b>客户报告本轮不做</b>（Tony 定）。<br>越语：报告页与活动表单新文案全部补字典，P-138 <b>68/68</b>。顺手把 <span class="mono">check-biz-core</span> 里写死的「侧栏 10 项」改成「≥10 且含经营报告」（加视图不再假红）。<br>验收：<span class="mono">check-research.js</span> 22→<b>35 项</b>（S2 七条 + S3 六条）+ 反向控制 2 组（砍反向关联 / 砍重复拦截）报红；全套 <b>67/67</b>。还原点 <span class="mono">s2-before-20261121</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>
