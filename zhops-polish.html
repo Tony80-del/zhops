@@ -558,7 +558,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-18 ============ -->
   <div class="day-panel on" data-day="2026-11-18">
     <div class="card">
-      <h2>2026-11-18 · 打磨记录<span class="n">30 行 · 已打磨 30 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-18 · 打磨记录<span class="n">31 行 · 已打磨 31 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -835,6 +835,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-21</td>
               <td class="mono nw">11-21</td>
               <td>Tony 问「群组讨论能不能用我的账号抓」，我实测后给出结论并落地方案。<br><b>为什么不做自动化抓取</b>（三条实测 + 一条条款）：① FB 私密群只见群名和人数（实测 “HSK Việt Nam · 4.2K members”）；② 公开群只露 1–2 条旧帖（实测那个 133 人群只看到 2013 年一条）；③ Zalo 个人号/群组不公开，非官方库（zca-js）官方明写「可能锁号/封号」；④ Meta 条款明确禁止未授权自动化采集，[官方帮助页](https://zh-tw.facebook.com/help/463983701520800/)写明会「强制禁止与抓取相关的账号」。<b>结论</b>：抓群组的收益（噪音大的闲聊）远小于风险（账号被封、客户聊天记录全丢）。<br><b>改做什么</b>：<br>① <b>对手档案</b>（新视图 + 侧栏）：每家一行 —— 名字 / 位置 / 主打平台 / HSK1 学费 + 备注 / 招生方式 / 主打卖点 / <b>我们的应对</b>（拍板后写）/ FB 主页。Tony 要的「知道对手什么价、怎么招生」直接落在这张表上。<br>② <b>群情报</b>（「+ 记一条群情报」）：选对手 → 选平台（FB/Zalo/TikTok/Google/官网/地推）→ 写一句 + 贴链接 → <b>自动归到那家名下</b>（<span class="mono">compId</span>），并记 <span class="mono">lastSeen</span>。情报进 <span class="mono">S.research[]</span>，跟市场调查同一份数据，不另造一套。<br>③ <b>超期提醒</b>：<b>14 天</b>没看标红「已 N 天没看」，卡片左边红条，按「最久没看」排最前；没看过的单独标「还没看过」并置顶。<br>④ 每条情报可带「我们要不要动」（跟 P-186 的动作闭环一致）。<br><b>守住的铁律</b>：页面里<b>一行群组抓取代码都没有</b>（探针钉住：不含 facebook.com/groups、不含 zalo.me 抓取、不含 tiktok.com/@）。<br>越语：60 条新文案全补字典，长句拆短句（换行会导致整句匹配失败），P-138 恢复 <b>68/68</b>。<br>验收：<span class="mono">check-competitor.js</span> <b>49 项</b>（含 9 条真跑行为：情报真进 research、真挂 compId、真更新 lastSeen、不选对手/不写内容都拒绝存、删对手情报保留）+ <b>反向控制 2 组真红</b>（去掉「必须选对手」→ 3 红 / 不记 lastSeen → 2 红）；全套 <b>69/69</b>。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-191</td>
+              <td><b>宣传素材 · 海报 AI 分析（Gemini + Cloudflare Worker）</b><br><span style="color:var(--ink3);font-size:12px">不绑卡 · Key 藏服务端 · 图不存库</span></td>
+              <td class="nw">业务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-21</td>
+              <td class="mono nw">11-21</td>
+              <td>Tony 提「在宣传素材里用 Gemini 3.8 Flash 免费版做海报分析，作为研发宣传册的参考」。我上一轮说「只能靠 Firebase Blaze」是<b>错的</b>，Tony 追问「不一定需要 Blaze 吧」——他对我对。<br><b>查实后改方案</b>：<b>Cloudflare Workers</b> 免费层 <b>10 万次/天、<u>不需要信用卡</u></b>（[官方 limits](https://developers.cloudflare.com/workers/platform/limits/index.md)），超限只停服务不扣钱；Gemini 免费层也不需要计费账户。实测越南可直连 Gemini（返回 “API key not valid” = 网络通）。<br><b>为什么必须有这一层</b>：<span class="mono">biz.html</span> 是公开页面，Gemini Key 写进去按 F12 就能看到（跟当前数据库 Key 暴露是同一类错）。Key 只能放服务端。<br><b>做了什么</b>：<br>① <span class="mono">build/market/worker-poster.js</span> —— Worker：Origin 白名单（只允许自己域名）+ CORS 预检 + 4MB 体积护栏 + 只收 POST + <b>Key 从 <span class="mono">env.GEMINI_KEY</span> 读</b>（探针钉住：代码里不许出现 <span class="mono">AIza...</span>）+ Gemini 报错原样转出（不吞）+ <b>不写任何数据库</b>。分析提示词固定 8 项（主打卖点/目标人群/价格策略/视觉设计/文案技巧/信息层级/可借鉴 3 条/不适用点），并要求「看不清就说看不清，不要编造」。<br>② 前端 <span class="mono">compressImage()</span>：<b>最长边 1280 + JPEG 0.72</b>（约 150–250KB，够看清又不浪费）→ <span class="mono">analyzePoster()</span> 调 Worker → 分析文字填进表单，并<b>自动抠出「可借鉴 / 不适用」预填</b>（人可改）。<br>③ 素材表单加 <b>5 个字段</b>：来源（我们自己/对手/参考）、关联对手、AI 分析、可借鉴点、不适用点。<b>A/B 都支持</b>——选「对手」时关联到对手档案（在对手卡里能看到「分析过它 N 张海报」），选「我们自己」就不关联。<br>④ 素材列表显示 AI 摘要（📊 AI 分析 / ✅ 可借鉴 / ❌ 不适用），没分析就不占地方。<br><b>★ 图片绝不进数据库</b>：Firestore 单文档只有 1MB，一张图 100KB 的话 10 张就满，会把学员/财务数据一起拖死。所以压缩后<b>只在内存里传给 Worker，拿回文字就丢弃</b>，数据库零增长。探针钉住 <span class="mono">saveAsset</span> 里不许出现 image/img/base64。<br>⑤ <span class="mono">docs/poster-ai-setup.md</span> —— 12 分钟部署指南（拿 Gemini Key → 注册 Cloudflare → 建 Worker → 填 Secret → 发网址），含 6 条常见问题与「会不会扣钱」的明确回答。<br>越语：13 条新文案 + 2 个 placeholder 全改越语示例，P-138 恢复 <b>68/68</b>。<br>验收：<span class="mono">check-poster-ai.js</span> <b>54 项</b> + <b>反向控制 2 组真红</b>——R1 硬编码 Key → 报红；R2 把白名单校验改成 <span class="mono">if(false)</span> → 报红（这条一开始<b>假绿</b>：探针只查了 <span class="mono">ALLOW_ORIGINS</span> 常量存在，没查是否真被调用，已强化成「必须真的用它拦请求」）；全套 <b>70/70</b>。还原点 <span class="mono">poster-ai-before-20261121</span>。<br><b>等 Tony</b>：部署 Worker 后把网址发我，填进 <span class="mono">POSTER_FN</span> 即可用。</td>
             </tr>
           </tbody>
         </table>
