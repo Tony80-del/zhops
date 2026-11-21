@@ -378,6 +378,31 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   transition:background .15s,color .15s,border-color .15s;}
 .backmain:hover{background:var(--surface-3);color:var(--ink);border-color:var(--brand);}
 .backmain:focus-visible{outline:2px solid var(--brand);outline-offset:1px;}
+/* ★ 2026-11-21（P-184）：投放报价单只读弹层（替掉原来的 window.alert 占位） */
+.qmask{display:none;position:fixed;inset:0;background:rgba(13,36,54,.5);z-index:95;align-items:center;justify-content:center;padding:20px}
+.qmask.on{display:flex}
+.qbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:100%;max-width:600px;
+  max-height:86vh;display:flex;flex-direction:column;box-shadow:0 16px 50px rgba(0,0,0,.28)}
+.qbox .qh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.qbox .qh h3{margin:0;font-size:15px}
+.qbox .qb{padding:18px;overflow:auto}
+.qhead{border:1px solid var(--brand);border-radius:9px;padding:11px 13px;background:var(--brand-soft);margin-bottom:13px}
+.qhead .qt{font-weight:700;font-size:14px;color:var(--brand-ink)}
+.qhead .qm{font-size:11.5px;color:var(--ink2);margin-top:4px}
+.qline{border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:9px}
+.qline .qt2{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.qline .qn{font-weight:650;font-size:13px}
+.qline .qa{font:700 13px var(--mono);color:var(--brand-ink)}
+.qline .qm2{font-size:11px;color:var(--ink3);margin-top:3px}
+.qline .qd{font-size:12px;color:var(--ink2);margin-top:8px;padding:8px 10px;background:var(--surface-2);
+  border-left:3px solid var(--amber);border-radius:4px;line-height:1.65;white-space:pre-wrap}
+.qline .qnone{font-size:11px;color:var(--ink3);font-style:italic;margin-top:8px}
+.qtotal{display:flex;justify-content:flex-end;align-items:baseline;gap:12px;padding:11px 14px;
+  background:var(--brand-soft);border:1px solid var(--brand);border-radius:9px;margin-top:12px}
+.qtotal b{font:800 19px var(--mono);color:var(--brand-ink)}
+.qmeta2{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-bottom:10px}
+.qreason{margin-top:10px;padding:9px 11px;background:var(--bad-soft);border-left:3px solid var(--bad);
+  border-radius:4px;font-size:12px;color:var(--bad)}
 </style>
 </head>
 <body data-theme="graphite">
@@ -916,6 +941,14 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 </div><!-- /#app -->
 
 <!-- 抽屉 -->
+<!-- ★ P-184：投放报价单只读弹层 -->
+<div class="qmask" id="qmask" onclick="if(event.target===this)closeQuote()">
+  <div class="qbox">
+    <div class="qh"><h3 id="qTitle">投放报价单</h3><span style="flex:1"></span>
+      <button class="btn" onclick="closeQuote()">✕</button></div>
+    <div class="qb" id="qBody"></div>
+  </div>
+</div>
 <div id="mask" onclick="closeDrawer()"></div>
 <div id="drawer">
   <div class="drawer-h">
@@ -3571,21 +3604,34 @@ function fsPushVoucherGeneric(v, cb){
 }
 /* 报价单只读视图（业务部看自己提交的明细快照） */
 function openCampaignQuote(id){
-  var c=S.campaigns.find(function(x){return x.id===id}); if(!c)return;
+  var c=S.campaigns.find(function(x){return x.id===id}); if(!c) return;
   var v=adVoucherOf(c.id,String(c.date||'').slice(0,7));
   var items=campaignItems(c);
   var st=v?(VOUCHER_STATES[v.state]||v.state):'未提交';
-  var h='<div class="quote-h"><div class="qt">投放报价单 · '+c.id+'</div>'+
-    '<div class="qm">'+escCmp(c.platform)+' · '+escCmp(c.type||'')+' · '+escCmp(c.date||'')+' · 状态：'+escCmp(st)+'</div>'+
+  var h='<div class="qhead"><div class="qt">投放报价单 · '+escCmp(c.id)+'</div>'+
+    '<div class="qm">'+escCmp(c.platform)+' · '+escCmp(c.type||'')+' · '+escCmp(c.date||'')+'</div>'+
     (c.refNo?'<div class="qm">合同/报价号：'+escCmp(c.refNo)+'</div>':'')+'</div>';
+  h+='<div class="qmeta2"><span>状态：<b>'+escCmp(st)+'</b></span>'+
+     (v&&v.id?'<span>单据号：'+escCmp(v.id)+'</span>':'')+
+     (v&&v.financeChecked?'<span style="color:var(--ok)">✓ 财务已核对</span>':'')+
+     (c.note?'<span>备注：'+escCmp(c.note)+'</span>':'')+'</div>';
   items.forEach(function(it,i){
-    h+='<div class="qline"><div class="ql-top"><span class="ql-name">'+(i+1)+'. '+escCmp(it.desc)+'</span>'+
-      '<span class="ql-amt">'+fmtVND(it.amt)+' ₫</span></div>'+
-      '<div class="ql-meta">数量 '+it.qty+' × 单价 '+fmtVND(it.unit)+' ₫</div>'+
-      (it.detail?'<div class="ql-desc">'+escCmp(it.detail)+'</div>':'<div class="ql-none">（无详细说明）</div>')+'</div>';
+    h+='<div class="qline"><div class="qt2"><span class="qn">'+(i+1)+'. '+escCmp(it.desc||'(未填项目)')+'</span>'+
+      '<span class="qa">'+fmtVND(it.amt)+' ₫</span></div>'+
+      '<div class="qm2">数量 '+escCmp(it.qty||0)+' × 单价 '+fmtVND(it.unit)+' ₫</div>'+
+      (it.detail?'<div class="qd">'+escCmp(it.detail)+'</div>':'<div class="qnone">（此行无详细说明）</div>')+'</div>';
   });
-  h+='<div class="quote-total"><span>合计</span><b>'+fmtVND(c.cost)+' ₫</b></div>';
-  window.alert(h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
+  h+='<div class="qtotal"><span>合计</span><b>'+fmtVND(c.cost)+' ₫</b></div>';
+  if(v&&v.state==='已驳'&&v.reason) h+='<div class="qreason"><b>驳回理由：</b>'+escCmp(v.reason)+'</div>';
+  var t=document.getElementById('qTitle'), bo=document.getElementById('qBody');
+  if(!t||!bo){ return; }
+  t.textContent='投放报价单 · '+c.id;
+  bo.innerHTML=h;
+  document.getElementById('qmask').classList.add('on');
+}
+function closeQuote(){
+  var m=document.getElementById('qmask');
+  if(m) m.classList.remove('on');
 }
 
 var VOUCHER_STATES = {'已提交':'待审批','已批':'已批准','已驳':'已驳回','已付':'已付款'};
