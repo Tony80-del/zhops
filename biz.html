@@ -332,15 +332,49 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
 .quote-card .row b{color:var(--ink);font-family:var(--mono);}
 .quote-card .row.due{color:var(--bad);font-weight:500;}
 
-/* ---------------- 漏斗 ---------------- */
-.funnel{display:flex;flex-direction:column;gap:4px;}
-.funnel .fr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:6px;font-size:13px;
-  background:var(--surface);border:1px solid var(--line);}
-.funnel .fr .lbl{flex:0 0 100px;color:var(--ink2);}
-.funnel .fr .bar-w{flex:1;height:24px;border-radius:4px;background:var(--surface-3);overflow:hidden;position:relative;}
-.funnel .fr .bar-f{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;
-  color:#fff;font-size:11.5px;font-family:var(--mono);font-weight:500;transition:width .4s;}
-.funnel .fr .num{flex:0 0 50px;text-align:right;font-family:var(--mono);font-weight:650;font-size:15px;}
+/* ---------------- 招生漏斗（P-185 · 真漏斗形 + 6 种动效） ---------------- */
+.funnel{display:flex;flex-direction:column;align-items:center;gap:0;position:relative;padding:6px 0 2px}
+.fn-row{position:relative;width:100%;display:flex;justify-content:center}
+/* 梯形：用 clip-path 逐层收窄 */
+.fn-seg{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;
+  color:#fff;font-size:12.5px;font-weight:600;min-height:46px;cursor:default;
+  transition:transform .18s ease,filter .18s ease;
+  clip-path:polygon(0 0,100% 0,calc(100% - 26px) 100%,26px 100%);
+  animation:fnIn .5s cubic-bezier(.22,1,.36,1) both;
+  transform-origin:center top}
+.fn-seg:hover{transform:scale(1.02);filter:brightness(1.12);z-index:2}
+.fn-seg .fn-l{opacity:.96;letter-spacing:.3px}
+.fn-seg .fn-v{font-family:var(--mono);font-size:17px;font-weight:800;letter-spacing:.5px}
+.fn-seg .fn-r{font-family:var(--mono);font-size:11px;opacity:.9;font-weight:600}
+@keyframes fnIn{from{opacity:0;transform:translateY(-10px) scaleX(.7)}to{opacity:1;transform:none}}
+/* 层间流失标注 */
+.fn-gap{display:flex;align-items:center;justify-content:center;gap:8px;height:26px;font-size:11px;
+  color:var(--bad);font-family:var(--mono);animation:fnFade .45s ease both}
+.fn-gap .ar{font-size:13px;line-height:1}
+@keyframes fnFade{from{opacity:0}to{opacity:1}}
+/* 顶部流动光带（水往下流） */
+.funnel::before{content:"";position:absolute;left:50%;top:0;width:2px;height:100%;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.85),transparent);
+  opacity:.35;pointer-events:none;animation:fnFlow 3.2s linear infinite;z-index:3}
+@keyframes fnFlow{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+/* 底层呼吸 */
+.fn-seg.fn-last{animation:fnIn .5s cubic-bezier(.22,1,.36,1) both,fnBreathe 2.6s ease-in-out 1s infinite}
+@keyframes fnBreathe{50%{box-shadow:0 0 22px rgba(15,123,82,.55)}}
+/* 总转化率 */
+.fn-total{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:9px;
+  font-size:12px;color:var(--ink2);background:var(--surface-2);border:1px dashed var(--line2);
+  border-radius:8px;padding:8px 14px;animation:fnFade .6s ease both}
+.fn-total b{font-family:var(--mono);font-size:15px;color:var(--brand)}
+@media(prefers-reduced-motion:reduce){
+  .funnel::before{animation:none;opacity:.12}
+  .fn-seg,.fn-seg.fn-last,.fn-gap,.fn-total{animation:none}
+  .fn-seg:hover{transform:none}
+}
+@media(max-width:720px){
+  .fn-seg{min-height:42px;font-size:11.5px;gap:7px}
+  .fn-seg .fn-v{font-size:15px}
+  .fn-seg .fn-r{display:none}
+}
 
 /* ---------------- 活动卡片 ---------------- */
 .evt-card{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--surface);transition:border-color .15s;}
@@ -1645,22 +1679,63 @@ function renderOverview(){
   document.getElementById('kpi-overdue').innerHTML = fmtVND(overdueAmt) + '<small>VND</small>';
   document.getElementById('kpi-overdue-d').textContent = overdue.length;
 
-  /* 漏斗 */
+  /* 漏斗（P-185）：真梯形 + 逐层转化率 / 流失 / 总转化率 + 入场动画
+     ★ 文案在生成时按当前语言拼（动态整句走 trText 匹配不到，必须当场出对应语言）。 */
+  var _vi = (typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi');
+  function FT(zh, vi){ return _vi ? vi : zh; }
   var stages = [
-    { lbl:'线索', val:S.leads.length, color:'#0e7490' },
-    { lbl:'已联系', val:S.leads.filter(function(l){return ['contacted','trial','enrolled'].includes(l.status);}).length, color:'#0891b2' },
-    { lbl:'已试听', val:S.leads.filter(function(l){return ['trial','enrolled'].includes(l.status);}).length, color:'#b45309' },
-    { lbl:'已报名', val:S.students.length, color:'#0f7b52' },
-    { lbl:'在读', val:S.students.filter(function(s){return s.status==='在读';}).length, color:'#0f7b52' },
+    { lbl:FT('线索','Khách tiềm năng'),   val:S.leads.length, color:'#0e7490' },
+    { lbl:FT('已联系','Đã liên hệ'), val:S.leads.filter(function(l){return ['contacted','trial','enrolled'].includes(l.status);}).length, color:'#0891b2' },
+    { lbl:FT('已试听','Đã học thử'), val:S.leads.filter(function(l){return ['trial','enrolled'].includes(l.status);}).length, color:'#b45309' },
+    /* ★ P-185：已报名只数「从线索转过来的」（有 leadId），否则业务部推来的学员会让漏斗倒挂（>100%） */
+    { lbl:FT('已报名','Đã ghi danh'), val:S.students.filter(function(x){ return x && x.leadId; }).length, color:'#0f7b52' },
+    { lbl:FT('在读','Đang học'),   val:S.students.filter(function(s){return s.status==='在读';}).length, color:'#0f7b52' },
   ];
-  var max = Math.max.apply(null, stages.map(function(s){return s.val;})) || 1;
-  var html = stages.map(function(s){
-    var w = Math.round(s.val / max * 100);
-    return '<div class="fr"><div class="lbl">'+s.lbl+'</div>'+
-      '<div class="bar-w"><div class="bar-f" style="width:'+w+'%;background:'+s.color+'">'+s.val+'</div></div>'+
-      '<div class="num">'+s.val+'</div></div>';
-  }).join('');
-  document.getElementById('funnel').innerHTML = html;
+  var fmax = Math.max.apply(null, stages.map(function(x){return x.val;})) || 1;
+  var fhtml = '';
+  stages.forEach(function(st,i){
+    var pct = Math.round(st.val / fmax * 100);
+    if(pct < 22) pct = 22;                    /* 太窄看不清，保底 */
+    var prev = i > 0 ? stages[i-1] : null;
+    var rate = (prev && prev.val) ? Math.round(st.val / prev.val * 100) : null;
+    var lost = (prev && prev.val > st.val) ? (prev.val - st.val) : 0;
+    if (i > 0){
+      fhtml += '<div class="fn-row"><div class="fn-gap" style="animation-delay:'+(i*0.09)+'s">'+
+        '<span class="ar">▼</span>'+
+        (lost ? FT('流失 '+lost+' 人','Mất '+lost+' người') : FT('无流失','Không mất'))+
+        (rate !== null ? FT(' · 转化 '+rate+'%',' · chuyển đổi '+rate+'%') : '')+
+        '</div></div>';
+    }
+    fhtml += '<div class="fn-row"><div class="fn-seg'+(i===stages.length-1?' fn-last':'')+'" '+
+      'style="width:'+pct+'%;background:'+st.color+';animation-delay:'+(i*0.09)+'s" '+
+      'title="'+st.lbl+' '+st.val+' '+FT('人','người')+(rate!==null?(FT(' · 相对上一层 ',' · so với tầng trên ')+rate+'%'):'')+'">'+
+      '<span class="fn-l">'+st.lbl+'</span>'+
+      '<span class="fn-v" data-cnt="'+st.val+'">0</span>'+
+      (rate !== null ? '<span class="fn-r">'+rate+'%</span>' : '')+
+    '</div></div>';
+  });
+  /* 总转化率：线索 → 已报名 */
+  var top = stages[0].val || 0, won = stages[3].val || 0;
+  var totalRate = top ? (won / top * 100).toFixed(1) : '0.0';
+  fhtml += '<div class="fn-total">'+FT('总转化率','Tỷ lệ chuyển đổi tổng')+' <b>'+totalRate+'%</b>'+
+           '<span style="color:var(--ink3)">'+FT('（线索 '+top+' → 已报名 '+won+' · 只算从线索转化的学员）',
+              '(Khách tiềm năng '+top+' → Đã ghi danh '+won+' · chỉ tính học viên chuyển từ khách tiềm năng)')+'</span></div>';
+  document.getElementById('funnel').innerHTML = fhtml;
+
+  /* 数字滚动（count-up），尊重系统「减少动态效果」 */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Array.prototype.forEach.call(document.querySelectorAll('#funnel .fn-v'), function(el){
+    var target = Number(el.getAttribute('data-cnt')) || 0;
+    if (reduce || !window.requestAnimationFrame){ el.textContent = target; return; }
+    var t0 = null, dur = 700;
+    function step(ts){
+      if(!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * e);
+      if(p < 1) window.requestAnimationFrame(step);
+    }
+    window.requestAnimationFrame(step);
+  });
 
   /* 来源分布 */
   var srcs = {};
@@ -4144,6 +4219,12 @@ var BIZ_VI = {
   '每项都要有金额和详细说明':'Mỗi mục cần có số tiền và giải thích chi tiết',
   '已提交财务 · ':'Đã gửi tài chính · ', '至少保留一行':'Giữ ít nhất một dòng',
   '项目':'Hạng mục', '数量':'Số lượng', '单价 ₫':'Đơn giá ₫', '金额 ₫':'Thành tiền ₫',
+  /* ★ 2026-11-21（P-185 招生漏斗） */
+  '总转化率':'Tỷ lệ chuyển đổi tổng','无流失':'Không mất','流失':'Mất','人':'người',
+  '转化':'Chuyển đổi','相对上一层':'so với tầng trên','线索':'Khách hàng tiềm năng',
+  '已联系':'Đã liên hệ','已试听':'Đã học thử','已报名':'Đã ghi danh','在读':'Đang học',
+  '只算从线索转化的学员':'chỉ tính học viên chuyển từ khách tiềm năng',
+  '（线索 ':'(Khách tiềm năng ',' → 已报名 ':' → Đã ghi danh ',' · 只算从线索转化的学员）':' · chỉ tính học viên chuyển từ khách tiềm năng)',
   '1 项 · 看明细':'1 mục · Xem chi tiết', '看明细':'Xem chi tiết',
   '合同/报价号':'Số hợp đồng/báo giá', '备注 / 说明':'Ghi chú / Giải thích',
   '引来线索':'Khách hàng tiềm năng', '转化报名':'Chuyển đổi ghi danh',

@@ -782,6 +782,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-21</td>
               <td>Tony：「点看明细没有弹窗，只有编辑投放能用。」<br><b>真因</b>：<span class="mono">openCampaignQuote()</span> 当初为跑通链路，用 <span class="mono">window.alert()</span> 弹纯文本（HTML 排版全被剥掉）；Chrome 还会在多次弹窗后静默屏蔽，看起来像"没反应"。而财务端 / Boss 端用的是真弹层 <span class="mono">#qmodal</span> —— 三端不一致。<br><b>修法</b>：业务端加 <span class="mono">#qmask</span> 真弹层（blueprint 配色、主信息头 + 逐行明细 + 每行详细说明 + 合计），<span class="mono">openCampaignQuote()</span> 改为渲染 HTML；弹层显示单据状态 / 单据号 / 财务已核对标记 / 驳回理由；<span class="mono">closeQuote()</span> 可关，点遮罩也关。<br>验收：真 Chrome 实测「弹层打开 ✓、alert 调用次数 = 0 ✓、含明细文字 ✓、可关闭 ✓」；<span class="mono">check-l09-ad.js</span> 30→<b>34 项</b>（新增 4 条钉住"不许再用 alert"）；反向控制改回 alert 报红；全套 <b>65/65</b>。还原点 <span class="mono">quote-modal-before-20261121</span>。</td>
             </tr>
+            <tr>
+              <td class="mono nw">P-185</td>
+              <td><b>招生漏斗改真梯形 + 6 种动效</b><br><span style="color:var(--ink3);font-size:12px">A+B 方案 · 看得出流失，也有动感</span></td>
+              <td class="nw">业务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-21</td>
+              <td class="mono nw">11-21</td>
+              <td>Tony 选 A+B（真漏斗形 + 全部 6 种动效），保留 P-153 口径说明。<br><b>形态</b>：从 5 行等宽横条改成<b>上宽下窄真梯形</b>（clip-path polygon，宽度按数值比例，窄层保底 22% 不消失）；层间加<b>流失人数 + 相对上一层转化率</b>；底部加<b>总转化率</b>（线索→已报名）。<br><b>6 种动效</b>：① 入场逐层下滑 ② 错峰 animation-delay ③ 数字 count-up 滚动 ④ 悬停放大 1.02 + 亮度 ⑤ 纵向流动光带（水往下流）⑥ 底层绿色呼吸。全部尊重 <span class="mono">prefers-reduced-motion</span>（系统关动画时静态呈现）。<br><b>顺手修一个真 bug</b>：已报名原来直接数 <span class="mono">S.students.length</span>，而业务部推来的学员没有 <span class="mono">leadId</span> → 种子数据下出现 <b>400% 总转化率倒挂</b>。改成只数<b>有 leadId 的学员</b>（跟 L-01 转化口径一致），并在总转化率旁注明「只算从线索转化的学员」。<br><b>越语</b>：漏斗文案是动态拼接，<span class="mono">trText</span> 整句匹配不到 → 改成生成时按 <span class="mono">BIZ_LANG</span> 用 <span class="mono">FT(zh,vi)</span> 直接出对应语言；P-138 <b>68/68</b> 恢复全绿。<br>验收：<span class="mono">check-funnel.js</span> <b>20/20</b> + 反向控制 3 组（砍梯形/改回全量学员/砍无障碍）报红；顺手把 P-143 那条偶发假红改成确定性前置（3/3 稳定）；全套 <b>66/66</b>。还原点 <span class="mono">funnel-before-20261121</span>。</td>
+            </tr>
           </tbody>
         </table>
       </div>
