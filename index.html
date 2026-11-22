@@ -2363,7 +2363,10 @@ function vOverview(){
      ⚠️ 这段说明必须留在模板字符串**外面**，别再挪回去。
      背景：这个数以前是写死的 62，现在从课次事实表算 ——
      不然跟「课次记录」页对不上（那页是算出来的）。
-     钱那三块（收入 / 成本 / 利润）仍是演示占位值，还没接事实表。 */
+     钱那三块（收入 / 成本 / 利润）2026-11-22 已按 Tony 定「主端只管排课」删掉，
+     钱由财务端统一算，主端不碰。DB.money 字段留着兼容老数据，只是不显示。 */
+  /* ★ T4/P-210：原来这里还有第二组 stats（线上班/线下班/本月收入/本月成本/
+     本月利润/今日利润），前两个跟第一组重复，后四个是演示值 —— 整组删除。 */
   return `
   <div class="page-h">
     <div><h2>总览</h2><p class="desc">打开系统第一眼看到全局 —— 规模 · 人 · 课 · 钱 · 形态 · 异常</p></div>
@@ -2423,15 +2426,6 @@ function vOverview(){
           thin.map(c=>'<div class="note" data-act="goclasses"><b>差 '+(c.cap-classN(c))+' 人开班</b> —— '+esc(c.name)+'（'+c.lv+'）目前 '+classN(c)+' / '+c.cap+' 人，进度 '+lessonProse(c.lv,classLesson(c))+'。<span class="go">去排课 › 班级 看这个班 ›</span></div>').join('')
         : '<div class="empty"><div class="big">没有需要处理的异常</div>教师可授时段 / 学生归属 / 班级人数都齐了</div>'}
     </div>
-  </div>
-
-  <div class="stats">
-    ${stat('线上班', online, '个', 'acc')}
-    ${stat('线下班', offline, '个')}
-    ${stat('本月收入', fmtVnd(DB.money.income), 'VND')}
-    ${stat('本月成本', fmtVnd(DB.money.cost), 'VND')}
-    ${stat('本月利润', fmtVnd(DB.money.income-DB.money.cost), 'VND', 'ok')}
-    ${stat('今日利润', fmtVnd(DB.money.today), 'VND')}
   </div>`;
 }
 
@@ -3987,14 +3981,15 @@ function vSettle(){
   return `
   <div class="page-h"><div><h2>结算</h2><p class="desc">开班至今 · 截至 ${esc(DB.todayDate)}</p></div><div class="sp"></div>
     <button class="btn" data-act="exportstatement">导出对账单</button><button class="btn pri" data-act="sealmonth">封存本月</button></div>
-  <div class="note amber"><b>只做了成本侧</b> —— 课次 / 人数 / 课酬都从课次事实表和学生表现算（口径：<b>开班至今，全部「已上」课次</b>）。
-    <b>收入 / 利润还出不来</b>：学生档案里没有「学费」字段，收多少没地方记 —— 宁可留空，也不编数字。<br>
+  <div class="note amber"><b>这里只算排课产生的成本</b> —— 课次 / 人数 / 课酬都从课次事实表和学生表现算（口径：<b>开班至今，全部「已上」课次</b>）。
+    ★ 2026-11-22（T4/P-210 · Tony 定）：<b>收入和利润不在这里算</b> —— 主端只管排课，跟钱没瓜葛；
+      学费和收费由业务端记、财务端统一算（钱只在一处算）。<br>
     另外两个已知缺口：① <b>单价没有快照</b>，改一次单价历史账会跟着变；② 按学员计费的教师，人数用的是<b>在读人数</b>，不是实到人数。</div>
   <div class="stats n4">
     ${stat('已上课次', doneAll, '节 · 开班至今', 'acc')}
     ${stat('课酬成本', fmtVnd(cost), 'VND · 应付教师', 'amber')}
-    ${stat('收入', '<span class="tbd">待定</span>', '缺「学费」字段')}
-    ${stat('利润', '<span class="tbd">待定</span>', '缺「学费」字段')}
+    ${stat('在读班级', DB.classes.length, '个 · 当前班数')}
+    ${stat('已上班级', new Set(DB.lessons.filter(l=>l.status==='done').map(l=>l.cid)).size, '个 · 有 done 课次', 'ok')}
   </div>
   <div class="card marks">
     <div class="card-h"><h3>按教师汇总</h3><span class="sub">名下所有班 · 已上课次 × 单价（按学员计费的再 × 在读人数）</span></div>
@@ -4035,8 +4030,10 @@ function exportStatement(){
     ['统计口径','开班至今 · 截至 ' + DB.todayDate,'','','',''],
     ['已上课次', doneAll,'节','','',''],
     ['课酬成本', cost,'VND · 应付教师','','',''],
-    ['收入','待定','缺「学费」字段','','',''],
-    ['利润','待定','缺「学费」字段','','',''],
+    /* ★ T4/P-210：收入和利润不进主端对账单（Tony 定「主端只管排课」）。
+       换成两个排课指标；钱的账在财务端。 */
+    ['在读班级', DB.classes.length, '个','','',''],
+    ['已上班级', new Set(DB.lessons.filter(l=>l.status==='done').map(l=>l.cid)).size, '个','','',''],
     ['','','','','',''],
     ['教师','类型','已上课次','在读人数','单价VND','小计VND']
   ];
