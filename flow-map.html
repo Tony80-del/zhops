@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>流程连接地图 · 业务端 · ZH-System</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#12151a; --card:#171b21; --line:rgba(255,255,255,.13);
+  --text:#e6e9ed; --muted:#9aa2ad; --hint:#6e7681;
+  --acc:#4fd1c5; --accb:#0f3f3c;
+  --ok:#6ee7a8; --okb:#0f3d28;
+  --warn:#f5c86a; --warnb:#46330d;
+  --bad:#f08080; --badb:#46191c;
+  --info:#5B9BF5; --infob:#1a3a6e;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font:13px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;}
+.header{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--line);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+.header h1{font-size:17px;font-weight:600;letter-spacing:-.2px;}
+.header .meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{font-size:10px;padding:3px 9px;border-radius:9px;white-space:nowrap;}
+.chip.ok{background:rgba(110,231,168,.14);color:var(--ok);}
+.chip.bad{background:rgba(240,128,128,.14);color:var(--bad);}
+.chip.wait{background:rgba(245,200,106,.14);color:var(--warn);}
+.chip.info{background:rgba(91,155,245,.14);color:var(--info);}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 24px 90px;}
+.section-title{font-size:11px;font-weight:600;letter-spacing:1.5px;color:var(--hint);text-transform:uppercase;margin:36px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+.section-title:first-of-type{margin-top:0;}
+.section-note{font-size:11.5px;color:var(--hint);margin:0 0 14px;line-height:1.75;}
+.section-note b{color:var(--muted);font-weight:500;}
+.now{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:15px 18px;margin-bottom:22px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;}
+.now .big{font-size:16px;font-weight:600;color:var(--acc);}
+.now .desc{font-size:12px;color:var(--muted);max-width:620px;}
+.now .sp{flex:1;}
+.meter{min-width:190px;}
+.meter .row{display:flex;justify-content:space-between;font-size:10px;color:var(--hint);margin-bottom:5px;}
+.bar{height:7px;background:var(--panel);border:1px solid var(--line);border-radius:4px;overflow:hidden;}
+.bar span{display:block;height:100%;background:var(--ok);width:82%;}
+
+/* 结构图 */
+.map{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 16px;}
+.layer-lab{font-size:10px;letter-spacing:1.2px;color:var(--hint);margin:14px 0 7px;text-transform:uppercase;}
+.layer-lab:first-child{margin-top:0;}
+.node{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;text-align:center;font-size:12.5px;}
+.node.root{border-color:var(--acc);background:var(--accb);color:var(--acc);font-weight:600;max-width:220px;}
+.node.ext{border-color:var(--info);color:var(--info);}
+.node .sub{display:block;font-size:10px;color:var(--hint);margin-top:2px;font-weight:400;}
+.chain{display:flex;align-items:stretch;gap:6px;}
+.chain .node{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.node.s-ok{border-color:var(--ok);background:linear-gradient(160deg,var(--okb),var(--card));box-shadow:0 0 14px rgba(110,231,168,.14)}
+.node.s-ok::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ok)}
+.node.s-bad{border-color:var(--bad);background:linear-gradient(160deg,var(--badb),var(--card));box-shadow:0 0 14px rgba(240,128,128,.16)}
+.node.s-bad::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bad)}
+.node.s-root-node{border-color:var(--info);background:linear-gradient(160deg,var(--infob),var(--card))}
+.node .ndot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%}
+.node.s-ok .ndot{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.node.s-bad .ndot{background:var(--bad);box-shadow:0 0 6px var(--bad)}
+.node.s-root-node .ndot{background:var(--info)}
+.arw{display:flex;align-items:center;color:var(--hint);font-size:15px;flex:none;position:relative}
+.arw.ok{color:var(--ok);font-weight:700}
+.arw.bad{color:var(--bad,#dc2626);font-weight:700}
+.arw .wire{height:3px;width:16px;border-radius:2px;background:currentColor;opacity:.75;margin-right:1px}
+.arw .lb{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;
+  color:currentColor;background:var(--card);padding:0 3px;border-radius:3px;font-weight:700}
+.down{text-align:center;color:var(--hint);font-size:15px;line-height:1;margin:7px 0;}
+.tri{display:flex;gap:8px;}
+.tri .node{flex:1;}
+.ext-row{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);}
+.ext-row .node{flex:1;}
+.ext-note{font-size:10.5px;color:var(--hint);margin-top:8px;line-height:1.7;}
+@media(max-width:720px){.chain{flex-wrap:wrap;}.chain .node{flex:1 1 42%;}.arw{display:none;}.tri,.ext-row{flex-wrap:wrap;}.tri .node,.ext-row .node{flex:1 1 30%;}}
+
+/* 线表 */
+.tools{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.tools button{font:inherit;font-size:11.5px;padding:5px 12px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--muted);cursor:pointer;}
+.tools button:hover{color:var(--text);}
+.tools button.on{background:var(--accb);border-color:var(--acc);color:var(--acc);}
+.line{background:var(--card);border:1px solid var(--line);border-radius:9px;margin-bottom:7px;overflow:hidden;}
+.line[data-s="ok"]{border-left:3px solid var(--ok);}
+.line[data-s="bad"]{border-left:3px solid var(--bad);}
+.line[data-s="wait"]{border-left:3px solid var(--warn);}
+.line[data-s="gray"]{border-left:3px solid var(--hint);}
+.line>summary{cursor:pointer;padding:10px 13px;list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.line>summary::-webkit-details-marker{display:none;}
+.line>summary:hover{background:rgba(255,255,255,.025);}
+.lid{font:11px var(--mono);color:var(--acc);width:42px;flex:none;}
+.lname{font-size:12.5px;font-weight:500;min-width:200px;flex:1;}
+.lcode{font:10.5px var(--mono);color:var(--muted);width:100%;order:3;}
+.st{font-size:10px;padding:2px 8px;border-radius:8px;white-space:nowrap;}
+.st.ok{background:var(--okb);color:var(--ok);}
+.st.bad{background:var(--badb);color:var(--bad);}
+.st.wait{background:var(--warnb);color:var(--warn);}
+.st.gray{background:rgba(255,255,255,.06);color:var(--hint);}
+.body{border-top:1px solid var(--line);padding:12px 14px 14px;background:rgba(255,255,255,.015);}
+.kv{font-size:11.5px;color:var(--muted);margin-bottom:9px;line-height:1.8;}
+.kv b{color:var(--text);font-weight:500;}
+.kv code{font:11px var(--mono);color:var(--acc);}
+.gap{font-size:11.5px;color:var(--bad);background:var(--badb);border-radius:6px;padding:7px 10px;margin-bottom:11px;line-height:1.7;}
+.steps{list-style:none;counter-reset:st;}
+.steps li{counter-increment:st;position:relative;padding:5px 0 5px 26px;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);}
+.steps li:first-child{border-top:0;}
+.steps li::before{content:counter(st);position:absolute;left:0;top:6px;width:17px;height:17px;border:1px solid var(--line);border-radius:4px;text-align:center;line-height:15px;font:10px var(--mono);color:var(--hint);}
+.steps li.done{color:var(--ok);}
+.steps li.done::before{content:"✓";border-color:var(--ok);color:var(--ok);}
+.steps li b{color:var(--text);font-weight:500;}
+.steps li.todo{color:var(--hint);}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:11.5px;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;}
+th{background:var(--panel);color:var(--hint);font-weight:500;font-size:10.5px;letter-spacing:.4px;}
+tr:last-child td{border-bottom:0;}
+td code{font:11px var(--mono);color:var(--acc);}
+td .mut{color:var(--hint);}
+.gate{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+@media(max-width:720px){.gate{grid-template-columns:1fr;}}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:13px 15px;}
+.gcard h3{font-size:12.5px;font-weight:600;color:var(--acc);margin-bottom:8px;}
+.gcard ul{list-style:none;font-size:11.5px;color:var(--muted);line-height:1.9;}
+.gcard li::before{content:"· ";color:var(--acc);}
+.gcard li b{color:var(--text);font-weight:500;}
+.foot{font-size:10.5px;color:var(--hint);margin-top:34px;padding-top:14px;border-top:1px solid var(--line);line-height:1.9;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>流程连接地图 · 业务端</h1>
+    <div class="meta">ZH-System · 结构关系 / 真实编码 / 线内工序 · 快照 2026-11-19（L-01/02/03 收口）</div>
+  </div>
+  <div class="chips">
+    <span class="chip ok">绿 9</span>
+    <span class="chip bad">红 2</span>
+    <span class="chip wait">待收口 0</span>
+    <span class="chip info">灰 0</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="now">
+    <div>
+      <div class="big">一条线 = 一叠工序</div>
+      <div class="desc">图上只看「谁连谁、通没通」。点开任意一条线，看它两端真实编号、缺口和 4 步工序。<b>4 步全过且验收通过，线才转绿</b>；关联扣款线未通，标「待收口」，不算完工。</div>
+    </div>
+    <div class="sp"></div>
+    <div class="meter">
+      <div class="row"><span>已通连线</span><span id="pct">9 / 11 · 82%</span></div>
+      <div class="bar"><span></span></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">一 · 结构关系图（分层 / 左→右连带）</h2>
+  <p class="section-note">第 2 层四个板块<b>一环扣一环</b>：线索进来 → 建学员档案 → 开收费单 → 排到教室。市场调查单独一层，下挂投放 / 素材 / 活动。跨端连线<b>只展示通不通</b>，具体做法写在下面每条线的工序里。<b>箭头颜色 = 对应线的状态</b>（绿=已通 / 红=未通），线号标在箭头上；<b>方框颜色 = 进入该节点的线状态</b>（蓝=根 / 绿=已通 / 红=未通，右上角圆点同色）。</p>
+  <div class="map">
+    <div class="layer-lab">第 1 层 · 根</div>
+    <div class="node root">业务部<span class="sub">zhops.biz.v1 · 客户与资源主档</span></div>
+    <div class="down">↓</div>
+    <div class="layer-lab">第 2 层 · 主链（一环扣一环）</div>
+    <div class="chain">
+      <div class="node s-root-node"><span class="ndot"></span>线索池<span class="sub">L-001 · 根</span></div>
+      <div class="arw ok" title="L-01 已通"><span class="lb">L-01 绿</span><span class="wire"></span>→</div>
+      <div class="node s-ok"><span class="ndot"></span>学员档案<span class="sub">st1 · L-01 绿</span></div>
+      <div class="arw ok" title="L-02 已通"><span class="lb">L-02 绿</span><span class="wire"></span>→</div>
+      <div class="node s-ok"><span class="ndot"></span>学生收费<span class="sub">B-001 · L-02 绿</span></div>
+      <div class="arw bad" title="经 L-06 接入排课，L-06 仍红（3/4）"><span class="lb">L-06 红</span><span class="wire"></span>→</div>
+      <div class="node s-bad"><span class="ndot"></span>教室<span class="sub">code 下拉+查号 · L-06 红</span></div>
+    </div>
+    <div class="layer-lab">第 3 层 · 单独一层</div>
+    <div class="node" style="max-width:220px">市场调查<span class="sub">R-001</span></div>
+    <div class="down">↓</div>
+    <div class="layer-lab">第 4 层 · 市场下挂</div>
+    <div class="tri">
+      <div class="node">投放记录<span class="sub">C-001</span></div>
+      <div class="node">宣传素材<span class="sub">A-001</span></div>
+      <div class="node">讲座活动<span class="sub">E-001</span></div>
+    </div>
+    <div class="ext-row">
+      <div class="node ext">主端 · 候选池 / 排课<span class="sub">L-05 · L-06</span></div>
+      <div class="node ext">财务端 · 收入 / 费用审批<span class="sub">L-03 · L-07 · L-09</span></div>
+      <div class="node ext">教师端 · 教室快照<span class="sub">L-11</span></div>
+      <div class="node ext" style="border-color:#a78bfa;color:#a78bfa">老板端 · 监督审批<span class="sub">boss.html · P-177</span></div>
+    </div>
+    <div class="ext-note">业务部必须把报价与租金费用提交财务审批；教室编码是 Tony 手填、查重、存了锁死，主端与教师端只引用，不许自己发号。</div>
+  </div>
+
+  <h2 class="section-title">二 · 11 条连线（点开看工序）</h2>
+  <p class="section-note">括号内为<b>现跑代码里的真实出处</b>，不是设计稿。筛选：<b>红 = 未通，绿 = 已通，待收口 = 主线通但钱线未通，灰 = 待定</b>。</p>
+  <div class="tools">
+    <button class="on" data-f="all">全部 11</button>
+    <button data-f="bad">红 2</button>
+    <button data-f="ok">绿 9</button>
+    <button data-f="wait">待收口 0</button>
+    <button data-f="gray">灰 0</button>
+  </div>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-01</span><span class="lname">线索池 → 学员档案</span><span class="st ok">绿 · sales</span><span class="lcode">L-001 (leads.id) → st1 (students.id) ｜ 钱线 L-02</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>L-001</code>（saveLead / S.seq.lead） → <code>st1</code>（peekStudentId，含 billing.sid 防撞）</div>
+      <div class="gap"><b>已修（① ~ ④）</b>：号码本登记 <code>L-001 ↔ stN</code> 互指；线索列表加「转成学员」，开预填表单带出姓名 / 类型 / 来源 / 联系方式 / 录入日期，介绍人与备注随学员一起存；保存时两头互指写回并把线索状态改成「已报名」；重复转学员在按钮与保存点各有一道红灯闸门。<b>编辑不覆盖、老数据不迁移、云桥 7 键不变。</b><br><b>编号口径（P-152 补）</b>：<code>stN</code> 由系统接学员档案现有最大号自动发（现有 20 位 → 下一位 <code>st21</code>），人不填、删过的号不回收；线索号 <code>L-xxx</code> 不参与编号，只做互指。已在学员档案里的人（如 L-001 ↔ st1）点「转成学员」先弹确认「关联 / 先不处理」，选关联只补外键、<b>不新增学员、不发新号</b>；抽屉显示来源线索号与下一个自动编号，学员编辑页显示来源与编号。<br><b>剩余缺口</b>：钱线 <code>L-02</code>（收费单自动开单）一条未做，本轮只登记接口、不接。<br><b>池内视图（P-153 · Tony 选 ②）</b>：已转出的线索不再进线索池列表，侧栏只数待跟进的人；记录一条不删，<code>students[].leadId</code> 仍指得回 <code>L-xxx</code>。总览漏斗与来源分布保留全部历史线索，界面标「含已转出」。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：号码本登记 L-001 与 stN 的对应关系，学员写 leadId、线索写 studentId —— <b>2026-11-14 已做</b>：生态地图编号字典「业务部 · 市场」加 1 行（原有 25 行 / 6 列 / 5 分组一字未动），<code>saveLead()</code> / <code>saveStudent()</code> 新建分支各留 1 个空外键，且只放新建分支保证编辑不抹值；P-101 探针同步加 1 条断言。台账 P-148。</li>
+        <li class="done"><b>② 通道接上</b>：线索池每行加「转成学员」<b>按钮</b>（4 份行模板统一走 <code>leadActions()</code>），点开的是原有 <code>studentForm()</code> 的预填版，不复制第二份保存逻辑；三个 hidden 把 <code>leadId / refBy / note</code> 带过抽屉，保存时 <code>students[].leadId</code> 与 <code>leads[].studentId</code> 互指写回、线索状态置 enrolled。台账 P-149。</li>
+        <li class="done"><b>③ 红灯闸门</b>：<code>leadConvertError()</code> 双判据（线索自带 studentId + 反查学员 leadId），按钮入口与 <code>saveStudent()</code> 保存点各过一次，拦下在取号之前不烧 stN；已转线索只显示「已转 stN」不再给按钮，原学员被删也不放行。台账 P-150。</li>
+        <li class="done"><b>④ 验收</b>：静态 / 运行时针对性探针 + 3 组副本反向控制（砍闸门 / 砍互指写回 / 砍字段带出都报红），全套 53 条复跑一次；转化率现在可从 <code>leads[].studentId</code> 直接数出。台账 P-151。</li>
+      </ul>
+      <div class="kv" style="margin-top:10px"><b>当前 4 / 4 · 线已转绿</b>；关联钱线 <b>L-02 已 4 / 4</b>（P-154 / P-157 / P-158），L-03 于 2026-11-18 收口（P-161）—— 两个前置都通了，本线不再「待收口」。<br><b>接口已留、本轮不接</b>：学员 <code>students[].id</code>（stN）→ 收费单 <code>billing[].sid</code>；L-02 开工时按这个外键开单，不许手打 sid。头部 3 绿 / 6 红 / 1 待收口 / 1 灰统计一字未动。</div>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-02</span><span class="lname">学员档案 → 学生收费</span><span class="st ok">绿 · sales</span><span class="lcode">st1 → B-001 + billing.sid ｜ 钱线 L-03</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>st1</code> → <code>B-001</code>（saveBilling / S.seq.bill）+ 外键 <code>billing[].sid</code></div>
+      <div class="gap"><b>已通（P-154 / P-157 / P-158 · 2026-11-16 收口）</b>：学员档案「收费」入口带只读 sid 一键开单，已收 / 待缴按收费单流水回读，孤儿 sid 与重复开单各有红灯闸门。<br><b>历史（过程记录）</b>：<br><b>P-154(2026-11-15 · 只在本地,未发布)</b>:学员档案 → 收费单的接缝已接上 —— 学员行加「收费」入口带 <b>只读 sid</b> 开单(不许手打 / 换人);收费改成「一张单 = 应收、多笔流水 = 实收」(<code>S.billPayments[]</code>,旧单已有 <code>paid</code> 补成一条期初流水、幂等不重复,<b>演示种子与学员档案「已缴」一个字没动</b>);允许预缴并标「预缴」,待缴 / 逾期 / 总览都不出负数;四道红灯闸门(sid 查不到 / 总金额 ≤ 0 / 有收款流水的单不许删 / 名下有收费单的学员不许删)。<b>但 L-03 钱线(收费单 → 财务端收入单据)一条未接</b>,收费单仍无财务编号 → <b>本线保持红,工序不擅自打勾。</b><br><b>P-155(2026-11-15 · 只在本地,未发布)</b>:Tony 选 <b>A1 + B1</b> —— 板块「报价与收费」正式改名 <b>「学生收费」</b>(导航 / 标题 / 面包屑 / 越语字典 / 编号字典 B-001 行一起改);学员档案不再自带第二份「已缴」:<b>表格那一列改成只读摘要</b>(已收 · 应收·待收 · 逾期 / 未开单),编辑抽屉顶部加只读摘要块 <code>#stu-fee</code>,「已缴」框改 <code>readonly</code>、值 = 收费单流水合计,<code>saveStudent()</code> 不再写 <code>paid</code>;P-107 的「课程包 / 已缴 / 待缴」联动行整段拆除(它按手打已缴算第二个待缴数,和收费单口径打架)。存盘里旧的 <code>students[].paid</code> 原样保留、不迁移、不清零。<b>L-03 钱线仍未接 → 本线保持红。</b><br><b>P-156(2026-11-15 · 只在本地,未发布)</b>:Tony 定「学员档案 = 开单第一入口,填课程包就等于开单」—— 学员档案「已缴」按有无收费单分两态:<b>没开单可手填</b>(= 报名已收),<b>已开单转只读</b>、值 = 收费单流水合计,有单不回写。点「收费」进新收费单窗口时 <b>课程包 / 总金额 / 开单时已收三格从报名窗口自动带过来</b>(课程包锁死),那笔已收记成 <code>origin:'opening'</code> 期初流水。<b>学生收费页横表(全列学员 + 手机号 + 已缴 / 应交日期 + 汇总展开)仍是下一轮;L-03 钱线仍未接 → 本线保持红,工序不擅自打勾。<br><b>P-156b(2026-11-15 · 只在本地,未发布)</b>:新收费单窗口「缴费方式」默认「<b>第一次交</b>」;「下次应收日期」在<b>新建单</b>时改叫「<b>日期</b>」(= 这笔缴费的日子,默认今天)+ 说明「这个入口只记第一次缴费和日期;后续收款到学生收费页登记」,编辑单仍叫旧名;新建单<b>不写 <code>dueDate</code></b>,那笔已收就按该格落成期初流水。<b>学生收费页横表仍是下一轮;L-03 钱线仍未接 → 本线保持红,工序不擅自打勾。<br><b>P-157(2026-11-15 · 只在本地,未发布)</b>:学生收费视图从竖卡改成横表——一行一学员(全列 20 位,没开单标「未开单」),加手机号、多单汇总、点击展开每张单+每笔流水、筛选(全部/未开单/进行中/逾期/已结清);顶部 6 格汇总保留。横表已通 L-02 的「两端编号对齐/通道接上/红灯闸门」,但<strong>钱线 L-03(收费单→财务端收入单据)仍 0/4</strong>,本线保持红、工序不打勾。</b></b></div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：收费单 sid 必须是已存在的 stN，不许手打</li>
+        <li class="done"><b>② 通道接上</b>：学员档案加「开收费单」，带 sid 过去</li>
+        <li class="done"><b>③ 红灯闸门</b>：sid 在号码本查不到就拦下（四道闸门，P-154）</li>
+        <li class="done"><b>④ 验收</b>：探针 + 反向控制「孤儿 sid 必须报红」（P-158 静态 68/68）</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-03</span><span class="lname">学生收费 → 财务端 · 收入审批</span><span class="st ok">绿 · 钱线 · 已收口</span><span class="lcode">B-001 → R-YYYYMM-NNN（P-161 发号，线上已核）</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>B-001</code>（saveBilling / S.seq.bill） → <code>R-YYYYMM-NNN</code>（入账时按收款月份发号，<code>receiptSeq</code> 水位只写一次）</div>
+      <div class="gap"><b>已通（P-160 / P-161 · 2026-11-18 上线）</b>：业务端手点「☁︎ 推已缴费给财务」→ 独立云文档 <code>zhops/bizpayments</code>（9 字段白名单 + 查号闸门，不推 <code>students[].paid</code>）；财务端 <code>onSnapshot</code> 只读订阅 → 待入账卡片 → Tony 点 ✓ 才入 <code>S.income</code>，三道闸门（sid 格式 / 金额 &gt; 0 / 学员存在），忽略只过滤不删；入账时按收款月份生成单据号、写 <code>receiptSeq</code>（入账成功才写，重试不烧号），收款方式按 Tony 口径映射（现金→现金，其余→其他）。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：财务收入单据发 <code>R-YYYYMM-NNN</code>，带 sid + 收款月份（P-161）</li>
+        <li class="done"><b>② 通道接上</b>：收费单「已收款」→ <code>zhops/bizpayments</code> → 财务待入账清单（P-160）</li>
+        <li class="done"><b>③ 红灯闸门</b>：字段白名单 + 查号 + 三道入账闸门，不许手打学生名（P-160）</li>
+        <li class="done"><b>④ 验收</b>：静态 30/0 + 真 Chrome 运行时 10/0 + 反向控制 3 组报红 + 线上 sha 核一致（P-161）</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-04</span><span class="lname">教室 → 场地租金</span><span class="st ok">绿 · sales</span><span class="lcode">rooms[].code → places[].id + rent ｜ 钱线 L-09 已通</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>rooms[].code</code> → <code>places[].id</code> + <code>rooms[].placeId</code>（savePlace 一次生成 N 间教室）→ 月租单 <code>v-biz-rent-YYYY-MM-N</code></div>
+      <div class="gap"><b>已收口（2026-11-19 · P-163/P-164）</b>：端内关联早已通（P-103③ 整层月租只挂场地一条、不摊到每间）；月租现在能进财务 —— 业务部按「场地 × 月份」开应付单，走 L-07 同一条 approvals，财务批准 / 付款，业务回读。<b>本线不再待收口。</b></div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：rooms[].placeId ↔ places[].id 已登记</li>
+        <li class="done"><b>② 通道接上</b>：场地生成教室、租金不摊分，已在跑</li>
+        <li class="done"><b>③ 红灯闸门</b>：每月按 places 生成一张月租应付单，走 L-07 同一条 approvals（P-163）</li>
+        <li class="done"><b>④ 验收</b>：L-09 已转绿（真云端端到端 13/13），本线收口</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-05</span><span class="lname">学员档案 → 主端 · 候选池</span><span class="st ok">绿 · sales → admin</span><span class="lcode">stN (zhops/bizstudents 7 键) → DB.students[].id = stN ｜ 无钱线</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b>业务端 <code>stN</code> → 主端 <code>DB.students[].id = stN</code>（addStudentsFromRoster 同取号规则）</div>
+      <div class="kv"><b>已通链路：</b>bizPush() → <code>zhops/bizstudents</code>（7 键 id/name/phone/lv/mode/preferRoom/deleted）→ 主端 pullBizStudents / subscribeBiz → mergeBizStudents，只覆盖 4 字段，删人标 <code>bizGone</code> 不删人，来源只认 <code>__app==='zhops.biz'</code>。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：stN 两端同规则</li>
+        <li class="done"><b>② 通道接上</b>：对外桥单向，主端不回写</li>
+        <li class="done"><b>③ 红灯闸门</b>：来源校验 + 空值不覆盖 + 墓碑标记</li>
+        <li class="done"><b>④ 验收</b>：check-biz-push / P-137 探针在跑</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="bad"><summary><span class="lid">L-06</span><span class="lname">教室 → 主端 · 排课</span><span class="st bad">红 · chief 裁决</span><span class="lcode">rooms[].code → class.roomCode / l.roomCode ｜ 钱线 L-09</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b>业务端 <code>rooms[].code</code>（Tony 手填、查重、存了锁死） → 主端 <code>class.roomCode</code> / 课次快照 <code>l.roomCode</code></div>
+      <div class="gap"><b>已修（②③）</b>：主端 bizRooms() 原只读<b>本机</b> localStorage['zhops.biz.v1'] → 现云端 <code>bizrooms</code> 优先、本机兜底；开班申请「教室编码」原为<b>手打 text 框</b> → 现只从业务部在用清单选、提交前查号拦下（<code>BINHTHANH-1</code> 这类手滑值进不来），审批建班改取申请 <code>o.roomCode</code>，编码一路进班与课次快照。<br><b>剩余缺口（④）</b>：还差端到端验收 —— 真云文档下「两台设备同号可见」+ 反向控制「打错号必须报红」。<b>钱线 L-09 已于 P-163 收口转绿</b>（2026-11-19），本线做完 ④ 即可直接转绿，无需再挂「待收口」。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：rooms[].code 发号（Tony 手填 / 查重 / 锁死），主端只引用 —— 产品代码已符合，待登记进号码本</li>
+        <li class="done"><b>② 通道接上</b>：教室清单上云（新增只读桥），主端 bizRooms() 先读云、本机兜底 —— <b>2026-11-14 已做</b>：业务端新增独立文档 <code>zhops/bizrooms</code> 与手点「☁︎ 推教室给主端」，载荷 9 字段白名单、<code>rooms[].code</code> 原样带出、钱线字段一个不推；主端新增手点「☁︎ 拉取业务部教室」+ 内存缓存，不写存盘键、不顶 <code>cloudDirty</code>；两端越南语字典已登记。针对性探针 33/33 全绿、反向控制 3 组全红。</li>
+        <li class="done"><b>③ 红灯闸门</b>：主端 roomCode 手打框换 &lt;select&gt;；保存前查号，查不到红灯拦下 —— <b>2026-11-14 已做</b>：新增 <code>roomCodeOptions()</code> / <code>isKnownRoomCode()</code> 唯一清单（下拉与查号同源、停用教室不列、首项「暂不指定」保留、老值补 option 不静默变空、线上班禁用并清空）；<code>createApp()</code> 加查号闸门（线下 + 非空 + 不在清单 → toast + return 不落盘）；<code>approveApp()</code> 编码真相源由审批草稿 <code>f</code> 改回申请 <code>o</code>（原草稿没有 roomCode，建班编码恒空 → 不产场地费单据）；P-98 探针断言同步升级。静态探针 34/34、运行时探针 21/21（含「审批建班 → 课次快照 → 场地使用记录」整条钱线），反向控制静态 3 组 + 运行时 3 组全红。</li>
+        <li class="todo"><b>④ 验收</b>：探针「两台设备同号可见」+ 反向控制「打错号必须报红」</li>
+      </ul>
+      <div class="kv" style="margin-top:10px"><b>当前 3 / 4 · 线保持红</b>，只差 ④ 端到端验收；关联扣款线 <b>L-09 已通</b>（P-163 收口），验收过即可转绿。</div>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-07</span><span class="lname">场地使用 → 财务端 · 请款</span><span class="st ok">绿 · 钱线</span><span class="lcode">u-&lt;lid&gt; (zhops/usage_&lt;lid&gt;) → v-biz-place-YYYY-MM-N</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b>主端 usageRecordOf() 生成 <code>u-&lt;lid&gt;</code>（lid = 课次 ID，线上课不记）→ 业务端 <code>v-biz-place-YYYY-MM-N</code>（newVoucherId，dept:'biz' / type:'place'）</div>
+      <div class="kv"><b>已通链路：</b>课次 done → <code>zhops/usage_&lt;lid&gt;</code> → 业务端「场地使用 · 待开单」→ submitPlaceVoucher() 写 <code>zhops/approvals</code> 的 vouchers[] → 财务端 placeApprovals 审批。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：lid / roomCode 快照 / 请款单号齐全</li>
+        <li class="done"><b>② 通道接上</b>：使用记录 → 请款单 → 审批单向</li>
+        <li class="done"><b>③ 红灯闸门</b>：金额 0 拒开单、已开单不重复（voucherId）</li>
+        <li class="done"><b>④ 验收</b>：check-p103-usage / 财务 placeApprovals 探针在跑</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-08</span><span class="lname">市场调查 → 投放 / 素材 / 活动</span><span class="st ok">绿 · sales</span><span class="lcode">R-001 → C-001 / A-001 / E-001 ｜ 钱线 L-09（投放费）</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>R-001</code>（S.seq.res）→ <code>C-001</code> / <code>A-001</code> / <code>E-001</code></div>
+      <div class="gap">纯台账、零连线。它不产生编号、不进账、不排课。<b>先别接</b> —— 要不要挂 sourceId 由 Tony 定；不定就标「独立台账」，不算故障。</div>
+      <ul class="steps">
+        <li class="todo"><b>①</b> 先定性：连 / 不连</li><li class="todo"><b>②</b> 要连才谈通道</li><li class="todo"><b>③</b> 要连才谈闸门</li><li class="todo"><b>④</b> 不连则无需验收</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-09</span><span class="lname">租金 / 投放费 → 财务端 · 支出审批</span><span class="st ok">绿 · 钱线 · 已收口</span><span class="lcode">places[].rent → v-biz-rent-YYYY-MM-N（月租已通）｜ 投放费已通（P-183）</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>places[].rent</code> → <code>v-biz-rent-YYYY-MM-N</code>（业务部发号，一场地一月一单）　｜　<code>campaigns[].cost</code> → 仍无编号（本轮不做）</div>
+      <div class="gap"><b>已做（P-163 · 2026-11-19 · 本地）</b>：业务部「月租 · 每月应付」按场地 × 月份开单，一个场地一张，写进 <b>L-07 同一条 zhops/approvals</b>（dept:'biz' / type:'rent'，不新开文档）；两道闸门 —— 场地没填月租不开、同月同场地本机 + 云端各查一次（已驳回的可重开，单号顺延）；财务端 <code>S.rentApprovals</code> 单独收、单独一张卡，<b>不混进工资单也不混进场请款单</b>，批准 / 驳回 / 付款与场地单共用 <code>voucherAct()</code> 一份实现；探针 63 项 + 3 组反向控制报红。<b>④ 已验收</b>（2026-11-19 · 真云端端到端 13/13，测试单已清理）；投放费（L-08）仍未做。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：<code>v-biz-rent-YYYY-MM-N</code>，带 placeId + 月份 + 间数（P-163）</li>
+        <li class="done"><b>② 通道接上</b>：每月按 places 生成应付单，走 L-07 同一条 approvals（P-163）</li>
+        <li class="done"><b>③ 红灯闸门</b>：没月租不开；同月同场地本机 + 云端各一道（P-163）</li>
+        <li class="done"><b>④ 验收</b>：探针 63/63 + 3 组反向控制报红；真云端端到端 13/13（业务开单 → 财务批准 → 付款 → 业务回读，测试单已清理）</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="bad"><summary><span class="lid">L-10</span><span class="lname">投放 / 素材 / 活动 → 线索池</span><span class="st bad">红 · sales</span><span class="lcode">C-001 / A-001 / E-001 → L-001 (refBy / source)</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>C-001 / A-001 / E-001</code> → <code>L-001</code>（leads.refBy / source）</div>
+      <div class="gap">缺口：campaigns.leads、events.conv 是手填数字，不生成真实线索，没有 campaignId / eventId 回指 → 能显示 ROI，追不到是哪个人。</div>
+      <ul class="steps">
+        <li class="todo"><b>① 两端编号对齐</b>：线索表加 sourceId，登记 C-001 / E-001 来源</li>
+        <li class="todo"><b>② 通道接上</b>：线索表单加「来源活动 / 来源投放」下拉</li>
+        <li class="todo"><b>③ 红灯闸门</b>：投放与活动页的「引来线索 / 转化」改成从 leads 数出，不再手填</li>
+        <li class="todo"><b>④ 验收</b>：探针「单转化成本可追到具体线索」+ 反向控制</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="line" data-s="ok"><summary><span class="lid">L-11</span><span class="lname">教室 → 教师端</span><span class="st ok">绿 · 仅同机</span><span class="lcode">rooms[].code → l.roomCode 快照 ｜ 无钱线</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>rooms[].code</code> → 课次 <code>l.roomCode</code> 快照（P-98：回看历史不能穿越，不拿班级现值现算）</div>
+      <div class="kv"><b>已通但有限制：</b>教师端直读本机 <code>zhops.biz.v1</code> 拿教室名，<b>只在同机同 origin 成立</b>；换设备 / 换线上即断，跟 L-06 是同一个根。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：roomCode 快照口径已定</li>
+        <li class="done"><b>② 通道接上</b>：本机直读可用</li>
+        <li class="todo"><b>③ 跨设备</b>：等共同账本 / 教室清单上云，与 L-06 一起收口</li>
+        <li class="todo"><b>④ 验收</b>：跨设备读到同一教室名</li>
+      </ul>
+    </div>
+  </details>
+
+  <h2 class="section-title">二·B · 老板端 · 监督端（P-177 · 独立板块，不计入 11 条连线）</h2>
+  <p class="section-note">第五端 = <b>监督端</b>，归总管执行，不单独建技能。它不新增连线，只在 <code>zhops/approvals</code> 上收口四端的审批；因此<b>不参与上方 11 条线的绿/红统计</b>。</p>
+  <div class="now" style="border-left-color:#a78bfa">
+    <div>
+      <div class="big">boss.html · 统一审批 + 报告 + 监督</div>
+      <div class="desc">四页签：待批 / 已处理 / 报告 / 监督；顶端悬浮球 AI 与 DSH 插件同款；三色主题；手机 iPad 自适应。<b>研发期未设口令。</b></div>
+    </div>
+    <div class="sp"></div>
+    <div class="meter"><div class="row"><span>探针</span><span>31 / 31</span></div><div class="bar"><span style="width:100%;background:#a78bfa"></span></div></div>
+  </div>
+  <div class="map" style="margin-top:12px">
+    <div class="layer-lab">数据进 · 自动</div>
+    <div class="node ext" style="border-color:#a78bfa;color:#a78bfa">zhops/approvals<span class="sub">20s 比对 at · 各端提交后自动到单</span></div>
+    <div class="down">↓</div>
+    <div class="chain">
+      <div class="node">待批<span class="sub">state=已提交</span></div><div class="arw">→</div>
+      <div class="node">批准 / 驳回<span class="sub">必填理由</span></div><div class="arw">→</div>
+      <div class="node">写回单据<span class="sub">app 保持 zhops.fin</span></div>
+    </div>
+    <div class="ext-note">
+      <b>写回口径</b>：逐字对齐财务 <code>fsPatchVoucher</code> —— 读整份 → 按 id 改 → PATCH 整份，app 标记不抢。非「已提交」不能重复批/驳。<br>
+      <b>边界</b>：只读四端存盘，不算薪资、不重算报告；市场宣传预算只留路口（业务部未开通）。<br>
+      <b>人事联动（S5）</b>：<code>watchDoneLive()</code> 实时收 <code>done_*</code>（20s 比对 at），<b>无手动兜底</b>（Tony 定）。<br>
+      <b>工序</b>：① 四页签 + 悬浮球 AI ② 审批写回对齐财务 ③ 反向控制 3 组报红 ④ 发布核 sha —— <b>4 / 4 已通</b>（P-177）。
+    </div>
+  </div>
+
+  <h2 class="section-title">三 · 业务端现跑编码字典（勿改 / 勿编）</h2>
+  <p class="section-note">全部核自 <code>docs/biz.html</code> 现跑代码。存盘键只有一把：<b>zhops.biz.v1</b>。发号器 <code>S.seq = {lead, stu, bill, res, cmp, ast, evt, room, place}</code>。</p>
+  <table>
+    <thead><tr><th style="width:15%">对象</th><th style="width:20%">数组</th><th style="width:25%">编号</th><th>发号处 / 规矩</th></tr></thead>
+    <tbody>
+      <tr><td>线索</td><td><code>S.leads</code></td><td><code>L-001</code></td><td>saveLead() · S.seq.lead</td></tr>
+      <tr><td>学员</td><td><code>S.students</code></td><td><code>st1</code></td><td>peekStudentId() 最大号+1，含 billing.sid 防撞；<b>删号不回收</b></td></tr>
+      <tr><td>学员墓碑</td><td><code>S.studentsDeleted</code></td><td>同 stN</td><td>删人留标，推 deleted:true，主端标 bizGone 不删人</td></tr>
+      <tr><td>收费单</td><td><code>S.billing</code></td><td><code>B-001</code> + <code>sid</code></td><td>saveBilling() · S.seq.bill</td></tr>
+      <tr><td>市场调查</td><td><code>S.research</code></td><td><code>R-001</code></td><td>saveResearch() · S.seq.res</td></tr>
+      <tr><td>投放记录</td><td><code>S.campaigns</code></td><td><code>C-001</code></td><td>saveCampaign() · S.seq.cmp</td></tr>
+      <tr><td>宣传素材</td><td><code>S.assets</code></td><td><code>A-001</code></td><td>saveAsset() · S.seq.ast</td></tr>
+      <tr><td>讲座活动</td><td><code>S.events</code></td><td><code>E-001</code></td><td>saveEvent() · S.seq.evt</td></tr>
+      <tr><td><b>教室</b></td><td><code>S.rooms</code></td><td><b>手填 <code>code</code></b></td><td><b>Tony 按填的教室名称当代号</b>；saveRoom() 查重 + 存了锁死；系统不生成不预设</td></tr>
+      <tr><td>场地</td><td><code>S.places</code></td><td><code>id</code> + <code>rooms[].placeId</code></td><td>savePlace() 一次生成 N 间；租金只挂场地一条，不摊到每间</td></tr>
+      <tr><td>场地使用</td><td><code>S.usage</code></td><td><code>u-&lt;lid&gt;</code></td><td>主端 usageRecordOf() 生成，lid = 课次 ID；云文档 zhops/usage_&lt;lid&gt;；线上课不记</td></tr>
+      <tr><td>场地请款单</td><td><code>S.placeVouchers</code></td><td><code>v-biz-place-YYYY-MM-N</code></td><td>newVoucherId() · dept:'biz' / type:'place'</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="section-title">四 · 跨端编号对照</h2>
+  <table>
+    <thead><tr><th style="width:22%">对象</th><th style="width:34%">编号</th><th>出处 / 规矩</th></tr></thead>
+    <tbody>
+      <tr><td>主端学生</td><td><code>DB.students[].id = stN</code></td><td>addStudentsFromRoster() 同取号规则；与业务端 stN 是同一个号</td></tr>
+      <tr><td>班级 / 课次</td><td><code>c1</code> / <code>c1#8</code></td><td>主端发号；课次 ID 进 done_&lt;lid&gt; 与 usage_&lt;lid&gt;</td></tr>
+      <tr><td>教室引用</td><td><code>class.roomCode</code> / <code>l.roomCode</code></td><td>课次存快照，回看历史不穿越</td></tr>
+      <tr><td>教师桥</td><td><code>emp.zhopsTid = t1/t2/t3</code> ↔ <code>DB.teachers[].id</code></td><td>人事端发号；<code>T001</code> 只是人事内部工号，永不进主端 / 财务</td></tr>
+      <tr><td>工资单</td><td><code>v-hr-YYYY-MM</code></td><td>人事 pushSum() · dept:'hr'</td></tr>
+      <tr><td>场地请款单</td><td><code>v-biz-place-YYYY-MM-N</code></td><td>业务 newVoucherId() · dept:'biz' / type:'place'</td></tr>
+      <tr><td>云文档</td><td><code>bizstudents</code> / <code>bizmaster</code> / <code>approvals</code> / <code>usage_*</code> / <code>done_*</code></td><td>对外桥与整份备份两条路绝不合并</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="section-title">五 · 总管闸门（zhops-chief 把关用）</h2>
+  <p class="section-note">总管不写业务代码、不碰生产存盘。<b>把关与操作分家</b>：改得对不对由探针红绿判定，不由施工者自评。跨端只交结论与证据，不交对方存盘钥匙。</p>
+  <div class="gate">
+    <div class="gcard">
+      <h3>放行前核 4 项</h3>
+      <ul>
+        <li>两端编号已在<b>号码本</b>登记，且谁发号 / 谁只读写清</li>
+        <li><b>moneyLink</b> 状态：关联扣款线红 → 标待收口，不放全绿</li>
+        <li><b>探针复跑</b>通过数（以复跑输出为准，不凭印象）</li>
+        <li><b>反向控制</b>确实报红（不报红 = 断言是装饰品）</li>
+      </ul>
+    </div>
+    <div class="gcard">
+      <h3>打回 3 禁区</h3>
+      <ul>
+        <li>碰了别人的存盘键（<code>zhops.sched.v3</code> / <code>hr.v1</code> / <code>fin.v1</code>）</li>
+        <li>顺手发布 / 推云 / 改线上 —— 没 Tony 明确点头一律打回</li>
+        <li>改了 Tony 已经认同过的文案和结论</li>
+      </ul>
+    </div>
+    <div class="gcard">
+      <h3>工具路由（哪类活调什么）</h3>
+      <ul>
+        <li><b>只读分析</b> → 文件读取 / 代码核查，可自动</li>
+        <li><b>施工</b> → 文件编辑，逐次确认；改前讲读写 / 备份 / 回滚</li>
+        <li><b>自证</b> → 单端探针 / run.sh / verify.sh</li>
+        <li><b>反向控制</b> → 副本目录 + 故意改坏 + 逐字还原</li>
+        <li><b>记账</b> → 工作台账当天页追加一行（不发布）</li>
+        <li><b>发布 / 推云 / 钱线 / 教室编码</b> → <b>Tony 手点</b></li>
+      </ul>
+    </div>
+    <div class="gcard">
+      <h3>施工顺序</h3>
+      <ul>
+        <li><b>L1 号码对齐</b>：号码本 + L-06（教室号唯一跨四端）</li>
+        <li><b>L2 钱线</b>：L-03 + L-09（碰钱，单独一轮先备份）</li>
+        <li><b>L3 人接上</b>：L-01 + L-02 + L-10（端内改动）</li>
+        <li><b>L4 定性</b>：L-08 标灰，不算故障</li>
+        <li>每通一根：图转绿 → 工序表回填 → 台账一句话</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    本页<b>只读</b>：不写任何 localStorage、不发网络请求、不碰产品存盘键 —— 双击 file:// 打开与线上打开看到的内容完全一致。<br>
+    线色只能由「4 步工序全过 + 总管闸门放行」更改，不许手改。所有编号核自现跑代码，不是设计稿。<br>
+    快照 2026-11-21（L-08 收口） · 当前 9 绿 / 2 红 / 0 待收口 / 0 灰 · 完成率 82%（剩 L-06 等裁决、L-10 未开）
+  </div>
+</div>
+
+<script>
+(function(){
+  var btns = document.querySelectorAll('.tools button');
+  var lines = document.querySelectorAll('.line');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var f = b.getAttribute('data-f');
+      lines.forEach(function(l){
+        l.style.display = (f === 'all' || l.getAttribute('data-s') === f) ? '' : 'none';
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
