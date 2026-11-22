@@ -107,17 +107,24 @@ a{color:var(--brand);text-decoration:none;}
 }
 .side-foot .sf-btn:hover{color:#a5f3fc;}
 /* ---------- 点名抽屉（2026-10-12 第 ③ 步）---------- */
-/* 一行一个学员，勾上 = 缺勤。缺勤是「例外」，所以列表默认全不勾 —— 一眼扫过去就知道谁没来 */
+/* 一行一个学员，三选一：全勤 / 请假 / 无故。
+   ★ 2026-11-22（T2/P-209）：原来是「勾上=缺勤」，现在要分请假和无意，
+     因为计费口径是「请假照收、无故不算」—— 分不清就没法按实到算钱。
+   全勤是默认（不选），一眼扫过去就知道谁没来。 */
 .roll-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
-.rollrow{display:flex;align-items:center;gap:9px;padding:7px 11px;cursor:pointer;
+.rollrow{display:flex;align-items:center;gap:9px;padding:7px 11px;
   background:var(--surface);border-bottom:1px solid var(--line);font-size:12.5px;}
 .rollrow:last-child{border-bottom:0;}
 .rollrow:hover{background:var(--surface-2);}
-.rollrow input{accent-color:var(--bad,#b03030);width:15px;height:15px;cursor:pointer;flex:none;}
 .rollrow .nm{font-weight:600;}
 .rollrow .ph{color:var(--ink3);font-family:var(--mono);font-size:11.5px;}
-.rollrow .tagx{margin-left:auto;font-size:10.5px;color:var(--ink3);}
-.rollrow input:checked ~ .tagx{color:var(--bad,#b03030);font-weight:600;}
+.rollrow .rk-set{margin-left:auto;display:flex;gap:4px;flex:none;}
+.rollrow .rk{font:inherit;font-size:11px;padding:3px 8px;border-radius:5px;cursor:pointer;
+  border:1px solid var(--line2);background:var(--surface);color:var(--ink3);}
+.rollrow .rk:hover{border-color:var(--ink3);}
+.rollrow .rk.on.ok{background:rgba(40,140,80,.14);border-color:#2a8c50;color:#2a8c50;font-weight:700;}
+.rollrow .rk.on.warn{background:rgba(190,130,20,.16);border-color:#b98314;color:#b98314;font-weight:700;}
+.rollrow .rk.on.bad{background:rgba(176,48,48,.14);border-color:#b03030;color:#b03030;font-weight:700;}
 .rl-pick select{font:inherit;font-size:12.5px;margin-left:4px;padding:2px 6px;
   border:1px solid var(--line2);border-radius:4px;background:var(--surface);color:var(--ink);}
 /* ---------- 编入班级抽屉（2026-10-12 第 ③ 步）---------- */
@@ -1492,6 +1499,11 @@ function doPush(cb){
          失败只提示一句，不改云状态 —— 排课数据已经推成功了。 */
       writePublic(ok => {
         if (!ok) toast('☁︎ public 没写进去（排课数据已推成功）');
+        /* ★ 2026-11-22（T2/P-209）：出勤汇总也要推 —— 业务端按实到计费靠这份。
+           跟 public 并列，谁失败都不影响另一个（排课数据已经推成功了）。 */
+        writeAttendance(aOk => {
+          if (!aOk) toast('☁︎ attendance 没写进去（排课数据已推成功）');
+        });
         /* ★ 第 2 步：再按教师写分片。public 成功与否都照写。 */
         writeSlices((allOk, n, total) => {
           if (!allOk) toast('☁︎ 教师分片 ' + n + ' / ' + total + ' 份写入成功（有失败）');
@@ -1541,6 +1553,71 @@ function writePublic(cb){
     app:     { stringValue: APP_TAG },
   }};
   return fetch(fsUrlOf('zhops', 'public'), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(() => { if (cb) cb(true); })
+    .catch(() => { if (cb) cb(false); });
+}
+
+/* ==========================================================================
+   出勤汇总 zhops/attendance（2026-11-22 · T2/P-209）
+   —— 为什么要单独一个文档：业务端要按实到计费，但出勤数据在主端，
+      业务端读不到。放 zhops/public 不行 —— public 是公开的（无鉴权），
+      学生出勤不该挂在那儿。所以单独一条，只给业务端读。
+   —— 只由主端写。业务端只读。
+   —— 内容：每个学生 × 每个班 → 已上几节 / 请假几节 / 无故几节。
+      ★ 只数 status='done' 的课次 —— plan/today 还没上，不能算。
+      ★ 「应上」= 该生所在班已 done 的课次数；请假和全勤都算「该收」，
+        只有无故缺勤要扣。这条口径 Tony 2026-11-22 定。
+   ========================================================================== */
+function attendancePayload(){
+  const out = { at: new Date().toISOString(), rows: [] };
+  const doneLessons = (DB.lessons || []).filter(l => l.status === 'done');
+
+  /* 按 班 × 学生 归集：这个班上了几节、这个学生请了几节/缺了几节 */
+  (DB.classes || []).forEach(c => {
+    const ls = doneLessons.filter(l => l.cid === c.id);
+    if (!ls.length) return;
+    /* 班里有哪些学生：members 是 sid 数组（跟点名用的是同一份） */
+    const mem = (c.members || []).slice();
+    if (!mem.length) return;
+    /* 这个班所有 done 课次里，每个学生的缺勤记录 */
+    const byStu = {};
+    mem.forEach(sid => { byStu[sid] = { leave: 0, noshow: 0 }; });
+    ls.forEach(l => {
+      (DB.absences || []).forEach(a => {
+        if (a.cid !== c.id || a.no !== l.no) return;
+        if (!byStu[a.sid]) return;
+        /* 老数据没 kind → 当无故（历史行为不变） */
+        if ((a.kind || 'noshow') === 'leave') byStu[a.sid].leave++;
+        else byStu[a.sid].noshow++;
+      });
+    });
+    mem.forEach(sid => {
+      const r = byStu[sid];
+      out.rows.push({
+        sid: sid, cid: c.id,
+        lv: c.lv || '', ccode: c.code || '',
+        done: ls.length,              /* 该生所在班已上节数 = 应上 */
+        leave: r.leave,               /* 请假（照收） */
+        noshow: r.noshow,             /* 无故（不算） */
+        billable: ls.length - r.noshow, /* 计费节数 = 应上 − 无故 */
+      });
+    });
+  });
+  return out;
+}
+
+function writeAttendance(cb){
+  if (typeof fetch !== 'function'){ if (cb) cb(false); return; }
+  const iso = new Date().toISOString();
+  const body = { fields: {
+    payload: { stringValue: JSON.stringify(attendancePayload()) },
+    at:      { stringValue: iso },
+    app:     { stringValue: APP_TAG },
+  }};
+  return fetch(fsUrlOf('zhops', 'attendance'), {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -5301,20 +5378,36 @@ function renderRollDrawer(){
   }
   if (!rollable.some(l => l.no === dState.no)) dState.no = rollable[rollable.length - 1].no;
 
-  /* 每次重画都从事实表重读缺勤名单 —— 别信 dState 里的旧值 */
-  const absent = DB.absences.filter(a => a.cid === cid && a.no === dState.no).map(a => a.sid);
+  /* 每次重画都从事实表重读缺勤名单 —— 别信 dState 里的旧值。
+     ★ 2026-11-22（T2/P-209）：现在分「请假 / 无故」两种。
+       老数据没有 kind → 一律当「无故缺勤」（历史行为不变，不给老记录改判）。 */
+  const absentMap = {};
+  DB.absences.filter(a => a.cid === cid && a.no === dState.no)
+    .forEach(a => { absentMap[a.sid] = a.kind || 'noshow'; });
 
   const opts = rollable.map(l =>
     '<option value="'+l.no+'"'+(l.no === dState.no ? ' selected' : '')+'>'+
       '第 '+l.no+' 课 · '+l.date+(l.status === 'today' ? '（今天）' : '')+
     '</option>').join('');
 
-  const rows = students.length ? students.map(s =>
-    '<label class="rollrow"><input type="checkbox" data-r-sid="'+s.id+'"'+
-      (absent.indexOf(s.id) >= 0 ? ' checked' : '')+'>'+
+  /* ★ 2026-11-22（T2/P-209）：一行三个状态 —— 全勤 / 请假 / 无故缺勤。
+     为什么要分：计费口径是「请假照收、无故不收」（Tony 选 C 混合）。
+     分不清这两种，就没法按实到算钱。
+     ★ 默认全勤（不选），跟原来「缺勤是例外」同一个思路 —— 省 97% 的记录量。 */
+  const rows = students.length ? students.map(s => {
+    const k = absentMap[s.id] || '';
+    const btn = (val, label, cls) =>
+      '<button type="button" class="rk'+(k === val ? ' on ' + cls : '')+'" ' +
+      'data-r-sid="' + s.id + '" data-r-kind="' + val + '">' + label + '</button>';
+    return '<div class="rollrow">'+
       '<span class="nm">'+esc(s.name)+'</span>'+
       '<span class="ph">'+esc(s.phone || '')+'</span>'+
-      '<span class="tagx">缺勤</span></label>').join('')
+      '<span class="rk-set">'+
+        btn('', '全勤', 'ok') +
+        btn('leave', '请假', 'warn') +
+        btn('noshow', '无故', 'bad') +
+      '</span></div>';
+  }).join('')
     : '<div class="empty">这个班还没有学员</div>';
 
   $('#drawer').innerHTML =
@@ -5324,7 +5417,8 @@ function renderRollDrawer(){
       '<button class="x" data-d-close title="关闭" aria-label="关闭">✕</button>'+
     '</div>'+
     '<div class="d-b">'+
-      '<div class="note"><b>只记缺勤</b> —— 默认全勤，勾上谁没来就行。<br>'+
+      '<div class="note"><b>默认全勤</b> —— 谁没来就点「请假」或「无故」。<br>'+
+        '请假照收学费，无故缺勤不算（计费口径 Tony 2026-11-22 定）。<br>'+
         '<span class="rl-pick">第几节：<select data-r-no>'+opts+'</select></span></div>'+
       '<div class="roll-list">'+rows+'</div>'+
     '</div>'+
@@ -5339,16 +5433,24 @@ function saveRoll(){
   if (!dState || dState.kind !== 'roll') return false;
   const cid = dState.cid, no = dState.no;
   if (!cid || !no) return false;
+  /* ★ 2026-11-22（T2/P-209）：按三选一状态重建。
+     先删该班该节全部记录再按当前选择重建 —— 幂等，重复保存结果一致。
+     kind: 'leave'（请假，照收）/ 'noshow'（无故，不算）。全勤 = 不存记录。 */
   const picked = [];
-  $('#drawer').querySelectorAll('[data-r-sid]').forEach(el => {
-    if (el.checked) picked.push(el.dataset.rSid);
+  $('#drawer').querySelectorAll('[data-r-kind]').forEach(el => {
+    if (el.classList.contains('on') && el.dataset.rKind) {
+      picked.push({ sid: el.dataset.rSid, kind: el.dataset.rKind });
+    }
   });
   DB.absences = DB.absences.filter(a => !(a.cid === cid && a.no === no));
-  picked.forEach(sid => DB.absences.push({ sid:sid, cid:cid, no:no }));
+  picked.forEach(p => DB.absences.push({ sid:p.sid, cid:cid, no:no, kind:p.kind }));
   buildFacts();
   save();
   closeDrawer(true);
-  toast('已记 ' + picked.length + ' 人缺勤');
+  const nLeave = picked.filter(p => p.kind === 'leave').length;
+  const nNo = picked.filter(p => p.kind === 'noshow').length;
+  toast(nLeave + nNo === 0 ? '全部全勤'
+    : ('已记 请假 ' + nLeave + ' 人 · 无故 ' + nNo + ' 人'));
   render();
   return true;
 }
@@ -6545,6 +6647,19 @@ document.addEventListener('click', e => {
   }
   /* ---- 备份链路：导入抽屉里的「确认导入」 ---- */
   if (e.target.closest('#drawer [data-i-do]')){ doImport(); return; }
+  /* ---- 点名抽屉：三选一状态切换（2026-11-22 T2/P-209）----
+     点「请假」= 该生这一节标请假；再点一次取消回全勤（同组互斥）。 */
+  const rk = e.target.closest('#drawer [data-r-kind]');
+  if (rk){
+    const sid = rk.dataset.rSid, kind = rk.dataset.rKind;
+    const grp = rk.parentElement;
+    const wasOn = rk.classList.contains('on');
+    /* 先把这一行全部取消 */
+    grp.querySelectorAll('[data-r-kind]').forEach(x => x.classList.remove('on'));
+    /* 原来选的就是它 → 现在取消 = 回全勤；否则设成新的 */
+    if (!wasOn && kind) rk.classList.add('on');
+    return;
+  }
   /* ---- 点名抽屉：保存（2026-10-12 第 ③ 步）---- */
   if (e.target.closest('#drawer [data-r-save]')){ saveRoll(); return; }
   /* ---- 开班申请抽屉 ---- */

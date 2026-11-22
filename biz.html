@@ -1575,14 +1575,89 @@ var SRC_COLORS = {
 };
 
 /* ---- 课程包参考价（VND） ---- */
+/* ★ 2026-11-22（T2 / P-209）：课程包加 lessons（课时数）。
+   为什么要加：按实到计费必须知道「这包包含多少课时」才能算出单价
+   （整包价 ÷ 课时数 = 每节多少钱）。原来课时数只写在名字字符串里，
+   程序取不到 —— 名字是给人看的，字段才是给程序用的。
+   ★ Tony 2026-11-22 定：先只设 HSK1，HSK2/HSK3 以后再说。
+     lessons 为 0 或未设 = 还没配课时数，这类包不走按实到计费（回落到整包价）。 */
 var PACKAGES = [
-  { id:'hsk1', name:'HSK1 完整（60课时）', price:8000000 },
-  { id:'hsk2', name:'HSK2 完整（60课时）', price:9000000 },
-  { id:'hsk3', name:'HSK3 备考包（含考试费）', price:10000000 },
-  { id:'trial', name:'试听课', price:0 },
-  { id:'vip1', name:'一对一（每小时）', price:350000 },
-  { id:'small', name:'小班（每课时）', price:280000 }
+  { id:'hsk1', name:'HSK1 完整（60课时）', price:8000000, lessons:60 },
+  { id:'hsk2', name:'HSK2 完整（60课时）', price:9000000, lessons:0 },
+  { id:'hsk3', name:'HSK3 备考包（含考试费）', price:10000000, lessons:0 },
+  { id:'trial', name:'试听课', price:0, lessons:0 },
+  { id:'vip1', name:'一对一（每小时）', price:350000, lessons:0 },
+  { id:'small', name:'小班（每课时）', price:280000, lessons:0 }
 ];
+
+/* ============================================================================
+   ★ 2026-11-22（T2/P-209）：按实到算钱（核心）
+
+   口径（Tony 2026-11-22 定「C 混合」）：
+     请假照收 · 无故缺勤不算 · 全勤照收
+     计费节数 = 该生所在班已上节数 − 无故缺勤节数
+
+   怎么用：
+     单价 = 整包价 ÷ 课程包课时数（pkgUnitPrice）
+     应收 = 计费节数 × 单价
+
+   ★ 什么时候不这么算（重要）：
+     ① 课程包没配课时数（HSK2/HSK3 目前 lessons=0）→ 回落到整包价
+     ② 读不到出勤数据 → 回落到整包价，并明确提示
+     ③ 出勤数据里没这个学生 → 同上
+     宁可老实说「按整包算」，也不能拿缺的数据算出一个假精确的数。
+   ============================================================================ */
+function stuBillable(sid, pkgId, stdFee){
+  var pkg = PACKAGES.find(function(p){ return p.id === pkgId; });
+  var n = pkg ? (Number(pkg.lessons) || 0) : 0;
+
+  /* 课时数没配 → 不能按节算 */
+  if (n <= 0) {
+    return { mode:'package', reason:'这个课程包还没配课时数', unit:0, billed:0, amount:0 };
+  }
+  /* 出勤数据没连上 */
+  if (!ATT.ok) {
+    return { mode:'package', reason:'没连上排课系统，读不到出勤', unit:0, billed:0, amount:0 };
+  }
+  var a = attOf(sid);
+  if (!a) {
+    return { mode:'package', reason:'排课系统里还没有这个学生的上课记录', unit:0, billed:0, amount:0 };
+  }
+  if (a.done <= 0) {
+    return { mode:'package', reason:'这个学生还没上过课', unit:0, billed:0, amount:0 };
+  }
+
+  var total = (stdFee != null && stdFee !== '') ? (Number(stdFee) || 0) : (Number(pkg.price) || 0);
+  var unit = total > 0 ? Math.round(total / n) : 0;
+  var billed = Math.max(0, Math.min(a.billable, n));   /* 不超过包的课时数 */
+  return {
+    mode: 'attendance',
+    reason: '',
+    unit: unit,
+    billed: billed,          /* 计费节数 */
+    done: a.done,            /* 已上节数 */
+    leave: a.leave,          /* 请假（照收） */
+    noshow: a.noshow,        /* 无故（不算） */
+    packageLessons: n,       /* 这个包总共几节 */
+    amount: unit * billed,
+  };
+}
+
+/* 取某个课程包的课时数；没配就返回 0（调用方据此判断能不能按节算） */
+function pkgLessons(id){
+  var p = PACKAGES.find(function(x){ return x.id === id; });
+  return p ? (Number(p.lessons) || 0) : 0;
+}
+/* 每节课单价 = 整包价 ÷ 课时数；课时数没配就返回 0 */
+function pkgUnitPrice(id, priceOverride){
+  var p = PACKAGES.find(function(x){ return x.id === id; });
+  if(!p) return 0;
+  var n = Number(p.lessons) || 0;
+  if(n <= 0) return 0;
+  var total = (priceOverride != null && priceOverride !== '')
+    ? (Number(priceOverride) || 0) : (Number(p.price) || 0);
+  return total > 0 ? Math.round(total / n) : 0;
+}
 
 /* ---- 初始化 ---- */
 function load(){
@@ -2009,6 +2084,58 @@ function stuFeeCell(s){
     (f.over ? ' <span class="tg bad">逾期</span>' : '');
 }
 /* 表单顶部只读摘要块:应收 / 已收 / 待收 / 下次应收日,全部从收费单算 */
+/* ============================================================================
+   出勤数据（2026-11-22 · T2/P-209）
+   —— 主端写 zhops/attendance，业务端只读。
+   —— 为什么要读它：计费口径是「请假照收、无故不算」（Tony 定 C 混合），
+      不读出勤就没法算「这个学生实际该交多少」。
+   —— 读不到怎么办：静默降级，按整包价算，并在界面上说清「没连上排课系统」。
+      绝不能让「读不到出勤」变成「算错钱还不说」。
+   ============================================================================ */
+var ATT = { rows: null, at: null, ok: false, err: '' };
+
+/* 按 sid 找这个学生的出勤汇总（可能有多条：他在多个班） */
+function attOf(sid){
+  if (!ATT.rows) return null;
+  var mine = ATT.rows.filter(function(r){ return r.sid === sid; });
+  if (!mine.length) return null;
+  var done = 0, leave = 0, noshow = 0, billable = 0;
+  mine.forEach(function(r){
+    done += Number(r.done) || 0;
+    leave += Number(r.leave) || 0;
+    noshow += Number(r.noshow) || 0;
+    billable += (r.billable != null ? Number(r.billable) : (Number(r.done)||0) - (Number(r.noshow)||0));
+  });
+  return { done:done, leave:leave, noshow:noshow, billable:billable, classes:mine.length };
+}
+
+function fetchAttendance(cb){
+  if (typeof fetch !== 'function'){ cb && cb(false); return; }
+  fetch(fsUrlOf('attendance')).then(function(r){
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function(raw){
+    var p = raw && raw.fields && raw.fields.payload && raw.fields.payload.stringValue;
+    if (!p) throw new Error('云端还没有出勤数据');
+    var o; try { o = JSON.parse(p); } catch(e){ throw new Error('出勤数据格式不对'); }
+    ATT.rows = Array.isArray(o.rows) ? o.rows : [];
+    ATT.at = o.at || (raw.fields.at && raw.fields.at.stringValue) || '';
+    ATT.ok = true; ATT.err = '';
+    cb && cb(true);
+  }).catch(function(e){
+    ATT.rows = null; ATT.ok = false; ATT.err = (e && e.message) || '读取失败';
+    cb && cb(false);
+  });
+}
+
+/* 出勤原因文案的越语表（键是中文原句，跟 stuBillable 返回的 reason 一一对应） */
+var ATTV = {
+  '这个课程包还没配课时数':'Gói khóa học này chưa cấu hình số tiết',
+  '没连上排课系统，读不到出勤':'Chưa kết nối hệ thống xếp lịch, không đọc được điểm danh',
+  '排课系统里还没有这个学生的上课记录':'Hệ thống xếp lịch chưa có dữ liệu lên lớp của học viên này',
+  '这个学生还没上过课':'Học viên này chưa lên lớp buổi nào'
+};
+
 /* ★ 2026-11-22（T1/P-208）：动态文案当场按语言拼。
    为什么不能用字典：'多收 2.000.000' 这种「前缀+数字」拼出来的串，
    翻译层按整句匹配永远匹配不到（项目里已有同样教训，见漏斗那段注释）。 */
@@ -2068,9 +2195,31 @@ function stuFeeBlock(s){
       (gap > 0 ? ' <span style="color:var(--ink3)">'+FEE_T('（打折 / 优惠，正常就没事）','（Chiết khấu / ưu đãi, bình thường thì không sao）')+'</span>' : '')+'<br>';
   }
 
+  /* ★ 2026-11-22（T2/P-209）：出勤 + 按实到该收多少。
+     这一行是 T2 的落点：以前只看到「开了多少单」，现在能看到
+     「按他的实际上课情况，应该收多少」。 */
+  var attLine = '';
+  if (s.id) {
+    var bl = stuBillable(s.id, s.pkg, s.stdFee);
+    if (bl.mode === 'attendance') {
+      attLine = '<span>' + FEE_T('出勤', 'Đi học') + '</span> ' +
+        '<span data-raw>' + bl.done + '</span> <span>' + FEE_T('节', 'tiết') + '</span>' +
+        ' · <span>' + FEE_T('请假', 'Nghỉ phép') + '</span> <span data-raw>' + bl.leave + '</span>' +
+        ' · <span>' + FEE_T('无故', 'Vắng không phép') + '</span> <span data-raw>' + bl.noshow + '</span><br>' +
+        '<span>' + FEE_T('按实到应收费', 'Phải thu theo số tiết thực học') + '</span> ' +
+        '<span data-raw>' + fmtVND(bl.amount) + '</span> <span>VND</span>' +
+        ' <span style="color:var(--ink3)">（' + bl.billed + ' ' + FEE_T('节', 'tiết') + ' × ' +
+        fmtVND(bl.unit) + '）</span><br>';
+    } else if (bl.reason) {
+      attLine = '<span style="color:var(--ink3)">' + FEE_T('按实到计费：', 'Tính theo số tiết thực học: ') +
+        FEE_T(bl.reason, ATTV[bl.reason] || bl.reason) + '</span><br>';
+    }
+  }
+
   return '<div id="stu-fee" class="sm" style="color:var(--ink3);margin:0 0 12px">'+
     stdLine+
     gapLine+
+    attLine+
     '<span>收费以收费单为准,学员档案不再另记一份。</span><br>'+
     '<span>名下收费单已缴合计</span> <span data-raw>'+fmtVND(f.got)+'</span> <span>VND</span><br>'+
     '<span>应收</span> <span data-raw>'+fmtVND(f.recv)+'</span> <span>VND</span> · '+
@@ -3671,6 +3820,24 @@ function editStudent(id){
   var s = S.students.find(function(x){return x.id===id;});
   if(!s) return;
   openDrawer('编辑学员 · '+s.name, studentForm(s));
+  /* ★ 2026-11-22（T2/P-209）：打开学员档案后，才按需拉一次出勤数据。
+     为什么不放启动：启动拉取会多一次请求，破坏现有「开机只发一次」的探针口径。
+     为什么有缓存：ATT.rows 已有就不重复拉，同一次会话反复点开不会狂发请求。
+     拉到后重画抽屉里的 fee 块 —— 只动那一段，不打断用户正在编辑的输入框。 */
+  if (ATT.rows === null && typeof fetch === 'function' &&
+      !window.__NO_CLOUD__ && !/[?&]nocloud=1/.test(location.search)) {
+    fetchAttendance(function(ok){
+      if(!ok) return;
+      var el = document.getElementById('stu-fee');
+      if(!el) return;
+      var host = el.parentNode;
+      if(!host) return;
+      var wrap = document.createElement('div');
+      wrap.innerHTML = studentForm(s);
+      var fresh = wrap.querySelector('#stu-fee');
+      if(fresh) host.replaceChild(fresh, el);
+    });
+  }
 }
 function studentForm(s){
   s = s || {};
@@ -5396,6 +5563,12 @@ var BIZ_VI = {
   '收费以收费单为准,学员档案不再另记一份。':'Thu theo phiếu thu; hồ sơ học viên không ghi thêm bản nào.',
   /* ★ 2026-11-22（T1/P-208）：标准学费相关文案 —— 越语界面不许留汉字 */
   '标准学费':'Học phí chuẩn',
+  '出勤':'Đi học',
+  '节':'tiết',
+  '请假':'Nghỉ phép',
+  '无故':'Vắng không phép',
+  '按实到应收费':'Phải thu theo số tiết thực học',
+  '按实到计费：':'Tính theo số tiết thực học: ',
   '标准':'Chuẩn',
   '少收':'Thu thiếu',
   '多收':'Thu thừa',
@@ -6289,6 +6462,7 @@ cldMark('idle');
 bakMark('idle');
 /* ★ P-138：开机按本机记的语言生效（存的是 vi 就直接是越南语，不用手点） */
 if (BIZ_LANG === 'vi') bizApplyLang(); else bizSyncBtn();
+
 
 /* ★ 2026-11-08（P-136）：给下面的实时同步 module 留三个口子。
    主脚本是普通 <script>（全局作用域），module 看不到它的 var/function，
