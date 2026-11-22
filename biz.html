@@ -3240,14 +3240,30 @@ function openPoster(id){
       return '<option value="'+c.id+'"'+(a.compId===c.id?' selected':'')+' data-raw>'+escCmp(c.name)+'</option>';
     }).join('')+'</select></div>';
 
+  /* 成本（P-196）：只有 Output 需要，Input 是别人的不算我们的成本 */
+  h += '<div class="fld-row"><div class="fld"><label>这张花了多少（VND）</label>'+
+    '<input id="p-cost" type="number" min="0" step="1000" value="'+(a.cost||'')+'" '+
+    'placeholder="0" onchange="setPosterCost(\''+a.id+'\', this.value)"></div>'+
+    '<div class="fld"><label>成本说明</label>'+
+    '<input id="p-costNote" value="'+escCmp(a.costNote||'')+'" placeholder="例：Canva 月费分摊 / 可灵额度 / 外包设计" '+
+    'onchange="setPosterCostNote(\''+a.id+'\', this.value)"></div></div>';
+
   /* 状态 */
   h += '<div class="fld"><label>状态</label><select id="p-status" onchange="setPosterStatus(\''+a.id+'\', this.value)">'+
     ['待分析','已分析','草稿','测试中','已发','退役'].map(function(t){
       return '<option '+(a.status===t?'selected':'')+'>'+t+'</option>';
     }).join('')+'</select></div>';
 
-  h += '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+
-    '<button class="btn danger sm" onclick="delPoster(\''+a.id+'\')">🗑 删除这张</button>'+
+  h += '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
+  /* P-196：Output + 有成本 + 已发 → 显示提交按钮 */
+  if (a.slot === 'output' && Number(a.cost) > 0 && a.status === '已发'){
+    if (a.costVoucherId){
+      h += '<span class="tg ok" style="padding:6px 10px">已提交财务 · '+escCmp(a.costVoucherId)+'</span>';
+    } else {
+      h += '<button class="btn pri sm" onclick="submitPosterCostVoucher(\''+a.id+'\')">💰 提交成本给财务</button>';
+    }
+  }
+  h += '<button class="btn danger sm" onclick="delPoster(\''+a.id+'\')">🗑 删除这张</button>'+
     '</div></div>';
 
   /* 右侧：AI 分析 */
@@ -3291,6 +3307,67 @@ function setPosterComp(id, compId){
   if (!a) return;
   a.compId = compId;
   save(); render('assets');
+}
+
+/* P-196：宣传册成本（2026-11-22 Tony 选 B —— 成本要进财务）
+   ★ 只有 Output 能填（Input 是别人的，不算我们的成本）
+   ★ 填了成本 + 状态=已发，才能提交审批
+   ★ 审批走跟投放费同一条链：业务提交 → 财务核对 → 老板批 → 自动付款 */
+function setPosterCost(id, v){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  if (a.slot !== 'output'){ toast('只有「我们的成品」才能填成本', true); return; }
+  a.cost = Math.max(0, Number(v) || 0);
+  save(); render('assets');
+}
+
+function setPosterCostNote(id, v){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  a.costNote = String(v || '').trim();
+  save();
+}
+
+/* 宣传册成本提交审批（一个月一张汇总单，把该月所有 Output 的成本加起来） */
+function submitPosterCostVoucher(id){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  if (a.slot !== 'output'){ toast('只有「我们的成品」才能提交成本', true); return; }
+  if (!(Number(a.cost) > 0)){ toast('先填成本金额', true); return; }
+  if (!String(a.costNote || '').trim()){ toast('请填成本说明（钱花在哪）', true); return; }
+  if (a.status !== '已发'){ toast('只有「已发」的成品才能报成本', true); return; }
+
+  var m = String(a.date || '').slice(0,7);
+  var v = {
+    id: 'v-biz-ad-' + m + '-poster-' + a.id,
+    type: 'ad', dept: 'biz', month: m,
+    campaignId: '',
+    platform: '宣传册',
+    campaignType: '海报设计',
+    date: a.date,
+    refNo: '',
+    note: a.title || '宣传册',
+    items: [{
+      desc: a.title || '宣传册设计',
+      qty: 1, unit: '项',
+      amt: Number(a.cost),
+      detail: a.costNote
+    }],
+    total: { gross: Number(a.cost), net: Number(a.cost), siEmp: 0, pit: 0, tch: 0 },
+    state: '已提交',
+    submittedAt: new Date().toISOString(),
+    by: '业务部'
+  };
+
+  fsPushVoucherGeneric(v, function(ok, msg){
+    if (!ok){ toast('提交失败：' + (msg || '断网'), true); return; }
+    S.adVouchers = S.adVouchers || [];
+    S.adVouchers.unshift(v);
+    a.costVoucherId = v.id;
+    a.costSubmittedAt = v.submittedAt;
+    save(); render('assets'); openPoster(id);
+    toast('已提交财务 · ' + v.id);
+  });
 }
 
 function setPosterStatus(id, st){

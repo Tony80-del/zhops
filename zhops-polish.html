@@ -558,7 +558,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-18 ============ -->
   <div class="day-panel on" data-day="2026-11-18">
     <div class="card">
-      <h2>2026-11-18 · 打磨记录<span class="n">35 行 · 已打磨 35 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-18 · 打磨记录<span class="n">36 行 · 已打磨 36 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -880,6 +880,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-22</td>
               <td class="mono nw">11-22</td>
               <td>Tony：「技能方面也有记录的更新的技能工作范围吗？」→ 查出 <span class="mono">zhops-sales</span> / <span class="mono">zhops-chief</span> 里<b>完全没有</b> P-189~193 的记录，任何会话调用都会以为宣传素材还是旧样子。随后 Tony 追加两条要求：「添加新技能必须让总管知道」+「怎么汇报给总管」。<br><b>① 补 zhops-sales（151→354 行）</b>：板块 9→<b>10</b>（加对手档案、宣传册工作台）；新增 §15 对手档案（字段表 / 群情报怎么记 / 超期提醒 / <b>来源可信度分级</b>）、§16 宣传册工作台（Input-Output 判断标准 / 状态字段 / 操作流程 / <b>三条铁律</b> / 技术栈）、§17 市场周报（怎么读怎么用）、§18 <b>三个新功能的分工边界</b>、§19 更新记录。<br><b>② 补 zhops-chief（170→399 行）</b>：§1 四端 → <b>四端 + 2 专项 + 监督端</b>；<b>新增 §14 新技能登记制度</b>（为什么要有 / 登记在哪 / <b>8 项检查清单</b> / 当前技能清单 / 大改也要登记）；<b>新增 §15 怎么向总管汇报</b>（<b>6 项固定格式</b>：做了什么 / 在哪 / 边界 / 证据 / 改了哪些旧东西 / 等裁决什么；三条铁律：不交存盘钥匙 / 不自评 / 不逐条报 sha；6 条常见错误）；§16 新增功能（L-12 / 3 个云端服务 / 5 个坑 / 3 个探针）；§17 更新记录。顺带修 3 处旧数字（11 条线→12、66/66→71/71、check-map 51/51→55/55）。<br><b>③ 新建 zhops-research（357 行）</b>：13 节。核心是<b>与 zhops-poster 的边界</b>——<b>海报图片归 poster，文字情报归 research</b>，判断口诀「<b>能截图的 → poster；只能写下来的 → research</b>」。含情报 5 类（kind 必填）、<b>动作闭环</b>（情报不能追到动作就是废纸）、对手文字情报（14 天没看标红）、情报源清单（含 <span class="mono">vn-cn.org</span> 已失效的提醒 + C1 四个源实际都没用的实测结论）、周报解读、月报。<br><b>按 Tony 的 8 项清单走完</b>：① frontmatter 有触发词 ✅；② 管什么/不管什么 ✅；③ 绝对不碰什么 ✅；④ 跟谁分工 ✅；⑤ <b>生态地图技能层登记</b>（research 待建→已建）✅；⑥ <b>工作台账记这一行</b> ✅；⑦ <b>总管 §1 + §14.4 清单更新</b> ✅；⑧ <b>sales 加指向 research 的说明</b>（口径归 research、界面归 sales）✅。<br><b>没动的东西</b>：产品代码一个字没改（这一轮纯技能文档）；探针未受影响；全套仍 <b>71/71</b>。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-196</td>
+              <td><b>跨端排查 + 宣传册成本接入财务审批链</b><br><span style="color:var(--ink3);font-size:12px">业务端 → 财务端 → 老板端 三端打通</span></td>
+              <td class="nw">业务端 + 财务端 + 老板端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-22</td>
+              <td class="mono nw">11-22</td>
+              <td>Tony：「排查一下，代码需要更新吗？包括了跨主端代码」。<br><b>排查结论（6 项）</b>：<br>✅ <b>7 键桥没断</b>：业务端推学员给主端的字段仍是 id/name/phone/lv/mode/preferRoom/deleted，新功能没动它。<br>✅ <b>审批类型没冲突</b>：业务端提交 dept='biz' 的 ad/rent/place/budget 四类，财务端与老板端都认。<br>✅ <b>各端 Firestore 文档不冲突</b>：biz 写 bizmaster/bizstudents/bizpayments/bizrooms，fin 写 finmaster，hr 写 hrmaster/master，boss 只读 approvals + marketreport。<br>✅ <b>新功能没动旧数据</b>：对手档案/宣传册是新增数组，不碰 students/billing。<br>⚠️ <b>主端缺老板端入口</b>：只列了 finance/biz/hr 三个，没有 boss.html。Tony 选<b>不加</b>（老板端只有他一个人用）。<br>⚠️ <b>三端都不知道新功能</b>：主端/财务端/人事端提到「对手档案/宣传册/市场周报」的次数都是 0。Tony 选<b>主端总览不显示</b>（主端只管排课）。<br><b>唯一要改的：宣传册成本进财务</b>（Tony 选 B）。<br><b>做了什么</b>：<br>① <b>业务端</b>：大图弹层加「这张花了多少（VND）」+「成本说明」两格；<b>只有 Output 能填</b>（Input 是别人的，不算我们的成本）；三道闸门 —— 金额 &gt; 0 / 说明必填 / 状态必须「已发」；提交走<b>跟投放费同一条审批链</b>（<span class="mono">type:'ad'</span> + <span class="mono">dept:'biz'</span>），用 <span class="mono">campaignType:'海报设计'</span> 区分；提交后记 <span class="mono">costVoucherId</span>（幂等，不重复提交）；已提交就显示「已提交财务 · 单号」不再显示按钮。<br>② <b>财务端</b>：支出分类从三元改成四元 —— <span class="mono">rent→场地租金</span> / <span class="mono">ad+海报设计→宣传册设计</span> / <span class="mono">ad→渠道投放</span> / <span class="mono">其他→场地费</span>；支出下拉加「宣传册设计」选项。<b>为什么单独一类</b>：宣传册是一次性设计费，跟持续投放的渠道费混在一起会看不清单线索成本。<br>③ <b>老板端</b>：<span class="mono">metaOf()</span> 加判断，<span class="mono">type==='ad' &amp;&amp; campaignType==='海报设计'</span> 时显示「🎨 宣传册设计费」，不跟「📣 投放费 · 报价单」混。<br><b>顺手修</b>：<span class="mono">check-l09-ad.js</span> 里「支出分类渠道投放」断言原本钉死单行写法 <span class="mono">v.type === 'ad' ? '渠道投放'</span>，改成三元嵌套后假红 → 改成只验「这条路还在」+ 新增一条验「宣传册单独分类」。<br>验收：<span class="mono">check-poster-workbench.js</span> 54→<b>69 项</b>（新增 15 条成本链路断言）；<b>反向控制 2 组真红</b>（R1 去掉「只有 Output 能填成本」→ 2 红；R2 财务端不认宣传册分类 → 1 红）；<span class="mono">check-l09-ad.js</span> 34→<b>35 项</b>；全套 <b>71/71</b>。还原点 <span class="mono">poster-cost-before-20261122</span>。</td>
             </tr>
           </tbody>
         </table>

@@ -434,6 +434,11 @@ var TYPE = {
   'biz:ad':    { name:'投放费 · 报价单',icon:'📣', cls:'salary' }
 };
 function metaOf(v){
+  /* ★ 2026-11-22（P-196）：宣传册成本也走 type='ad'，
+     但用 campaignType='海报设计' 区分，别跟渠道投放混在一起显示 */
+  if (v.type === 'ad' && v.campaignType === '海报设计'){
+    return { name:'宣传册设计费', icon:'🎨', cls:'place' };
+  }
   var k = (v.dept || '') + ':' + (v.type || '');
   return TYPE[k] || TYPE[v.dept] || { name:(v.type||'单据'), icon:'📄', cls:'place' };
 }

@@ -2346,7 +2346,7 @@ function renderExpense(){
       return '<tr data-i="'+i+'">'+
         '<td><input class="w-date" data-k="expense.'+i+'.d" type="date" value="'+esc(r.d)+'"></td>'+
         '<td><select data-k="expense.'+i+'.cat">'+
-          ['房租','渠道投放','其他'].map(function(x){return '<option'+(r.cat===x?' selected':'')+'>'+x+'</option>';}).join('')+
+          ['房租','渠道投放','宣传册设计','其他'].map(function(x){return '<option'+(r.cat===x?' selected':'')+'>'+x+'</option>';}).join('')+
         '</select></td>'+
         '<td><input class="w-mid" data-k="expense.'+i+'.payee" value="'+esc(r.payee)+'" placeholder="人名或公司名"></td>'+
         '<td><input class="w-money num" data-k="expense.'+i+'.amt" type="number" value="'+esc(r.amt)+'" placeholder="2400000"></td>'+
@@ -2418,7 +2418,11 @@ function postVoucherExpense(v){
   S.expense = S.expense || [];
   S.expense.push({
     d: v.paidOn || today(),
-    cat: v.type === 'rent' ? '场地租金' : (v.type === 'ad' ? '渠道投放' : '场地费'),
+    /* ★ 2026-11-22（P-196）：宣传册成本单独一类，跟渠道投放分开算
+       判据：campaignType === '海报设计'（业务端 submitPosterCostVoucher 写入） */
+    cat: v.type === 'rent' ? '场地租金'
+       : (v.type === 'ad' ? (v.campaignType === '海报设计' ? '宣传册设计' : '渠道投放')
+       : '场地费'),
     payee: it.placeName || (v.type==='ad' ? (v.platform||'投放') : '') || v.title || '',
     amt: amt,
     inv: v.voucherNo || v.refNo || v.id || '',   /* 投放费自动记账：合同号兜底凭证号（Tony 11-21 定 B） */
