@@ -2335,7 +2335,10 @@ function billPaymentRows(bid){
 var RESEARCH_SOURCES = [
   { id:'hsk',   name:'HSK 官网（考试日历 / 大纲）', vn:'Trang HSK (lịch thi / đề cương)', url:'https://www.chinesetest.cn/',   cycle:'季', cycVi:'quý', days:90,  last:'2026-10-01' },
   { id:'moe',   name:'越南教育部（政策 / 资质）',   vn:'Bộ GD Việt Nam (chính sách / giấy phép)', url:'https://moet.gov.vn/', cycle:'年', cycVi:'năm', days:365, last:'2026-09-15' },
-  { id:'cham',  name:'越南中国商会（活动 / 讲座）', vn:'Hiệp hội Doanh nghiệp TQ (sự kiện / hội thảo)', url:'http://www.vn-cn.org/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-01' },
+  /* ★ 2026-11-22（P-198 漂移修复）：商会域名换了。
+     原名「越南中国商会」，2024 年底更名为「越南中国总商会」，
+     域名从 vn-cn.org（已 NXDOMAIN 失效）换成 vietchina.org（实测 200，3188 字正文，有「商会活动」栏目）。 */
+  { id:'cham',  name:'越南中国总商会（活动 / 讲座）', vn:'Tổng Thương hội Doanh nghiệp TQ (sự kiện / hội thảo)', url:'http://www.vietchina.org/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-01' },
   { id:'job',   name:'招聘平台（中文岗薪资）',      vn:'Trang tuyển dụng (lương việc tiếng Trung)', url:'https://www.vietnamworks.com/', cycle:'月', cycVi:'tháng', days:30,  last:'2026-11-05' },
 ];
 /* ============================================================================

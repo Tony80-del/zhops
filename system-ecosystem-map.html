@@ -437,19 +437,21 @@
 <div class="header">
   <div>
     <h1>系统生态地图</h1>
-    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-11-12</b>（按源码核对，不按计划）· 决策 <b>11 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b> · <b>P-144 主端单入口 / 人事 10 项同步 / 计价互斥</b></div>
+    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-11-22</b>（按源码核对，不按计划）· 决策 <b>12 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b> · <b>P-144 主端单入口 / 人事 10 项同步 / 计价互斥</b></div>
   </div>
   <div class="meter">
     <div class="row"><span>系统建成</span><span>2 / 5 · 财务 + 人事骨架已建</span></div>
     <div class="progress-bar"><div class="progress-fill"></div></div>
   </div>
   <div class="chips">
-    <span class="chip ok">已定 10</span>
+    <span class="chip ok">已定 12</span>
     <span class="chip info">暂缓 3</span>
     <span class="chip ok">财务 审批已通</span>
     <span class="chip ok">人事 排课已接云</span>
     <span class="chip ok">教师分片已落地</span>
     <span class="chip ok">断点 3 已结案</span>
+    <a class="chip info" href="skill-structure.html" title="老板 → 总管 → 四端 + 2 专项">🧭 技能结构图</a>
+    <a class="chip info" href="flow-map.html" title="线级工序与缺口">📐 施工图</a>
   </div>
 </div>
 
@@ -506,6 +508,19 @@
         <b>怎么做</b>：Cloudflare Worker 把 Key 放在环境变量（<code>env.GEMINI_KEY</code>），网页只调 Worker。<br>
         <b>踩过的坑</b>：① 网页控制台建不了 Durable Object（必须在 <code>wrangler.toml</code> 声明 migrations）；② 香港机房被 Gemini 拒（用 DO + <code>locationHint: 'wnam'</code> 绕北美）；③ <code>3.8-flash</code> 免费层只有 20 次/天（换 <code>3.5-flash-lite</code>）。<br>
         <b>成本</b>：Worker 10 万次/天免费，Gemini 约 20 次/天免费，<b>都不绑卡</b>。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑱ 代码和技能脱节怎么发现 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">每周一自动比一次，只报不改<br><span style="color:var(--hint); font-weight:400;">（2026-11-22 · P-198）</span></div>
+      <div class="dec-why">
+        <b>问题</b>：技能文件是给 AI 读的岗位规矩，代码天天改，规矩会慢慢脱节。2026-11-22 手工就抓到 3 处 —— 技能说「十个板块」实际 12 个；5 个技能说「全套 63/63」实际 72/72；情报源 <code>vn-cn.org</code> 早已 NXDOMAIN。<b>人记不住，只能机器每周比。</b><br>
+        <b>怎么做</b>：<code>build/health/check-drift.js</code> 读技能提取「数字声明」→ 读代码数「实际值」→ 比对。8 项：板块数 / 施工图线数 / 探针套件数 / 探针文件存在性 / 技能清单完整性 / 生态地图技能层 / 发布清单完整性 / 情报源可用性。<code>health-check.js</code> 把漂移 + 全套探针合并写 <code>zhops/healthreport</code> → 老板端「🩺 系统健康」。<br>
+        <b>★ 只报不改</b>（Tony 选 A）：自动修等于让机器改生产代码，出错没人兜。检测器只负责让问题<b>无法被忽略</b>，修还是人来修。<br>
+        <b>★ 反向控制必须进周巡检</b>（Tony 选 B）：检测脚本最危险的失败方式不是报错，是<b>永远说零漂移</b> —— 看着全绿其实没查。所以 <code>check-health.js</code> 造 <b>7 个故意改坏的副本</b>，每一个都必须报出来。<b>这套反向控制当场抓到检测器自己的 4 个 bug</b>（最典型：排序写成 <code>(LEVEL_ORDER[x] || 9)</code>，high 权重是 0 被当成假值换成 9，high 反而排最后）。<br>
+        <b>一个自证时刻</b>：新探针一注册，套件数 72→73，漂移检测立刻报「5 个技能说 72/72，实际 73/73」——<b>工具抓到了自己的漂移</b>。<br>
+        <b>成本</b>：GitHub Actions 每周 1 次约 6 分钟 = 24 分钟/月（2000 分钟额度用 1.2%），<b>$0</b>。
       </div>
     </div>
 

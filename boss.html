@@ -137,7 +137,11 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
 
 .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.86);backdrop-filter:blur(18px);border-top:1px solid rgba(255,255,255,.6);
   display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
-.tabs button{flex:1;border:0;background:none;padding:9px 2px 11px;font-size:11px;color:#64748b;cursor:pointer;position:relative;transition:color .2s}
+.tabs button{flex:1;min-width:0;border:0;background:none;padding:9px 1px 11px;font-size:11px;color:#64748b;cursor:pointer;position:relative;transition:color .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ★ 2026-11-22：加到第 6 个标签时，「系统健康」在 390px 手机上被挤出屏幕。
+   原因：flex 子项默认 min-width:auto，不肯缩到内容宽度以下。
+   加 min-width:0 + 省略号；窄屏再降一档字号，保证 6 个都在。 */
+@media(max-width:430px){.tabs button{font-size:10px;padding:8px 0 10px}.tabs button .ic{font-size:17px}}
 .tabs button .ic{display:block;font-size:19px;transition:transform .25s}
 .tabs button.on{color:var(--accent);font-weight:700;transition:color 1s ease}
 .tabs button.on .ic{transform:translateY(-2px) scale(1.1)}
@@ -233,6 +237,11 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <div class="vhdr"><b>🛰️ 市场周报</b><span class="sp"></span><span class="mini" id="mMeta">云端每周一自动抓</span></div>
   <div id="mBody"><div class="ph">加载中…</div></div>
 </section>
+
+<section class="view" id="v-health">
+  <div class="vhdr"><b>🩺 系统健康</b><span class="sp"></span><span class="mini" id="hMeta">每周一自动巡检</span></div>
+  <div id="hBody"><div class="ph">加载中…</div></div>
+</section>
 </div>
 <div class="qmodal" id="qmodal" onclick="if(event.target===this)closeQ()">
   <div class="qbox"><div class="qh"><b id="qTitle">报价单明细</b><span class="sp"></span><button class="btn ghost" onclick="closeQ()">✕ 关闭</button></div>
@@ -263,6 +272,7 @@ h1{font-size:18px;margin:0}.sub{font-size:11px;color:#5b7185}
   <button data-t="report"><span class="ic">📊</span>报告</button>
   <button data-t="log"><span class="ic">🔍</span>监督</button>
   <button data-t="market"><span class="ic">🛰️</span>市场周报<span class="b" id="mbdg" style="display:none">0</span></button>
+  <button data-t="health"><span class="ic">🩺</span>系统健康<span class="b" id="hbdg" style="display:none">0</span></button>
 </div>
 <script>
 /* ============================================================
@@ -747,6 +757,140 @@ function mrEsc(x){
   });
 }
 
+/* ============================================================
+   🩺 系统健康（P-198 · 2026-11-22）
+   - 数据源：zhops/healthreport（云端每周一由 GitHub Actions 写入）
+   - 只读，不写任何东西
+   ============================================================ */
+var HR = { doc:null, ok:false };
+
+function hrUrl(){
+  return 'https://firestore.googleapis.com/v1/projects/'+FS.pid+
+    '/databases/(default)/documents/'+FS.coll+'/healthreport?key='+encodeURIComponent(FS.key);
+}
+
+/* ★ 拉不到时要说清楚，不能永远停在「加载中…」。
+   2026-11-22 踩过：fetch 失败只调了 cb(false)，没人重渲染，
+   页面就卡在加载态 —— 老板会以为「巡检还没跑」，其实是网络断了。 */
+function healthFail(msg){
+  HR.doc = null; HR.err = msg || '拉取失败';
+  var el = document.getElementById('hBody');
+  if (el){
+    el.innerHTML = '<div class="ph">拉不到巡检结果<br>'+
+      '<span style="font-size:12px;color:#94a3b8">'+mrEsc(HR.err)+'</span><br>'+
+      '<span style="font-size:11px;color:#cbd5e1;margin-top:6px;display:inline-block">'+
+      '可能原因：网络断了 / 云端还没有第一次巡检<br>每周一 09:00 自动巡检后才会有数据</span></div>';
+  }
+  var meta = document.getElementById('hMeta');
+  if (meta) meta.textContent = '读取失败';
+}
+
+function fetchHealth(cb){
+  if (typeof fetch !== 'function'){ healthFail('这个浏览器不支持 fetch'); cb && cb(false); return; }
+  fetch(hrUrl()).then(function(r){
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(raw){
+    if (!raw || !raw.fields){ healthFail('云端还没有巡检记录'); cb && cb(false); return; }
+    var p = raw.fields.payload && raw.fields.payload.stringValue;
+    if (!p){ healthFail('记录里没有 payload'); cb && cb(false); return; }
+    var o; try{ o = JSON.parse(p); }catch(e){ healthFail('payload 不是合法 JSON'); cb && cb(false); return; }
+    HR.doc = o; HR.ok = true;
+    renderHealth();
+    /* ★ 角标是装饰：它出错绝不能连累「报告已经渲染好了」这个事实。
+       2026-11-22 踩过：角标那段一抛错，整个 fetchHealth 就走 catch → 回调报失败，
+       明明数据已经拿到、页面已经渲染，却显示「加载失败」。包一层 try。 */
+    try {
+      var bd = document.getElementById('hbdg');
+      if (bd && bd.style){
+        var n = (o.summary && o.summary.driftCount) || 0;
+        if (o.status === 'bad'){ n = n || 1; }
+        if (n > 0){ bd.textContent = n; bd.style.display = ''; }
+        else { bd.style.display = 'none'; }
+      }
+    } catch (e) { /* 角标失败不影响主报告 */ }
+    cb && cb(true);
+  }).catch(function(e){ healthFail('网络请求失败：'+((e&&e.message)||e)); cb && cb(false); });
+}
+
+function renderHealth(){
+  var el = document.getElementById('hBody');
+  if (!el) return;
+  if (!HR.doc){
+    el.innerHTML = '<div class="ph">云端还没有巡检记录<br><span style="font-size:12px;color:#94a3b8">每周一 09:00 自动巡检后出现</span></div>';
+    return;
+  }
+
+  var d = HR.doc;
+  var sm = d.summary || {};
+  var meta = document.getElementById('hMeta');
+  if (meta) meta.textContent = (d.at || '').replace('T',' ').slice(0,16);
+
+  var stColor = { ok:'#059669', warn:'#d97706', bad:'#e11d48' };
+  var stText = { ok:'✅ 正常', warn:'🟡 有警告', bad:'🔴 有问题' };
+  var h = '';
+
+  /* 顶部大字状态 */
+  h += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px;'+
+       'border-left:4px solid '+(stColor[d.status]||'#94a3b8')+'">'+
+       '<div style="font-size:20px;font-weight:700;color:'+(stColor[d.status]||'#94a3b8')+'">'+
+       (stText[d.status]||'未知')+'</div>'+
+       '<div style="font-size:12px;color:#64748b;margin-top:6px">'+
+       '漂移 '+(sm.driftCount||0)+' 处 · 探针 '+(sm.probeSkipped?'未跑':(sm.probePassed||0)+'/'+((sm.probePassed||0)+(sm.probeFailed||0)))+
+       (sm.probeRetried?' · '+sm.probeRetried+' 项不稳':'')+
+       '</div></div>';
+
+  /* 漂移列表 */
+  var dr = (d.drift && d.drift.drift) || [];
+  if (dr.length){
+    h += '<div style="font-weight:700;margin:16px 0 8px;font-size:14px">⚠️ 代码漂移 '+dr.length+' 处</div>';
+    dr.forEach(function(x){
+      var c = x.level === 'high' ? '#e11d48' : x.level === 'medium' ? '#d97706' : '#64748b';
+      h += '<div style="background:#fff;border:1px solid #e2e8f0;border-left:3px solid '+c+';'+
+           'border-radius:8px;padding:12px;margin-bottom:10px">'+
+           '<div style="font-weight:700;font-size:13px;color:'+c+'">'+mrEsc(x.what)+'</div>'+
+           '<div style="font-size:12px;color:#475569;margin-top:5px">'+
+           '技能说：<b>'+mrEsc(String(x.claimed))+'</b> → 实际：<b>'+mrEsc(String(x.actual))+'</b></div>'+
+           '<div style="font-size:11px;color:#94a3b8;margin-top:4px">'+mrEsc(x.where||'')+'</div>'+
+           (x.detail?'<div style="font-size:11.5px;color:#64748b;margin-top:5px">'+mrEsc(x.detail)+'</div>':'')+
+           '</div>';
+    });
+  } else {
+    h += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin:16px 0;'+
+         'font-size:12.5px;color:#059669">✓ 代码与技能文件完全一致，零漂移</div>';
+  }
+
+  /* 探针 */
+  var pr = d.probe || {};
+  if (!pr.skipped){
+    h += '<div style="font-weight:700;margin:16px 0 8px;font-size:14px">🧪 探针 '+(pr.passed||0)+'/'+(pr.total||0)+'</div>';
+    if (pr.failed > 0){
+      h += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:10px">'+
+           '<div style="font-size:13px;font-weight:700;color:#e11d48">失败 '+(pr.failedList||[]).length+' 项</div>';
+      (pr.failedList||[]).forEach(function(f){
+        h += '<div style="font-size:12px;color:#475569;margin-top:4px">· '+mrEsc(f)+'</div>';
+      });
+      h += '</div>';
+    } else {
+      h += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:10px;'+
+           'font-size:12.5px;color:#059669">✓ 全部通过</div>';
+    }
+    if ((pr.retried||[]).length){
+      h += '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:10px">'+
+           '<div style="font-size:12.5px;font-weight:700;color:#b45309">'+(pr.retried||[]).length+' 项不稳（首次红、重试后绿）</div>';
+      (pr.retried||[]).forEach(function(r){
+        h += '<div style="font-size:11.5px;color:#78716c;margin-top:3px">· '+mrEsc(r)+'</div>';
+      });
+      h += '</div>';
+    }
+  }
+
+  h += '<div style="font-size:10.5px;color:#cbd5e1;margin:16px 0 8px;line-height:1.6">'+
+       '巡检：GitHub Actions 每周一 09:00（越南）· 只发现问题，不自动修</div>';
+
+  el.innerHTML = h;
+}
+
 function renderMarket(){
   var el = document.getElementById('mBody');
   if (!el) return;
@@ -846,9 +990,14 @@ document.querySelectorAll('.tabs button').forEach(function(b){
   if (b.dataset.t === 'market'){
     b.addEventListener('click', function(){ fetchMarketReport(); });
   }
+  if (b.dataset.t === 'health'){
+    b.addEventListener('click', function(){ fetchHealth(); });
+  }
 });
 
 render(); countUp(); startLive(); fetchMarketReport();
+/* 系统健康：进页面先静默拉一次，只为了点红角标；不抢市场周报的请求 */
+setTimeout(function(){ fetchHealth(); }, 2500);
 })();
 </script>
 </body>
