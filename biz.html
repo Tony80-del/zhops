@@ -398,6 +398,59 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
   .fld-row{grid-template-columns:1fr;}
   #view{padding:14px 12px 40px;}
 }
+/* ============================================================================
+   宣传册工作台（P-193 · 2026-11-22）
+   图墙 + 大图弹层 + 手机只上传
+   ============================================================================ */
+.pw-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.pw-sec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;}
+.pw-h{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.pw-h b{font-size:14px;}
+.pw-n{font-size:12px;color:var(--ink3);margin-left:auto;}
+.pw-sub{font-size:11.5px;color:var(--ink3);margin-bottom:12px;}
+.pw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;min-height:80px;}
+.pw-empty{grid-column:1/-1;padding:24px 10px;text-align:center;color:var(--ink3);font-size:12.5px;
+  border:1px dashed var(--line2);border-radius:8px;}
+
+/* 一张卡 */
+.pw-card{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;
+  background:var(--surface-2);cursor:pointer;transition:transform .15s,border-color .15s;}
+.pw-card:hover{transform:translateY(-2px);border-color:var(--brand);}
+.pw-thumb{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--surface-3);}
+.pw-thumb-ph{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);font-size:11px;background:var(--surface-3);}
+.pw-meta{padding:7px 8px;}
+.pw-t{font-size:12px;font-weight:700;color:var(--ink1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pw-d{font-size:10.5px;color:var(--ink3);margin-top:2px;}
+.pw-s{font-size:10.5px;color:var(--brand-ink);margin-top:3px;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pw-badge{position:absolute;top:6px;left:6px;font-size:10px;padding:2px 6px;border-radius:4px;
+  background:rgba(0,0,0,.6);color:#fff;}
+.pw-badge.out{background:var(--ok);}
+.pw-busy{position:absolute;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;
+  justify-content:center;font-size:12px;color:var(--brand);font-weight:700;}
+
+/* 大图弹层 */
+.pmask{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;z-index:9000;padding:20px;}
+.pmask.on{display:flex;}
+.pbox{background:var(--surface);border-radius:12px;width:min(880px,100%);max-height:90vh;
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.ph{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);}
+.ph span:first-child{font-weight:700;font-size:14px;}
+.pb{padding:16px;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;}
+.pb img{width:100%;border-radius:8px;border:1px solid var(--line);}
+.pb-ai{font-size:12.5px;line-height:1.75;white-space:pre-wrap;color:var(--ink1);
+  background:var(--surface-2);padding:12px;border-radius:8px;max-height:420px;overflow:auto;}
+
+/* 手机：只留上传 */
+@media (max-width:720px){
+  .pw-wrap{grid-template-columns:1fr;}
+  .pw-grid{grid-template-columns:repeat(2,1fr);}
+  .pb{grid-template-columns:1fr;}
+  .pb-ai{max-height:none;}
+}
+
 /* 教室 · 周几勾选（2026-11-02 · P-91） */
 .rm-day{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid var(--line);
   border-radius:6px;font-size:12.5px;cursor:pointer;user-select:none;background:var(--surface-2);color:var(--ink2);}
@@ -887,24 +940,55 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
     </div>
 
     <!-- ====== 宣传素材 ====== -->
+    <!-- ====== 宣传册工作台（P-193 · 2026-11-22）====== -->
     <div class="view" data-view="assets">
       <div class="page-h">
-        <h2>宣传素材</h2>
-        <p class="desc">文案 / 海报 / 视频 / 落地页</p>
+        <h2>宣传册工作台</h2>
+        <p class="desc">收到的存 Input · 我们落地的存 Output</p>
         <div class="sp"></div>
-        <button class="btn pri" onclick="addAsset()">+ 新素材</button>
+        <!-- 手机上只显示上传按钮 -->
+        <button class="btn pri" onclick="pickPoster()">📷 上传截图</button>
       </div>
-      <div class="bar">
-        <select class="inp" onchange="filterAssetType(this.value)">
-          <option value="">全部类型</option>
-          <option>文案</option><option>海报</option><option>视频</option><option>帖子模板</option><option>落地页</option>
-        </select>
-        <select class="inp" onchange="filterAssetStatus(this.value)">
-          <option value="">全部状态</option>
-          <option>草稿</option><option>已发</option><option>测试中</option><option>退役</option>
-        </select>
+
+      <!-- 隐藏的文件选择器：手机点它会弹相册 -->
+      <input type="file" id="poster-file" accept="image/*" multiple
+             style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden"
+             onchange="onPosterPicked(this)">
+
+      <!-- 上传后的状态条 -->
+      <div id="poster-status" class="note" style="display:none"></div>
+
+      <!-- 电脑：两块图墙。手机：只显示上传区 -->
+      <div class="pw-wrap">
+        <!-- Input -->
+        <div class="pw-sec">
+          <div class="pw-h">
+            <b>📥 Input · 收到的</b>
+            <span class="pw-n" id="pw-in-count" data-raw>0</span>
+          </div>
+          <div class="pw-sub">对手的 / 参考的 / 群里看到的</div>
+          <div class="pw-grid" id="pw-input"></div>
+        </div>
+
+        <!-- Output -->
+        <div class="pw-sec">
+          <div class="pw-h">
+            <b>📤 Output · 我们的</b>
+            <span class="pw-n" id="pw-out-count" data-raw>0</span>
+          </div>
+          <div class="pw-sub">我们自己设计并投放的</div>
+          <div class="pw-grid" id="pw-output"></div>
+        </div>
       </div>
-      <div id="assets-list"></div>
+    </div>
+
+    <!-- 大图弹层 -->
+    <div class="pmask" id="pmask" onclick="if(event.target===this)closePoster()">
+      <div class="pbox">
+        <div class="ph"><span id="p-title">海报</span><span style="flex:1"></span>
+          <button class="btn" onclick="closePoster()">✕</button></div>
+        <div class="pb" id="p-body"></div>
+      </div>
     </div>
 
     <!-- ====== 讲座活动 ====== -->
@@ -2909,41 +2993,342 @@ function assetAISummary(a){
   h += '</div>';
   return h;
 }
-function renderAssets(){
-  var el = document.getElementById('assets-list');
-  if(!S.assets.length){ el.innerHTML = '<div class="empty">还没有素材。</div>'; return; }
-  el.innerHTML = S.assets.map(function(a){
-    var stTag = { '草稿':'tg off','已发':'tg on','测试中':'tg warn','退役':'tg bad' };
-    var st = stTag[a.status]||'tg off';
-    return '<div class="card"><div class="card-h"><h3>'+a.title+'</h3>'+
-      '<span class="tg own">'+a.type+'</span>'+
-      '<span class="'+st+'">'+a.status+'</span>'+
-      '<div class="sp"></div><span class="sub">'+fmtDate(a.date)+'</span></div>'+
-      '<div class="card-b" style="padding:10px 15px">'+
-        '<div class="sm" style="color:var(--ink2)">用途：'+(a.use||'—')+' · 平台：'+(a.platform||'—')+
-          (a.src?' · 来源：'+a.src+(a.compId&&compById(a.compId)?'（'+escCmp(compById(a.compId).name)+'）':''):'')+'</div>'+
-        assetAISummary(a)+
-        '<div style="margin-top:8px"><a class="act" onclick="editAsset(\''+a.id+'\')">编辑</a></div>'+
-      '</div></div>';
-  }).join('');
+/* ============================================================================
+   宣传册工作台（P-193 · 2026-11-22）
+   ★ 结构：S.assets[] 每条 = 一张海报
+     { id, slot:'input'|'output', url, path, title, date, status,
+       src, compId, ai, learn, unfit, analyzedAt }
+   ★ 图片存 Supabase，这里只存 URL（数据库零增长）
+   ★ 上传后自动分析（Tony 选 A）
+   ★ 删除只能在大图里（Tony 选 B）
+   ============================================================================ */
+var SB = {
+  url: 'https://wiyiequwbgidnpneiymp.supabase.co',
+  key: 'sb_publishable_MNkk1Ofv5c01CIhnHSJPmA_WIt6SeuC',
+  bucket: 'posters'
+};
+
+function sbPublicUrl(path){
+  return SB.url + '/storage/v1/object/public/' + SB.bucket + '/' + path;
 }
-function filterAssetType(v){
-  renderAssetsFiltered(v, null);
+
+/* 上传到 Supabase，回调 (err, {path,url}) */
+function sbUpload(path, blob, mime, cb){
+  fetch(SB.url + '/storage/v1/object/' + SB.bucket + '/' + path, {
+    method: 'POST',
+    headers: {
+      'apikey': SB.key,
+      'Authorization': 'Bearer ' + SB.key,
+      'Content-Type': mime || 'image/jpeg'
+    },
+    body: blob
+  }).then(function(r){
+    if (r.ok) { cb(null, { path: path, url: sbPublicUrl(path) }); return; }
+    return r.text().then(function(t){
+      cb(new Error('上传失败 ' + r.status + '：' + String(t).slice(0,120)));
+    });
+  }).catch(function(e){ cb(new Error('上传失败：' + e.message)); });
 }
-function filterAssetStatus(v){
-  renderAssetsFiltered(null, v);
+
+/* 删除 Supabase 文件（失败不阻塞界面） */
+function sbDelete(path){
+  if (!path) return;
+  fetch(SB.url + '/storage/v1/object/' + SB.bucket + '/' + path, {
+    method: 'DELETE',
+    headers: { 'apikey': SB.key, 'Authorization': 'Bearer ' + SB.key }
+  }).catch(function(){ /* 静默：文件删不掉不影响记录删除 */ });
 }
-function renderAssetsFiltered(type, status){
-  var el = document.getElementById('assets-list');
-  var rows = S.assets.filter(function(a){
-    return (!type || a.type===type) && (!status || a.status===status);
+
+/* ---- 文件名 ---- */
+function posterPathName(slot, compId, seq){
+  var d = new Date();
+  var ymd = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  var who = compId || 'misc';
+  var n = String(seq).padStart(2,'0');
+  return slot + '/' + slot + '-' + who + '-' + ymd + '-' + n + '.jpg';
+}
+
+/* ---- 状态条 ---- */
+function pwStatus(txt, isErr){
+  var el = document.getElementById('poster-status');
+  if (!el) return;
+  if (!txt) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.style.background = isErr ? 'var(--bad-soft, #fee)' : 'var(--brand-soft)';
+  el.style.color = isErr ? 'var(--bad)' : 'var(--brand-ink)';
+  el.style.borderLeft = '3px solid ' + (isErr ? 'var(--bad)' : 'var(--brand)');
+  el.textContent = txt;
+}
+
+/* ---- 点上传 ---- */
+function pickPoster(){
+  var f = document.getElementById('poster-file');
+  if (!f) return;
+  f.value = '';          /* 同一个文件连选两次也能触发 */
+  f.click();
+}
+
+/* ---- 选完文件 → 逐张处理 ---- */
+function onPosterPicked(input){
+  var files = Array.prototype.slice.call(input.files || []);
+  if (!files.length) return;
+
+  /* 默认归 Input（收到的）。要归 Output 就在大图里改，或上传时先选。 */
+  var slot = window._pwSlot || 'input';
+
+  var done = 0, total = files.length, okCount = 0, failCount = 0;
+
+  function next(){
+    if (done >= total){
+      pwStatus('✓ 完成：成功 ' + okCount + ' 张' + (failCount ? '，失败 ' + failCount + ' 张' : '') +
+               '（已自动分析）');
+      render('assets');
+      return;
+    }
+    var file = files[done];
+    pwStatus('正在处理 ' + (done+1) + ' / ' + total + '：压缩中…');
+
+    compressImage(file, function(err, b64, mime, size){
+      if (err){ failCount++; done++; next(); return; }
+
+      var seq = (S.seq.ast = (S.seq.ast || 1) + 1);
+      var path = posterPathName(slot, '', seq);
+
+      /* base64 → Blob */
+      var bin = atob(b64);
+      var arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var blob = new Blob([arr], { type: mime });
+
+      pwStatus('正在处理 ' + (done+1) + ' / ' + total + '：上传中（' + size + '）…');
+
+      sbUpload(path, blob, mime, function(upErr, res){
+        if (upErr){
+          failCount++; done++;
+          pwStatus('✗ ' + upErr.message, true);
+          setTimeout(next, 800);
+          return;
+        }
+
+        var rec = {
+          id: 'A-' + String(S.seq.ast).padStart(3,'0'),
+          slot: slot,
+          url: res.url,
+          path: res.path,
+          title: (slot === 'input' ? '收到的海报' : '我们的成品'),
+          date: todayStr(),
+          status: slot === 'input' ? '待分析' : '草稿',
+          src: slot === 'input' ? '对手' : '我们自己',
+          compId: '',
+          ai: '', learn: '', unfit: '',
+          analyzedAt: ''
+        };
+        S.assets.unshift(rec);
+        save();
+        render('assets');
+
+        /* ★ Tony 选 A：上传后自动分析 */
+        pwStatus('正在处理 ' + (done+1) + ' / ' + total + '：AI 分析中（约 20 秒）…');
+        analyzePosterById(rec.id, b64, mime, function(aErr){
+          done++;
+          if (aErr) failCount++; else okCount++;
+          next();
+        });
+      });
+    });
+  }
+  next();
+}
+
+/* ---- 按 id 分析（上传后自动调，也供手动重试用） ---- */
+function analyzePosterById(id, b64, mime, cb){
+  var rec = S.assets.find(function(x){ return x.id === id; });
+  if (!rec){ cb && cb(new Error('记录不存在')); return; }
+  if (!POSTER_FN){ cb && cb(new Error('AI 未接通')); return; }
+
+  fetch(POSTER_FN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: b64, mime: mime })
+  }).then(function(r){ return r.json(); }).then(function(o){
+    if (!o || o.error || !o.text){
+      rec.status = rec.slot === 'input' ? '待分析' : rec.status;
+      save(); render('assets');
+      cb && cb(new Error((o && o.error) || '分析失败'));
+      return;
+    }
+    rec.ai = o.text;
+    rec.analyzedAt = new Date().toISOString();
+    /* 抠出可借鉴 / 不适用 */
+    var mL = o.text.match(/(?:可借鉴点|可借鉴)[^\n]*\n([\s\S]*?)(?=\n\s*\d+\.\s*不适用|\n不适用|$)/i);
+    var mU = o.text.match(/(?:不适用点|不适用)[^\n]*\n([\s\S]*)$/i);
+    rec.learn = mL ? mL[1].trim().slice(0,500) : '';
+    rec.unfit = mU ? mU[1].trim().slice(0,300) : '';
+    /* 一句话卖点：抠第 1 项 */
+    var mS = o.text.match(/主打卖点[：:]\s*(.+)/);
+    rec.sell = mS ? mS[1].trim().slice(0,60) : '';
+    if (rec.slot === 'input') rec.status = '已分析';
+    save(); render('assets');
+    cb && cb(null);
+  }).catch(function(e){
+    cb && cb(new Error(e.message || '网络错误'));
   });
-  if(!rows.length){ el.innerHTML = '<div class="empty">没有匹配</div>'; return; }
-  el.innerHTML = rows.map(function(a){
-    var stTag = { '草稿':'tg off','已发':'tg on','测试中':'tg warn','退役':'tg bad' };
-    var st = stTag[a.status]||'tg off';
-    return '<div class="card"><div class="card-h"><h3>'+a.title+'</h3><span class="tg own">'+a.type+'</span><span class="'+st+'">'+a.status+'</span><div class="sp"></div><span class="sub">'+fmtDate(a.date)+'</span></div><div class="card-b" style="padding:10px 15px"><div class="sm" style="color:var(--ink2)">用途：'+(a.use||'—')+' · 平台：'+(a.platform||'—')+(a.src?' · 来源：'+a.src+(a.compId&&compById(a.compId)?'（'+escCmp(compById(a.compId).name)+'）':''):'')+'</div>'+assetAISummary(a)+'<div style="margin-top:8px"><a class="act" onclick="editAsset(\''+a.id+'\')">编辑</a></div></div></div>';
-  }).join('');
+}
+
+/* ---- 渲染图墙 ---- */
+function renderAssets(){
+  var inEl = document.getElementById('pw-input');
+  var outEl = document.getElementById('pw-output');
+  if (!inEl || !outEl) return;
+
+  var list = S.assets || [];
+  var ins = list.filter(function(a){ return (a.slot||'input') === 'input'; });
+  var outs = list.filter(function(a){ return a.slot === 'output'; });
+
+  var _v = (typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi');
+  document.getElementById('pw-in-count').textContent = ins.length + (_v ? ' ảnh' : ' 张');
+  document.getElementById('pw-out-count').textContent = outs.length + (_v ? ' ảnh' : ' 张');
+
+  inEl.innerHTML = ins.length ? ins.map(cardHTML).join('') :
+    '<div class="pw-empty">还没有收到宣传册。<br>点右上角「📷 上传截图」开始。</div>';
+  outEl.innerHTML = outs.length ? outs.map(cardHTML).join('') :
+    '<div class="pw-empty">还没有成品。<br>做好一版后上传到这里。</div>';
+}
+
+function cardHTML(a){
+  var isOut = a.slot === 'output';
+  var comp = a.compId && compById(a.compId) ? compById(a.compId).name : '';
+  var line1 = comp || a.title || (isOut ? '我们的成品' : '收到的海报');
+  var line3 = a.sell || (a.status === '待分析' ? '待分析' : '');
+  return '<div class="pw-card" onclick="openPoster(\''+a.id+'\')">'+
+    (isOut ? '<span class="pw-badge out">我们的</span>' : '<span class="pw-badge">参考</span>')+
+    (a.url
+      ? '<img class="pw-thumb" src="'+escCmp(a.url)+'" alt="" loading="lazy">'
+      : '<div class="pw-thumb-ph">无图</div>')+
+    '<div class="pw-meta">'+
+      '<div class="pw-t">'+escCmp(line1)+'</div>'+
+      '<div class="pw-d" data-raw>'+escCmp(a.date||'')+(a.status?' · '+escCmp(a.status):'')+'</div>'+
+      (line3?'<div class="pw-s">'+escCmp(line3)+'</div>':'')+
+    '</div></div>';
+}
+
+/* ---- 大图弹层 ---- */
+function openPoster(id){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  var comp = a.compId && compById(a.compId) ? compById(a.compId).name : '';
+  document.getElementById('p-title').textContent =
+    (a.slot === 'output' ? '📤 ' : '📥 ') + (comp || a.title || '海报');
+
+  var h = '<div>';
+  h += a.url ? '<img src="'+escCmp(a.url)+'" alt="">' : '<div class="pw-thumb-ph">无图</div>';
+  h += '<div style="margin-top:10px;font-size:12px;color:var(--ink3)">'+
+       escCmp(a.date||'')+' · '+escCmp(a.src||'')+
+       (comp?' · '+escCmp(comp):'')+'</div>';
+
+  /* 归哪一档（可改） */
+  h += '<div class="fld" style="margin-top:12px"><label>归档到</label>'+
+    '<select id="p-slot" onchange="movePoster(\''+a.id+'\', this.value)">'+
+      '<option value="input"'+(a.slot!=='output'?' selected':'')+'>📥 Input · 收到的</option>'+
+      '<option value="output"'+(a.slot==='output'?' selected':'')+'>📤 Output · 我们的</option>'+
+    '</select></div>';
+
+  /* 关联对手 */
+  h += '<div class="fld"><label>关联对手</label><select id="p-comp" onchange="setPosterComp(\''+a.id+'\', this.value)">'+
+    '<option value="">（不关联）</option>'+
+    (S.competitors||[]).map(function(c){
+      return '<option value="'+c.id+'"'+(a.compId===c.id?' selected':'')+' data-raw>'+escCmp(c.name)+'</option>';
+    }).join('')+'</select></div>';
+
+  /* 状态 */
+  h += '<div class="fld"><label>状态</label><select id="p-status" onchange="setPosterStatus(\''+a.id+'\', this.value)">'+
+    ['待分析','已分析','草稿','测试中','已发','退役'].map(function(t){
+      return '<option '+(a.status===t?'selected':'')+'>'+t+'</option>';
+    }).join('')+'</select></div>';
+
+  h += '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn danger sm" onclick="delPoster(\''+a.id+'\')">🗑 删除这张</button>'+
+    '</div></div>';
+
+  /* 右侧：AI 分析 */
+  h += '<div>';
+  h += '<div style="font-weight:700;font-size:13px;margin-bottom:8px">📊 AI 分析</div>';
+  h += a.ai
+    ? '<div class="pb-ai">'+escCmp(a.ai)+'</div>'
+    : '<div class="pb-ai" style="color:var(--ink3)">还没有分析。<br>'+
+      (POSTER_FN ? '点下面按钮重新分析（约 20 秒）。' : 'AI 未接通。')+'</div>';
+  if (a.learn){
+    h += '<div style="margin-top:10px"><div class="sm" style="color:var(--ok);font-weight:700">✅ 可借鉴</div>'+
+         '<div class="pb-ai" style="background:var(--ok-soft)">'+escCmp(a.learn)+'</div></div>';
+  }
+  if (a.unfit){
+    h += '<div style="margin-top:10px"><div class="sm" style="color:var(--bad);font-weight:700">❌ 不适用</div>'+
+         '<div class="pb-ai" style="background:var(--bad-soft, #fee)">'+escCmp(a.unfit)+'</div></div>';
+  }
+  h += '<div style="margin-top:12px">'+
+    '<button class="btn sm" onclick="reanalyze(\''+a.id+'\')">🔄 重新分析</button></div>';
+  h += '</div>';
+
+  document.getElementById('p-body').innerHTML = h;
+  document.getElementById('pmask').classList.add('on');
+}
+
+function closePoster(){
+  document.getElementById('pmask').classList.remove('on');
+}
+
+function movePoster(id, slot){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  a.slot = slot;
+  if (slot === 'output' && a.status === '待分析') a.status = '草稿';
+  save(); render('assets');
+  openPoster(id);   /* 刷新弹层 */
+}
+
+function setPosterComp(id, compId){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  a.compId = compId;
+  save(); render('assets');
+}
+
+function setPosterStatus(id, st){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  a.status = st;
+  save(); render('assets');
+}
+
+/* 删除：先删云端文件，再删记录 */
+function delPoster(id){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a) return;
+  if (!confirm('删除这张？\n\n云端的图也会一起删掉，不能恢复。')) return;
+  sbDelete(a.path);
+  S.assets = S.assets.filter(function(x){ return x.id !== id; });
+  save(); closePoster(); render('assets');
+  toast('已删除');
+}
+
+/* 重新分析：从云端取图 → 转 base64 → 调 Worker */
+function reanalyze(id){
+  var a = (S.assets||[]).find(function(x){ return x.id === id; });
+  if (!a || !a.url){ toast('没有图片', true); return; }
+  if (!POSTER_FN){ toast('AI 未接通', true); return; }
+
+  toast('重新分析中…');
+  fetch(a.url).then(function(r){ return r.blob(); }).then(function(blob){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var b64 = String(e.target.result).split(',')[1];
+      analyzePosterById(id, b64, blob.type || 'image/jpeg', function(err){
+        if (err) toast('分析失败：' + err.message, true);
+        else { toast('分析完成'); openPoster(id); }
+      });
+    };
+    reader.readAsDataURL(blob);
+  }).catch(function(e){ toast('取图失败：' + e.message, true); });
 }
 
 /* ============================================================
@@ -3776,69 +4161,9 @@ function delCampaign(id){
   save(); closeDrawer(); render('campaigns');
 }
 
-/* ---- 素材表单 ---- */
-function addAsset(){
-  openDrawer('新素材', assetForm());
-}
-function editAsset(id){
-  var a = S.assets.find(function(x){return x.id===id;});
-  if(!a) return;
-  openDrawer('编辑素材 · '+a.title, assetForm(a));
-}
-function assetForm(a){
-  a = a || {};
-  return '<div class="fld"><label>标题</label><input id="f-title" value="'+(a.title||'')+'"></div>'+
-    '<div class="fld-row"><div class="fld"><label>类型</label><select id="f-type">'+['文案','海报','视频','帖子模板','落地页'].map(function(t){return '<option '+(a.type===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
-    '<div class="fld"><label>用途</label><select id="f-use">'+['招生','品牌推广','讲座宣传','转介绍'].map(function(t){return '<option '+(a.use===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div></div>'+
-    '<div class="fld-row"><div class="fld"><label>使用平台</label><input id="f-platform" value="'+(a.platform||'')+'" placeholder="Zalo / Facebook / TikTok"></div>'+
-    '<div class="fld"><label>日期</label><input type="date" id="f-date" value="'+(a.date||new Date().toISOString().slice(0,10))+'"></div></div>'+
-    '<div class="fld"><label>状态</label><select id="f-status">'+['草稿','已发','测试中','退役'].map(function(t){return '<option '+(a.status===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
-    /* ★ P-191：来源 + 关联对手 + AI 分析 */
-    '<div class="fld-row"><div class="fld"><label>来源</label><select id="f-src">'+
-      ['我们自己','对手','参考'].map(function(t){return '<option '+(a.src===t?'selected':'')+'>'+t+'</option>';}).join('')+
-    '</select></div>'+
-    '<div class="fld"><label>关联对手（来源=对手时选）</label><select id="f-comp">'+
-      '<option value="">（不关联）</option>'+
-      (S.competitors||[]).map(function(c){
-        return '<option value="'+c.id+'"'+(a.compId===c.id?' selected':'')+' data-raw>'+escCmp(c.name)+'</option>';
-      }).join('')+
-    '</select></div></div>'+
-    '<div class="fld"><label>AI 分析（点下面的按钮生成，可改）</label>'+
-      '<textarea id="f-ai" style="min-height:120px" placeholder="点「🤖 分析海报」自动填，或自己写">'+escCmp(a.ai||'')+'</textarea></div>'+
-    '<div class="fld"><label>可借鉴点（3 条，换行分隔）</label>'+
-      '<textarea id="f-learn" style="min-height:64px" data-raw placeholder="VD: 1. Số liệu đặt trước\n2. Giới hạn thời gian\n3. Đưa hoàn tiền thành hình ảnh chính">'+escCmp(a.learn||'')+'</textarea></div>'+
-    '<div class="fld"><label>不适用点（哪些我们不能学）</label>'+
-      '<textarea id="f-unfit" style="min-height:52px" data-raw placeholder="VD: hoàn toàn bộ — biên lợi nhuận của ta không chịu nổi">'+escCmp(a.unfit||'')+'</textarea></div>'+
-    '<div class="fld" style="background:var(--surface-2);padding:10px;border-radius:6px">'+
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-        '<input type="file" id="f-img" accept="image/*" style="flex:1;min-width:180px;font-size:12px">'+
-        '<button class="btn sm pri" type="button" onclick="analyzePoster()">🤖 分析海报</button>'+
-      '</div>'+
-      '<div class="sm" style="color:var(--ink3);margin-top:6px">图片不存库（只存分析文字）。分析约 15–30 秒。</div>'+
-      '<div id="f-ai-status" class="sm" style="margin-top:6px"></div>'+
-    '</div>'+
-    '<div style="display:flex;gap:10px;margin-top:16px">'+
-      '<button class="btn pri" onclick="saveAsset('+(a.id?"'"+a.id+"'":"null")+')">保存</button>'+
-      (a.id?'<button class="btn danger" onclick="delAsset(\''+a.id+'\')">删除</button>':'')+
-      '<button class="btn ghost" onclick="closeDrawer()">取消</button>'+
-    '</div>';
-}
-function saveAsset(id){
-  var data = { title: val('f-title'), type: val('f-type'), use: val('f-use'), platform: val('f-platform'), date: val('f-date'), status: val('f-status'),
-               /* ★ P-191 */
-               src: val('f-src') || '我们自己',
-               compId: val('f-comp') || '',
-               ai: val('f-ai'), learn: val('f-learn'), unfit: val('f-unfit') };
-  if(!data.title){ toast('请填标题', true); return; }
-  if(id){ Object.assign(S.assets.find(function(x){return x.id===id;}), data); }
-  else { data.id = 'A-' + String(S.seq.ast++).padStart(3,'0'); S.assets.unshift(data); }
-  save(); closeDrawer(); render('assets');
-}
-function delAsset(id){
-  if(!confirm(tr('删除？'))) return;
-  S.assets = S.assets.filter(function(x){return x.id!==id;});
-  save(); closeDrawer(); render('assets');
-}
+/* ---- 素材表单已废弃（P-193）：一切从图开始，改用上传 + 大图弹层 ----
+   addAsset / editAsset / assetForm / saveAsset / delAsset 全部移除。
+   替代：pickPoster / onPosterPicked / openPoster / delPoster */
 
 /* ---- 活动表单 ---- */
 function addEvent(){
@@ -4920,6 +5245,46 @@ var BIZ_VI = {
   '市场调查':'Khảo sát thị trường', '对市场的判断和结论':'Nhận định và kết luận về thị trường',
   /* ★ P-190 对手档案 */
   /* ★ P-191 宣传海报 AI 分析 */
+  /* ★ P-193 宣传册工作台 */
+  '宣传册工作台':'Bàn làm việc ấn phẩm',
+  '收到的存 Input · 我们落地的存 Output':'Nhận vào lưu Input · Ta làm xong lưu Output',
+  '📷 上传截图':'📷 Tải ảnh lên',
+  '📥 Input · 收到的':'📥 Input · Nhận được',
+  '📤 Output · 我们的':'📤 Output · Của chúng ta',
+  '对手的 / 参考的 / 群里看到的':'Của đối thủ / tham khảo / thấy trong nhóm',
+  '我们自己设计并投放的':'Do ta thiết kế và đã chạy',
+  '张':' ảnh',
+  '还没有收到宣传册。':'Chưa nhận được ấn phẩm nào.',
+  '点右上角「📷 上传截图」开始。':'Bấm «📷 Tải ảnh lên» ở góc phải để bắt đầu.',
+  '还没有成品。':'Chưa có thành phẩm.',
+  '做好一版后上传到这里。':'Làm xong một bản thì tải lên đây.',
+  '参考':'Tham khảo',
+  '我们的':'Của chúng ta',
+  '归档到':'Lưu vào',
+  '关联对手':'Đối thủ liên quan',
+  '状态':'Trạng thái',
+  '待分析':'Chờ phân tích',
+  '已分析':'Đã phân tích',
+  '草稿':'Bản nháp',
+  '测试中':'Đang thử',
+  '已发':'Đã đăng',
+  '退役':'Ngừng dùng',
+  '🗑 删除这张':'🗑 Xóa ảnh này',
+  '🔄 重新分析':'🔄 Phân tích lại',
+  '📊 AI 分析':'📊 Phân tích AI',
+  '还没有分析。':'Chưa phân tích.',
+  '点下面按钮重新分析（约 20 秒）。':'Bấm nút bên dưới để phân tích lại (khoảng 20 giây).',
+  'AI 未接通。':'AI chưa kết nối.',
+  '✅ 可借鉴':'✅ Có thể học hỏi',
+  '❌ 不适用':'❌ Không phù hợp',
+  '收到的海报':'Ảnh nhận được',
+  '我们的成品':'Thành phẩm của ta',
+  '无图':'Không có ảnh',
+  '删除这张？':'Xóa ảnh này?',
+  '云端的图也会一起删掉，不能恢复。':'Ảnh trên đám mây cũng sẽ bị xóa, không khôi phục được.',
+  '已删除':'Đã xóa',
+  '重新分析中…':'Đang phân tích lại…',
+  '分析完成':'Phân tích xong',
   '来源':'Nguồn',
   '我们自己':'Của chúng ta',
   '对手':'Đối thủ',

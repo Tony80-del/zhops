@@ -558,7 +558,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-18 ============ -->
   <div class="day-panel on" data-day="2026-11-18">
     <div class="card">
-      <h2>2026-11-18 · 打磨记录<span class="n">32 行 · 已打磨 32 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-18 · 打磨记录<span class="n">33 行 · 已打磨 33 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -853,6 +853,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-21</td>
               <td class="mono nw">11-22</td>
               <td>P-191 的代码写完后，部署阶段踩了三个坑，全部实测解决。<br><b>坑 1：网页控制台建不了 Durable Object。</b>在 Cloudflare 网页里 <span class="mono">Settings → Bindings → Add → Durable Object</span>，Class name 下拉**永远是空的**。查官方文档才明白：DO 必须在配置里声明生命周期（<span class="mono">migrations</span> 的 <span class="mono">new_sqlite_classes</span>），而这个声明**只能在 <span class="mono">wrangler.toml</span> 里写，网页没有入口**。→ 改用命令行：装 <span class="mono">wrangler</span> + 写 <span class="mono">wrangler.toml</span> + <span class="mono">wrangler deploy</span>，一次成功（部署日志显示 <span class="mono">env.GEMINI_RELAY (GeminiRelay)  Durable Object</span>）。<br><b>坑 2：香港机房被 Gemini 拒绝。</b>实测 <span class="mono">cf_trace.colo = HKG</span>（你本机 <span class="mono">loc = VN</span>，但 Cloudflare 把请求送到香港处理）。Gemini 不支持香港 → <span class="mono">400 User location is not supported</span>。直连重试 3 次全落香港。→ 用 <b>Durable Object + <span class="mono">locationHint: 'wnam'</span></b>（北美西部）绕开，实测 <span class="mono">route: relay</span> 成功返回分析。<br><b>坑 3：免费额度每天只有 20 次。</b><span class="mono">gemini-3.8-flash</span> 免费层 <span class="mono">limit: 20</span>，测试时耗尽 → <span class="mono">429 Quota exceeded</span>。逐个试模型后发现 <b><span class="mono">gemini-3.5-flash-lite</span> 额度独立且可用</b>，换过去立刻成功。<br><b>顺带修</b>：给 DO 调用加 <b>25 秒超时</b>（实测不加会挂住 90 秒以上，前端一直转圈）；<span class="mono">.gitignore</span> 放行 <span class="mono">build/market/worker/</span>（不然换台机器没法重新部署）；部署文档补三个坑的完整记录。<br><b>实测分析质量</b>（用一张模拟的 Prep 促销海报）：正确识别「减 40% / 只剩 15 个名额 / 3.180.000đ」，配色判断「大红配亮黄、极简」，心理触发「稀缺 + 折扣」，并<b>主动指出缺陷</b>「没有品牌 Logo、没有联系方式，用户看完无法咨询」—— 这正是研发宣传册需要的参考。<br>验收：<span class="mono">check-poster-ai.js</span> 54→<b>58 项</b>（新增 wrangler.toml 的 DO 声明检查）；全套 <b>70/70</b>。<br><b>⚠️ 遗留</b>：免费层 20 次/天，够日常用但批量分析会撞限；要更多额度得绑卡。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-193</td>
+              <td><b>宣传素材 → 宣传册工作台（图墙 + Input/Output + 手机上传）</b><br><span style="color:var(--ink3);font-size:12px">从文字台账改成看得见图的工作台</span></td>
+              <td class="nw">业务端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-22</td>
+              <td class="mono nw">11-22</td>
+              <td>Tony：「我怎么知道别人的海报长什么样？我完全没有概念」「这个页面要打造成正在研发宣传册的页面，不是一个路边小窗口」。诊断出原设计三个硬伤：① <b>只存文字不存图</b>（分析完图就丢，三天后连自己分析的是哪张都不知道）；② <b>上传入口藏在抽屉最底下</b>，手机上更麻烦；③ <b>是台账不是工作台</b> —— 一个文字列表，分不出哪个是别人的、哪个是我们的。<br><b>重建后</b>：<br>① <b>图墙</b>：Input（收到的）/ Output（我们落地的）两块并排，缩略图网格，每张显示对手名 + 日期 + 一句话卖点，角标区分「参考 / 我们的」。判断标准一句话：<b>不是我做的 → Input，是我做的 → Output</b>。<br>② <b>图片存 Supabase Storage</b>（新接入，项目 <span class="mono">wiyiequwbgidnpneiymp</span>，桶 <span class="mono">posters</span>，已建 <span class="mono">input/</span> 和 <span class="mono">output/</span> 两个目录 + README 说明）。<b>免费 1GB 且不用绑卡</b>（R2 要绑卡，Tony 明确先不绑）。系统只存 URL，数据库零增长。实测：上传 / 读取 / 列目录 / 删除全通。<br>③ <b>上传后自动分析</b>（Tony 选 A）：选图 → 压缩 1280/0.72 → 传 Supabase → 自动调 Worker → 分析结果回填。<b>多张一次传</b>，状态条显示「第 N / 共 M 张」。<br>④ <b>删除只能在大图里</b>（Tony 选 B，防手滑），且<b>同时删云端文件</b>（<span class="mono">sbDelete(a.path)</span>），确认框写明「云端也会删，不能恢复」。<br>⑤ <b>手机只上传</b>：隐藏的 <span class="mono">input[type=file] accept="image/*"</span> 弹相册；<b>不用 <span class="mono">display:none</span></b>（iOS Safari 会点不动，实测已知坑），改 <span class="mono">opacity:0</span> 覆盖式。<br>⑥ <b>大图弹层</b>：大图 + 完整 AI 分析 + 可借鉴 / 不适用 + 能改归档（Input↔Output）/ 关联对手 / 状态 / 重新分析 / 删除。<br>⑦ <b>「+ 新素材」按钮已去掉</b>（Tony 定：一切从图开始），旧表单函数 <span class="mono">addAsset/assetForm/saveAsset/delAsset</span> 全删。<br><b>顺手修</b>：<span class="mono">check-poster-ai.js</span> 里检查旧表单的 5 条断言全部改写适配新架构；<span class="mono">check-p138-bizvi.js</span> 里移除已废弃的 <span class="mono">addAsset</span> 抽屉检查；工作台新文案全补越语（含动态拼接的「N 张」改成 <span class="mono">_v ? ' ảnh' : ' 张'</span> 内联）。<br>验收：新建 <span class="mono">check-poster-workbench.js</span> <b>54 项</b> + <b>反向控制 2 组真红</b>（R1 记录里塞 base64 → 报红；R2 删除时不删云端 → 报红）；<span class="mono">check-poster-ai.js</span> 58→<b>56 项</b>（适配新架构）；全套 <b>71/71</b>；<b>真图端到端实测通过</b>（上传 14KB → 读回 → 分析 6.5 秒 → 返回 8 项 → 删除）。还原点 <span class="mono">poster-workbench-before-20261122</span>。<br><b>Tony 定</b>：上传后自动分析 / 删除在大图里 / 图下显示对手名+日期+卖点 / 不留「+ 新素材」。</td>
             </tr>
           </tbody>
         </table>
