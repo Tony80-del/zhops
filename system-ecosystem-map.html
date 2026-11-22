@@ -461,9 +461,56 @@
 <div class="dec-box">
   <div class="dec-head">
     <span class="dh-t">决策台账</span>
-    <span class="dh-s">13 条 · 已定 10 · 暂缓 3 · 待定 0 · 更新 2026-11-07</span>
+    <span class="dh-s">17 条 · 已定 14 · 暂缓 3 · 待定 0 · 更新 2026-11-22</span>
     <span class="dh-s" style="margin-left:auto; color:var(--hint);">落实状态：<span class="dec-flag df-done">已落实</span> <span class="dec-flag df-part">已部分</span> <span class="dec-flag df-none">未落实</span></span>
   </div>
+  <div class="dec-sub">E · 宣传与云端（2026-11-21/22）</div>
+  <div class="dec-grid">
+
+    <div class="dec settled">
+      <div class="dec-q">⑭ 宣传册怎么做 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">AI 出「设计说明书」，人用 Canva / 可灵落地<br><span style="color:var(--hint); font-weight:400;">（2026-11-22 Tony 定）</span></div>
+      <div class="dec-why">
+        <b>不做</b>「AI 直接出成品图」。<br>
+        <b>为什么</b>：① 可灵 Kling Image 4.0 <b>不支持越南语</b>（官方语言列表只有中/繁中/英/日/韩/西/葡）；② 越南语有 6 个声调 + 大量变音符号（ă â ê ô ơ ư đ），AI 生图最容易在这里出错；③ 越南本地商家实测反馈「文字几乎要完全重做，比自己设计还费时间」；④ 一张海报印出来发现「giảm」写成「giarn」，就要重做。<br>
+        <b>分工</b>：可灵做<b>纯背景图</b>（无文字）+ 短视频；Canva 做<b>文字排版</b>（支持越南语，声调准确）；系统出<b>设计说明书</b>（含越南语文案，人复制粘贴）。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑮ 宣传册图存哪 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">Supabase Storage，不用 Cloudflare R2<br><span style="color:var(--hint); font-weight:400;">（2026-11-22 Tony 定）</span></div>
+      <div class="dec-why">
+        <b>为什么不用 R2</b>：R2 要 <b>attach billing</b>（绑卡）才能开通，Tony 明确先不绑卡。Supabase 免费 1GB 且<b>不要卡</b>。<br>
+        <b>1GB 够不够</b>：按一年 300 张（300KB/张 = 90MB）算，<b>够用 11 年</b>。<br>
+        <b>为什么不用 Firestore / localStorage 存图</b>：Firestore 单文档 1MB，10 张图就满，会把学员/财务数据一起拖死；localStorage 5MB，约 30 张就满。<b>所以图片存 Supabase，系统只存 URL。</b><br>
+        <b>已知限制</b>：Supabase 免费项目 7 天不活动会暂停（点一下恢复，数据不丢）。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑯ 群组情报怎么来 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">不自动抓，走「人看 + 系统记」<br><span style="color:var(--hint); font-weight:400;">（2026-11-22 Tony 定）</span></div>
+      <div class="dec-why">
+        <b>为什么不能自动抓</b>（四条实测）：① FB 私密群只见群名 + 人数；② FB 公开群只露 1–2 条旧帖（实测 133 人群只看到 2013 年一条）；③ Zalo 个人号/群不公开，非官方库（zca-js）官方明写「可能锁号/封号」；④ Meta 条款明确禁止，会「强制禁止与抓取相关的账号」。<br>
+        <b>收益 vs 风险</b>：收益（噪音大的闲聊）远小于风险（账号被封、客户聊天记录全丢）。<br>
+        <b>替代方案</b>：三个入口 —— ① 海报图片 → 宣传册 Input（自动分析）；② 文字情报 → 对手档案「+ 记一条」；③ 来不及分析 → Input 标「待分析」。<b>来源字段标可信度</b>（官方主页=高 / 群=中 / 转发=低）。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑰ AI 服务的 Key 放哪 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">服务端（Cloudflare Worker），绝不写进网页<br><span style="color:var(--hint); font-weight:400;">（2026-11-22）</span></div>
+      <div class="dec-why">
+        <b>为什么</b>：<code>biz.html</code> 是 GitHub Pages 上的公开页面，Gemini Key 写进去<b>按 F12 就能看到</b>，别人拿去白嫖你的额度。<br>
+        <b>怎么做</b>：Cloudflare Worker 把 Key 放在环境变量（<code>env.GEMINI_KEY</code>），网页只调 Worker。<br>
+        <b>踩过的坑</b>：① 网页控制台建不了 Durable Object（必须在 <code>wrangler.toml</code> 声明 migrations）；② 香港机房被 Gemini 拒（用 DO + <code>locationHint: 'wnam'</code> 绕北美）；③ <code>3.8-flash</code> 免费层只有 20 次/天（换 <code>3.5-flash-lite</code>）。<br>
+        <b>成本</b>：Worker 10 万次/天免费，Gemini 约 20 次/天免费，<b>都不绑卡</b>。
+      </div>
+    </div>
+
+  </div>
+
   <div class="dec-sub">A · 业务口径</div>
   <div class="dec-grid">
 
@@ -719,7 +766,7 @@
     </div>
   </div>
 
-  <div class="ov-label">云端 · 已实测存在（HTTP 200）的 2 条路径 · Firestore 项目 hsk-class-v1</div>
+  <div class="ov-label">云端 · 已实测存在（HTTP 200）的 3 条路径 · Firestore 项目 hsk-class-v1</div>
   <div class="ov-row3">
     <div class="cloud-chip">
       <div class="c-n">meta/curriculum</div>
@@ -729,6 +776,10 @@
       <div class="c-n">zhops/master</div>
       <div class="c-d">教师端 + 管理端共用一份<br>双向读写 · 主端<b>完全不碰</b></div>
     </div>
+    <div class="cloud-chip">
+      <div class="c-n">zhops/marketreport</div>
+      <div class="c-d">市场周报（P-189）<br>GitHub Actions 每周一写入 · <b>老板端只读</b></div>
+    </div>
     <div class="cloud-chip" style="border-style:dashed; border-color:var(--warn);">
       <div class="c-n" style="color:var(--warn);">敏感库（待建）</div>
       <div class="c-d">财务 + 人事 · 与业务库分开<br><b>还不存在</b> · 财务已本地建但<b>未上云</b> · 认证补上前只放测试数据</div>
@@ -736,6 +787,21 @@
   </div>
 </div>
 
+  <div class="ov-label">外部服务 · 全部免费层 · 都不绑卡（2026-11-21/22 接入）</div>
+  <div class="ov-row3">
+    <div class="cloud-chip">
+      <div class="c-n">Cloudflare Worker</div>
+      <div class="c-d">zhops-poster<br>海报 AI 分析 · <b>藏 Gemini Key</b> · 10 万次/天免费</div>
+    </div>
+    <div class="cloud-chip">
+      <div class="c-n">Supabase Storage</div>
+      <div class="c-d">桶 posters（input/ output/）<br>宣传册图片 · <b>1GB 免费</b> · 约 3400 张</div>
+    </div>
+    <div class="cloud-chip">
+      <div class="c-n">GitHub Actions</div>
+      <div class="c-d">market-weekly.yml<br>每周一 08:00 抓对手广告 · <b>2000 分钟/月免费</b></div>
+    </div>
+  </div>
 </div><!-- /sec-l1 -->
 
 <!-- ===== 第二层 ===== -->
@@ -1234,7 +1300,7 @@
     <div class="left">
       <span class="sys-tag">业务</span>
       <span class="sys-name">业务部（含市场）</span>
-      <span class="sys-sub">线索池 · 学员档案 · 学生收费 · 市场调查 · 投放记录 · 宣传素材 · 讲座活动</span>
+      <span class="sys-sub">线索池 · 学员档案 · 学生收费 · 市场调查 · 对手档案 · 投放记录 · 宣传册工作台 · 讲座活动</span>
     </div>
     <div class="right"><span class="status-badge s-info">已建 · 待完善</span><span class="toggle">▶</span></div>
   </div>
@@ -1279,6 +1345,15 @@
       <div class="field-value">内容研发 · 渠道发布 · 活动管理。短片研发、宣传册、渠道（Facebook / Zalo / 微信）、活动任务（自办 vs 协办）、销售赛道研发。</div>
     </div>
     <div class="field">
+      <div class="field-label">2026-11-21/22 新增（P-189 ~ P-193）</div>
+      <div class="field-value multi">
+        <div><b class="yes">① 对手档案 + 群情报</b>（P-190）：每家对手一行（位置 / 学费 / 平台 / 招生方式 / 卖点 / 我们的应对 / FB 主页）；群情报「+ 记一条」自动归到对手名下，记 <span class="mono">lastSeen</span>，<b>14 天没看标红提醒</b>，按「最久没看」排最前。<b>不自动抓群组</b>（FB 私密群只见群名、公开群只露 1–2 条旧帖、Zalo 非官方库会封号、Meta 条款禁止）→ 走人工归档。</div>
+        <div><b class="yes">② 宣传册工作台</b>（P-193）：原「宣传素材」文字台账改成<b>图墙</b>。<b>Input</b>（收到的：对手/参考/群里看到的）/ <b>Output</b>（我们落地的）两块并排，缩略图网格，每张显示对手名 + 日期 + 一句话卖点，角标区分「参考 / 我们的」。<b>图片存 Supabase Storage</b>（1GB 免费、不绑卡），系统只存 URL。上传后<b>自动 AI 分析</b>（8 项），删除只能在大图里（防手滑）且同时删云端。手机只做上传。</div>
+        <div><b class="yes">③ 市场周报</b>（P-189）：云端每周一 08:00 自动抓 4 家对手的 FB 广告库（Prep HSK / 华文 SHZ / 师大 / MCBooks），比对上周算出新增 / 停投 / 促销 / 长期在投，自动挑「要你拍板」5 条，生成<b>手机一屏版</b>（约 340 字，按杀伤力排序：退全款 &gt; 限时免费名额 &gt; 闪购 &gt; 新课），写进 <span class="mono">zhops/marketreport</span>，<b>老板端「🛰️ 市场周报」标签页</b>直接读。</div>
+        <div><b class="yes">④ 海报 AI 分析</b>（P-192）：Cloudflare Worker <span class="mono">zhops-poster</span> + Durable Object 绕北美（绕开香港机房被 Gemini 拒的问题），模型 <span class="mono">gemini-3.5-flash-lite</span>（约 20 次/天）。<b>AI 只出设计说明书，不生成成品图</b> —— 可灵不支持越南语，越南语 6 个声调 + 变音符号 AI 生图必错。</div>
+      </div>
+    </div>
+    <div class="field">
       <div class="field-label">数据流向（规划）</div>
       <div class="field-value multi">
         <div class="plan">入：zhops 班级数据 → 招生参考</div>
@@ -1296,12 +1371,84 @@
   </div>
 </div>
 
+<!-- ⑦ 云端服务（2026-11-22 新增） -->
+<div class="sys-card partial" id="cloud">
+  <div class="sys-head" onclick="toggleCard('cloud')">
+    <div class="left">
+      <span class="sys-tag">云端</span>
+      <span class="sys-name">云端服务 · Worker / Storage / Actions</span>
+      <span class="sys-sub">3 个外部服务 · 全部免费层 · 不绑卡</span>
+    </div>
+    <div class="right"><span class="status-badge s-ok">已部署</span><span class="toggle">▶</span></div>
+  </div>
+  <div class="sys-body">
+    <div class="field">
+      <div class="field-label">三个服务是什么</div>
+      <div class="field-value multi">
+        <div><b class="yes">① Cloudflare Worker</b> —— <span class="mono">zhops-poster.tony80cheong.workers.dev</span><br>
+          作用：藏 Gemini Key + 转发图片做分析。<b>Key 绝不写进网页</b>（网页是公开的，按 F12 就能看到）。<br>
+          为什么要有这一层：浏览器直连 Gemini 会把 Key 暴露；Worker 把 Key 放在服务端环境变量里。</div>
+        <div><b class="yes">② Supabase Storage</b> —— 项目 <span class="mono">wiyiequwbgidnpneiymp</span>，桶 <span class="mono">posters</span><br>
+          作用：存宣传册图片。<b>1GB 免费、不需要绑卡</b>（Cloudflare R2 要绑卡，Tony 明确先不绑）。<br>
+          目录：<span class="mono">posters/input/</span>（收到的）/ <span class="mono">posters/output/</span>（我们落地的）。<br>
+          <b>系统只存 URL</b>，图片本身不进 Firestore（单文档 1MB，会把学员/财务数据一起拖死）。</div>
+        <div><b class="yes">③ GitHub Actions</b> —— <span class="mono">.github/workflows/market-weekly.yml</span><br>
+          作用：每周一 01:00 UTC（= 08:00 越南）自动抓对手广告 → 生成周报 → 写 Firestore。<br>
+          免费额度：私有仓库 2000 分钟/月，本任务约 16 分钟/月 = <b>0.8%</b>。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">踩过的坑（都已修）</div>
+      <div class="field-value multi">
+        <div><b class="no">坑 1：网页控制台建不了 Durable Object</b><br>
+          DO 必须在 <span class="mono">wrangler.toml</span> 里声明 <span class="mono">migrations</span> 的 <span class="mono">new_sqlite_classes</span>，网页没有这个入口 → Binding 下拉永远是空的。必须用命令行 <span class="mono">wrangler deploy</span>。</div>
+        <div><b class="no">坑 2：香港机房被 Gemini 拒绝</b><br>
+          实测 <span class="mono">cf_trace.colo = HKG</span>（本机 <span class="mono">loc = VN</span>，但 Cloudflare 把请求送到香港处理）。Gemini 不支持香港 → <span class="mono">400 User location is not supported</span>。解法：Durable Object + <span class="mono">locationHint: 'wnam'</span>（北美西部）。</div>
+        <div><b class="no">坑 3：免费额度每天只有 20 次</b><br>
+          <span class="mono">gemini-3.8-flash</span> 免费层 <span class="mono">limit: 20</span>，测试时耗尽。换 <span class="mono">gemini-3.5-flash-lite</span> 后正常（额度独立）。</div>
+        <div><b class="no">坑 4：Supabase 建桶 / 上传被 RLS 挡</b><br>
+          建桶要 secret 密钥或网页操作；上传要 4 条 policy（anon 的 insert / delete / select / update）。已在 SQL Editor 跑过。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">成本</div>
+      <div class="field-value multi">
+        <div>· Cloudflare Workers：<b>10 万次/天免费</b>，超限只停服务不扣钱</div>
+        <div>· Supabase Storage：<b>1GB 免费</b>，约 3400 张图（按 300KB/张）</div>
+        <div>· GitHub Actions：<b>2000 分钟/月免费</b>（私有仓库）</div>
+        <div>· Gemini API：<b>约 20 次/天免费</b>（<span class="mono">3.5-flash-lite</span>）</div>
+        <div style="margin-top:6px;"><b class="yes">四个服务全部 $0，且都没绑卡</b>（Supabase / Cloudflare / GitHub / Google AI Studio 免费层都不要卡）。</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">已知限制</div>
+      <div class="field-value multi">
+        <div>· <b>Supabase 免费项目 7 天不活动会暂停</b>（点一下恢复，数据不丢）</div>
+        <div>· <b>Gemini 20 次/天</b> —— 日常够用，批量分析会撞限</div>
+        <div>· <b>可灵接不进系统</b> —— Tony 买的是 WorkBuddy 内的 MCP 插件，不是官网 API。要用得另买 <span class="mono">kling.ai/dev</span> 的资源包（约 ¥0.2/张）</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">部署命令</div>
+      <div class="field-value">
+        <div style="font-family:monospace;font-size:11.5px;background:var(--surface-2);padding:8px;border-radius:4px;white-space:pre-wrap">cd build/market/worker
+export CLOUDFLARE_API_TOKEN='...'
+export CLOUDFLARE_ACCOUNT_ID='91cdd1c7211a05e8b750ed0191d1b357'
+wrangler deploy
+
+# 改 Key
+wrangler secret put GEMINI_KEY</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ⑦ 技能层 -->
 <div class="sys-card todo" id="skills">
   <div class="sys-head" onclick="toggleCard('skills')">
     <div class="left">
       <span class="sys-tag">AI 技能</span>
-      <span class="sys-name">技能层 · 4 端 + 总管</span>
+      <span class="sys-name">技能层 · 5 端 + 总管 + 2 专项</span>
       <span class="sys-sub">RSI · 岗位化 · 不碰生产存盘</span>
     </div>
     <div class="right"><span class="status-badge s-ok">4 端 + 总管全部已落地 · P-118</span><span class="toggle">▶</span></div>
@@ -1316,6 +1463,22 @@
       <div class="sw-r"><b>分界线</b>：AI 负责准备 / 核对 / 建议 / 跑测试 / 记账；Tony 按最后一下 —— 写真实数据、推云、发布、跨端通知、教室编码。</div>
       <div class="sw-r"><b>工作台账 P-117 只验了「叫得动 + 测试跑得通」</b>，没验「会替你录学生」。</div>
     </div>
+    <!-- 2026-11-22：新增 2 个专项技能 -->
+    <div class="field">
+      <div class="field-label">2026-11-22 新增 · 2 个专项技能</div>
+      <div class="field-value multi">
+        <div><b class="yes">zhops-poster · 宣传册研发台</b><br>
+          触发词：宣传册、宣传素材、海报、对手海报、截图、Input、Output、Canva、可灵、设计说明书。<br>
+          管：从「收到宣传册」到「我们落地成品」这条线。<b>Input</b>（收到的）/ <b>Output</b>（我们落地的）两个档案。<br>
+          铁律：① 不生成成品图（越南语不可控）；② 图片不进数据库；③ 手机只上传；④ 不自动抓群组，但必须能人工归档。<br>
+          含<b>设计说明书模板</b>（尺寸 / 配色 / 字体 / 层级 / 越南语文案 / 可灵提示词）和<b>对比模板</b>。</div>
+        <div><b class="wait">zhops-research · 市场调查</b>（待建）<br>
+          触发词：市场调查、对手档案、群情报、情报 5 类、市场周报。<br>
+          管：市场情报 5 类（官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈）+ 对手档案 + 文字情报归档 + 周报解读。<br>
+          与 zhops-poster 的分工：<b>海报图片归 poster，文字情报归 research</b>。</div>
+      </div>
+    </div>
+
     <!-- P-128 · 5 个岗位架构图 + 每端说明卡 -->
     <div class="field">
       <div class="field-label">5 个岗位架构图 · 4 端 + 总管（P-128）</div>

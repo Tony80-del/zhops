@@ -38,7 +38,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.65 -apple-system,BlinkMa
 .meter{min-width:190px;}
 .meter .row{display:flex;justify-content:space-between;font-size:10px;color:var(--hint);margin-bottom:5px;}
 .bar{height:7px;background:var(--panel);border:1px solid var(--line);border-radius:4px;overflow:hidden;}
-.bar span{display:block;height:100%;background:var(--ok);width:82%;}
+.bar span{display:block;height:100%;background:var(--ok);width:83%;}
 
 /* 结构图 */
 .map{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 16px;}
@@ -129,10 +129,10 @@ td .mut{color:var(--hint);}
 <div class="header">
   <div>
     <h1>流程连接地图 · 业务端</h1>
-    <div class="meta">ZH-System · 结构关系 / 真实编码 / 线内工序 · 快照 2026-11-19（L-01/02/03 收口）</div>
+    <div class="meta">ZH-System · 结构关系 / 真实编码 / 线内工序 · 快照 2026-11-22（L-12 市场情报线新增）</div>
   </div>
   <div class="chips">
-    <span class="chip ok">绿 9</span>
+    <span class="chip ok">绿 10</span>
     <span class="chip bad">红 2</span>
     <span class="chip wait">待收口 0</span>
     <span class="chip info">灰 0</span>
@@ -148,7 +148,7 @@ td .mut{color:var(--hint);}
     </div>
     <div class="sp"></div>
     <div class="meter">
-      <div class="row"><span>已通连线</span><span id="pct">9 / 11 · 82%</span></div>
+      <div class="row"><span>已通连线</span><span id="pct">10 / 12 · 83%</span></div>
       <div class="bar"><span></span></div>
     </div>
   </div>
@@ -187,12 +187,12 @@ td .mut{color:var(--hint);}
     <div class="ext-note">业务部必须把报价与租金费用提交财务审批；教室编码是 Tony 手填、查重、存了锁死，主端与教师端只引用，不许自己发号。</div>
   </div>
 
-  <h2 class="section-title">二 · 11 条连线（点开看工序）</h2>
+  <h2 class="section-title">二 · 12 条连线（点开看工序）</h2>
   <p class="section-note">括号内为<b>现跑代码里的真实出处</b>，不是设计稿。筛选：<b>红 = 未通，绿 = 已通，待收口 = 主线通但钱线未通，灰 = 待定</b>。</p>
   <div class="tools">
     <button class="on" data-f="all">全部 11</button>
     <button data-f="bad">红 2</button>
-    <button data-f="ok">绿 9</button>
+    <button data-f="ok">绿 10</button>
     <button data-f="wait">待收口 0</button>
     <button data-f="gray">灰 0</button>
   </div>
@@ -339,8 +339,44 @@ td .mut{color:var(--hint);}
     </div>
   </details>
 
-  <h2 class="section-title">二·B · 老板端 · 监督端（P-177 · 独立板块，不计入 11 条连线）</h2>
-  <p class="section-note">第五端 = <b>监督端</b>，归总管执行，不单独建技能。它不新增连线，只在 <code>zhops/approvals</code> 上收口四端的审批；因此<b>不参与上方 11 条线的绿/红统计</b>。</p>
+  <details class="line" data-s="ok"><summary><span class="lid">L-12</span><span class="lname">市场情报 → 周报 → 老板端（P-189/190/193）</span><span class="st ok">绿 · 云端 · 新增</span><span class="lcode">FB 广告库 → ads-*.json → report-*.json → zhops/marketreport → boss.html ｜ 无钱线</span></summary>
+    <div class="body">
+      <div class="kv"><b>两端编号：</b><code>Library ID</code>（Meta 广告库唯一号）→ <code>ads-YYYY-MM-DD.json</code> → <code>report-YYYY-MM-DD.json</code> → Firestore <code>zhops/marketreport</code> → 老板端「🛰️ 市场周报」标签页</div>
+      <div class="kv"><b>已通（2026-11-22 实测）：</b>GitHub Actions 每周一 01:00 UTC（= 08:00 越南）自动跑：<b>①</b> headless Chrome 抓 4 家对手的 FB 广告库（Prep HSK / 华文 SHZ / 师大 / MCBooks）→ <b>②</b> 按广告主名过滤噪音（实测关键词搜索会混进 CFA、医院、烹饪学校，41 条里只有 22 条真是 Prep）→ <b>③</b> 跟上周比对算新增 / 停投 / 促销 / 长期在投 → <b>④</b> 自动打分挑「要你拍板」5 条 → <b>⑤</b> 生成手机一屏版（约 340 字，按杀伤力排序：退全款 &gt; 限时免费名额 &gt; 闪购 &gt; 新课）→ <b>⑥</b> 写 Firestore → <b>⑦</b> 老板端只读展示。</div>
+      <div class="kv"><b>实测数据（2026-11-22）：</b>在投 <b>49 条</b> · Prep HSK 22 条（18 带促销）· SHZ 8 条 · 师大 2 条 · MCBooks 17 条；Prep 的打法看得很清楚：<b>退 100% 学费</b>、<b>15 个 0đ 名额</b>、<b>闪购 40% 省 400 万限 3 天</b>、<b>减 159 万送教材+APP</b>、<b>3,180,000đ 起</b>。</div>
+      <div class="kv"><b>踩过的坑（都已修）：</b><br>
+        ① <b>日期格式</b> —— GitHub 服务器在美国，FB 返回 <code>May 18, 2026</code>（美式），本机越南时区是 <code>18 May 2026</code>（英式），正则只认英式 → <b>换台机器就静默 0 条</b>；改成两种都认 + 归一化 ISO（顺带发现 MCBooks 之前 0 条也是这个原因，修完从 0 变 17 条）。<br>
+        ② <b>云端抓取不稳定</b> —— <code>--virtual-time-budget</code> 25s 不够、带 UA 反而被挡、首个关键词常失败 → 提到 40s、去掉 UA、<b>失败重试 3 次间隔递增</b>；重试后云端从 8 条恢复到 <b>49 条</b>（与本机一致）。<br>
+        ③ <b>抓 0 条会覆盖云端</b> —— 第一次云端跑把本机抓好的 32 条覆盖成空周报；加了「<b>抓 0 条拒绝写云端</b>」的防呆（exit 3 并说明原因）。</div>
+      <div class="kv"><b>人工那一环：</b>群里的海报走「人看 + 系统记」——<b>不自动抓群组</b>（FB 私密群只见群名、公开群只露 1–2 条旧帖、Zalo 非官方库会封号、Meta 条款禁止）。三个入口：① 海报图片 → 宣传册 Input（自动分析）；② 文字情报 → 对手档案「+ 记一条」；③ 来不及分析 → Input 标「待分析」。</div>
+      <ul class="steps">
+        <li class="done"><b>① 两端编号对齐</b>：Library ID → 文件名 → Firestore 文档，全程可追</li>
+        <li class="done"><b>② 通道接上</b>：GitHub Actions → Firestore → 老板端，<b>2026-11-22 云端实跑成功</b></li>
+        <li class="done"><b>③ 数据一致</b>：云端 49 条 = 本机 49 条</li>
+        <li class="done"><b>④ 验收</b>：老板端「🛰️ 市场周报」能读出手机一屏版（<code>check-market.js</code> 58 项 + 反向控制 2 组真红）</li>
+      </ul>
+    </div>
+  </details>
+
+  <h2 class="section-title">二·C · 宣传册研发台（P-193 · 新增，不计入 12 条连线）</h2>
+  <p class="section-note">原「宣传素材」文字台账改成<b>图墙工作台</b>。它不在业务主链上（不参与线索→学员→收费→教室那条线），单独一块。</p>
+  <div class="now" style="border-left-color:#22c55e">
+    <div>
+      <b>两个档案，一进一出</b><br>
+      <b>Input</b>（收到的：对手的 / 参考的 / 群里看到的）→ Supabase <code>posters/input/</code><br>
+      <b>Output</b>（我们落地的成品）→ Supabase <code>posters/output/</code><br>
+      判断标准一句话：<b>不是我做的 → Input，是我做的 → Output</b>。
+    </div>
+    <div style="margin-top:10px">
+      <b>为什么图片不进数据库</b>：Firestore 单文档 1MB，10 张图就满，会把学员/财务数据一起拖死；localStorage 5MB，约 30 张就满。<b>所以图片存 Supabase（1GB 免费、不绑卡），系统只存 URL。</b>
+    </div>
+    <div style="margin-top:10px">
+      <b>AI 只出「设计说明书」，不生成成品图</b>：可灵不支持越南语（官方语言列表只有中/繁中/英/日/韩/西/葡），越南语 6 个声调 + 变音符号 AI 生图必错。人拿说明书去 Canva 排版，文字绝对准确。
+    </div>
+  </div>
+
+  <h2 class="section-title">二·B · 老板端 · 监督端（P-177 · 独立板块，不计入 12 条连线）</h2>
+  <p class="section-note">第五端 = <b>监督端</b>，归总管执行，不单独建技能。它不新增连线，只在 <code>zhops/approvals</code> 上收口四端的审批；因此<b>不参与上方 12 条线的绿/红统计</b>。</p>
   <div class="now" style="border-left-color:#a78bfa">
     <div>
       <div class="big">boss.html · 统一审批 + 报告 + 监督</div>
@@ -446,7 +482,8 @@ td .mut{color:var(--hint);}
   <div class="foot">
     本页<b>只读</b>：不写任何 localStorage、不发网络请求、不碰产品存盘键 —— 双击 file:// 打开与线上打开看到的内容完全一致。<br>
     线色只能由「4 步工序全过 + 总管闸门放行」更改，不许手改。所有编号核自现跑代码，不是设计稿。<br>
-    快照 2026-11-21（L-08 收口） · 当前 9 绿 / 2 红 / 0 待收口 / 0 灰 · 完成率 82%（剩 L-06 等裁决、L-10 未开）
+    快照 2026-11-22（L-12 新增 · 宣传册工作台） · 当前 10 绿 / 2 红 / 0 待收口 / 0 灰 · 完成率 83%（剩 L-06 等裁决、L-10 未开）<br>
+    另有两块<b>不在 11 条主链上</b>的独立板块：老板端监督端（P-177）、宣传册研发台（P-193）。
   </div>
 </div>
 
