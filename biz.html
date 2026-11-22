@@ -1988,19 +1988,89 @@ function stuFee(sid){
 /* 表格单元格:只读摘要(已收 / 应收·待收 / 逾期)。中文标签各自成串,越语层整串命中。 */
 function stuFeeCell(s){
   var f = stuFee(s.id);
-  if(!f.n) return '<span class="tg off">未开单</span>';
+  var std = stuStdFee(s);
+  /* ★ 2026-11-22（T1/P-208）：列表也要能看出「标准价 vs 实开单」。
+     未开单时显示标准价，让人知道这个学生该收多少。 */
+  if(!f.n){
+    return std > 0
+      ? '<span class="tg off">未开单</span><br><small style="color:var(--ink3)">'+
+        '<span>'+FEE_T('标准','Chuẩn')+'</span> <span data-raw>'+fmtVND(std)+'</span></small>'
+      : '<span class="tg off">未开单</span>';
+  }
+  var gap = std - f.recv;
+  var gapTag = (std > 0 && f.recv > 0 && gap !== 0)
+    ? ' <span class="tg '+(gap > 0 ? 'amber' : 'off')+'">'+
+      FEE_T('少收','Thu thiếu')+' '+fmtVND(Math.abs(gap))+'</span>'
+    : '';
   return fmtVND(f.got)+'<small>VND</small>'+
     (f.due>0 ? '<br><small style="color:var(--ink3)"><span>应收</span> <span data-raw>'+fmtVND(f.recv)+
       '</span> · <span>待收</span> <span data-raw>'+fmtVND(f.due)+'</span></small>' : '')+
+    gapTag+
     (f.over ? ' <span class="tg bad">逾期</span>' : '');
 }
 /* 表单顶部只读摘要块:应收 / 已收 / 待收 / 下次应收日,全部从收费单算 */
+/* ★ 2026-11-22（T1/P-208）：动态文案当场按语言拼。
+   为什么不能用字典：'多收 2.000.000' 这种「前缀+数字」拼出来的串，
+   翻译层按整句匹配永远匹配不到（项目里已有同样教训，见漏斗那段注释）。 */
+function FEE_T(zh, vi){ return (typeof BIZ_LANG !== 'undefined' && BIZ_LANG === 'vi') ? vi : zh; }
+
+/* ★ 2026-11-22（T1 / P-208）：取「这个学生该收多少」。
+   优先用档案里手填的 stdFee（乙方案：可以给个别学生单独定价）；
+   没填过就回落到课程包标价；课程包也找不到就给 0。
+   ★ 注意 stdFee 存 null 表示「没填过」，不是「填了 0」——
+     填 0 是合法的（试听课免费），不能混。 */
+function stuStdFee(s){
+  if(!s) return 0;
+  if(s.stdFee != null && s.stdFee !== '') return Number(s.stdFee) || 0;
+  var pkg = PACKAGES.find(function(p){ return p.id === s.pkg; });
+  return pkg ? (Number(pkg.price) || 0) : 0;
+}
+
+/* 标准价从哪来的（给提示文案用） */
+function stuStdFeeFrom(s){
+  if(!s) return 'pkg';
+  return (s.stdFee != null && s.stdFee !== '') ? 'manual' : 'pkg';
+}
+
 function stuFeeBlock(s){
   if(!s || !s.id) return '';
   var f = stuFee(s.id);
+  var std = stuStdFee(s);
+  var fromPkg = stuStdFeeFrom(s) === 'pkg';
+  /* 标准价那一行：手填的显示来源备注，按套餐的显示套餐名 */
+  var stdLine = '';
+  if(std > 0){
+    var pkg = PACKAGES.find(function(p){ return p.id === s.pkg; });
+    stdLine = '<span>'+FEE_T('标准学费','Học phí chuẩn')+'</span> <span data-raw>'+fmtVND(std)+'</span> <span>VND</span>'+
+      (fromPkg
+        /* ★ 不显示课程包名：它是数据（HSK1 完整（60课时）），越语界面里会留汉字。
+           「按课程包」四个字已经说清来源，名字在课程包下拉里看得到。 */
+        ? ' <span style="color:var(--ink3)">（'+FEE_T('按课程包','Theo gói khóa học')+'）</span>'
+        : ' <span style="color:var(--ink3)">（'+FEE_T('档案手填','Nhập tay trong hồ sơ')+(s.stdFeeNote?' · '+esc(s.stdFeeNote):'')+'）</span>')+
+      '<br>';
+  }
+
   if(!f.n) return '<div id="stu-fee" class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+    stdLine+
     '<span>还没开收费单。填好课程包和已缴,再点「收费」开单。</span></div>';
+
+  /* ★ 2026-11-22（T1/P-208）：标准 vs 实际 —— 这是 T1 的核心价值。
+     以前只能看到「收了多少」，看不到「该收多少、少收了多少」。
+     ★ 差额不报警、不拦保存：少收可能是正常折扣，多收可能是加课。
+       只显示，由人判断。 */
+  var gap = std - f.recv;
+  var gapLine = '';
+  if(std > 0 && f.recv > 0 && gap !== 0){
+    var gapWord = gap > 0 ? FEE_T('少收','Thu thiếu') : FEE_T('多收','Thu thừa');
+    var gapColor = gap > 0 ? 'var(--warn,#b45309)' : 'var(--ink3)';
+    gapLine = '<span style="color:'+gapColor+'"><span>'+gapWord+'</span> '+
+      '<span data-raw>'+fmtVND(Math.abs(gap))+'</span> <span>VND</span></span>'+
+      (gap > 0 ? ' <span style="color:var(--ink3)">'+FEE_T('（打折 / 优惠，正常就没事）','（Chiết khấu / ưu đãi, bình thường thì không sao）')+'</span>' : '')+'<br>';
+  }
+
   return '<div id="stu-fee" class="sm" style="color:var(--ink3);margin:0 0 12px">'+
+    stdLine+
+    gapLine+
     '<span>收费以收费单为准,学员档案不再另记一份。</span><br>'+
     '<span>名下收费单已缴合计</span> <span data-raw>'+fmtVND(f.got)+'</span> <span>VND</span><br>'+
     '<span>应收</span> <span data-raw>'+fmtVND(f.recv)+'</span> <span>VND</span> · '+
@@ -3639,7 +3709,16 @@ function studentForm(s){
       '</select></div>'+
     '</div>'+
     '<div id="room-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
-    '<div class="fld"><label>课程包</label><select id="f-pkg">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
+    '<div class="fld"><label>课程包</label><select id="f-pkg" onchange="pkgPriceHint()">'+PACKAGES.map(function(p){return '<option value="'+p.id+'" '+(s.pkg===p.id?'selected':'')+'>'+p.name+' ('+fmtVND(p.price)+' VND)</option>';}).join('')+'</select></div>'+
+    /* 标准学费（T1/P-208）：档案=定价依据，收费单=什么时候收；留空按课程包价 */
+    '<div class="fld-row">'+
+      '<div class="fld"><label>标准学费（VND）</label>'+
+        '<input type="text" inputmode="numeric" id="f-stdFee" value="'+(s.stdFee!=null?fmtVND(Number(s.stdFee)||0):'')+'" '+
+        'placeholder="留空 = 按课程包价" onblur="fmtPaidInput(this)"></div>'+
+      '<div class="fld"><label>学费备注</label>'+
+        '<input id="f-stdFeeNote" value="'+esc(s.stdFeeNote||'')+'" placeholder="例：老生价 / 含考试费 / 一次付清优惠"></div>'+
+    '</div>'+
+    '<div id="pkg-hint" class="sm" style="color:var(--ink3);margin:-6px 0 12px"></div>'+
     /* ★ P-156(Tony 2026-11-15):「已缴」分两种状态 ——
        没开单:手填(报名已收),开单时带进收费单;已开单:只读,显示流水合计。
        千分位文本框口径不变(type=text + inputmode),失焦才格式化。 */
@@ -3663,6 +3742,19 @@ function fmtPaidInput(el){
    - 选线上 → 教室下拉置灰（线上不占教室），并说明「不占教室，只占老师时段」
    - 选线下但没指定教室 → 提示「主端编班时要再选」
    - 一间教室都没录 → 直接叫去教室板块录，别让人在那儿猜 */
+/* ★ 2026-11-22（T1 / P-208）：课程包价格提示。
+   作用：选课程包时，在「标准学费」下面提示一句套餐价，让人知道留空会按多少收。
+   不自动填 —— 自动填会把「老生优惠」这类真实情况盖掉，人还得手改回来。 */
+function pkgPriceHint(){
+  var pkgEl = document.getElementById('f-pkg');
+  var hint = document.getElementById('pkg-hint');
+  if(!pkgEl || !hint) return;
+  var pkg = PACKAGES.find(function(p){ return p.id === pkgEl.value; });
+  if(!pkg){ hint.textContent = ''; return; }
+  hint.innerHTML = '课程包标价 <b data-raw>' + fmtVND(pkg.price) + '</b> VND —— ' +
+    '标准学费留空就按这个收；有优惠就填实价，备注写清原因。';
+}
+
 function roomPickHint(){
   var mEl = document.getElementById('f-mode');
   var rEl = document.getElementById('f-preferRoom');
@@ -3711,6 +3803,18 @@ function saveStudent(id){
     mode: val('f-mode') || 'offline',
     preferRoom: val('f-preferRoom') || ''
   };
+  /* ★ 2026-11-22（T1 / P-208）：标准学费 + 备注。
+     留空 = 不存这个键（不是存 0）—— 这样「没填过」和「填了 0」能分清，
+     取价时 stdFee 为 null/undefined 就回落到课程包价。
+     parseVND 是项目原有的千分位解析，跟「已缴」同一套口径。 */
+  var stdFeeRaw = val('f-stdFee');
+  if (stdFeeRaw !== '') {
+    data.stdFee = parseVND(stdFeeRaw);
+    data.stdFeeNote = val('f-stdFeeNote') || '';
+  } else {
+    data.stdFee = null;
+    data.stdFeeNote = val('f-stdFeeNote') || '';
+  }
   /* ★ P-156(Tony 2026-11-15):报名窗口的「已缴」= 报名已收,存进学员。
      已有收费单的学员不回写 —— 钱只认收费单流水,不存第二份。 */
   if(!id || !stuBillsOf(id).length) data.paid = parseVND(val('f-paid'));
@@ -5290,6 +5394,21 @@ var BIZ_VI = {
   '学员编号来自学员档案，这里只读，不许手打或换人。':'Mã học viên lấy từ hồ sơ, chỉ đọc ở đây, không gõ tay hay đổi người.',
   '名下收费单已缴合计':'Tổng đã nộp theo phiếu thu',
   '收费以收费单为准,学员档案不再另记一份。':'Thu theo phiếu thu; hồ sơ học viên không ghi thêm bản nào.',
+  /* ★ 2026-11-22（T1/P-208）：标准学费相关文案 —— 越语界面不许留汉字 */
+  '标准学费':'Học phí chuẩn',
+  '标准':'Chuẩn',
+  '少收':'Thu thiếu',
+  '多收':'Thu thừa',
+  '按课程包':'Theo gói khóa học',
+  '档案手填':'Nhập tay trong hồ sơ',
+  '标准学费（VND）':'Học phí chuẩn (VND)',
+  '学费备注':'Ghi chú học phí',
+  '留空 = 按课程包价':'Để trống = theo giá gói khóa học',
+  '例：老生价 / 含考试费 / 一次付清优惠':'VD: giá học viên cũ / đã gồm lệ phí thi / ưu đãi đóng một lần',
+  '课程包标价':'Giá niêm yết của gói',
+  '标准学费留空就按这个收；有优惠就填实价，备注写清原因。':'Để trống học phí chuẩn thì thu theo giá này; có ưu đãi thì nhập giá thực, ghi rõ lý do vào ghi chú.',
+  '（打折 / 优惠，正常就没事）':'（Chiết khấu / ưu đãi, bình thường thì không sao）',
+  '还没开收费单。填好课程包和已缴,再点「收费」开单。':'Chưa mở phiếu thu. Điền gói khóa học và đã nộp, rồi bấm «Thu tiền» để mở phiếu.',
   '还没开收费单。':'Chưa mở phiếu thu.',
   '总额':'Tổng tiền',
   '收款日期':'Ngày thu tiền', '本次收款金额（VND）':'Số tiền thu lần này (VND)',
