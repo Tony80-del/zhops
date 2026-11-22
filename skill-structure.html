@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>技能结构图 · ZH-System · 总管是唯一通道</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#12151a; --card:#171b21; --line:rgba(255,255,255,.13);
+  --text:#e6e9ed; --muted:#9aa2ad; --hint:#6e7681;
+  --acc:#4fd1c5; --accb:#0f3f3c;
+  --ok:#6ee7a8; --okb:#0f3d28;
+  --warn:#f5c86a; --warnb:#46330d;
+  --bad:#f08080; --badb:#46191c;
+  --info:#5B9BF5; --infob:#1a3a6e;
+  --purple:#a78bfa; --purpleb:#2d1f52;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font:13px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;}
+.header{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--line);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+.header h1{font-size:17px;font-weight:600;letter-spacing:-.2px;}
+.header .meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{font-size:10px;padding:3px 9px;border-radius:9px;white-space:nowrap;}
+.chip.ok{background:rgba(110,231,168,.14);color:var(--ok);}
+.chip.info{background:rgba(91,155,245,.14);color:var(--info);}
+.chip.purple{background:rgba(167,139,250,.14);color:var(--purple);}
+.wrap{max-width:1120px;margin:0 auto;padding:26px 24px 90px;}
+
+.section-title{font-size:11px;font-weight:600;letter-spacing:1.5px;color:var(--hint);text-transform:uppercase;margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+.section-note{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.8;}
+.section-note b{color:var(--text);}
+
+/* ---------- 主结构图 ---------- */
+.org{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px 20px;margin-bottom:22px;}
+
+/* 老板层 */
+.lv-boss{display:flex;justify-content:center;margin-bottom:0;}
+.node-boss{background:linear-gradient(135deg,#2d1f52,#1a1230);border:2px solid var(--purple);border-radius:12px;
+  padding:16px 40px;text-align:center;min-width:260px;}
+.node-boss .nb-t{font-size:16px;font-weight:700;color:var(--purple);letter-spacing:.5px;}
+.node-boss .nb-d{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* 箭头 */
+.arr{display:flex;flex-direction:column;align-items:center;padding:8px 0;}
+.arr-line{width:2px;height:22px;background:var(--line);}
+.arr-tip{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid var(--line);}
+.arr-label{font-size:10px;color:var(--hint);margin:4px 0;white-space:nowrap;}
+.arr.up .arr-line{background:var(--purple);}
+.arr.up .arr-tip{border-top-color:var(--purple);}
+.arr.down .arr-line{background:var(--acc);}
+.arr.down .arr-tip{border-top-color:var(--acc);}
+
+/* 总管层 */
+.lv-chief{display:flex;justify-content:center;}
+.node-chief{background:linear-gradient(135deg,#0f3f3c,#0a2a28);border:2px solid var(--acc);border-radius:12px;
+  padding:18px 32px;text-align:center;min-width:520px;position:relative;}
+.node-chief .nc-t{font-size:15px;font-weight:700;color:var(--acc);letter-spacing:.5px;}
+.node-chief .nc-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.node-chief .nc-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+.node-chief .nc-tags span{font-size:10px;padding:3px 9px;border-radius:8px;background:rgba(79,209,197,.13);color:var(--acc);}
+.node-chief .badge-gate{position:absolute;top:-10px;right:16px;font-size:10px;padding:3px 10px;border-radius:9px;
+  background:var(--warnb);color:var(--warn);border:1px solid var(--warn);}
+
+/* 部门层 */
+.lv-ends{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:0;}
+.node-end{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 12px;text-align:center;transition:border-color .2s,transform .2s;cursor:pointer;}
+.node-end:hover{border-color:var(--acc);transform:translateY(-2px);}
+.node-end .ne-icon{font-size:20px;margin-bottom:5px;}
+.node-end .ne-t{font-size:13px;font-weight:700;color:var(--text);}
+.node-end .ne-id{font-size:10px;color:var(--hint);font-family:var(--mono);margin-top:2px;}
+.node-end .ne-f{font-size:10px;color:var(--muted);margin-top:4px;}
+.node-end .ne-n{font-size:10px;color:var(--acc);margin-top:5px;}
+
+/* 专项技能（挂在总管下面，不占端） */
+.lv-spec{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px;max-width:600px;margin-left:auto;margin-right:auto;}
+.node-spec{background:var(--card);border:1px dashed var(--info);border-radius:10px;padding:12px;text-align:center;}
+.node-spec .ns-t{font-size:12px;font-weight:700;color:var(--info);}
+.node-spec .ns-id{font-size:10px;color:var(--hint);font-family:var(--mono);}
+.node-spec .ns-d{font-size:10.5px;color:var(--muted);margin-top:4px;}
+
+/* 地基 */
+.foundation{margin-top:26px;border:1px dashed var(--acc);border-radius:10px;padding:14px 18px;
+  background:rgba(79,209,197,.04);text-align:center;}
+.foundation .fd-t{font-size:12px;font-weight:700;color:var(--acc);}
+.foundation .fd-d{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.7;}
+
+/* 数据流说明 */
+.flows{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+.flow-row{display:grid;grid-template-columns:100px 24px 100px 1fr;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
+.flow-row:last-child{border-bottom:0;}
+.flow-from{color:var(--text);font-weight:600;text-align:right;}
+.flow-arrow{color:var(--acc);text-align:center;font-size:14px;}
+.flow-to{color:var(--text);font-weight:600;}
+.flow-what{color:var(--muted);font-size:11.5px;}
+
+/* 三级处理 */
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.lv-card{border-radius:10px;padding:16px;border:1px solid;}
+.lv-card.lv1{background:rgba(110,231,168,.06);border-color:rgba(110,231,168,.35);}
+.lv-card.lv2{background:rgba(245,200,106,.06);border-color:rgba(245,200,106,.35);}
+.lv-card.lv3{background:rgba(240,128,128,.06);border-color:rgba(240,128,128,.35);}
+.lv-card .lc-t{font-size:13px;font-weight:700;margin-bottom:8px;}
+.lv-card.lv1 .lc-t{color:var(--ok);}
+.lv-card.lv2 .lc-t{color:var(--warn);}
+.lv-card.lv3 .lc-t{color:var(--bad);}
+.lv-card .lc-who{font-size:11px;color:var(--hint);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+.lv-card ul{list-style:none;font-size:11.5px;line-height:1.9;color:var(--muted);}
+.lv-card ul li::before{content:"· ";color:var(--hint);}
+
+/* 汇报格式 */
+.fmt{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:11.5px;line-height:1.9;color:var(--muted);white-space:pre-wrap;}
+.fmt .k{color:var(--acc);}
+.fmt .c{color:var(--hint);}
+
+/* 折叠卡 */
+details.skill{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+details.skill summary{padding:12px 16px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;}
+details.skill summary::-webkit-details-marker{display:none;}
+details.skill summary::before{content:"▶";font-size:9px;color:var(--hint);transition:transform .2s;}
+details.skill[open] summary::before{transform:rotate(90deg);}
+details.skill .sk-body{padding:0 16px 16px;font-size:12px;color:var(--muted);line-height:1.8;border-top:1px solid var(--line);padding-top:12px;}
+details.skill .sk-body b{color:var(--text);}
+details.skill .sk-body code{font-family:var(--mono);font-size:11px;background:var(--panel);padding:1px 5px;border-radius:3px;color:var(--acc);}
+.sk-tag{font-size:10px;padding:2px 8px;border-radius:7px;margin-left:auto;}
+.sk-tag.ok{background:rgba(110,231,168,.14);color:var(--ok);}
+.sk-tag.info{background:rgba(91,155,245,.14);color:var(--info);}
+
+.foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;color:var(--hint);line-height:1.9;}
+
+@media (max-width:820px){
+  .lv-ends{grid-template-columns:repeat(2,1fr);}
+  .levels{grid-template-columns:1fr;}
+  .node-chief{min-width:auto;}
+  .flow-row{grid-template-columns:1fr;gap:4px;}
+  .flow-from{text-align:left;}
+  .flow-arrow{text-align:left;}
+  .lv-spec{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>技能结构图 · ZH-System</h1>
+    <div class="meta">总管是唯一通道 · 所有技能必须通过总管才能到老板 · 快照 2026-11-22</div>
+  </div>
+  <div class="chips">
+    <span class="chip purple">老板 1</span>
+    <span class="chip ok">总管 1</span>
+    <span class="chip info">端 4</span>
+    <span class="chip info">专项 2</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============================================================
+       一、主结构
+       ============================================================ -->
+  <div class="section-title">一 · 主结构（谁在上面，谁在下面）</div>
+  <div class="section-note">
+    读法：<b>实线 = 已落地</b>；<b>箭头方向 = 权力方向</b>。<br>
+    <b>总管是唯一通道</b> —— 任何部门要向上说话，必须经过总管；老板要向下发令，也经过总管。部门之间不能绕过总管直接找老板。
+  </div>
+
+  <div class="org">
+
+    <!-- 老板 -->
+    <div class="lv-boss">
+      <div class="node-boss">
+        <div class="nb-t">👑 老板 · Tony</div>
+        <div class="nb-d">定方向 / 拍板 / 点发布 · 唯一能说「做」的人</div>
+      </div>
+    </div>
+
+    <!-- 老板 → 总管 -->
+    <div class="arr up">
+      <div class="arr-line"></div>
+      <div class="arr-label">↑ 总管汇报（只在 3 种情况）</div>
+      <div class="arr-line"></div>
+      <div class="arr-tip"></div>
+    </div>
+    <div class="arr down" style="padding-top:0;">
+      <div class="arr-tip" style="border-top:0;border-bottom:8px solid var(--acc);"></div>
+      <div class="arr-line"></div>
+      <div class="arr-label">↓ 老板发令</div>
+      <div class="arr-line"></div>
+    </div>
+
+    <!-- 总管 -->
+    <div class="lv-chief">
+      <div class="node-chief">
+        <div class="badge-gate">唯一通道</div>
+        <div class="nc-t">🛡 总管 · zhops-chief</div>
+        <div class="nc-sub">管所有技能和板块 · 管流程 · 监督完成度与错误</div>
+        <div class="nc-tags">
+          <span>调度</span>
+          <span>跨端裁决</span>
+          <span>探针闸门</span>
+          <span>工作台账</span>
+          <span>发布闸门</span>
+          <span>三级处理</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 总管 → 四端 -->
+    <div class="arr down">
+      <div class="arr-line"></div>
+      <div class="arr-label">↓ 派活 / 打回 / 放行</div>
+      <div class="arr-line"></div>
+      <div class="arr-tip"></div>
+    </div>
+
+    <!-- 四端 -->
+    <div class="lv-ends">
+      <div class="node-end" onclick="document.getElementById('sk-sales').scrollIntoView({behavior:'smooth'});document.getElementById('sk-sales').open=true;">
+        <div class="ne-icon">💼</div>
+        <div class="ne-t">业务部</div>
+        <div class="ne-id">zhops-sales</div>
+        <div class="ne-f">biz.html</div>
+        <div class="ne-n">10 个板块</div>
+      </div>
+      <div class="node-end" onclick="document.getElementById('sk-admin').scrollIntoView({behavior:'smooth'});document.getElementById('sk-admin').open=true;">
+        <div class="ne-icon">📅</div>
+        <div class="ne-t">主端</div>
+        <div class="ne-id">zhops-admin</div>
+        <div class="ne-f">zhops-admin.html</div>
+        <div class="ne-n">排课引擎</div>
+      </div>
+      <div class="node-end" onclick="document.getElementById('sk-hr').scrollIntoView({behavior:'smooth'});document.getElementById('sk-hr').open=true;">
+        <div class="ne-icon">👥</div>
+        <div class="ne-t">人事部</div>
+        <div class="ne-id">zhops-hr</div>
+        <div class="ne-f">hr.html</div>
+        <div class="ne-n">档案 / 工资</div>
+      </div>
+      <div class="node-end" onclick="document.getElementById('sk-fin').scrollIntoView({behavior:'smooth'});document.getElementById('sk-fin').open=true;">
+        <div class="ne-icon">💰</div>
+        <div class="ne-t">财务部</div>
+        <div class="ne-id">zhops-finance</div>
+        <div class="ne-f">finance.html</div>
+        <div class="ne-n">收支 / 审批</div>
+      </div>
+    </div>
+
+    <!-- 专项技能 -->
+    <div class="lv-spec">
+      <div class="node-spec">
+        <div class="ns-t">🎨 宣传册研发台</div>
+        <div class="ns-id">zhops-poster</div>
+        <div class="ns-d">不占端 · 只管「海报从收到到落地」这一条线</div>
+      </div>
+      <div class="node-spec">
+        <div class="ns-t">🔍 市场调查</div>
+        <div class="ns-id">zhops-research</div>
+        <div class="ns-d">不占端 · 只管「文字情报 + 5 类 + 周报解读」</div>
+      </div>
+    </div>
+
+    <!-- 地基 -->
+    <div class="foundation">
+      <div class="fd-t">━━━ 总管（地基部分）· 所有部门共用 ━━━</div>
+      <div class="fd-d">
+        探针套件 71/71 · 工作台账 · 发布脚本 · 编号字典 · 生态地图 · 施工图<br>
+        <b>没有这层，四个部门都没法验证自己做得对不对。</b>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       二、数据流（谁给谁什么）
+       ============================================================ -->
+  <div class="section-title">二 · 部门之间实际传什么（从代码读出来的，不是设计稿）</div>
+  <div class="section-note">
+    <b>注意</b>：部门之间传数据，<b>不传权力</b>。数据可以横向走（业务部→主端），但<b>汇报必须纵向走（→总管→老板）</b>。
+  </div>
+
+  <div class="flows">
+    <div class="flow-row">
+      <div class="flow-from">业务部</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">主端</div>
+      <div class="flow-what">推学员 7 键（id/name/phone/lv/mode/preferRoom/deleted）+ 教室 bizrooms · 手动点「推送」</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-from">业务部</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">财务部</div>
+      <div class="flow-what">4 类审批：投放费 ad / 月租 rent / 场地费 place / <b>宣传册设计</b> · 提交后自动进 zhops/approvals</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-from">人事部</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">财务部</div>
+      <div class="flow-what">工资单（dept='hr'）· 人事算 → 财务核对 → 老板批</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-from">人事部</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">主端</div>
+      <div class="flow-what">done_* 课次（算工资用）· 主端点名后写</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-from">主端</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">教师端</div>
+      <div class="flow-what">public（班级 / 课次 / 教室快照）· 自动</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-from">云端</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">老板端</div>
+      <div class="flow-what">市场周报 zhops/marketreport · GitHub Actions 每周一 08:00 写入</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-from">四端</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-to">老板端</div>
+      <div class="flow-what">全部审批（zhops/approvals）· 老板端只读 + 批/驳</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       三、总管管什么 / 不管什么
+       ============================================================ -->
+  <div class="section-title">三 · 总管管什么，不管什么</div>
+  <div class="section-note">
+    <b>一句话</b>：总管管「做得对不对」，不管「做得值不值」。<br>
+    <b>值不值</b>（这个价格定多少、要不要跟对手打价格战）→ 总管判断后<b>送老板端</b>，最终老板拍板。
+  </div>
+
+  <div class="levels">
+    <div class="lv-card lv1">
+      <div class="lc-t">✅ 总管管的（流程）</div>
+      <div class="lc-who">它说了算</div>
+      <ul>
+        <li>这活归哪一端（调度）</li>
+        <li>有没有越界、有没有抢活（裁决）</li>
+        <li>探针红不红、反向控制做没做</li>
+        <li>台账记没记、旧账有没有改</li>
+        <li>能不能发布（闸门）</li>
+        <li>发现错误按三级处理</li>
+      </ul>
+    </div>
+    <div class="lv-card lv2">
+      <div class="lc-t">⚖️ 总管判断后送老板（业务）</div>
+      <div class="lc-who">它判断，老板拍板</div>
+      <ul>
+        <li>这个价格定得对不对</li>
+        <li>要不要跟对手打价格战</li>
+        <li>这个宣传册设计能不能用</li>
+        <li>这笔钱该不该花</li>
+        <li>这个对手值不值得跟</li>
+        <li>—— 它给建议 + 证据，老板说做不做</li>
+      </ul>
+    </div>
+    <div class="lv-card lv3">
+      <div class="lc-t">❌ 总管不做的</div>
+      <div class="lc-who">红线</div>
+      <ul>
+        <li>不替部门干业务活</li>
+        <li>不改别人的存盘（zhops.biz.v1 等）</li>
+        <li>不自己拍板业务决策</li>
+        <li>不绕过你直接发布</li>
+        <li>不把推断写成事实</li>
+        <li>不猜未定的口径</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       四、三级处理
+       ============================================================ -->
+  <div class="section-title">四 · 发现错误怎么处理（三级）</div>
+  <div class="section-note">
+    <b>核心原则</b>：能自己处理的自己处理（事后报备）；要重做的打回；<b>只有「不能回滚」和「业务决策」才找老板</b>。
+  </div>
+
+  <div class="levels">
+    <div class="lv-card lv1">
+      <div class="lc-t">🟡 一级 · 小问题</div>
+      <div class="lc-who">总管自己处理 → 事后报备老板</div>
+      <ul>
+        <li>台账少写一行 → 直接补</li>
+        <li>探针断言写死数字 → 改成自适应</li>
+        <li>文件命名不规范 → 提醒改</li>
+        <li>注释过时 → 顺手更新</li>
+        <li><b>不打扰老板</b></li>
+      </ul>
+    </div>
+    <div class="lv-card lv2">
+      <div class="lc-t">🟠 二级 · 要重做</div>
+      <div class="lc-who">总管打回给部门 → 部门重做 → 总管再验</div>
+      <ul>
+        <li>探针没过就报「完成」</li>
+        <li>反向控制没做</li>
+        <li>越界改了别人的存盘 → 先回滚</li>
+        <li>只记台账没更新生态地图</li>
+        <li>汇报缺项（6 项不全）</li>
+        <li><b>不打扰老板，部门重做</b></li>
+      </ul>
+    </div>
+    <div class="lv-card lv3">
+      <div class="lc-t">🔴 三级 · 要老板拍板</div>
+      <div class="lc-who">总管停手 → 立刻找老板</div>
+      <ul>
+        <li>两个端口径打架（业务决策）</li>
+        <li>改数据可能丢东西（不能回滚）</li>
+        <li>发布上线（闸门在老板手上）</li>
+        <li>涉及钱的判断</li>
+        <li>云端数据被覆盖</li>
+        <li><b>停手，等老板</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       五、汇报格式
+       ============================================================ -->
+  <div class="section-title">五 · 部门怎么向总管汇报（固定 6 项，缺一不可）</div>
+
+  <div class="fmt"><span class="k">## 汇报 · &lt;谁&gt; · &lt;日期&gt;</span>
+
+<span class="k">### ① 做了什么</span>
+一句话说清。不要罗列文件清单。
+
+<span class="k">### ② 在哪</span>
+- 本地：&lt;文件路径&gt;
+- 线上：&lt;URL 或「未发布」&gt;
+
+<span class="k">### ③ 边界（跟谁分工）</span>
+我做了 X，Y 归 &lt;谁&gt;。不碰 Z。
+
+<span class="k">### ④ 证据</span>
+- 探针：&lt;文件名&gt; &lt;通过数&gt;/&lt;总数&gt;
+- 反向控制：&lt;几组，是否真红&gt;
+- 实测：&lt;真机/真网络跑过什么&gt;
+
+<span class="k">### ⑤ 改了哪些旧东西</span>
+&lt;有没有动旧章节、旧探针、旧统计；没动就写「没动」&gt;
+
+<span class="k">### ⑥ 等总管裁决什么</span>
+&lt;需要总管拍板的事；没有就写「无」&gt;</div>
+
+  <div class="section-note" style="margin-top:16px;">
+    <b>三条铁律</b>：<br>
+    ① <b>不交存盘钥匙</b> —— 跨端只交结论与证据，不交 <code style="font-family:var(--mono);color:var(--acc)">zhops.biz.v1</code> 这类钥匙<br>
+    ② <b>不自评</b> —— 改得对不对由探针红绿判定，不由修改者自评<br>
+    ③ <b>不逐条报 sha</b> —— 说清改了什么、在本地还是线上即可
+  </div>
+
+  <!-- ============================================================
+       六、每个技能干什么
+       ============================================================ -->
+  <div class="section-title">六 · 每个技能干什么（点开看）</div>
+
+  <details class="skill" id="sk-chief" open>
+    <summary>🛡 总管 · zhops-chief <span class="sk-tag ok">已建 P-120</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b>调度 / 跨端裁决 / 探针闸门 / 工作台账 / 发布闸门 / 三级处理<br>
+      <b>管哪几个文件：</b><code>flow-map.html</code>（施工图）、<code>system-ecosystem-map.html</code>（生态地图）、<code>zhops-polish.html</code>（工作台账）<br>
+      <b>不做什么：</b>不下场做业务、不改别人存盘、不自己拍板业务决策、不绕过老板发布<br>
+      <b>关键制度：</b>§14 新技能登记（8 项清单）· §15 汇报格式（6 项）· 三级处理
+    </div>
+  </details>
+
+  <details class="skill" id="sk-sales">
+    <summary>💼 业务部 · zhops-sales <span class="sk-tag ok">已建 P-116</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b><code>biz.html</code> 十个板块（总览 / 线索 / 学员 / 收费｜对手档案 / 调查 / 投放 / 宣传册工作台 / 讲座 / 教室）<br>
+      <b>存盘钥匙：</b><code>zhops.biz.v1</code>（只有这一把）<br>
+      <b>往外给什么：</b>推学员 7 键给主端 · 4 类审批给财务部<br>
+      <b>不管什么：</b>文字情报口径 → 叫 <code>zhops-research</code>；海报图片做法 → 叫 <code>zhops-poster</code><br>
+      <b>口诀：</b>口径归 research，界面归 sales
+    </div>
+  </details>
+
+  <details class="skill" id="sk-admin">
+    <summary>📅 主端 · zhops-admin <span class="sk-tag ok">已建 P-118</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b><code>zhops-admin.html</code> 排课引擎（班级 / 课次 / 点名 / 教师）<br>
+      <b>读别人的什么：</b>业务部 <code>bizstudents</code>（9 处）· <code>bizrooms</code>（4 处）· 人事部 <code>done_*</code><br>
+      <b>给别人什么：</b><code>public</code> 给教师端<br>
+      <b>不管什么：</b>不写业务部存盘（单向读）· 只管排课，不管业务细节
+    </div>
+  </details>
+
+  <details class="skill" id="sk-hr">
+    <summary>👥 人事部 · zhops-hr <span class="sk-tag ok">已建 P-118</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b><code>hr.html</code> 档案 / 合同证件 / 社保个税 / 工资<br>
+      <b>给别人什么：</b>工资单（dept='hr'）给财务部 · <code>done_*</code> 给主端<br>
+      <b>权威点：</b>教师主档的权威在人事端，主端只读收取（P-142 裁决）<br>
+      <b>不管什么：</b>不碰业务端、不碰财务端
+    </div>
+  </details>
+
+  <details class="skill" id="sk-fin">
+    <summary>💰 财务部 · zhops-finance <span class="sk-tag ok">已建 P-118</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b><code>finance.html</code> 收支 / 审批核对 / 记账<br>
+      <b>收什么：</b>业务部 4 类审批（投放费 / 月租 / 场地费 / <b>宣传册设计</b>）· 人事部工资单<br>
+      <b>给老板端什么：</b>核对后「送老板」（写 <code>financeChecked</code>，财务不批）<br>
+      <b>不管什么：</b>不自己批、不碰业务存盘
+    </div>
+  </details>
+
+  <details class="skill" id="sk-poster">
+    <summary>🎨 宣传册研发台 · zhops-poster <span class="sk-tag info">专项 · 已建 11-22</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b>宣传册从「收到」到「落地」这一条线（<code>biz.html</code> 的宣传册工作台）<br>
+      <b>两个档案：</b><b>Input</b>（收到的，Supabase <code>posters/input/</code>）/ <b>Output</b>（我们落地的，<code>posters/output/</code>）<br>
+      <b>铁律：</b>不生成成品图（越南语不可控）· 图片不进数据库（存 Supabase，只存 URL）· 手机只上传 · 不自动抓群组<br>
+      <b>跟谁分工：</b>海报图片归我，文字情报归 <code>zhops-research</code>；界面归 <code>zhops-sales</code><br>
+      <b>口诀：</b>能截图的 → poster
+    </div>
+  </details>
+
+  <details class="skill" id="sk-research">
+    <summary>🔍 市场调查 · zhops-research <span class="sk-tag info">专项 · 已建 11-22</span></summary>
+    <div class="sk-body">
+      <b>管什么：</b>文字情报这条线（<code>biz.html</code> 的市场调查 + 对手档案）<br>
+      <b>核心：</b>情报 5 类（kind 必填）· <b>动作闭环</b>（每条必须能追到「做了什么」）· 情报源清单 · 周报解读 · 月报<br>
+      <b>铁律：</b>不碰海报图片 · 不自动抓群组 · 不把闲聊当结论 · 影响等级按来源可信度标<br>
+      <b>跟谁分工：</b>文字情报归我，海报图片归 <code>zhops-poster</code>；界面归 <code>zhops-sales</code><br>
+      <b>口诀：</b>只能写下来的 → research
+    </div>
+  </details>
+
+  <!-- ============================================================
+       七、铁律
+       ============================================================ -->
+  <div class="section-title">七 · 五条铁律（任何技能都不能破）</div>
+
+  <div class="flows">
+    <div class="flow-row" style="grid-template-columns:30px 1fr;">
+      <div style="color:var(--bad);font-weight:700;font-size:16px;">1</div>
+      <div><b>总管是唯一通道</b> —— 部门不能绕过总管直接找老板；老板发令也经过总管。</div>
+    </div>
+    <div class="flow-row" style="grid-template-columns:30px 1fr;">
+      <div style="color:var(--bad);font-weight:700;font-size:16px;">2</div>
+      <div><b>不自评</b> —— 改得对不对由探针红绿判定，不由修改者自评。</div>
+    </div>
+    <div class="flow-row" style="grid-template-columns:30px 1fr;">
+      <div style="color:var(--bad);font-weight:700;font-size:16px;">3</div>
+      <div><b>不交存盘钥匙</b> —— 跨端只交结论与证据，不交 <code style="font-family:var(--mono);color:var(--acc)">zhops.biz.v1</code> 这类钥匙。</div>
+    </div>
+    <div class="flow-row" style="grid-template-columns:30px 1fr;">
+      <div style="color:var(--bad);font-weight:700;font-size:16px;">4</div>
+      <div><b>台账只追加、不改旧行</b> —— 记错了写新的更正行，不改旧账。</div>
+    </div>
+    <div class="flow-row" style="grid-template-columns:30px 1fr;">
+      <div style="color:var(--bad);font-weight:700;font-size:16px;">5</div>
+      <div><b>发布是老板手点</b> —— 总管放行后，发布按钮仍在老板手上。</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    本页<b>只读</b>：不写任何 localStorage、不发网络请求。<br>
+    结构来自实际代码与技能文件，不是设计稿。快照 2026-11-22。<br>
+    技能清单：总管 1 · 端 4 · 专项 2 = <b>7 个技能</b>。
+  </div>
+
+</div>
+
+</body>
+</html>

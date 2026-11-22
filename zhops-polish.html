@@ -558,7 +558,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-18 ============ -->
   <div class="day-panel on" data-day="2026-11-18">
     <div class="card">
-      <h2>2026-11-18 · 打磨记录<span class="n">36 行 · 已打磨 36 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-18 · 打磨记录<span class="n">37 行 · 已打磨 37 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -889,6 +889,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-22</td>
               <td class="mono nw">11-22</td>
               <td>Tony：「排查一下，代码需要更新吗？包括了跨主端代码」。<br><b>排查结论（6 项）</b>：<br>✅ <b>7 键桥没断</b>：业务端推学员给主端的字段仍是 id/name/phone/lv/mode/preferRoom/deleted，新功能没动它。<br>✅ <b>审批类型没冲突</b>：业务端提交 dept='biz' 的 ad/rent/place/budget 四类，财务端与老板端都认。<br>✅ <b>各端 Firestore 文档不冲突</b>：biz 写 bizmaster/bizstudents/bizpayments/bizrooms，fin 写 finmaster，hr 写 hrmaster/master，boss 只读 approvals + marketreport。<br>✅ <b>新功能没动旧数据</b>：对手档案/宣传册是新增数组，不碰 students/billing。<br>⚠️ <b>主端缺老板端入口</b>：只列了 finance/biz/hr 三个，没有 boss.html。Tony 选<b>不加</b>（老板端只有他一个人用）。<br>⚠️ <b>三端都不知道新功能</b>：主端/财务端/人事端提到「对手档案/宣传册/市场周报」的次数都是 0。Tony 选<b>主端总览不显示</b>（主端只管排课）。<br><b>唯一要改的：宣传册成本进财务</b>（Tony 选 B）。<br><b>做了什么</b>：<br>① <b>业务端</b>：大图弹层加「这张花了多少（VND）」+「成本说明」两格；<b>只有 Output 能填</b>（Input 是别人的，不算我们的成本）；三道闸门 —— 金额 &gt; 0 / 说明必填 / 状态必须「已发」；提交走<b>跟投放费同一条审批链</b>（<span class="mono">type:'ad'</span> + <span class="mono">dept:'biz'</span>），用 <span class="mono">campaignType:'海报设计'</span> 区分；提交后记 <span class="mono">costVoucherId</span>（幂等，不重复提交）；已提交就显示「已提交财务 · 单号」不再显示按钮。<br>② <b>财务端</b>：支出分类从三元改成四元 —— <span class="mono">rent→场地租金</span> / <span class="mono">ad+海报设计→宣传册设计</span> / <span class="mono">ad→渠道投放</span> / <span class="mono">其他→场地费</span>；支出下拉加「宣传册设计」选项。<b>为什么单独一类</b>：宣传册是一次性设计费，跟持续投放的渠道费混在一起会看不清单线索成本。<br>③ <b>老板端</b>：<span class="mono">metaOf()</span> 加判断，<span class="mono">type==='ad' &amp;&amp; campaignType==='海报设计'</span> 时显示「🎨 宣传册设计费」，不跟「📣 投放费 · 报价单」混。<br><b>顺手修</b>：<span class="mono">check-l09-ad.js</span> 里「支出分类渠道投放」断言原本钉死单行写法 <span class="mono">v.type === 'ad' ? '渠道投放'</span>，改成三元嵌套后假红 → 改成只验「这条路还在」+ 新增一条验「宣传册单独分类」。<br>验收：<span class="mono">check-poster-workbench.js</span> 54→<b>69 项</b>（新增 15 条成本链路断言）；<b>反向控制 2 组真红</b>（R1 去掉「只有 Output 能填成本」→ 2 红；R2 财务端不认宣传册分类 → 1 红）；<span class="mono">check-l09-ad.js</span> 34→<b>35 项</b>；全套 <b>71/71</b>。还原点 <span class="mono">poster-cost-before-20261122</span>。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-197</td>
+              <td><b>技能结构图（skill-structure.html）+ 总管三级处理流程</b><br><span style="color:var(--ink3);font-size:12px">总管是唯一通道 · 以后智能系统靠这个关系操作</span></td>
+              <td class="nw">文档 + 技能</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-22</td>
+              <td class="mono nw">11-22</td>
+              <td>Tony：「做一个部门技能结构图」「总管是唯一通道，所有的技能必须通过总管，才能到老板」。<br><b>建了新页面 <span class="mono">docs/skill-structure.html</span></b>（23KB，8 个章节，<b>纯只读</b> —— 不写 localStorage、不发请求、无 script）：<br>① <b>主结构</b>：老板（👑）→ 总管（🛡 带「唯一通道」标记）→ 四端（💼业务 / 📅主端 / 👥人事 / 💰财务）→ 两个专项（🎨宣传册 / 🔍市场调查）+ <b>地基</b>（探针 / 台账 / 发布 / 编号字典，四端共用）。<br>② <b>部门之间实际传什么</b>（从代码读的，不是设计稿）：业务→主端推学员 7 键 + 教室；业务→财务 4 类审批（含宣传册设计）；人事→财务工资单；人事→主端 done_*；主端→教师端 public；云端→老板端市场周报；四端→老板端全部审批。<b>标注「数据可以横向走，但汇报必须纵向走」</b>。<br>③ <b>总管管什么 / 不管什么</b>（三列对比）：管流程（调度/裁决/探针/台账/闸门）· <b>判断后送老板</b>（价格对不对、要不要打价格战、设计能不能用、钱该不该花）· 红线（不替部门干活、不改别人存盘、不自己拍板、不绕过老板发布）。<br>④ <b>三级处理</b>（三色卡片）：🟡 小问题我自处理事后报备 · 🟠 要重做我打回部门 · 🔴 要老板拍板我停手。<br>⑤ <b>汇报格式 6 项</b>（做了什么/在哪/边界/证据/改了哪些旧东西/等裁决什么）+ 三条铁律。<br>⑥ <b>7 个技能各干什么</b>（可折叠，点部门卡片会跳转并展开）。<br>⑦ <b>五条铁律</b>：总管是唯一通道 / 不自评 / 不交存盘钥匙 / 台账只追加 / 发布是老板手点。<br><b>同时把三级处理写进总管技能 §16</b>（新增 7 小节，399→<b>522 行</b>）：核心原则「能自己处理的自己处理；要重做的打回；只有不能回滚和业务决策才找老板」；其他端失误按「能不能回滚」分两类处理；唯一通道画成 ASCII 图；配套指向技能结构图页面。<br><b>新建探针 <span class="mono">check-skill-map.js</span> 46 项</b>：验唯一通道声明、层级 DOM 顺序（老板在总管前、总管在四端前）、7 个技能齐全、三级处理三档都在、汇报 6 项齐全、数据流与实际代码一致（bizstudents / 4 类审批 / campaignType 海报设计 / dept=hr）、只读页（不写 localStorage、不发请求、无 script）、五条铁律。<br><b>反向控制 2 组真红</b>：R1 去掉「唯一通道」声明 → 2 红；R2 把总管移到老板上面 → 2 红（箭头断言抓住）。<br>验收：<span class="mono">check-skill-map.js</span> <b>46/46</b>；全套 71→<b>72/72</b>。还原点 <span class="mono">skill-map-before-20261122</span>。</td>
             </tr>
           </tbody>
         </table>
