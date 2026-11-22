@@ -437,7 +437,7 @@
 <div class="header">
   <div>
     <h1>系统生态地图</h1>
-    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-11-22</b>（按源码核对，不按计划）· 决策 <b>12 定 / 3 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b> · <b>P-144 主端单入口 / 人事 10 项同步 / 计价互斥</b></div>
+    <div class="meta">中文教学运营系统 · 口径：<b>对外经营</b> · 快照 <b>2026-11-22</b>（按源码核对，不按计划）· 决策 <b>12 定 / 4 暂缓 / 0 待定</b> · 路线 <b>S1.1 S1.2 S1.3 S1.9 已做</b> · <b>财务 + 人事骨架已建</b> · <b>多教师分片已落地</b> · <b>课次 done 已通人事，且能退</b> · <b>人事算 → 财务批 → 付款已闭环</b> · <b>P-144 主端单入口 / 人事 10 项同步 / 计价互斥</b></div>
   </div>
   <div class="meter">
     <div class="row"><span>系统建成</span><span>2 / 5 · 财务 + 人事骨架已建</span></div>
@@ -445,7 +445,7 @@
   </div>
   <div class="chips">
     <span class="chip ok">已定 12</span>
-    <span class="chip info">暂缓 3</span>
+    <span class="chip info">暂缓 4</span>
     <span class="chip ok">财务 审批已通</span>
     <span class="chip ok">人事 排课已接云</span>
     <span class="chip ok">教师分片已落地</span>
@@ -521,6 +521,23 @@
         <b>★ 反向控制必须进周巡检</b>（Tony 选 B）：检测脚本最危险的失败方式不是报错，是<b>永远说零漂移</b> —— 看着全绿其实没查。所以 <code>check-health.js</code> 造 <b>7 个故意改坏的副本</b>，每一个都必须报出来。<b>这套反向控制当场抓到检测器自己的 4 个 bug</b>（最典型：排序写成 <code>(LEVEL_ORDER[x] || 9)</code>，high 权重是 0 被当成假值换成 9，high 反而排最后）。<br>
         <b>一个自证时刻</b>：新探针一注册，套件数 72→73，漂移检测立刻报「5 个技能说 72/72，实际 73/73」——<b>工具抓到了自己的漂移</b>。<br>
         <b>成本</b>：GitHub Actions 每周 1 次约 6 分钟 = 24 分钟/月（2000 分钟额度用 1.2%），<b>$0</b>。
+      </div>
+    </div>
+
+    <div class="dec later">
+      <div class="dec-q">⑲ 数据鉴权什么时候做 <span class="dec-flag df-later">已记 · 暂缓</span></div>
+      <div class="dec-a">系统还在研发搭建中，<b>正式落地时再做</b><br><span style="color:var(--hint); font-weight:400;">（2026-11-22 · Tony 定）</span></div>
+      <div class="dec-why">
+        <b>Tony 原话</b>：「我都说了，现在还正在搭建研发中还正式落地。」<br>
+        <b>现状（2026-11-22 实测）</b>：Firestore 规则 <code>allow read, write: if true</code> —— 匿名可读、可写、可删，三条都验过（HTTP 200）。API Key 写在 6 个公开页面里，线上 <code>finance.html</code> 实测有 2 处，按 F12 可见。<br>
+        <b>云端现有真实数据</b>：<code>bizstudents</code> 20 位学生姓名+电话 · <code>hrmaster</code> 员工合同与工资 · <code>finmaster</code> 财务 · <code>bizpayments</code> 付款 · <code>approvals</code> 审批含金额 · <code>master</code> 排课 22KB。<br>
+        <b>为什么暂缓</b>：系统还在研发期，加登录会改变每天的使用方式（每端都要登录页），也拖慢迭代。<b>这是 Tony 的判断，不是遗漏。</b><br>
+        <b>★ 但有一条必须记住</b>：<b>在鉴权补上之前，云端不能放真实敏感数据</b>。现在放的是研发期测试/半真实数据；一旦要把真实工资表、真实家长联系方式当生产数据用，<b>鉴权必须排在前面</b> —— 先有门，再放东西。<br>
+        <b>三种做法（等真要落地时选）</b>：<br>
+        ① <b>最小方案</b>：<code>allow read: if true; allow write: if false;</code> —— 一条规则，止住「被改 / 被删」，不影响现在任何用法，探针也不用改。<br>
+        ② <b>折中</b>：只保护敏感字段（电话 / 工资 / 金额），课表教室仍公开（教师端要用）。<br>
+        ③ <b>完整</b>：每个端加登录页 + 服务账号，最安全但工作量最大。<br>
+        <b>不是现在做，是别忘记。</b>这条会一直挂在这里，直到 Tony 说「落地了」。
       </div>
     </div>
 
