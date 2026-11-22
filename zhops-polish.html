@@ -558,7 +558,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-18 ============ -->
   <div class="day-panel on" data-day="2026-11-18">
     <div class="card">
-      <h2>2026-11-18 · 打磨记录<span class="n">31 行 · 已打磨 31 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-18 · 打磨记录<span class="n">32 行 · 已打磨 32 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -844,6 +844,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-21</td>
               <td class="mono nw">11-21</td>
               <td>Tony 提「在宣传素材里用 Gemini 3.8 Flash 免费版做海报分析，作为研发宣传册的参考」。我上一轮说「只能靠 Firebase Blaze」是<b>错的</b>，Tony 追问「不一定需要 Blaze 吧」——他对我对。<br><b>查实后改方案</b>：<b>Cloudflare Workers</b> 免费层 <b>10 万次/天、<u>不需要信用卡</u></b>（[官方 limits](https://developers.cloudflare.com/workers/platform/limits/index.md)），超限只停服务不扣钱；Gemini 免费层也不需要计费账户。实测越南可直连 Gemini（返回 “API key not valid” = 网络通）。<br><b>为什么必须有这一层</b>：<span class="mono">biz.html</span> 是公开页面，Gemini Key 写进去按 F12 就能看到（跟当前数据库 Key 暴露是同一类错）。Key 只能放服务端。<br><b>做了什么</b>：<br>① <span class="mono">build/market/worker-poster.js</span> —— Worker：Origin 白名单（只允许自己域名）+ CORS 预检 + 4MB 体积护栏 + 只收 POST + <b>Key 从 <span class="mono">env.GEMINI_KEY</span> 读</b>（探针钉住：代码里不许出现 <span class="mono">AIza...</span>）+ Gemini 报错原样转出（不吞）+ <b>不写任何数据库</b>。分析提示词固定 8 项（主打卖点/目标人群/价格策略/视觉设计/文案技巧/信息层级/可借鉴 3 条/不适用点），并要求「看不清就说看不清，不要编造」。<br>② 前端 <span class="mono">compressImage()</span>：<b>最长边 1280 + JPEG 0.72</b>（约 150–250KB，够看清又不浪费）→ <span class="mono">analyzePoster()</span> 调 Worker → 分析文字填进表单，并<b>自动抠出「可借鉴 / 不适用」预填</b>（人可改）。<br>③ 素材表单加 <b>5 个字段</b>：来源（我们自己/对手/参考）、关联对手、AI 分析、可借鉴点、不适用点。<b>A/B 都支持</b>——选「对手」时关联到对手档案（在对手卡里能看到「分析过它 N 张海报」），选「我们自己」就不关联。<br>④ 素材列表显示 AI 摘要（📊 AI 分析 / ✅ 可借鉴 / ❌ 不适用），没分析就不占地方。<br><b>★ 图片绝不进数据库</b>：Firestore 单文档只有 1MB，一张图 100KB 的话 10 张就满，会把学员/财务数据一起拖死。所以压缩后<b>只在内存里传给 Worker，拿回文字就丢弃</b>，数据库零增长。探针钉住 <span class="mono">saveAsset</span> 里不许出现 image/img/base64。<br>⑤ <span class="mono">docs/poster-ai-setup.md</span> —— 12 分钟部署指南（拿 Gemini Key → 注册 Cloudflare → 建 Worker → 填 Secret → 发网址），含 6 条常见问题与「会不会扣钱」的明确回答。<br>越语：13 条新文案 + 2 个 placeholder 全改越语示例，P-138 恢复 <b>68/68</b>。<br>验收：<span class="mono">check-poster-ai.js</span> <b>54 项</b> + <b>反向控制 2 组真红</b>——R1 硬编码 Key → 报红；R2 把白名单校验改成 <span class="mono">if(false)</span> → 报红（这条一开始<b>假绿</b>：探针只查了 <span class="mono">ALLOW_ORIGINS</span> 常量存在，没查是否真被调用，已强化成「必须真的用它拦请求」）；全套 <b>70/70</b>。还原点 <span class="mono">poster-ai-before-20261121</span>。<br><b>等 Tony</b>：部署 Worker 后把网址发我，填进 <span class="mono">POSTER_FN</span> 即可用。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-192</td>
+              <td><b>海报 AI 分析 · 云端部署完成（Cloudflare Worker + Durable Object）</b><br><span style="color:var(--ink3);font-size:12px">实测打通 · 绕过地区限制</span></td>
+              <td class="nw">业务端 + 云端</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-21</td>
+              <td class="mono nw">11-22</td>
+              <td>P-191 的代码写完后，部署阶段踩了三个坑，全部实测解决。<br><b>坑 1：网页控制台建不了 Durable Object。</b>在 Cloudflare 网页里 <span class="mono">Settings → Bindings → Add → Durable Object</span>，Class name 下拉**永远是空的**。查官方文档才明白：DO 必须在配置里声明生命周期（<span class="mono">migrations</span> 的 <span class="mono">new_sqlite_classes</span>），而这个声明**只能在 <span class="mono">wrangler.toml</span> 里写，网页没有入口**。→ 改用命令行：装 <span class="mono">wrangler</span> + 写 <span class="mono">wrangler.toml</span> + <span class="mono">wrangler deploy</span>，一次成功（部署日志显示 <span class="mono">env.GEMINI_RELAY (GeminiRelay)  Durable Object</span>）。<br><b>坑 2：香港机房被 Gemini 拒绝。</b>实测 <span class="mono">cf_trace.colo = HKG</span>（你本机 <span class="mono">loc = VN</span>，但 Cloudflare 把请求送到香港处理）。Gemini 不支持香港 → <span class="mono">400 User location is not supported</span>。直连重试 3 次全落香港。→ 用 <b>Durable Object + <span class="mono">locationHint: 'wnam'</span></b>（北美西部）绕开，实测 <span class="mono">route: relay</span> 成功返回分析。<br><b>坑 3：免费额度每天只有 20 次。</b><span class="mono">gemini-3.8-flash</span> 免费层 <span class="mono">limit: 20</span>，测试时耗尽 → <span class="mono">429 Quota exceeded</span>。逐个试模型后发现 <b><span class="mono">gemini-3.5-flash-lite</span> 额度独立且可用</b>，换过去立刻成功。<br><b>顺带修</b>：给 DO 调用加 <b>25 秒超时</b>（实测不加会挂住 90 秒以上，前端一直转圈）；<span class="mono">.gitignore</span> 放行 <span class="mono">build/market/worker/</span>（不然换台机器没法重新部署）；部署文档补三个坑的完整记录。<br><b>实测分析质量</b>（用一张模拟的 Prep 促销海报）：正确识别「减 40% / 只剩 15 个名额 / 3.180.000đ」，配色判断「大红配亮黄、极简」，心理触发「稀缺 + 折扣」，并<b>主动指出缺陷</b>「没有品牌 Logo、没有联系方式，用户看完无法咨询」—— 这正是研发宣传册需要的参考。<br>验收：<span class="mono">check-poster-ai.js</span> 54→<b>58 项</b>（新增 wrangler.toml 的 DO 声明检查）；全套 <b>70/70</b>。<br><b>⚠️ 遗留</b>：免费层 20 次/天，够日常用但批量分析会撞限；要更多额度得绑卡。</td>
             </tr>
           </tbody>
         </table>

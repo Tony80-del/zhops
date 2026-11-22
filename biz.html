@@ -3605,7 +3605,7 @@ function delResearch(id){
      数据库零增长（Firestore 单文档只有 1MB，图绝不能进）。
    ★ 失败静默 + 说明原因，不弹红字、不卡页面。
    ============================================================================ */
-var POSTER_FN = '';   /* ← Tony 部署完 Worker 后，把网址填这里 */
+var POSTER_FN = 'https://zhops-poster.tony80cheong.workers.dev';
 
 /* 压缩到最长边 1280、JPEG 0.72 —— 约 150–250KB，够 Gemini 看清 */
 function compressImage(file, cb){
