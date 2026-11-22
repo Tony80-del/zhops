@@ -558,7 +558,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-18 ============ -->
   <div class="day-panel on" data-day="2026-11-18">
     <div class="card">
-      <h2>2026-11-18 · 打磨记录<span class="n">34 行 · 已打磨 34 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-18 · 打磨记录<span class="n">35 行 · 已打磨 35 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -871,6 +871,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-22</td>
               <td class="mono nw">11-22</td>
               <td>Tony：「全部把它更新，包括系统施工图」。两张图从 11-19/11-21 的快照同步到 11-22。<br><b>生态地图改了 4 处</b>：<br>① <b>业务部卡片</b>加「2026-11-21/22 新增」字段，写清四件事：对手档案 + 群情报（P-190，含为什么不能自动抓群组的四条实测）、宣传册工作台（P-193，图墙 + Input/Output + Supabase）、市场周报（P-189，云端每周抓 4 家 + 手机一屏版）、海报 AI 分析（P-192，Worker + DO 绕北美 + 为什么不生成成品图）。<br>② <b>新增「云端服务」卡片</b>：三个服务（Cloudflare Worker / Supabase Storage / GitHub Actions）各写清作用、成本、免费额度；<b>四个踩过的坑</b>（网页建不了 DO、香港机房被 Gemini 拒、免费额度 20 次/天、Supabase RLS）；部署命令。<br>③ <b>技能层</b>：标题 4 端 → <b>5 端 + 总管 + 2 专项</b>；加 <span class="mono">zhops-poster</span>（已建）和 <span class="mono">zhops-research</span>（待建）两个专项技能，写清分工（<b>海报图片归 poster，文字情报归 research</b>）。<br>④ <b>第一层总览</b>：云端路径 2 条 → <b>3 条</b>（加 <span class="mono">zhops/marketreport</span>）；新增「外部服务」一行三个 chip。<b>决策台账</b>：13 条 → <b>17 条</b>，新增 E 组「宣传与云端」四条（⑭ 宣传册怎么做 / ⑮ 图存哪 / ⑯ 群组情报怎么来 / ⑰ Key 放哪），每条都写了「为什么」和实测依据。<br><b>施工图改了 3 处</b>：<br>① <b>新增 L-12「市场情报 → 周报 → 老板端」</b>，绿线，四步工序全打勾。写清 7 步链路、实测数据（49 条 · Prep 22 条 · 三个坑）、人工那一环（不抓群组走三个入口）。<br>② <b>新增「二·C 宣传册研发台」</b>板块（不在主链上），写清 Input/Output 判断标准、为什么图不进数据库、为什么不生成成品图。<br>③ 统计同步：绿 9 → <b>10</b>，11 条 → <b>12 条</b>，82% → <b>83%</b>，页脚与头部 meta 都改。<br><b>顺手修探针的硬编码</b>：<span class="mono">check-map.js</span> 原来写死「线数 = 11」和「N / 11 · M%」，加线就假红 → 改成<b>自适应</b>（从实际卡片数推导，只要求 ≥12 且编号连续）；顺带修了一个索引 bug（进度条取 <span class="mono">pm[2]</span> 拿到的是分母，应取 <span class="mono">pm[3]</span> 百分比）。<br>验收：<span class="mono">check-map.js</span> <b>55/55</b>、<span class="mono">check-p102-ecofold.js</span> <b>36/36</b>；全套 <b>71/71</b>。还原点 <span class="mono">map-update-before-20261122</span>。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-195</td>
+              <td><b>技能层整理：建 zhops-research + 补 zhops-sales + 总管登记制度</b><br><span style="color:var(--ink3);font-size:12px">按 Tony 的 8 项清单走</span></td>
+              <td class="nw">技能</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-22</td>
+              <td class="mono nw">11-22</td>
+              <td>Tony：「技能方面也有记录的更新的技能工作范围吗？」→ 查出 <span class="mono">zhops-sales</span> / <span class="mono">zhops-chief</span> 里<b>完全没有</b> P-189~193 的记录，任何会话调用都会以为宣传素材还是旧样子。随后 Tony 追加两条要求：「添加新技能必须让总管知道」+「怎么汇报给总管」。<br><b>① 补 zhops-sales（151→354 行）</b>：板块 9→<b>10</b>（加对手档案、宣传册工作台）；新增 §15 对手档案（字段表 / 群情报怎么记 / 超期提醒 / <b>来源可信度分级</b>）、§16 宣传册工作台（Input-Output 判断标准 / 状态字段 / 操作流程 / <b>三条铁律</b> / 技术栈）、§17 市场周报（怎么读怎么用）、§18 <b>三个新功能的分工边界</b>、§19 更新记录。<br><b>② 补 zhops-chief（170→399 行）</b>：§1 四端 → <b>四端 + 2 专项 + 监督端</b>；<b>新增 §14 新技能登记制度</b>（为什么要有 / 登记在哪 / <b>8 项检查清单</b> / 当前技能清单 / 大改也要登记）；<b>新增 §15 怎么向总管汇报</b>（<b>6 项固定格式</b>：做了什么 / 在哪 / 边界 / 证据 / 改了哪些旧东西 / 等裁决什么；三条铁律：不交存盘钥匙 / 不自评 / 不逐条报 sha；6 条常见错误）；§16 新增功能（L-12 / 3 个云端服务 / 5 个坑 / 3 个探针）；§17 更新记录。顺带修 3 处旧数字（11 条线→12、66/66→71/71、check-map 51/51→55/55）。<br><b>③ 新建 zhops-research（357 行）</b>：13 节。核心是<b>与 zhops-poster 的边界</b>——<b>海报图片归 poster，文字情报归 research</b>，判断口诀「<b>能截图的 → poster；只能写下来的 → research</b>」。含情报 5 类（kind 必填）、<b>动作闭环</b>（情报不能追到动作就是废纸）、对手文字情报（14 天没看标红）、情报源清单（含 <span class="mono">vn-cn.org</span> 已失效的提醒 + C1 四个源实际都没用的实测结论）、周报解读、月报。<br><b>按 Tony 的 8 项清单走完</b>：① frontmatter 有触发词 ✅；② 管什么/不管什么 ✅；③ 绝对不碰什么 ✅；④ 跟谁分工 ✅；⑤ <b>生态地图技能层登记</b>（research 待建→已建）✅；⑥ <b>工作台账记这一行</b> ✅；⑦ <b>总管 §1 + §14.4 清单更新</b> ✅；⑧ <b>sales 加指向 research 的说明</b>（口径归 research、界面归 sales）✅。<br><b>没动的东西</b>：产品代码一个字没改（这一轮纯技能文档）；探针未受影响；全套仍 <b>71/71</b>。</td>
             </tr>
           </tbody>
         </table>
