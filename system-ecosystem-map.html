@@ -466,7 +466,7 @@
     <span class="dh-s">17 条 · 已定 14 · 暂缓 3 · 待定 0 · 更新 2026-11-22</span>
     <span class="dh-s" style="margin-left:auto; color:var(--hint);">落实状态：<span class="dec-flag df-done">已落实</span> <span class="dec-flag df-part">已部分</span> <span class="dec-flag df-none">未落实</span></span>
   </div>
-  <div class="dec-sub">E · 宣传与云端（2026-11-21/22）</div>
+  <div class="dec-sub">E · 宣传与云端（2026-11-21/22/23）</div>
   <div class="dec-grid">
 
     <div class="dec settled">
@@ -538,6 +538,21 @@
         ② <b>折中</b>：只保护敏感字段（电话 / 工资 / 金额），课表教室仍公开（教师端要用）。<br>
         ③ <b>完整</b>：每个端加登录页 + 服务账号，最安全但工作量最大。<br>
         <b>不是现在做，是别忘记。</b>这条会一直挂在这里，直到 Tony 说「落地了」。
+      </div>
+    </div>
+
+    <div class="dec settled">
+      <div class="dec-q">⑳ 宣传视频工作台怎么做 <span class="dec-flag df-ok">已定</span><span class="dec-flag df-done">已落实</span></div>
+      <div class="dec-a">独立页 video.html · 本地 edge-tts · WebCodecs 直出 MP4 · 四闸门<br><span style="color:var(--hint); font-weight:400;">（2026-11-23 · T11 · Tony 拍板）</span></div>
+      <div class="dec-why">
+        <b>范围</b>：Tony 选「另外开一个页面专门制作宣传视频」，不塞进 biz.html。业务端侧栏加「宣传视频」入口跳过去，用 <code>data-go</code> 不是 <code>data-v</code> —— <b>它不是第 13 个板块</b>，漂移检测只数 <code>data-v</code>。<br>
+        <b>十模块</b>：项目总览 / 素材库 / ①脚本 ②制作·分镜 ③配音 ④剪接 ⑤质检 ⑥MP4 ⑦审核闸门 ⑧成品台账。其中素材库 / 审核闸门 / 质检规范 / 项目总览是 Tony 要「以专业判断补充」后加的。<br>
+        <b>配音</b>：Tony 定本地 edge-tts（免费越南语男女声 vi-VN-NamMinh / HoaiMy）。<b>不用浏览器 speechSynthesis</b> —— 它走 OS、不提供音频流，录进视频是静音。<br>
+        <b>导出</b>：WebCodecs VideoEncoder（avc1.640028 → 4d401f → 42001e 先 <code>isConfigSupported</code> 协商）+ mp4-muxer@5.1.3 CDN 直出 MP4，timestamp 微秒。<b>不用 ffmpeg.wasm</b>（25MB 首次下载、慢 10–50×、单 tab 2GB 上限，8GB Mac 扛不住）。<br>
+        <b>素材</b>：Tony 定接 Pixabay 免费 API（Pexels 已暂停发 key）。<br>
+        <b>云端</b>：<b>暂不接</b>（Tony 定：等管理线做完再说）—— 项目数据只在 localStorage <code>zhops.video.v1</code>。<br>
+        <b>发布</b>：四道审核闸门（脚本→分镜→音频→成片）串行，上一关没过下一关锁；四关全过才送老板，<b>发布仍 Tony 手点</b>（🔴 类不自动发）。成本复用 P-196 三闸门，voucher <code>v-biz-ad-&lt;月&gt;-video-&lt;id&gt;</code> 幂等。<br>
+        <b>技能</b>：新建 <code>zhops-video</code> 并登记总管 §14.4 —— 清单 7→8 个技能（3 专项）。
       </div>
     </div>
 
@@ -1480,7 +1495,7 @@ wrangler secret put GEMINI_KEY</div>
   <div class="sys-head" onclick="toggleCard('skills')">
     <div class="left">
       <span class="sys-tag">AI 技能</span>
-      <span class="sys-name">技能层 · 5 端 + 总管 + 2 专项</span>
+      <span class="sys-name">技能层 · 5 端 + 总管 + 3 专项</span>
       <span class="sys-sub">RSI · 岗位化 · 不碰生产存盘</span>
     </div>
     <div class="right"><span class="status-badge s-ok">4 端 + 总管全部已落地 · P-118</span><span class="toggle">▶</span></div>
@@ -1495,9 +1510,9 @@ wrangler secret put GEMINI_KEY</div>
       <div class="sw-r"><b>分界线</b>：AI 负责准备 / 核对 / 建议 / 跑测试 / 记账；Tony 按最后一下 —— 写真实数据、推云、发布、跨端通知、教室编码。</div>
       <div class="sw-r"><b>工作台账 P-117 只验了「叫得动 + 测试跑得通」</b>，没验「会替你录学生」。</div>
     </div>
-    <!-- 2026-11-22：新增 2 个专项技能 -->
+    <!-- 2026-11-22：新增 2 个专项技能；2026-11-23：再加 1 个 zhops-video -->
     <div class="field">
-      <div class="field-label">2026-11-22 新增 · 2 个专项技能</div>
+      <div class="field-label">2026-11-22/23 新增 · 3 个专项技能</div>
       <div class="field-value multi">
         <div><b class="yes">zhops-poster · 宣传册研发台</b><br>
           触发词：宣传册、宣传素材、海报、对手海报、截图、Input、Output、Canva、可灵、设计说明书。<br>
@@ -1508,6 +1523,10 @@ wrangler secret put GEMINI_KEY</div>
           触发词：市场调查、情报、情报源、对手档案、群情报、竞品动态、官方政策、商会活动、市场趋势、客户反馈、市场月报、经营月报、周报解读、去查、已查过。<br>
           管：<b>情报 5 类</b>（官方政策 / 商会活动 / 竞品动态 / 市场趋势 / 客户反馈，<b>kind 必填</b>）+ <b>动作闭环</b>（每条必须能追到「做了什么」，action + outcome）+ <b>情报源清单</b>（4 个白名单源 + 周期提醒 + 去查/已查过）+ <b>对手文字情报</b>（「+ 记一条」，14 天没看标红）+ <b>周报解读</b> + <b>月报</b>（经营月报 + 市场月报，内部两份）。<br>
           与 zhops-poster 的分工：<b>海报图片归 poster，文字情报归 research</b>。判断口诀：<b>能截图的 → poster；只能写下来的 → research</b>。</div>
+         <div><b class="yes">zhops-video · 宣传视频工作台</b>（2026-11-23 T11 已建）<br>
+           触发词：宣传视频、短视频、TikTok、Reels、Shorts、脚本、分镜、配音、剪接、MP4、视频成品。<br>
+           管：独立页 video.html，八步流程（脚本→制作·分镜→配音→剪接→质检→MP4→四道审核闸门→成品台账）。文案口径归 zhops-poster / zhops-research，本技能只管视频页流程与 GUI。<br>
+           铁律：<b>不接云端存储</b>（Tony 定：等管理线做完）；配音用本地 edge-tts（浏览器 speechSynthesis 录进视频是静音）；<b>不用 ffmpeg.wasm</b>（8GB Mac 扛不住，用 WebCodecs + mp4-muxer）；<b>四关全过才送老板手点发布</b>（🔴 类不自动发）。成本复用 P-196 三闸门，campaignType '视频制作'。判断口诀：<b>做出来的 → video</b>。</div>
       </div>
     </div>
 

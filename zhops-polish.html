@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">1</span></button>
+    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">2</span></button>
     <button data-day="2026-11-18">2026-11-18<span class="c">41</span></button>
     <button data-day="2026-11-16">2026-11-16<span class="c">3</span></button>
     <button data-day="2026-11-15">2026-11-15<span class="c">1</span></button>
@@ -559,7 +559,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-23 ============ -->
   <div class="day-panel on" data-day="2026-11-23">
     <div class="card">
-      <h2>2026-11-23 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-23 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -575,6 +575,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-23</td>
               <td class="mono nw">11-23</td>
               <td>L-06 ①②③此前已通，独缺④端到端验收。本轮新建 <code>check-l06-e2e.js</code>（14 项）：两个独立 store 模拟两台设备验云端同号可见 + 本地错码被覆盖 + 打错号闸门拦下 + 正确码放行；反向控制两组（破坏云端优先 / 闸门失效）真红。把 ②③ 静态 33/34 + ③ 运行时 21 + ④ 14 共四探针纳入 run.sh 每轮回归；<code>--sync-counts</code> 把 5 技能 10 处套件数刷到 79/79 并同步仓库副本（踩坑：初次同步方向搞反，home→repo 才对）。flow-map L-06 红→绿、绿 10→11、红 2→1、完成率 83%→92%，check-map 55/55 自洽通过。全套 78/78 全绿、漂移 10/10 零漂移。还原点 tag <code>l06-accept-before-20261123-2009</code>。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-212</td>
+              <td><b>T11 · 宣传视频工作台（独立页，10 模块八步全流程）</b><br><span style="color:#8899aa;font-size:12px">Tony：「我要的是你直接帮我搭建一个短视频工作台……脚本、制作、配音、剪接、MP4、成品，我需要很专业的一整套。」经两轮方案调整 + 拍板「按修订版 10 模块开工」+ 接 Pixabay 免费 API。</span></td>
+              <td class="nw">宣传视频 · 独立页</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-23</td>
+              <td class="mono nw">11-23</td>
+              <td>新建 <code>docs/video.html</code>（单文件、全局 V、独立页不占板块，业务端侧栏用 <code>data-go</code> 跳，线上 /zhops/video.html）。10 模块：项目总览 / 素材库（Pixabay API）/ ①脚本 ②制作·分镜 ③配音 ④剪接 ⑤质检 ⑥MP4 ⑦审核闸门 ⑧成品台账。<b>关键决策</b>：配音本地 <code>edge-tts</code>（浏览器 speechSynthesis 录进视频是静音）；导出 WebCodecs（avc1.640028→4d401f→42001e 先 isConfigSupported 协商）+ mp4-muxer@5.1.3 CDN 直出 MP4，<b>不用 ffmpeg.wasm</b>（8GB Mac 扛不住）；云端存储<b>暂不接</b>（Tony 定：等管理线）；四道闸门串行、四关全过才送老板手点（🔴 不自动发），成本复用 P-196 三闸门、voucher 幂等。新建 <code>build/video/tts.py</code>（延迟导入 edge-tts）+ <code>config.json</code>；<code>worker/index.js</code> 加 script 模式（越南语分镜 prompt，复用 Gemini）；新建技能 <code>zhops-video</code> 并登记总管 §14。新建 <code>check-video.js</code> <b>72 项</b>，反向控制两组（闸门失效 / 成本闸门绕过）真红；全套 <b>79/79</b>、漂移 10/10。三张图（技能结构/生态地图/发布清单）同步加 video；生态地图决策 ⑳。还原点 tag <code>video-before-20261123</code>。</td>
             </tr>
           </tbody>
         </table>

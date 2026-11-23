@@ -558,6 +558,12 @@ select.inp:focus,input.inp:focus{border-color:var(--brand);}
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3z"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>
       经营报告
     </a>
+    <!-- ★ 2026-11-23（T11）：宣传视频工作台入口。独立页面，本页侧栏只做跳转。
+         ★ 用 data-go 不用 data-v —— 它不是第 13 个「板块」，是独立页，漂移检测器只数 data-v。 -->
+    <a data-go="video" id="navVideo" title="打开独立页「宣传视频工作台」（script/配音/剪接/MP4）">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><path d="M6 6l4 2-4 2z"/></svg>
+      宣传视频
+    </a>
   </nav>
   <div class="side-foot">
     数据键 <b>zhops.biz.v1</b><br>
@@ -5618,6 +5624,8 @@ var BIZ_VI = {
   /* ★ P-190 对手档案 */
   /* ★ P-191 宣传海报 AI 分析 */
   /* ★ P-193 宣传册工作台 */
+  /* ★ 2026-11-23（T11）宣传视频工作台入口 */
+  '宣传视频':'Video quảng cáo',
   '宣传册工作台':'Bàn làm việc ấn phẩm',
   '收到的存 Input · 我们落地的存 Output':'Nhận vào lưu Input · Ta làm xong lưu Output',
   '📷 上传截图':'📷 Tải ảnh lên',
@@ -6335,7 +6343,16 @@ window.__BIZ_LANG_TEST__ = {
 
 /* ---- 侧栏导航 ---- */
 document.querySelectorAll('#nav a').forEach(function(a){
-  a.addEventListener('click', function(e){ e.preventDefault(); nav(a.dataset.v); });
+  a.addEventListener('click', function(e){
+    e.preventDefault();
+    /* ★ 2026-11-23（T11）：宣传视频是独立页，点它直接跳过去，nav() 没有对应 view。 */
+    if (a.dataset.go === 'video') {
+      var isOnline = location.protocol.indexOf('http') === 0 && location.hostname.indexOf('localhost') < 0 && location.hostname !== '127.0.0.1';
+      window.location.href = isOnline ? '/zhops/video.html' : 'video.html';
+      return;
+    }
+    nav(a.dataset.v);
+  });
 });
 
 /* ---- 返回主端的 href（2026-11-01 · P-89） ----
