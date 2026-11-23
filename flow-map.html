@@ -38,7 +38,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.65 -apple-system,BlinkMa
 .meter{min-width:190px;}
 .meter .row{display:flex;justify-content:space-between;font-size:10px;color:var(--hint);margin-bottom:5px;}
 .bar{height:7px;background:var(--panel);border:1px solid var(--line);border-radius:4px;overflow:hidden;}
-.bar span{display:block;height:100%;background:var(--ok);width:83%;}
+.bar span{display:block;height:100%;background:var(--ok);width:92%;}
 
 /* 结构图 */
 .map{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 16px;}
@@ -129,11 +129,11 @@ td .mut{color:var(--hint);}
 <div class="header">
   <div>
     <h1>流程连接地图 · 业务端</h1>
-    <div class="meta">ZH-System · 结构关系 / 真实编码 / 线内工序 · 快照 2026-11-22（L-12 市场情报线新增）</div>
+    <div class="meta">ZH-System · 结构关系 / 真实编码 / 线内工序 · 快照 2026-11-23（L-06 转绿 · T6 收口）</div>
   </div>
   <div class="chips">
-    <span class="chip ok">绿 10</span>
-    <span class="chip bad">红 2</span>
+    <span class="chip ok">绿 11</span>
+    <span class="chip bad">红 1</span>
     <span class="chip wait">待收口 0</span>
     <span class="chip info">灰 0</span>
     <a class="chip info" href="skill-structure.html" title="谁管谁、谁不能绕过谁">🧭 技能结构</a>
@@ -150,7 +150,7 @@ td .mut{color:var(--hint);}
     </div>
     <div class="sp"></div>
     <div class="meter">
-      <div class="row"><span>已通连线</span><span id="pct">10 / 12 · 83%</span></div>
+      <div class="row"><span>已通连线</span><span id="pct">11 / 12 · 92%</span></div>
       <div class="bar"><span></span></div>
     </div>
   </div>
@@ -193,8 +193,8 @@ td .mut{color:var(--hint);}
   <p class="section-note">括号内为<b>现跑代码里的真实出处</b>，不是设计稿。筛选：<b>红 = 未通，绿 = 已通，待收口 = 主线通但钱线未通，灰 = 待定</b>。</p>
   <div class="tools">
     <button class="on" data-f="all">全部 11</button>
-    <button data-f="bad">红 2</button>
-    <button data-f="ok">绿 10</button>
+    <button data-f="bad">红 1</button>
+    <button data-f="ok">绿 11</button>
     <button data-f="wait">待收口 0</button>
     <button data-f="gray">灰 0</button>
   </div>
@@ -265,17 +265,17 @@ td .mut{color:var(--hint);}
     </div>
   </details>
 
-  <details class="line" data-s="bad"><summary><span class="lid">L-06</span><span class="lname">教室 → 主端 · 排课</span><span class="st bad">红 · chief 裁决</span><span class="lcode">rooms[].code → class.roomCode / l.roomCode ｜ 钱线 L-09</span></summary>
+  <details class="line" data-s="ok"><summary><span class="lid">L-06</span><span class="lname">教室 → 主端 · 排课</span><span class="st ok">绿 · 已通</span><span class="lcode">rooms[].code → class.roomCode / l.roomCode ｜ 钱线 L-09</span></summary>
     <div class="body">
       <div class="kv"><b>两端编号：</b>业务端 <code>rooms[].code</code>（Tony 手填、查重、存了锁死） → 主端 <code>class.roomCode</code> / 课次快照 <code>l.roomCode</code></div>
-      <div class="gap"><b>已修（②③）</b>：主端 bizRooms() 原只读<b>本机</b> localStorage['zhops.biz.v1'] → 现云端 <code>bizrooms</code> 优先、本机兜底；开班申请「教室编码」原为<b>手打 text 框</b> → 现只从业务部在用清单选、提交前查号拦下（<code>BINHTHANH-1</code> 这类手滑值进不来），审批建班改取申请 <code>o.roomCode</code>，编码一路进班与课次快照。<br><b>剩余缺口（④）</b>：还差端到端验收 —— 真云文档下「两台设备同号可见」+ 反向控制「打错号必须报红」。<b>钱线 L-09 已于 P-163 收口转绿</b>（2026-11-19），本线做完 ④ 即可直接转绿，无需再挂「待收口」。</div>
+      <div class="gap"><b>已修（②③）</b>：主端 bizRooms() 原只读<b>本机</b> localStorage['zhops.biz.v1'] → 现云端 <code>bizrooms</code> 优先、本机兜底；开班申请「教室编码」原为<b>手打 text 框</b> → 现只从业务部在用清单选、提交前查号拦下（<code>BINHTHANH-1</code> 这类手滑值进不来），审批建班改取申请 <code>o.roomCode</code>，编码一路进班与课次快照。<br><b>④ 已验收（2026-11-23 · T6）</b>：端到端探针 <code>check-l06-e2e.js</code> 用两个独立 store 模拟两台设备，验云端清单同号可见 + 本地错码被覆盖 + 打错号闸门拦下 + 正确码放行；反向控制两组（破坏云端优先 / 闸门失效）均报红。四探针已纳入 run.sh 每轮回归。<b>钱线 L-09 已于 P-163 收口转绿</b>，本线 4/4 全通，2026-11-23 转绿。</div>
       <ul class="steps">
         <li class="done"><b>① 两端编号对齐</b>：rooms[].code 发号（Tony 手填 / 查重 / 锁死），主端只引用 —— 产品代码已符合，待登记进号码本</li>
         <li class="done"><b>② 通道接上</b>：教室清单上云（新增只读桥），主端 bizRooms() 先读云、本机兜底 —— <b>2026-11-14 已做</b>：业务端新增独立文档 <code>zhops/bizrooms</code> 与手点「☁︎ 推教室给主端」，载荷 9 字段白名单、<code>rooms[].code</code> 原样带出、钱线字段一个不推；主端新增手点「☁︎ 拉取业务部教室」+ 内存缓存，不写存盘键、不顶 <code>cloudDirty</code>；两端越南语字典已登记。针对性探针 33/33 全绿、反向控制 3 组全红。</li>
         <li class="done"><b>③ 红灯闸门</b>：主端 roomCode 手打框换 &lt;select&gt;；保存前查号，查不到红灯拦下 —— <b>2026-11-14 已做</b>：新增 <code>roomCodeOptions()</code> / <code>isKnownRoomCode()</code> 唯一清单（下拉与查号同源、停用教室不列、首项「暂不指定」保留、老值补 option 不静默变空、线上班禁用并清空）；<code>createApp()</code> 加查号闸门（线下 + 非空 + 不在清单 → toast + return 不落盘）；<code>approveApp()</code> 编码真相源由审批草稿 <code>f</code> 改回申请 <code>o</code>（原草稿没有 roomCode，建班编码恒空 → 不产场地费单据）；P-98 探针断言同步升级。静态探针 34/34、运行时探针 21/21（含「审批建班 → 课次快照 → 场地使用记录」整条钱线），反向控制静态 3 组 + 运行时 3 组全红。</li>
-        <li class="todo"><b>④ 验收</b>：探针「两台设备同号可见」+ 反向控制「打错号必须报红」</li>
+        <li class="done"><b>④ 验收</b>：2026-11-23 T6 收口 —— check-l06-e2e.js（14 项）验两台设备同号可见（云端优先 + 本地错码覆盖）+ 打错号闸门拦下 + 正确码放行；反向控制两组真红。②③ 只读桥 33 项 / 闸门静态 34 项 / 运行时 21 项 + ④ 14 项，四探针纳入 run.sh 每轮回归，全套 78/78 全绿。</li>
       </ul>
-      <div class="kv" style="margin-top:10px"><b>当前 3 / 4 · 线保持红</b>，只差 ④ 端到端验收；关联扣款线 <b>L-09 已通</b>（P-163 收口），验收过即可转绿。</div>
+      <div class="kv" style="margin-top:10px"><b>4 / 4 全通 · 线已转绿</b>（2026-11-23 T6 收口）；关联扣款线 <b>L-09 已通</b>（P-163 收口）。</div>
     </div>
   </details>
 
@@ -484,7 +484,7 @@ td .mut{color:var(--hint);}
   <div class="foot">
     本页<b>只读</b>：不写任何 localStorage、不发网络请求、不碰产品存盘键 —— 双击 file:// 打开与线上打开看到的内容完全一致。<br>
     线色只能由「4 步工序全过 + 总管闸门放行」更改，不许手改。所有编号核自现跑代码，不是设计稿。<br>
-    快照 2026-11-22（L-12 新增 · 宣传册工作台） · 当前 10 绿 / 2 红 / 0 待收口 / 0 灰 · 完成率 83%（剩 L-06 等裁决、L-10 未开）<br>
+    快照 2026-11-23（L-06 转绿 · T6 收口） · 当前 11 绿 / 1 红 / 0 待收口 / 0 灰 · 完成率 92%（剩 L-10 未开）<br>
     另有两块<b>不在 11 条主链上</b>的独立板块：老板端监督端（P-177）、宣传册研发台（P-193）。
   </div>
 </div>

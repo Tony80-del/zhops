@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-18">2026-11-18 · 今天<span class="c">1</span></button>
+    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">1</span></button>
+    <button data-day="2026-11-18">2026-11-18<span class="c">41</span></button>
     <button data-day="2026-11-16">2026-11-16<span class="c">3</span></button>
     <button data-day="2026-11-15">2026-11-15<span class="c">1</span></button>
     <button data-day="2026-11-12">2026-11-12<span class="c">4</span></button>
@@ -555,8 +556,34 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     </div>
   </div>
 
+  <!-- ============ 2026-11-23 ============ -->
+  <div class="day-panel on" data-day="2026-11-23">
+    <div class="card">
+      <h2>2026-11-23 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-211</td>
+              <td><b>T6 · L-06 教室→主端排课 端到端收口转绿</b><br><span style="color:#8899aa;font-size:12px">「探针纳入 run.sh 每轮跑 + 验收后立即转绿」—— Tony 在 A/B 澄清里拍板。</span></td>
+              <td class="nw">主端 · 施工图 L-06</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-23</td>
+              <td class="mono nw">11-23</td>
+              <td>L-06 ①②③此前已通，独缺④端到端验收。本轮新建 <code>check-l06-e2e.js</code>（14 项）：两个独立 store 模拟两台设备验云端同号可见 + 本地错码被覆盖 + 打错号闸门拦下 + 正确码放行；反向控制两组（破坏云端优先 / 闸门失效）真红。把 ②③ 静态 33/34 + ③ 运行时 21 + ④ 14 共四探针纳入 run.sh 每轮回归；<code>--sync-counts</code> 把 5 技能 10 处套件数刷到 79/79 并同步仓库副本（踩坑：初次同步方向搞反，home→repo 才对）。flow-map L-06 红→绿、绿 10→11、红 2→1、完成率 83%→92%，check-map 55/55 自洽通过。全套 78/78 全绿、漂移 10/10 零漂移。还原点 tag <code>l06-accept-before-20261123-2009</code>。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 2026-11-18 ============ -->
-  <div class="day-panel on" data-day="2026-11-18">
+  <div class="day-panel" data-day="2026-11-18">
     <div class="card">
       <h2>2026-11-18 · 打磨记录<span class="n">41 行 · 已打磨 39 · 已记决定 1 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
