@@ -165,7 +165,8 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">4</span></button>
+    <button class="on" data-day="2026-11-24">2026-11-24 · 今天<span class="c">1</span></button>
+    <button data-day="2026-11-23">2026-11-23<span class="c">4</span></button>
     <button data-day="2026-11-18">2026-11-18<span class="c">41</span></button>
     <button data-day="2026-11-16">2026-11-16<span class="c">3</span></button>
     <button data-day="2026-11-15">2026-11-15<span class="c">1</span></button>
@@ -556,8 +557,34 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
     </div>
   </div>
 
+  <!-- ============ 2026-11-24 ============ -->
+  <div class="day-panel on" data-day="2026-11-24">
+    <div class="card">
+      <h2>2026-11-24 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+        <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
+      <div class="bd">
+        <table>
+          <thead><tr>
+            <th>编号</th><th>打磨项</th><th>类别</th><th>状态</th><th>提出</th><th>完成</th><th>记录</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nw">P-214</td>
+              <td><b>T11 · 网页里「✨ 让技能一键做片」本机桥（不用敲命令）</b><br><span style="color:#8899aa;font-size:12px">Tony 点导出 MP4 见「质检有硬伤」→ 细查发现：工作台是手工流水线，导出按钮只渲染已有镜头，不会写脚本/配音/建项目；"技能做片"此前只在本机终端。Tony 要「网页点一下技能就做完」，选 A（本机桥）。</span></td>
+              <td class="nw">宣传视频 · 本机桥</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-24</td>
+              <td class="mono nw">11-24</td>
+              <td>新建 <code>build/video/server.js</code> 本机桥（只监听 127.0.0.1:8977）：网页 POST /api/auto-make → 写脚本（线上 Worker 优先，失败用越南语模板兜底）→ 调 auto-make.js 配音+渲染 → 成片经 /out 回传网页直接播放（支持 Range 拖动）。video.html 加「✨ 让技能一键做片」视图（侧栏入口+主题/平台/时长/声线字段+进度+播放器），从本机地址打开自动落该面板并检测桥状态。★修三个真坑：① CJK 主题塞进 vi-VN 旁白触发 NoAudioReceived → 检测中文改纯越南语模板；② 首次做片偶发失败 → 自动重试一次；③ 桥端口 8935 撞 P-139 探针 → 改 8977（全套 81/0）。为免 Tony 敲命令，做桌面双击启动器「启动宣传视频工作台.command」+ 服务启动自动开浏览器。端到端验证：CDP 点按钮跑通 + API 做片 570KB + 成片回网页。新探针 <code>check-video-bridge.js</code> 26 项全过。全套 <b>81/0</b>、漂移 10/10。还原点 tag <code>a-button-before-20261124-1135</code>。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 2026-11-23 ============ -->
-  <div class="day-panel on" data-day="2026-11-23">
+  <div class="day-panel" data-day="2026-11-23">
     <div class="card">
       <h2>2026-11-23 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>

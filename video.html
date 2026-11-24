@@ -73,6 +73,7 @@ canvas{width:100%;height:100%;display:block}
   <div class="lg"><h1>🎬 宣传视频工作台</h1><div class="sub">ZH-System · 短宣传册视频线</div></div>
   <nav class="nav" id="nav">
     <div class="grp">入口</div>
+    <a data-v="auto"><span class="no">✨</span> 让技能一键做片</a>
     <a data-v="overview" class="on"><span class="no">◫</span> 项目总览</a>
     <a data-v="assets"><span class="no">▦</span> 素材库</a>
     <div class="grp">制作流程</div>
@@ -103,6 +104,35 @@ canvas{width:100%;height:100%;display:block}
   </header>
 
   <div id="view">
+    <!-- ✨ 让技能一键做片 -->
+    <section class="view" data-view="auto">
+      <div class="page-h"><h2>✨ 让技能一键做片</h2><p class="desc">填主题，点一下，本机技能自动写脚本→越南语配音→渲染→成片直接在这里播放。</p></div>
+      <div class="card">
+        <h3>桥接状态</h3>
+        <div id="bridgeStatus" class="hint">检测本机桥…</div>
+        <div class="hint" style="margin-top:6px">★ 最简单：<b>双击桌面「启动宣传视频工作台.command」</b>，浏览器会自动打开本页（不用敲任何命令）。窗口保持开着即可做片，用完关掉窗口。手动方式：终端跑 <code>node build/video/server.js</code> 再开 <code>http://127.0.0.1:8977/</code>。不要从 GitHub Pages 打开本页——本机桥只在本机地址。不接云、不花钱。</div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>给我一个主题</h3>
+        <div class="row">
+          <div><label>项目名（可选）</label><input id="a-name" placeholder="例：HSK1 春季班招生"></div>
+          <div><label>平台</label><select id="a-platform"><option>TikTok</option><option>Reels</option><option>Shorts</option><option>Zalo</option></select></div>
+          <div><label>时长</label><select id="a-duration"><option value="15">15 秒</option><option value="30" selected>30 秒</option><option value="60">60 秒</option></select></div>
+          <div><label>声线</label><select id="a-voice"><option value="vi-VN-NamMinhNeural">男声</option><option value="vi-VN-HoaiMyNeural">女声</option></select></div>
+        </div>
+        <div style="margin-top:12px"><label>主题 / 商品</label><textarea id="a-topic" placeholder="例：越南学生零基础 3 个月过 HSK1，春季班优惠"></textarea></div>
+        <div style="margin-top:12px"><button class="btn pri" id="a-go" onclick="autoMake()">✨ 开始做片</button></div>
+        <div class="progress"><i id="a-bar"></i></div>
+        <div class="hint" id="a-msg">点开始后约 1–3 分钟（配音+渲染），进度会在这里更新。</div>
+      </div>
+      <div class="card" style="margin-top:12px" id="a-result" hidden>
+        <h3>成片预览 <span id="a-source" class="hint"></span></h3>
+        <video id="a-video" controls playsinline style="width:100%;max-height:70vh;border-radius:10px;background:#000"></video>
+        <div style="margin-top:10px"><a id="a-download" class="btn" download>⬇ 下载 MP4</a></div>
+        <div class="hint" style="margin-top:8px">四闸门 0/4 · 未送审 · 未上云 · 未发布。要发布请去「⑦ 审核闸门」手点。</div>
+      </div>
+    </section>
+
     <!-- 项目总览 -->
     <section class="view on" data-view="overview">
       <div class="page-h"><h2>项目总览</h2><p class="desc">所有宣传视频在這裡進出。點卡片進八步流程。</p><div class="sp"></div><button class="btn pri" onclick="addProject()">+ 新项目</button></div>
@@ -274,7 +304,7 @@ function activeProject(){ return V.projects.find(function(p){ return p.id===V.ac
 function needProject(){ var p=activeProject(); if(!p){ toast('请先在项目总览新建/打开一个项目'); return null; } return p; }
 
 /* ---------- 导航 ---------- */
-var VIEW_CN = {overview:'项目总览',assets:'素材库',script:'脚本',storyboard:'制作 · 分镜',dub:'配音',edit:'剪接',qc:'质检规范',export:'MP4 导出',review:'审核闸门',finished:'成品台账'};
+var VIEW_CN = {auto:'✨ 让技能一键做片',overview:'项目总览',assets:'素材库',script:'脚本',storyboard:'制作 · 分镜',dub:'配音',edit:'剪接',qc:'质检规范',export:'MP4 导出',review:'审核闸门',finished:'成品台账'};
 function nav(v){
   document.querySelectorAll('#nav a').forEach(function(a){ a.classList.toggle('on', a.dataset.v===v); });
   document.querySelectorAll('.view').forEach(function(el){ el.classList.toggle('on', el.dataset.view===v); });
@@ -282,6 +312,7 @@ function nav(v){
   render(v);
 }
 function render(v){
+  if(v==='auto') checkBridge();
   if(v==='overview') renderOverview();
   if(v==='assets') renderAssets();
   if(v==='script') fillScriptForm();
@@ -423,6 +454,55 @@ function genScript(){
       var sc=document.getElementById('f-script'); if(sc) sc.value=x.d.text||'';
       toast('AI 脚本已生成，请核对越南语后再保存');
     }).catch(function(e){ toast('AI 生成失败：'+e.message+'（可手写脚本）'); });
+}
+
+/* ====== ✨ 让技能一键做片（本机桥，2026-11-24） ======
+   静态网页没后端，配音/渲染做不了。这座本机桥（build/video/server.js）把
+   网页请求转给本机 auto-make.js，成片回传直接在页面播放。不接云、不花钱。
+   GitHub Pages 页面也能用：优先找 localhost 桥，找不到就提示先开桥。 */
+var BRIDGE='http://127.0.0.1:8977';
+function checkBridge(){
+  var box=document.getElementById('bridgeStatus'); if(!box) return;
+  fetch(BRIDGE+'/api/ping').then(function(r){ return r.json(); })
+    .then(function(d){ box.innerHTML=d.ok?('<span style="color:#86efac">● 本机桥已连接（v'+d.version+'）· 可以一键做片</span>'):'<span style="color:#fca5a5">○ 本机桥未就绪</span>'; })
+    .catch(function(){ box.innerHTML='<span style="color:#fcd34d">○ 本机桥未启动</span> —— 在 Mac 终端跑 <code>node build/video/server.js</code> 后刷新本页'; });
+}
+function autoMake(){
+  var topic=(document.getElementById('a-topic')||{}).value||'';
+  if(!topic.trim()){ toast('先填主题 / 商品'); return; }
+  var btn=document.getElementById('a-go'), msg=document.getElementById('a-msg'), bar=document.getElementById('a-bar');
+  var input={ name:(document.getElementById('a-name')||{}).value||'',
+    platform:(document.getElementById('a-platform')||{}).value||'TikTok',
+    duration:parseInt((document.getElementById('a-duration')||{}).value,10)||30,
+    voice:(document.getElementById('a-voice')||{}).value||'vi-VN-NamMinhNeural',
+    topic:topic.trim() };
+  if(btn) btn.disabled=true;
+  if(msg) msg.textContent='① 正在写脚本 + 生成越南语配音…（约 1–3 分钟，别关页面）';
+  if(bar) bar.style.width='12%';
+  var ticks=setInterval(function(){ if(bar){ var w=parseInt(bar.style.width,10)||12; if(w<80) bar.style.width=(w+3)+'%'; } },3000);
+  fetch(BRIDGE+'/api/auto-make',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(x){
+      clearInterval(ticks);
+      if(!x.ok||!x.d.ok) throw new Error((x.d&&x.d.error)||('HTTP '+x.ok));
+      if(bar) bar.style.width='100%';
+      if(msg) msg.textContent='✅ 做好：'+x.d.scenes+' 镜 · 脚本来源 '+(x.d.scriptSource==='worker'?'AI':'模板')+' · 四闸门 0/4';
+      showAutoResult(x.d.url,x.d.scriptSource);
+      toast('成片已生成，直接在下方播放/下载');
+    })
+    .catch(function(e){ clearInterval(ticks); if(bar) bar.style.width='0';
+      if(msg) msg.textContent='✗ 做片失败：'+e.message; toast('做片失败：'+e.message); })
+    .finally(function(){ if(btn) btn.disabled=false; });
+}
+function showAutoResult(url,source){
+  var box=document.getElementById('a-result'), v=document.getElementById('a-video'),
+      dl=document.getElementById('a-download'), src=document.getElementById('a-source');
+  if(!box||!v) return;
+  var full=BRIDGE+url;
+  v.src=full; v.load();
+  if(dl){ dl.href=full; dl.setAttribute('download',''); }
+  if(src) src.textContent=(source==='worker'?'AI 脚本':'模板脚本')+' · 本机渲染';
+  box.hidden=false;
 }
 
 /* ========== ② 制作 · 分镜 ========== */
@@ -813,7 +893,10 @@ if(bm){ bm.addEventListener('click',function(e){
 }); }
 
 /* ---------- 启动 ---------- */
-nav('overview');
+/* 从本机桥（127.0.0.1/localhost）打开时，直接落在「让技能一键做片」面板；
+   从 GitHub Pages 打开时照旧落在项目总览。 */
+var ON_BRIDGE=(location.hostname==='127.0.0.1'||location.hostname==='localhost');
+nav(ON_BRIDGE?'auto':'overview');
 setCodecInfo();
 if(V.projects.length && V.activeId){ /* 保留上次打开的项目，不自动跳页 */ }
 </script>
