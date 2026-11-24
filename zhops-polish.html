@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">3</span></button>
+    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">4</span></button>
     <button data-day="2026-11-18">2026-11-18<span class="c">41</span></button>
     <button data-day="2026-11-16">2026-11-16<span class="c">3</span></button>
     <button data-day="2026-11-15">2026-11-15<span class="c">1</span></button>
@@ -559,7 +559,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-23 ============ -->
   <div class="day-panel on" data-day="2026-11-23">
     <div class="card">
-      <h2>2026-11-23 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-23 · 打磨记录<span class="n">4 行 · 已打磨 4 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -592,7 +592,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td><span class="b done">✅已打磨</span></td>
               <td class="mono nw">11-23</td>
               <td class="mono nw">11-23</td>
-              <td>试片抓到静音真 bug：<code>AudioBuffer</code> 帧数是 <code>.length</code> 不是 <code>.numberOfFrames</code>，判断恒假 → 三段配音一段没铺进去。修复后样片 390 帧 / H.264+AAC / 有声（成片 RMS 0.25）。<b>把两块修复搬回 <code>docs/video.html</code></b>：drawScene 用 loadImage+drawImage 真贴图（无图画渐变占位），exportMP4 加 buildAudioTrack+AudioEncoder+addAudioChunk 真混音。端到端验收 <code>verify-workbench.js</code> 直接驱动工作台导出，成片 468KB / 13.1s / 波形 RMS 0.23（有声）。新增一键链路：<code>auto-make.js</code>（tts→注入→调页面导出→落 final.mp4，四闸门保持 0/4、不上云、不发布）、<code>fetch-assets.js</code>（Pixabay 可选）、<code>review-list.js</code>（待审清单）；<code>tts.py</code> 加 NoAudioReceived 单段重试 3 次。技能 zhops-video 加 §8 A 档段；新探针 <code>check-video-auto.js</code> 16 项，反向控制（删 drawImage）真红。全套 <b>80/80</b>、漂移 10/10。还原点 tag <code>video-workbench-port-before-20261123-2235</code>。未 push / 未上线（等 Tony 点头）。</td>
+              <td>试片抓到静音真 bug：<code>AudioBuffer</code> 帧数是 <code>.length</code> 不是 <code>.numberOfFrames</code>，判断恒假 → 三段配音一段没铺进去。修复后样片 390 帧 / H.264+AAC / 有声（成片 RMS 0.25）。<b>把两块修复搬回 <code>docs/video.html</code></b>：drawScene 用 loadImage+drawImage 真贴图（无图画渐变占位），exportMP4 加 buildAudioTrack+AudioEncoder+addAudioChunk 真混音。端到端验收 <code>verify-workbench.js</code> 直接驱动工作台导出，成片 468KB / 13.1s / 波形 RMS 0.23（有声）。新增一键链路：<code>auto-make.js</code>（tts→注入→调页面导出→落 final.mp4，四闸门保持 0/4、不上云、不发布）、<code>fetch-assets.js</code>（Pixabay 可选）、<code>review-list.js</code>（待审清单）；<code>tts.py</code> 加 NoAudioReceived 单段重试 3 次。技能 zhops-video 加 §8 A 档段；新探针 <code>check-video-auto.js</code> 16 项，反向控制（删 drawImage）真红。全套 <b>80/80</b>、漂移 10/10。还原点 tag <code>video-workbench-port-before-20261123-2235</code>。Tony 指出「工作台全空、不是说技能直接在工作台帮我做吗？」→ 澄清三点（线上旧版 / 工作台本是空工具 / 自动化在本机终端不在网页），Tony 选 A（上线 + 我代做第一部）。已 push c5f1b0a + publish 上线 video.html（线上 sha a50a0c0b…，含真贴图真混音）。代做第一部「中文课体验课招生」4 镜 26s：首次当众跑配音第 2/3 段连续 NoAudioReceived（微软高频限流），修 <code>tts.py</code> 重试 3→5 次 + 退避 2/4/6/8s + 段间 1.5s + 清半截空文件（commit 0e1f567 已 push），重跑一次通过，成片 906KB / 26.07s / 1080×1920 / RMS 0.22（有声），四闸门 0/4、未上云未发布，已呈现给 Tony。</td>
             </tr>
           </tbody>
         </table>
