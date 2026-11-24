@@ -118,9 +118,13 @@ canvas{width:100%;height:100%;display:block}
           <div><label>项目名（可选）</label><input id="a-name" placeholder="例：HSK1 春季班招生"></div>
           <div><label>平台</label><select id="a-platform"><option>TikTok</option><option>Reels</option><option>Shorts</option><option>Zalo</option></select></div>
           <div><label>时长</label><select id="a-duration"><option value="15">15 秒</option><option value="30" selected>30 秒</option><option value="60">60 秒</option></select></div>
-          <div><label>声线</label><select id="a-voice"><option value="vi-VN-NamMinhNeural">男声</option><option value="vi-VN-HoaiMyNeural">女声</option></select></div>
+          <div><label>声线</label><select id="a-voice"><option value="vi-VN-NamMinhNeural">越南男声</option><option value="vi-VN-HoaiMyNeural">越南女声</option><option value="zh-CN-YunxiNeural">中文男声</option><option value="zh-CN-XiaoxiaoNeural">中文女声</option></select></div>
         </div>
         <div style="margin-top:12px"><label>主题 / 商品</label><textarea id="a-topic" placeholder="例：越南学生零基础 3 个月过 HSK1，春季班优惠"></textarea></div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="useBuiltinScript('cnAdmission')" style="font-size:13px">📘 一键填入「中文招生广告」脚本</button>
+          <span class="hint" style="margin:0;align-self:center">点它会自动填好主题/脚本/中文声线，再点「开始做片」即可</span>
+        </div>
         <div style="margin-top:12px"><button class="btn pri" id="a-go" onclick="autoMake()">✨ 开始做片</button></div>
         <div class="progress"><i id="a-bar"></i></div>
         <div class="hint" id="a-msg">点开始后约 1–3 分钟（配音+渲染），进度会在这里更新。</div>
@@ -461,6 +465,32 @@ function genScript(){
    网页请求转给本机 auto-make.js，成片回传直接在页面播放。不接云、不花钱。
    GitHub Pages 页面也能用：优先找 localhost 桥，找不到就提示先开桥。 */
 var BRIDGE='http://127.0.0.1:8977';
+/* 内置脚本库：网页直接选用，不依赖坏掉的线上脚本 Worker。
+   每行一镜：画面描述|字幕|旁白|秒数 */
+var BUILTIN_SCRIPTS={
+  cnAdmission:{
+    name:'中文招生广告',
+    topic:'招生宣传 · 成功白领与商务人士',
+    duration:15,
+    voice:'zh-CN-YunxiNeural',
+    script:[
+      'successful white collar professionals in modern bright office, confident|你也在寻找突破的机会吗？|你也在寻找突破的机会吗？|4',
+      'business people networking handshake at professional conference|和优秀的人一起，走得更远|和优秀的人一起，走得更远。|4',
+      'confident business professional in suit overlooking city skyline, success|提升自己，从此刻开始|提升自己，从此刻开始。|4',
+      'happy successful graduates group celebrating together, bright|立即报名，开启你的新篇章|立即报名，开启你的新篇章。|3'
+    ].join('\n')
+  }
+};
+var _activeBuiltin=null;
+function useBuiltinScript(key){
+  var s=BUILTIN_SCRIPTS[key]; if(!s) return;
+  _activeBuiltin=s;
+  var set=function(id,val){ var el=document.getElementById(id); if(el) el.value=val; };
+  set('a-name',s.name); set('a-topic',s.topic); set('a-duration',s.duration); set('a-voice',s.voice);
+  var msg=document.getElementById('a-msg');
+  if(msg) msg.textContent='已填入「'+s.name+'」脚本（'+s.script.split('\n').length+' 镜）。点「✨ 开始做片」即可生成中文片。';
+  toast('已填入「'+s.name+'」脚本');
+}
 function checkBridge(){
   var box=document.getElementById('bridgeStatus'); if(!box) return;
   fetch(BRIDGE+'/api/ping').then(function(r){ return r.json(); })
@@ -475,7 +505,8 @@ function autoMake(){
     platform:(document.getElementById('a-platform')||{}).value||'TikTok',
     duration:parseInt((document.getElementById('a-duration')||{}).value,10)||30,
     voice:(document.getElementById('a-voice')||{}).value||'vi-VN-NamMinhNeural',
-    topic:topic.trim() };
+    topic:topic.trim(),
+    script:_activeBuiltin?_activeBuiltin.script:'' };
   if(btn) btn.disabled=true;
   if(msg) msg.textContent='① 正在写脚本 + 生成越南语配音…（约 1–3 分钟，别关页面）';
   if(bar) bar.style.width='12%';
@@ -580,7 +611,7 @@ function drawScene(canvas,scene,idx,img){
   var fs=tpl==='bold'?96:(tpl==='calm'?58:64);
   /* 字幕：安全区居中，深色底衬保证可读 */
   ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,canvas.height*0.55,canvas.width,240);
-  ctx.fillStyle='#fff'; ctx.font='700 '+fs+'px "Noto Sans Vietnamese", Arial, sans-serif';
+  ctx.fillStyle='#fff'; ctx.font='700 '+fs+'px "Noto Sans Vietnamese", "PingFang SC", "Microsoft YaHei", Arial, sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   var cap=scene.caption||'';
   ctx.fillText(cap.slice(0,16),canvas.width/2,canvas.height*0.55+80);
