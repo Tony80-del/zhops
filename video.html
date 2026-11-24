@@ -461,24 +461,59 @@ function renderStoryboard(){
       '</div></div><div class="mv"><button onclick="moveScene(\''+s.id+'\',-1)" title="上移">↑</button><button onclick="moveScene(\''+s.id+'\',1)" title="下移">↓</button><button onclick="delScene(\''+s.id+'\')" title="删除">×</button></div></div>';
   }).join('');
 }
-function drawScene(canvas,scene){
+/* ★ A 档（2026-11-23）：图片真贴图。GRADS 给无图镜头当渐变底，
+   有 scene.image URL 时 loadImage 预载后用 drawImage 真贴（9:16 居中裁切）。 */
+var GRADS=[['#5b8cff','#1b2a6b'],['#ff7a59','#7a1f1f'],['#12b76a','#0b3d2e'],
+           ['#8b5cf6','#2a1a5b'],['#06b6d4','#083344'],['#f59e0b','#78350f']];
+var IMG_CACHE={};
+function loadImage(src){
+  return new Promise(function(res){
+    if(!src){ res(null); return; }
+    if(IMG_CACHE[src]!==undefined){ res(IMG_CACHE[src]); return; }
+    if(typeof Image==='undefined'){ res(null); return; } /* 探针里没 Image → 画渐变占位 */
+    var img=new Image(); img.crossOrigin='anonymous';
+    img.onload=function(){ IMG_CACHE[src]=img; res(img); };
+    img.onerror=function(){ IMG_CACHE[src]=null; res(null); };
+    img.src=src;
+  });
+}
+function preloadProjectImages(p){
+  return Promise.all((p&&p.scenes||[]).map(function(s){ return loadImage(s.image||''); }));
+}
+function drawScene(canvas,scene,idx,img){
   if(!canvas||!canvas.getContext) return false;
-  var ctx=canvas.getContext('2d'); var brand=(V.cfg&&V.cfg.brand)||'#5b8cff';
-  ctx.fillStyle=brand; ctx.fillRect(0,0,canvas.width,canvas.height);
-  /* 图片占位（真浏览器里 loadImage 异步贴图，探针里没有 Image 就画色块） */
-  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,260,canvas.width,1100);
+  var ctx=canvas.getContext('2d');
+  var g=GRADS[(idx||0)%GRADS.length];
+  var grad=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+  grad.addColorStop(0,(V.cfg&&V.cfg.brand)||g[0]); grad.addColorStop(1,g[1]);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(img){
+    var ir=img.width/img.height, br=canvas.width/(canvas.height*0.55), sw,sh,sx,sy;
+    if(ir>br){ sh=img.height; sw=sh*br; sx=(img.width-sw)/2; sy=0; }
+    else { sw=img.width; sh=sw/br; sx=0; sy=(img.height-sh)/2; }
+    try { ctx.drawImage(img,sx,sy,sw,sh,0,0,canvas.width,Math.round(canvas.height*0.55)); } catch(e){}
+  } else {
+    ctx.fillStyle='rgba(255,255,255,.07)'; ctx.beginPath();
+    ctx.arc(canvas.width/2,canvas.height*0.28,220,0,Math.PI*2); ctx.fill();
+  }
   var tpl=(activeProject()&&activeProject().template)||'standard';
-  var fs = tpl==='bold'?96:(tpl==='calm'?58:64);
-  ctx.fillStyle='#fff'; ctx.font='700 '+fs+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  var cap=scene.caption||''; ctx.fillText(cap.slice(0,18),canvas.width/2,700);
-  if(cap.length>18) ctx.fillText(cap.slice(18,36),canvas.width/2,700+fs+10);
-  /* 品牌 Logo */
-  if(V.cfg&&V.cfg.logo){ /* 真浏览器异步贴，探针跳过 */ }
+  var fs=tpl==='bold'?96:(tpl==='calm'?58:64);
+  /* 字幕：安全区居中，深色底衬保证可读 */
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,canvas.height*0.55,canvas.width,240);
+  ctx.fillStyle='#fff'; ctx.font='700 '+fs+'px "Noto Sans Vietnamese", Arial, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  var cap=scene.caption||'';
+  ctx.fillText(cap.slice(0,16),canvas.width/2,canvas.height*0.55+80);
+  if(cap.length>16) ctx.fillText(cap.slice(16,32),canvas.width/2,canvas.height*0.55+170);
+  /* 角标 */
+  ctx.font='500 34px Arial'; ctx.fillStyle='rgba(255,255,255,.85)';
+  ctx.fillText('ZHOPS · HSK',canvas.width/2,canvas.height-90);
   return true;
 }
 function renderPreview(){
   var p=needProject(); if(!p||!p.scenes.length){ toast('先有镜头再预览'); return; }
-  var c=document.getElementById('prevCanvas'); drawScene(c,p.scenes[0]);
+  var c=document.getElementById('prevCanvas');
+  loadImage(p.scenes[0].image||'').then(function(img){ drawScene(c,p.scenes[0],0,img); });
 }
 
 /* ========== ③ 配音 ========== */
@@ -582,6 +617,31 @@ function setCodecInfo(){
   });
 }
 function renderExport(){ setCodecInfo(); }
+/* ★ A 档（2026-11-23）：把每段 scene.audioUrl 的 mp3 解码后按镜头秒数
+   铺到 48kHz 立体声 PCM，再经 AudioEncoder(mp4a.40.2) 写进音轨。
+   ★ 坑：AudioBuffer 的帧数是 .length，不是 .numberOfFrames（曾致全片静音）。 */
+function decodeAudio(url, actx){
+  return fetch(url).then(function(r){ return r.arrayBuffer(); })
+    .then(function(ab){ return actx.decodeAudioData(ab); });
+}
+async function buildAudioTrack(p, actx){
+  var SR=48000;
+  var totalSec=(p.scenes||[]).reduce(function(a,s){ return a+(parseInt(s.seconds,10)||5); },0);
+  var totalFrames=Math.ceil(totalSec*SR);
+  var L=new Float32Array(totalFrames), R=new Float32Array(totalFrames), cursor=0;
+  for(var i=0;i<p.scenes.length;i++){
+    var url=p.scenes[i].audioUrl, buf=null;
+    if(url){ try { buf=await decodeAudio(url, actx); } catch(e){} }
+    var start=cursor;
+    if(buf && buf.length){ // ★ AudioBuffer.length
+      var ch0=buf.getChannelData(0), ch1=buf.numberOfChannels>1?buf.getChannelData(1):ch0;
+      var n=Math.min(buf.length, totalFrames-start);
+      for(var f=0;f<n;f++){ L[start+f]=ch0[f]; R[start+f]=ch1[f]; }
+    }
+    cursor+=(parseInt(p.scenes[i].seconds,10)||5)*SR;
+  }
+  return { L:L, R:R, totalFrames:totalFrames };
+}
 async function exportMP4(){
   var p=needProject(); if(!p) return; var qc=qcCheck(p);
   if(qc.some(function(x){ return x.level==='bad'; })){ toast('质检有硬伤，先去「质检规范」修完'); return; }
@@ -590,34 +650,70 @@ async function exportMP4(){
   try {
     if(typeof VideoEncoder==='undefined') throw new Error('本浏览器不支持 WebCodecs，请用 Chrome / Edge');
     var vc=await pickVideoCodec(); if(!vc) throw new Error('没有可用的 H.264 编码器');
+    var ac=await pickAudioCodec();
     var mux=await ensureMuxer();
-    if(msg) msg.textContent='编码中（'+p.scenes.length+' 镜）…';
+    if(msg) msg.textContent='编码中（'+p.scenes.length+' 镜'+(ac?' · 含配音':' · 无配音')+'）…';
     var Muxer=mux.Muxer, ArrayBufferTarget=mux.ArrayBufferTarget;
     var target=new ArrayBufferTarget();
-    var muxer=new Muxer({target:target,video:{codec:'avc',width:W,height:H},fastStart:'in-memory'});
-    var encoder=new VideoEncoder({output:function(chunk,meta){ muxer.addVideoChunk(chunk,meta); },error:function(e){ toast('编码错误：'+e.message); }});
+    var muxCfg={target:target,video:{codec:'avc',width:W,height:H},fastStart:'in-memory'};
+    if(ac) muxCfg.audio={codec:'aac',numberOfChannels:2,sampleRate:48000};
+    var muxer=new Muxer(muxCfg);
+    var encErr=null, audErr=null;
+    var encoder=new VideoEncoder({
+      output:function(chunk,meta){ try{ muxer.addVideoChunk(chunk,meta); }catch(e){ encErr=String(e); } },
+      error:function(e){ encErr=e.message; }
+    });
     encoder.configure({codec:vc,width:W,height:H,bitrate:6000000,framerate:FPS});
+    var aEncoder=null;
+    if(ac){
+      aEncoder=new AudioEncoder({
+        output:function(chunk,meta){ try{ muxer.addAudioChunk(chunk,meta); }catch(e){ audErr=String(e); } },
+        error:function(e){ audErr=e.message; }
+      });
+      aEncoder.configure({codec:ac,sampleRate:48000,numberOfChannels:2,bitrate:128000});
+    }
+    /* 预载图片，逐帧真贴图 */
+    var imgs=await preloadProjectImages(p);
     var canvas=document.getElementById('prevCanvas'); if(!canvas){ canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H; }
     var frameDur=1000000/FPS; var n=0;
     for(var si=0; si<p.scenes.length; si++){
       var scene=p.scenes[si]; var frames=Math.max(1,(parseInt(scene.seconds,10)||5)*FPS);
       for(var f=0; f<frames; f++){
-        drawScene(canvas,scene);
+        drawScene(canvas,scene,si,imgs[si]);
         var vf=new VideoFrame(canvas,{timestamp:Math.round(n*frameDur),duration:Math.round(frameDur)});
         encoder.encode(vf,{keyFrame:(n%30===0)}); vf.close(); n++;
-        if(n%30===0 && bar) bar.style.width=Math.min(95,Math.round(n/(p.scenes.reduce(function(a,s){return a+(s.seconds||5)*FPS;},0))*100))+'%';
+        if(n%30===0 && bar) bar.style.width=Math.min(90,Math.round(n/(p.scenes.reduce(function(a,s){return a+(s.seconds||5)*FPS;},0))*100))+'%';
         await new Promise(function(r){ setTimeout(r,0); });
       }
     }
-    await encoder.flush(); encoder.close(); muxer.finalize();
+    await encoder.flush(); encoder.close();
+    /* 音频混流 */
+    if(aEncoder){
+      var actx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});
+      var track=await buildAudioTrack(p, actx);
+      var CHUNK=4096;
+      for(var off=0; off<track.totalFrames; off+=CHUNK){
+        var cnt=Math.min(CHUNK, track.totalFrames-off);
+        var planar=new Float32Array(cnt*2);
+        planar.set(track.L.subarray(off,off+cnt),0);
+        planar.set(track.R.subarray(off,off+cnt),cnt);
+        var ad=new AudioData({format:'f32-planar',sampleRate:48000,numberOfFrames:cnt,numberOfChannels:2,timestamp:Math.round(off/48000*1000000),data:planar});
+        aEncoder.encode(ad); ad.close();
+      }
+      await aEncoder.flush(); aEncoder.close();
+      try { await actx.close(); } catch(e){}
+    }
+    muxer.finalize();
+    if(encErr) throw new Error('视频编码：'+encErr);
+    if(audErr) throw new Error('音频编码：'+audErr);
     var blob=new Blob([target.buffer],{type:'video/mp4'});
     var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
     a.download=(p.name||'video').replace(/[^\w\u4e00-\u9fa5-]+/g,'_')+'.mp4';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    p.exported={at:new Date().toISOString(),frames:n,codec:vc}; saveV();
+    p.exported={at:new Date().toISOString(),frames:n,codec:vc,audio:ac||null}; saveV();
     if(bar) bar.style.width='100%';
-    if(msg) msg.textContent='导出完成：'+n+' 帧 / '+vc+'。文件已下载。';
-    toast('MP4 已导出（'+n+' 帧）');
+    if(msg) msg.textContent='导出完成：'+n+' 帧 / '+vc+(ac?' + AAC 配音':'（静音）')+'。文件已下载。';
+    toast('MP4 已导出（'+n+' 帧'+(ac?' · 有声':' · 静音')+'）');
   } catch(e){
     if(msg) msg.textContent='导出失败：'+e.message;
     toast('导出失败：'+e.message);

@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">2</span></button>
+    <button class="on" data-day="2026-11-23">2026-11-23 · 今天<span class="c">3</span></button>
     <button data-day="2026-11-18">2026-11-18<span class="c">41</span></button>
     <button data-day="2026-11-16">2026-11-16<span class="c">3</span></button>
     <button data-day="2026-11-15">2026-11-15<span class="c">1</span></button>
@@ -559,7 +559,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-23 ============ -->
   <div class="day-panel on" data-day="2026-11-23">
     <div class="card">
-      <h2>2026-11-23 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-23 · 打磨记录<span class="n">3 行 · 已打磨 3 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -584,6 +584,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-23</td>
               <td class="mono nw">11-23</td>
               <td>新建 <code>docs/video.html</code>（单文件、全局 V、独立页不占板块，业务端侧栏用 <code>data-go</code> 跳，线上 /zhops/video.html）。10 模块：项目总览 / 素材库（Pixabay API）/ ①脚本 ②制作·分镜 ③配音 ④剪接 ⑤质检 ⑥MP4 ⑦审核闸门 ⑧成品台账。<b>关键决策</b>：配音本地 <code>edge-tts</code>（浏览器 speechSynthesis 录进视频是静音）；导出 WebCodecs（avc1.640028→4d401f→42001e 先 isConfigSupported 协商）+ mp4-muxer@5.1.3 CDN 直出 MP4，<b>不用 ffmpeg.wasm</b>（8GB Mac 扛不住）；云端存储<b>暂不接</b>（Tony 定：等管理线）；四道闸门串行、四关全过才送老板手点（🔴 不自动发），成本复用 P-196 三闸门、voucher 幂等。新建 <code>build/video/tts.py</code>（延迟导入 edge-tts）+ <code>config.json</code>；<code>worker/index.js</code> 加 script 模式（越南语分镜 prompt，复用 Gemini）；新建技能 <code>zhops-video</code> 并登记总管 §14。新建 <code>check-video.js</code> <b>72 项</b>，反向控制两组（闸门失效 / 成本闸门绕过）真红；全套 <b>79/79</b>、漂移 10/10。三张图（技能结构/生态地图/发布清单）同步加 video；生态地图决策 ⑳。还原点 tag <code>video-before-20261123</code>。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-213</td>
+              <td><b>T11 A 档 · 一键做片 + 工作台补真贴图/真混音</b><br><span style="color:#8899aa;font-size:12px">Tony 选 A（守铁律：AI 全自动做到待审，四闸门手点）+「开工，先试一段看效果」。Tony 追问「视频制造流程在哪？是在工作台吗？」→ 发现试片是独立 harness 做的、工作台本身仍是旧版（静音+色块），遂把修复搬回工作台。</span></td>
+              <td class="nw">宣传视频 · 自动化</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-23</td>
+              <td class="mono nw">11-23</td>
+              <td>试片抓到静音真 bug：<code>AudioBuffer</code> 帧数是 <code>.length</code> 不是 <code>.numberOfFrames</code>，判断恒假 → 三段配音一段没铺进去。修复后样片 390 帧 / H.264+AAC / 有声（成片 RMS 0.25）。<b>把两块修复搬回 <code>docs/video.html</code></b>：drawScene 用 loadImage+drawImage 真贴图（无图画渐变占位），exportMP4 加 buildAudioTrack+AudioEncoder+addAudioChunk 真混音。端到端验收 <code>verify-workbench.js</code> 直接驱动工作台导出，成片 468KB / 13.1s / 波形 RMS 0.23（有声）。新增一键链路：<code>auto-make.js</code>（tts→注入→调页面导出→落 final.mp4，四闸门保持 0/4、不上云、不发布）、<code>fetch-assets.js</code>（Pixabay 可选）、<code>review-list.js</code>（待审清单）；<code>tts.py</code> 加 NoAudioReceived 单段重试 3 次。技能 zhops-video 加 §8 A 档段；新探针 <code>check-video-auto.js</code> 16 项，反向控制（删 drawImage）真红。全套 <b>80/80</b>、漂移 10/10。还原点 tag <code>video-workbench-port-before-20261123-2235</code>。未 push / 未上线（等 Tony 点头）。</td>
             </tr>
           </tbody>
         </table>
