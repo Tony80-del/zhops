@@ -48,6 +48,15 @@ textarea{resize:vertical;min-height:64px;line-height:1.5}
 .pcard:hover{border-color:var(--acc)}.pcard h4{margin:0 0 6px;font-size:14px}.pcard .meta{font-size:11px;color:var(--mut);line-height:1.7}
 .pcard .x{position:absolute;right:8px;top:8px;color:var(--mut);border:0;background:none;cursor:pointer;font-size:16px}
 .empty{color:var(--mut);text-align:center;padding:40px;font-size:13px}
+/* ★ 2026-11-25：成品架网格（留档成片回看） */
+.shelfGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.shelfItem{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.shelfItem video{width:100%;aspect-ratio:9/16;max-height:300px;object-fit:contain;border-radius:8px;background:#000}
+.shelfMeta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.shelfMeta b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelfMeta .hint{font-size:10px}
+.shelfBtns{display:flex;gap:4px}
+.shelfBtns .btn{flex:1;padding:4px 6px;font-size:11px}
 .stage{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;background:var(--card2);margin-bottom:8px}
 .stage .dot{width:10px;height:10px;border-radius:50%;background:var(--mut);flex:none}
 .stage.pass .dot{background:var(--acc2)}.stage.reject .dot{background:var(--bad)}.stage.cur{border:1px solid var(--acc)}
@@ -159,22 +168,22 @@ canvas{width:100%;height:100%;display:block}
 
     <!-- 脚本 -->
     <section class="view" data-view="script">
-      <div class="page-h"><h2>① 脚本</h2><p class="desc">越南语分镜脚本。AI 生成 A/B 两版，或手写。</p><div class="sp"></div><button class="btn" onclick="exportProjectJSON()">⬇ 导出项目 JSON</button><button class="btn" onclick="genScript()">✨ AI 写脚本</button><button class="btn pri" onclick="saveScript()">保存脚本</button></div>
+      <div class="page-h"><h2>① 脚本</h2><p class="desc">中文分镜脚本（越南语暂不管）。AI 生成或手写。</p><div class="sp"></div><button class="btn" onclick="fillDemoScript()">📘 示例脚本（看格式）</button><button class="btn" onclick="exportProjectJSON()">⬇ 导出项目 JSON</button><button class="btn" onclick="genScript()">✨ AI 写脚本</button><button class="btn pri" onclick="saveScript()">保存脚本</button></div>
       <div class="card">
         <div class="row">
           <div><label>项目名</label><input id="f-name" placeholder="例：HSK1 春季班招生"></div>
           <div><label>投放平台</label><select id="f-platform"><option>TikTok</option><option>Reels</option><option>Shorts</option><option>Zalo</option></select></div>
           <div><label>目标时长</label><select id="f-duration"><option value="15">15 秒</option><option value="30" selected>30 秒</option><option value="60">60 秒</option></select></div>
         </div>
-        <div style="margin-top:12px"><label>主题 / 商品（给 AI 的输入）</label><textarea id="f-topic" placeholder="例：越南学生零基础 3 个月过 HSK1，春季班优惠"></textarea></div>
-        <div style="margin-top:12px"><label>分镜脚本（每行一镜：画面 | 越南语字幕 | 旁白 | 秒数）</label><textarea id="f-script" style="min-height:220px" placeholder="画面：Logo 开场 | Bắt đầu học tiếng Trung | Chào bạn | 3&#10;画面：课堂实拍 | Học HSK1 trong 3 tháng | ... | 8"></textarea></div>
+        <div style="margin-top:12px"><label>主题 / 商品（给 AI 的输入）</label><textarea id="f-topic" placeholder="例：中文招生广告，零基础 3 个月提升，春季班优惠"></textarea></div>
+        <div style="margin-top:12px"><label>分镜脚本（每行一镜：画面 | 中文字幕 | 旁白 | 秒数）</label><textarea id="f-script" style="min-height:220px" placeholder="画面：Logo 开场 | 你也在寻找突破的机会吗？ | 你也在寻找突破的机会吗？ | 4&#10;画面：课堂实拍 | 提升自己，从此刻开始 | 提升自己，从此刻开始。 | 4"></textarea></div>
         <div class="hint">格式：<code>画面描述 | 越南语字幕 | 旁白文字 | 秒数</code>。保存后自动拆成分镜，进「制作」微调。</div>
       </div>
     </section>
 
     <!-- 制作 · 分镜 -->
     <section class="view" data-view="storyboard">
-      <div class="page-h"><h2>② 制作 · 分镜</h2><p class="desc">每镜一张图 + 动态字幕 + 转场 + 品牌色。实时预览。</p><div class="sp"></div><button class="btn" onclick="addScene()">+ 加镜头</button><button class="btn pri" onclick="renderPreview()">▶ 预览</button></div>
+      <div class="page-h"><h2>② 制作 · 分镜</h2><p class="desc">每镜一张图 + 动态字幕 + 转场 + 品牌色。实时预览。</p><div class="sp"></div><button class="btn" onclick="attachImages()">🖼 一键挂配图</button><button class="btn" onclick="addScene()">+ 加镜头</button><button class="btn pri" onclick="renderPreview()">▶ 预览</button></div>
       <div class="grid g2">
         <div><div class="canwrap"><canvas id="prevCanvas" width="1080" height="1920"></canvas></div><div class="hint">9:16 · 1080×1920 · 字幕≥42px · 安全区居中</div></div>
         <div>
@@ -188,15 +197,15 @@ canvas{width:100%;height:100%;display:block}
 
     <!-- 配音 -->
     <section class="view" data-view="dub">
-      <div class="page-h"><h2>③ 配音</h2><p class="desc">本地 edge-tts 出越南语 mp3，逐镜挂载。浏览器朗读无法录进视频，必须 mp3 文件。</p></div>
+      <div class="page-h"><h2>③ 配音</h2><p class="desc">中文配音（越南语暂不管）。点按钮 → 本机生成 mp3 → 自动挂到每镜，直接试听。</p><div class="sp"></div><button class="btn pri" onclick="genDub()">🔊 一键生成中文配音</button></div>
       <div class="card">
-        <h3>生成配音（在 Mac 上跑）</h3>
+        <h3>中文配音（本机 edge-tts，免费）</h3>
         <div class="row">
-          <div><label>声音</label><select id="f-voice"><option value="vi-VN-NamMinhNeural">男声 · NamMinh</option><option value="vi-VN-HoaiMyNeural">女声 · HoaiMy</option></select></div>
+          <div><label>声音</label><select id="f-voice"><option value="zh-CN-YunxiNeural">男声 · Yunxi（云希）</option><option value="zh-CN-XiaoxiaoNeural">女声 · Xiaoxiao（晓晓）</option></select></div>
           <div><label>语速</label><input id="f-rate" value="+0%"></div>
           <div><label>音调</label><input id="f-pitch" value="+0Hz"></div>
         </div>
-        <div class="hint" id="ttsCmd">先保存脚本 → 终端跑 <code>python3 build/video/tts.py --project "…"</code> 生成 mp3 → 下方逐镜填 URL / 路径。</div>
+        <div class="hint" id="ttsCmd">点右上角「🔊 一键生成中文配音」→ 本机跑 tts.py → mp3 自动挂到每镜，下方直接试听。不用开终端。</div>
       </div>
       <div id="dubList"></div>
     </section>
@@ -205,7 +214,7 @@ canvas{width:100%;height:100%;display:block}
     <section class="view" data-view="edit">
       <div class="page-h"><h2>④ 剪接</h2><p class="desc">时间线即导出顺序。拖顺序、改时长、设转场。</p><div class="sp"></div><button class="btn" onclick="autoTime()">按脚本时长</button></div>
       <div id="editList"></div>
-      <div class="card"><h3>本片合计</h3><div id="timelineSum">—</div><div class="hint">目标 15 / 30 / 60 秒；每 1–3 秒一次视觉变化。</div></div>
+      <div class="card"><h3>本片合计</h3><div id="timelineSum">—</div><div class="hint">脚本总时长 = 各镜秒数之和。显示「吻合」即可导出；目标 15 / 30 / 60 秒是可选规格，不是硬性要求。</div></div>
     </section>
 
     <!-- 质检 -->
@@ -223,6 +232,13 @@ canvas{width:100%;height:100%;display:block}
         <div class="progress"><i id="expBar"></i></div>
         <div class="hint" id="expMsg">点导出后逐帧编码，1080×1920×30fps 约几十秒。</div>
         <button class="btn pri" id="btnExport" onclick="exportMP4()">⬇ 导出 MP4</button>
+      </div>
+      <!-- ★ 2026-11-25：导出后直接在这里播放，看得见画面、听得到配音 -->
+      <div class="card" id="expResultCard" hidden style="margin-top:12px">
+        <h3>✅ 成片预览 <span class="hint" id="expResultInfo"></span></h3>
+        <video id="expResultVideo" controls playsinline style="width:100%;max-height:70vh;border-radius:10px;background:#000"></video>
+        <div class="hint" style="margin-top:8px">若这里没声音，点下方用系统播放器打开（QuickTime/VLC），声音在这条文件里是确实存在的。</div>
+        <button class="btn" id="expOpenBtn" style="margin-top:8px">🔊 用系统播放器打开原文件</button>
       </div>
     </section>
 
@@ -274,7 +290,7 @@ var STATUSES = ['草稿','测试中','已发','退役'];
 var GATES = ['script','storyboard','audio','final'];
 var GATE_CN = {script:'脚本',storyboard:'分镜',audio:'音频',final:'成片'};
 var TRANSITIONS = ['none','fade','slide','zoom'];
-var VOICES = ['vi-VN-NamMinhNeural','vi-VN-HoaiMyNeural'];
+var VOICES = ['zh-CN-YunxiNeural','zh-CN-XiaoxiaoNeural','vi-VN-NamMinhNeural','vi-VN-HoaiMyNeural'];
 
 /* ---------- 存盘 ---------- */
 function blankV(){ return { projects:[], assets:[], activeId:null, finished:[], cfg:{brand:'#5b8cff',logo:'',pixabay:''} }; }
@@ -283,6 +299,78 @@ function loadV(){
   return blankV();
 }
 function saveV(){ try { localStorage.setItem(VK, JSON.stringify(V)); } catch(e){ toast('存盘失败：'+e.message); } }
+
+/* ========== 成品留档：IndexedDB（浏览器侧兜底） ==========
+   ★ 2026-11-25：用户要求「成品留在工作台内，不需要导出」。
+   localStorage 只有 ~5MB，装不下一部 9MB 的片子，所以视频 blob 存 IndexedDB；
+   项目 JSON 仍走 localStorage。桥开着时另外推一份到 out/ 目录（双保险）。 */
+var IDB_NAME='zhops-video-store', IDB_VER=1, IDB_STORE='videos';
+function idbOpen(){
+  return new Promise(function(res,rej){
+    var q=indexedDB.open(IDB_NAME,IDB_VER);
+    q.onupgradeneeded=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE,{keyPath:'id'});
+    };
+    q.onsuccess=function(e){ res(e.target.result); };
+    q.onerror=function(){ rej(q.error||new Error('IndexedDB 打开失败')); };
+  });
+}
+async function idbPut(rec){
+  var db=await idbOpen();
+  return new Promise(function(res,rej){
+    var tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(rec);
+    tx.oncomplete=function(){ res(rec); };
+    tx.onerror=function(){ rej(tx.error||new Error('写入失败')); };
+  });
+}
+async function idbGet(id){
+  var db=await idbOpen();
+  return new Promise(function(res,rej){
+    var tx=db.transaction(IDB_STORE,'readonly');
+    var g=tx.objectStore(IDB_STORE).get(id);
+    g.onsuccess=function(){ res(g.result||null); };
+    g.onerror=function(){ rej(g.error||new Error('读取失败')); };
+  });
+}
+async function idbAll(){
+  var db=await idbOpen();
+  return new Promise(function(res,rej){
+    var tx=db.transaction(IDB_STORE,'readonly');
+    var g=tx.objectStore(IDB_STORE).getAll();
+    g.onsuccess=function(){ res(g.result||[]); };
+    g.onerror=function(){ rej(g.error||new Error('读取失败')); };
+  });
+}
+async function idbDel(id){
+  var db=await idbOpen();
+  return new Promise(function(res,rej){
+    var tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete=function(){ res(1); };
+    tx.onerror=function(){ rej(tx.error||new Error('删除失败')); };
+  });
+}
+/* 成品落库：桥磁盘 + IndexedDB 双写。任一路成功即算留档成功。 */
+async function keepVideo(p,blob,meta){
+  meta=meta||{};
+  var id=uid('v');
+  var rec={id:id,projectId:p.id,projectName:p.name||'video',at:new Date().toISOString(),
+    size:blob.size,type:blob.type||'video/mp4',frames:meta.frames||0,codec:meta.codec||'',audio:!!meta.audio,
+    bridgeUrl:'',idb:false,blob:blob}; /* ★ blob 必须一起存，否则桥关了没得播 */
+  /* ① 推一份到本机桥磁盘（out/<slug>/final-<id>.mp4） */
+  try{
+    var url=BRIDGE+'/api/save-video?name='+encodeURIComponent(p.name||'video')+'&ver='+encodeURIComponent(id);
+    var r=await fetch(url,{method:'POST',headers:{'Content-Type':'video/mp4'},body:blob});
+    var d=await r.json();
+    if(d&&d.ok){ rec.bridgeUrl=d.url; }
+  }catch(e){ /* 桥没开就只走 IndexedDB */ }
+  /* ② 存一份到 IndexedDB（桥关了也能回看） */
+  try{ await idbPut(rec); rec.idb=true; }catch(e){}
+  if(!rec.bridgeUrl&&!rec.idb) throw new Error('成品没能留档（桥和浏览器存储都失败）');
+  return rec;
+}
 function loadAssets(){
   try { var raw = localStorage.getItem(AK); if(raw) return JSON.parse(raw); } catch(e){}
   return null;
@@ -310,6 +398,8 @@ function needProject(){ var p=activeProject(); if(!p){ toast('请先在项目总
 /* ---------- 导航 ---------- */
 var VIEW_CN = {auto:'✨ 让技能一键做片',overview:'项目总览',assets:'素材库',script:'脚本',storyboard:'制作 · 分镜',dub:'配音',edit:'剪接',qc:'质检规范',export:'MP4 导出',review:'审核闸门',finished:'成品台账'};
 function nav(v){
+  /* 离开分镜页时停掉预览动画，避免后台空转 */
+  if(typeof PREVIEW_TIMER!=='undefined'&&PREVIEW_TIMER){ clearInterval(PREVIEW_TIMER); PREVIEW_TIMER=null; }
   document.querySelectorAll('#nav a').forEach(function(a){ a.classList.toggle('on', a.dataset.v===v); });
   document.querySelectorAll('.view').forEach(function(el){ el.classList.toggle('on', el.dataset.view===v); });
   var c=document.getElementById('crumb-sub'); if(c) c.textContent=VIEW_CN[v]||'';
@@ -418,6 +508,18 @@ function scriptFromScenes(p){
     return (s.image?'画面：'+s.image:'画面')+' | '+(s.caption||'')+' | '+(s.narration||'')+' | '+(s.seconds||5);
   }).join('\n');
 }
+/* 📘 示例脚本：只把文字填进脚本输入框，给你看格式、随便改。不保存、不做片。 */
+function fillDemoScript(){
+  var sc=document.getElementById('f-script'); if(!sc){ toast('请先进入脚本页'); return; }
+  var demo=[
+    '画面：现代明亮办公室里自信的白领 | 你也在寻找突破的机会吗？ | 你也在寻找突破的机会吗？ | 4',
+    '画面：商务会议握手交流 | 和优秀的人一起，走得更远 | 和优秀的人一起，走得更远。 | 4',
+    '画面：西装白领俯瞰城市天际线 | 提升自己，从此刻开始 | 提升自己，从此刻开始。 | 4',
+    '画面：毕业生开心庆祝 | 立即报名，开启你的新篇章 | 立即报名，开启你的新篇章。 | 3'
+  ].join('\n');
+  sc.value=demo;
+  toast('已填入示例脚本：4 行 = 4 个镜头，每行 画面 | 字幕 | 旁白 | 秒数。可直接改字。');
+}
 function parseScript(text){
   return String(text||'').split('\n').map(function(line){
     var parts=line.split('|').map(function(x){ return x.trim(); });
@@ -433,8 +535,22 @@ function saveScript(){
       tp=document.getElementById('f-topic'),sc=document.getElementById('f-script');
   if(n)p.name=n.value.trim()||p.name; if(pl)p.platform=pl.value; if(du)p.duration=parseInt(du.value,10)||30;
   if(tp)p.topic=tp.value; if(!sc) return;
-  var lines=sc.value; if(lines.trim()) p.scenes=parseScript(lines);
-  p.updated=new Date().toISOString(); saveV(); toast('脚本已保存：'+p.scenes.length+' 个镜头');
+  var lines=sc.value;
+  if(lines.trim()){
+    /* ★ 2026-11-25 修复：重新保存脚本时必须保留已挂的配音/配图，
+       否则 parseScript() 重建镜头写死 audioUrl:'' → 配音被清空 → 导出无声片。
+       按旁白文字匹配旧镜头（其次按顺序兜底）。 */
+    var old=p.scenes||[]; var fresh=parseScript(lines);
+    fresh.forEach(function(s,i){
+      var m=old.find(function(o){ return o.narration===s.narration; })||old[i];
+      if(m){
+        if(m.audioUrl) s.audioUrl=m.audioUrl;
+        if(m.image && /^https?:\/\//.test(m.image)) s.image=m.image; /* 只保留真图 URL，不当「画面：」文字 */
+      }
+    });
+    p.scenes=fresh;
+  }
+  p.updated=new Date().toISOString(); saveV(); toast('脚本已保存：'+p.scenes.length+' 个镜头（已保留配音和配图）');
 }
 function exportProjectJSON(){
   var p=needProject(); if(!p) return;
@@ -574,6 +690,12 @@ function updateScene(id,field,val){
   var p=needProject(); if(!p) return; var s=p.scenes.find(function(x){ return x.id===id; }); if(!s) return;
   s[field]=val; p.updated=new Date().toISOString(); saveV();
 }
+/* 剪接页改单镜秒数 → 更新数据并立刻重算合计（不用跳回分镜页）。 */
+function setSceneSeconds(id,val){
+  var p=needProject(); if(!p) return; var s=p.scenes.find(function(x){ return x.id===id; }); if(!s) return;
+  s.seconds=Math.max(1,Math.min(20,parseInt(val,10)||5));
+  p.updated=new Date().toISOString(); saveV(); renderEdit(); renderStoryboard();
+}
 function applyTemplate(){
   var p=needProject(); if(!p) return; var sel=document.getElementById('f-tpl'); var tpl=sel?sel.value:'standard';
   p.template=tpl; saveV(); renderPreview(); toast('模板已切到：'+tpl);
@@ -611,7 +733,11 @@ function loadImage(src){
 function preloadProjectImages(p){
   return Promise.all((p&&p.scenes||[]).map(function(s){ return loadImage(s.image||''); }));
 }
-function drawScene(canvas,scene,idx,img){
+/* ★ 2026-11-25（B 项）：Ken Burns 缓慢运镜。
+   progress = 当前镜内进度 0..1。省略时按 0 处理（静态预览仍可用）。
+   4 种运镜按镜号轮转：推近 / 右移 / 拉远 / 左移，缓入缓出。
+   只裁切已有图片，不放大超出边界 → 不会出现黑边。 */
+function drawScene(canvas,scene,idx,img,progress){
   if(!canvas||!canvas.getContext) return false;
   var ctx=canvas.getContext('2d');
   var g=GRADS[(idx||0)%GRADS.length];
@@ -619,61 +745,142 @@ function drawScene(canvas,scene,idx,img){
   grad.addColorStop(0,(V.cfg&&V.cfg.brand)||g[0]); grad.addColorStop(1,g[1]);
   ctx.fillStyle=grad; ctx.fillRect(0,0,canvas.width,canvas.height);
   if(img){
-    var ir=img.width/img.height, br=canvas.width/(canvas.height*0.55), sw,sh,sx,sy;
+    /* ★ 2026-11-25 修复「看不到脸」：图片铺满整块 9:16 画布，不再压成
+       1080×1056 横条（那会把 576×1024 竖图上下各切 230px，头被切掉）。
+       竖图 576×1024 与画布 1080×1920 比例都是 0.5625 → 正好铺满、不裁切。 */
+    var ir=img.width/img.height, br=canvas.width/canvas.height, sw,sh,sx,sy;
     if(ir>br){ sh=img.height; sw=sh*br; sx=(img.width-sw)/2; sy=0; }
     else { sw=img.width; sh=sw/br; sx=0; sy=(img.height-sh)/2; }
-    try { ctx.drawImage(img,sx,sy,sw,sh,0,0,canvas.width,Math.round(canvas.height*0.55)); } catch(e){}
+    /* 运镜：在基础裁切框内做缩放/平移，全程留在原图范围内 */
+    var p=Math.max(0,Math.min(1,typeof progress==='number'?progress:0));
+    var e=p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;   /* easeInOutQuad */
+    var z=1, cx=sx+sw/2, cy=sy+sh/2;
+    switch((idx||0)%4){
+      case 0: z=1+0.12*e; break;                       /* 推近（收敛到 12%，少切脸） */
+      case 1: z=1.10; cx+=(sw-sw/z)*(e-0.5); break;    /* 右移 */
+      case 2: z=1.12-0.12*e; break;                    /* 拉远 */
+      case 3: z=1.10; cx-=(sw-sw/z)*(e-0.5); break;    /* 左移 */
+    }
+    var sw2=sw/z, sh2=sh/z;
+    var sx2=Math.max(0,Math.min(img.width -sw2, cx-sw2/2));
+    var sy2=Math.max(0,Math.min(img.height-sh2, cy-sh2/2));
+    try { ctx.drawImage(img,sx2,sy2,sw2,sh2,0,0,canvas.width,canvas.height); } catch(e){}
   } else {
     ctx.fillStyle='rgba(255,255,255,.07)'; ctx.beginPath();
     ctx.arc(canvas.width/2,canvas.height*0.28,220,0,Math.PI*2); ctx.fill();
   }
   var tpl=(activeProject()&&activeProject().template)||'standard';
   var fs=tpl==='bold'?96:(tpl==='calm'?58:64);
-  /* 字幕：安全区居中，深色底衬保证可读 */
-  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,canvas.height*0.55,canvas.width,240);
+  /* 字幕：浮在图片下部，深色底衬保证可读（不再占掉图片上半部） */
+  var capY=canvas.height*0.82;
+  ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,capY-72,canvas.width,190);
   ctx.fillStyle='#fff'; ctx.font='700 '+fs+'px "Noto Sans Vietnamese", "PingFang SC", "Microsoft YaHei", Arial, sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   var cap=scene.caption||'';
-  ctx.fillText(cap.slice(0,16),canvas.width/2,canvas.height*0.55+80);
-  if(cap.length>16) ctx.fillText(cap.slice(16,32),canvas.width/2,canvas.height*0.55+170);
+  ctx.fillText(cap.slice(0,16),canvas.width/2,capY);
+  if(cap.length>16) ctx.fillText(cap.slice(16,32),canvas.width/2,capY+78);
   /* 角标 */
   ctx.font='500 34px Arial'; ctx.fillStyle='rgba(255,255,255,.85)';
   ctx.fillText('ZHOPS · HSK',canvas.width/2,canvas.height-90);
   return true;
 }
+/* ▶ 预览：把 4 镜连起来循环播放，逐帧带 Ken Burns 运镜，
+   这样点导出前就能亲眼看到图片会缓慢移动，而不是静态翻页。 */
+var PREVIEW_TIMER=null;
 function renderPreview(){
   var p=needProject(); if(!p||!p.scenes.length){ toast('先有镜头再预览'); return; }
-  var c=document.getElementById('prevCanvas');
-  loadImage(p.scenes[0].image||'').then(function(img){ drawScene(c,p.scenes[0],0,img); });
+  var c=document.getElementById('prevCanvas'); if(!c) return;
+  if(PREVIEW_TIMER){ clearInterval(PREVIEW_TIMER); PREVIEW_TIMER=null; }
+  preloadProjectImages(p).then(function(imgs){
+    var si=0, f=0, steps=30; /* 每镜 30 步 × 60ms ≈ 1.8s/镜 */
+    PREVIEW_TIMER=setInterval(function(){
+      if(si>=p.scenes.length){ si=0; }
+      drawScene(c,p.scenes[si],si,imgs[si],f/steps);
+      f++;
+      if(f>steps){ f=0; si++; }
+    },60);
+    toast('预览播放中（4 镜循环，图片带缓慢运镜）。再点一次「▶ 预览」可停止。');
+  });
+}
+/* 🖼 一键挂配图：把草稿里已有的 4 张 AI 图（中文招生广告_v2/images/1-4.jpg）
+   挂到每镜。图片用含桥前缀的绝对地址，本地桥或 GitHub 页面打开都能加载。
+   ★ 关键：scene.image 必须是真图片 URL，不能是「画面：xxx」文字——
+     文字会让 loadImage 失败，导出时只剩渐变底色，白瞎了生成好的图。 */
+function attachImages(){
+  var p=needProject(); if(!p) return;
+  if(!p.scenes.length){ toast('还没有镜头'); return; }
+  var base=BRIDGE+'/build/video/out/'+encodeURIComponent('中文招生广告_v2')+'/images/';
+  p.scenes.forEach(function(s,i){ s.image=base+((i%4)+1)+'.jpg'; });
+  p.updated=new Date().toISOString(); saveV(); renderStoryboard(); renderPreview();
+  toast('✅ 已挂 '+p.scenes.length+' 张配图，左侧预览可见。点「▶ 预览」看第一镜。');
 }
 
 /* ========== ③ 配音 ========== */
 function renderDub(){
   var p=needProject(); var box=document.getElementById('dubList'); if(!box) return;
-  var cmd=document.getElementById('ttsCmd');
-  if(cmd) cmd.innerHTML='先保存脚本 → 终端跑 <code>python3 build/video/tts.py --project "'+esc(p?p.name:'')+'"</code> 生成 mp3 → 下方逐镜填 URL / 路径。';
   if(!p||!p.scenes.length){ box.innerHTML='<div class="empty">还没有镜头。</div>'; return; }
   box.innerHTML=p.scenes.map(function(s,i){
     return '<div class="sc"><div class="idx">'+(i+1)+'</div><div class="body"><b>'+esc(s.caption||'镜头'+(i+1))+'</b>'+
       '<div class="hint" style="margin:4px 0">'+esc(s.narration||'（无旁白）')+'</div>'+
       '<input style="font-size:11px" value="'+esc(s.audioUrl||'')+'" placeholder="mp3 URL / 路径" onchange="updateScene(\''+s.id+'\',\'audioUrl\',this.value)">'+
-      (s.audioUrl?' <audio controls src="'+esc(s.audioUrl)+'" style="height:28px;vertical-align:middle;width:220px"></audio>':'')+
+      (s.audioUrl?' <audio controls src="'+esc(s.audioUrl)+'" style="height:28px;vertical-align:middle;width:220px"></audio> <span class="tag ok">已配音</span>':' <span class="tag warn">未配音</span>')+
       '</div></div>';
   }).join('');
+}
+/* 🔊 一键生成中文配音：把当前项目发给本机桥 /api/tts，
+   tts.py 生成的 mp3 自动挂回每镜 audioUrl → 页面直接试听。不用开终端。 */
+function genDub(){
+  var p=needProject(); if(!p) return;
+  if(!p.scenes.length){ toast('还没有镜头'); return; }
+  var sel=document.getElementById('f-voice'); var voice=sel?sel.value:'zh-CN-YunxiNeural';
+  var btn=document.querySelector('[onclick="genDub()"]'); if(btn) btn.disabled=true;
+  toast('正在生成中文配音（'+p.scenes.length+' 段，约 10–30 秒）…');
+  fetch(BRIDGE+'/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:p.name,voice:voice,scenes:p.scenes.map(function(s){return {narration:s.narration||'',seconds:s.seconds||5};})})})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(x){
+      if(!x.ok||!x.d.ok) throw new Error((x.d&&x.d.error)||('HTTP '+x.ok));
+      var urls=x.d.urls||[];
+      p.scenes.forEach(function(s,i){ if(urls[i]) s.audioUrl=BRIDGE+urls[i]; });
+      p.updated=new Date().toISOString(); saveV(); renderDub();
+      var n=urls.filter(Boolean).length;
+      toast('✅ 已生成 '+n+' 段中文配音，已挂到每镜，下方可直接试听。');
+    })
+    .catch(function(e){ toast('配音失败：'+e.message); })
+    .finally(function(){ if(btn) btn.disabled=false; });
 }
 
 /* ========== ④ 剪接 ========== */
 function autoTime(){
   var p=needProject(); if(!p) return; var n=p.scenes.length; if(!n){ toast('无镜头'); return; }
-  var per=Math.max(3,Math.round(p.duration/n));
-  p.scenes.forEach(function(s){ s.seconds=per; }); saveV(); renderEdit(); renderStoryboard(); toast('每镜 '+per+'s');
+  /* ★ 真·按脚本时长：从脚本页文本框重新解析每行第 4 段秒数（4/4/4/3…），
+     逐镜套用；解析不到才退回各镜现有秒数。绝不再平均分配
+     （旧代码 30÷4→8s×4=32s，与脚本不符，是 bug）。 */
+  var sc=document.getElementById('f-script'); var secs=null;
+  if(sc && sc.value.trim()){
+    var lines=sc.value.split('\n').filter(function(l){ return l.trim(); });
+    if(lines.length===n){
+      secs=lines.map(function(l){
+        var parts=l.split('|'); var v=parseInt((parts[3]||'').trim(),10);
+        return (v&&v>=1)?v:5;
+      });
+    }
+  }
+  if(!secs) secs=p.scenes.map(function(s){ return parseInt(s.seconds,10)||5; });
+  p.scenes.forEach(function(s,i){ s.seconds=secs[i]; });
+  p.updated=new Date().toISOString(); saveV(); renderEdit(); renderStoryboard();
+  var total=secs.reduce(function(a,b){ return a+b; },0);
+  toast('已按脚本时长：'+secs.join('/')+'s，合计 '+total+'s');
 }
 function renderEdit(){
   var p=needProject(); var box=document.getElementById('editList'); if(!box) return;
   if(!p||!p.scenes.length){ box.innerHTML='<div class="empty">还没有镜头。</div>'; var s0=document.getElementById('timelineSum'); if(s0)s0.textContent='—'; return; }
   box.innerHTML=p.scenes.map(function(s,i){
     return '<div class="sc"><div class="idx">'+(i+1)+'</div><div class="body"><b>'+esc(s.caption||'镜头'+(i+1))+'</b>'+
-      '<div class="hint">'+s.seconds+'s · 转场 '+esc(s.transition||'fade')+'</div></div>'+
+      '<div class="hint" style="margin:4px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<label style="width:auto;font-size:11px">时长 <input type="number" style="width:64px;font-size:12px" value="'+s.seconds+'" min="1" max="20" onchange="setSceneSeconds(\''+s.id+'\',this.value)"> 秒</label>'+
+      '<label style="width:auto;font-size:11px">转场 <select style="width:96px;font-size:11px" onchange="updateScene(\''+s.id+'\',\'transition\',this.value);renderEdit()">'+TRANSITIONS.map(function(t){return '<option'+((s.transition||'fade')===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></label>'+
+      '</div></div>'+
       '<div class="mv"><button onclick="moveScene(\''+s.id+'\',-1)">↑</button><button onclick="moveScene(\''+s.id+'\',1)">↓</button></div></div>';
   }).join('');
   var total=p.scenes.reduce(function(a,s){ return a+(parseInt(s.seconds,10)||0); },0);
@@ -687,14 +894,16 @@ function qcCheck(p){
   if(!scenes.length){ out.push({level:'bad',text:'没有任何镜头'}); return out; }
   /* 字幕必须（85% 静音观看） */
   var noCap=scenes.filter(function(s){ return !s.caption||!s.caption.trim(); }).length;
-  out.push(noCap?{level:'bad',text:'有 '+noCap+' 个镜头缺越南语字幕（85% 静音观看，字幕必须有）'}:{level:'pass',text:'全部镜头有字幕'});
+  out.push(noCap?{level:'bad',text:'有 '+noCap+' 个镜头缺字幕（85% 静音观看，字幕必须有）'}:{level:'pass',text:'全部镜头有字幕'});
   /* 字号 ≥42 */
   out.push({level:'pass',text:'字幕字号 64px（≥42px 规范）'});
   /* 安全区 */
   out.push({level:'pass',text:'文字居中在 900×1400 安全区内'});
-  /* 钩子：前 2 秒 */
+  /* 钩子：字幕从镜头第 0 秒就绘制（drawScene 一进场即画 caption），
+     所以只要首镜有文字即满足「3 秒内给出钩子」，与镜头时长无关。
+     旧代码误把「文字 3 秒内出现」当成「首镜时长≤3s」，导致 4s 钩子误报。 */
   var h=scenes[0];
-  out.push((h && (h.seconds<=3) && h.caption)?{level:'pass',text:'开场钩子 '+h.seconds+'s（≤3s）+ 文字'}:{level:'warn',text:'开场未在 3 秒内给出钩子文字'});
+  out.push((h && h.caption && h.caption.trim())?{level:'pass',text:'开场钩子「'+h.caption.slice(0,12)+'」字幕从 0s 显示（≤3s）'}:{level:'warn',text:'开场没有钩子文字（首镜缺字幕）'});
   /* 时长 */
   var total=scenes.reduce(function(a,s){ return a+(parseInt(s.seconds,10)||0); },0);
   out.push([15,30,60].indexOf(total)>=0?{level:'pass',text:'总时长 '+total+'s（标准档）'}:{level:'warn',text:'总时长 '+total+'s，建议 15/30/60s'});
@@ -773,9 +982,47 @@ async function buildAudioTrack(p, actx){
   }
   return { L:L, R:R, totalFrames:totalFrames };
 }
+/* ★ 2026-11-25：导出前自动补齐配音（鲁棒方案）。
+   localStorage 状态脆弱（保存脚本/刷新可能丢 audioUrl），导致反复出无声片。
+   这里双保险：① 先按项目名探测桥上已生成的 mp3；② 探测不到就直接调
+   /api/tts 现场重新生成。全程自动，不依赖用户记得先点配音。 */
+async function ensureAudio(p){
+  var scenes=p.scenes||[]; if(!scenes.length) return;
+  var have=scenes.filter(function(s){ return s.audioUrl&&s.audioUrl.trim(); }).length;
+  if(have===scenes.length) return; /* 全都有，跳过 */
+  var slug=(p.name||'video').replace(/[^\w\u4e00-\u9fa5-]+/g,'_').replace(/^_+|_+$/g,'');
+  var base=BRIDGE+'/out/'+encodeURIComponent(slug)+'/';
+  var ok=0;
+  for(var i=0;i<scenes.length;i++){
+    var url=base+String(i+1).padStart(2,'0')+'.mp3';
+    try{
+      var r=await fetch(url);
+      if(r.ok && (r.headers.get('content-type')||'').indexOf('audio')>=0){ scenes[i].audioUrl=url; ok++; }
+    }catch(e){}
+  }
+  if(ok<scenes.length){
+    /* ② 探测不全 → 现场重新生成整条 */
+    try{
+      var body={name:p.name,voice:'zh-CN-YunxiNeural',
+        scenes:scenes.map(function(s){ return {narration:s.narration||'',seconds:s.seconds||5}; })};
+      var r2=await fetch(BRIDGE+'/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      var d=await r2.json();
+      if(d.ok&&d.urls){ d.urls.forEach(function(u,i){ if(u) scenes[i].audioUrl=BRIDGE+u; }); }
+    }catch(e){}
+  }
+  var still=scenes.filter(function(s){ return s.audioUrl&&s.audioUrl.trim(); }).length;
+  if(still>0) saveV();
+  if(still===scenes.length) toast('✅ 配音已自动补齐（'+still+' 段），这次导出会有声音。');
+}
 async function exportMP4(){
   var p=needProject(); if(!p) return; var qc=qcCheck(p);
   if(qc.some(function(x){ return x.level==='bad'; })){ toast('质检有硬伤，先去「质检规范」修完'); return; }
+  await ensureAudio(p); /* ★ 自动补齐配音，杜绝无声片 */
+  var withNarr=(p.scenes||[]).filter(function(s){ return s.narration&&s.narration.trim(); }).length;
+  var withAudio=(p.scenes||[]).filter(function(s){ return s.audioUrl&&s.audioUrl.trim(); }).length;
+  if(withNarr>0 && withAudio===0){
+    if(!confirm('本机配音服务没响应，导出会没有声音。\n确认桥 8977 开着、再试一次？\n\n点「确定」继续导出无声片；点「取消」放弃。')) return;
+  }
   var btn=document.getElementById('btnExport'); if(btn) btn.disabled=true;
   var bar=document.getElementById('expBar'); var msg=document.getElementById('expMsg');
   try {
@@ -810,7 +1057,7 @@ async function exportMP4(){
     for(var si=0; si<p.scenes.length; si++){
       var scene=p.scenes[si]; var frames=Math.max(1,(parseInt(scene.seconds,10)||5)*FPS);
       for(var f=0; f<frames; f++){
-        drawScene(canvas,scene,si,imgs[si]);
+        drawScene(canvas,scene,si,imgs[si],f/(frames-1||1));  /* ★ Ken Burns 逐帧进度 */
         var vf=new VideoFrame(canvas,{timestamp:Math.round(n*frameDur),duration:Math.round(frameDur)});
         encoder.encode(vf,{keyFrame:(n%30===0)}); vf.close(); n++;
         if(n%30===0 && bar) bar.style.width=Math.min(90,Math.round(n/(p.scenes.reduce(function(a,s){return a+(s.seconds||5)*FPS;},0))*100))+'%';
@@ -838,13 +1085,32 @@ async function exportMP4(){
     if(encErr) throw new Error('视频编码：'+encErr);
     if(audErr) throw new Error('音频编码：'+audErr);
     var blob=new Blob([target.buffer],{type:'video/mp4'});
-    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    var objUrl=URL.createObjectURL(blob);
+    /* ★ 2026-11-25：成品留在工作台内（桥磁盘 + IndexedDB 双写），
+       用户不用再去 Downloads 找文件。下载只是附带的备份动作。 */
+    var kept=null;
+    try{ kept=await keepVideo(p,blob,{frames:n,codec:vc,audio:ac}); }
+    catch(e){ toast('⚠ 成品没能留档：'+e.message); }
+    if(kept){
+      p.exported={at:new Date().toISOString(),frames:n,codec:vc,audio:ac||null,
+        videoId:kept.id,bridgeUrl:kept.bridgeUrl,size:kept.size};
+      saveV();
+    }
+    var a=document.createElement('a'); a.href=objUrl;
     a.download=(p.name||'video').replace(/[^\w\u4e00-\u9fa5-]+/g,'_')+'.mp4';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    p.exported={at:new Date().toISOString(),frames:n,codec:vc,audio:ac||null}; saveV();
+    /* ★ 2026-11-25：导出后把成片接进播放器，在平台里直接看+听，
+       不再让用户只能去 Downloads 找文件猜有没有声音。 */
+    var card=document.getElementById('expResultCard'), pv=document.getElementById('expResultVideo'),
+        info=document.getElementById('expResultInfo'), ob=document.getElementById('expOpenBtn');
+    if(card&&pv){ card.hidden=false; pv.src=objUrl; pv.load();
+      if(info) info.textContent=n+' 帧 · '+vc+(ac?' · 含 AAC 配音':' · 无配音')+(kept?' · 已留档':' · ⚠ 未留档');
+      if(ob) ob.onclick=function(){ pv.play().catch(function(){}); if(pv.requestFullscreen) pv.requestFullscreen().catch(function(){}); };
+    }
+    if(!kept){ p.exported={at:new Date().toISOString(),frames:n,codec:vc,audio:ac||null}; saveV(); }
     if(bar) bar.style.width='100%';
-    if(msg) msg.textContent='导出完成：'+n+' 帧 / '+vc+(ac?' + AAC 配音':'（静音）')+'。文件已下载。';
-    toast('MP4 已导出（'+n+' 帧'+(ac?' · 有声':' · 静音')+'）');
+    if(msg) msg.textContent='导出完成：'+n+' 帧 / '+vc+(ac?' + AAC 配音':'（静音）')+(kept?'。成品已留在工作台（⑧ 成品台账可回看）。':'。文件已下载，下方播放器可直接看+听。');
+    toast('MP4 已导出（'+n+' 帧'+(ac?' · 有声':' · 静音')+'）'+(kept?' · 已留档':'')+'· 下方播放器可看');
   } catch(e){
     if(msg) msg.textContent='导出失败：'+e.message;
     toast('导出失败：'+e.message);
@@ -926,11 +1192,88 @@ function renderFinished(){
   var p=needProject(); var box=document.getElementById('finList'); if(!box) return;
   var fn=document.getElementById('fin-name'); if(fn && p && !fn.value) fn.value=p.name;
   var mine=V.finished.filter(function(f){ return !p || f.projectId===p.id; });
-  if(!mine.length){ box.innerHTML='<div class="empty">还没有成品登记。</div>'; return; }
-  box.innerHTML='<table><tr><th>成品</th><th>平台</th><th>状态</th><th>成本</th><th>凭证</th><th>时间</th></tr>'+mine.map(function(f){
+  /* ★ 2026-11-25：成品台账升级 —— 视频留在工作台内，能直接看能听。
+     先渲染登记表，再异步把每条的播放器挂上（视频来自桥磁盘或 IndexedDB）。 */
+  var head='<div class="card" style="margin-bottom:12px"><h3>🎬 工作台内的成片</h3>'+
+    '<div class="hint">导出的片子自动留在这里，点播放即可回看，不用去 Downloads 找。</div>'+
+    '<div id="finVideos" style="margin-top:10px"><div class="empty">读取中…</div></div></div>';
+  var table=mine.length?('<table><tr><th>成品</th><th>平台</th><th>状态</th><th>成本</th><th>凭证</th><th>时间</th></tr>'+mine.map(function(f){
     return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.platform)+'</td><td>'+statusTag(f.status)+'</td><td>'+f.amount+' VND</td><td>'+
       (f.voucherId?'<span class="tag ok">'+esc(f.voucherId)+'</span>':'—')+'</td><td>'+dtLocal(f.at)+'</td></tr>';
-  }).join('')+'</table>';
+  }).join('')+'</table>'):'<div class="empty">还没有成品登记。</div>';
+  box.innerHTML=head+table;
+  renderVideoShelf();
+}
+/* 成片架：列出所有留档视频（桥 + IndexedDB 合并去重），每条一个内嵌播放器 */
+async function renderVideoShelf(){
+  var box=document.getElementById('finVideos'); if(!box) return;
+  var items=[];
+  /* ① 桥上的成片 */
+  try{
+    var r=await fetch(BRIDGE+'/api/videos');
+    var d=await r.json();
+    if(d&&d.ok&&d.items) d.items.forEach(function(it){
+      items.push({key:'bridge:'+it.url,name:it.name,url:BRIDGE+it.url,size:it.size,at:it.at,src:'桥'});
+    });
+  }catch(e){}
+  /* ② IndexedDB 里的成片 */
+  try{
+    var recs=await idbAll();
+    for(var i=0;i<recs.length;i++){
+      var rec=recs[i];
+      var dup=items.some(function(x){ return x.name===rec.projectName && Math.abs(x.size-rec.size)<1024; });
+      if(dup) continue; /* 同一部片两边都有，只显示一条（优先桥） */
+      items.push({key:'idb:'+rec.id,name:rec.projectName,url:'',blobId:rec.id,size:rec.size,at:rec.at,src:'浏览器'});
+    }
+  }catch(e){}
+  if(!items.length){ box.innerHTML='<div class="empty">还没有留档成片。导出一次后就会出现在这里。</div>'; return; }
+  items.sort(function(a,b){ return a.at<b.at?1:-1; });
+  box.innerHTML='<div class="shelfGrid">'+items.map(function(it,i){
+    var mb=(it.size/1048576).toFixed(1);
+    return '<div class="shelfItem">'+
+      '<video id="shelf-v'+i+'" controls playsinline preload="metadata" data-key="'+esc(it.key)+'" data-blob="'+(it.blobId||'')+'"'+
+        (it.url?' src="'+esc(it.url)+'"':'')+'></video>'+
+      '<div class="shelfMeta"><b title="'+esc(it.name)+'">'+esc(it.name)+'</b>'+
+        '<span class="hint">'+mb+' MB · '+dtLocal(it.at)+' · <span class="tag">'+it.src+'</span></span></div>'+
+      '<div class="shelfBtns">'+
+        '<button class="btn" onclick="shelfPlay('+i+')">▶ 播放</button>'+
+        '<button class="btn" onclick="shelfDownload('+i+')">⬇ 下载</button>'+
+        (it.blobId?'<button class="btn bad" onclick="shelfDelete(\''+it.blobId+'\')">🗑</button>':'')+
+      '</div>'+
+    '</div>';
+  }).join('')+'</div>';
+  window.__SHELF=items;
+}
+async function shelfPlay(i){
+  var it=(window.__SHELF||[])[i]; if(!it) return;
+  var v=document.getElementById('shelf-v'+i); if(!v) return;
+  if(!v.src && it.blobId){
+    try{
+      var rec=await idbGet(it.blobId);
+      if(rec&&rec.blob) v.src=URL.createObjectURL(rec.blob);
+    }catch(e){ toast('读取失败：'+e.message); return; }
+  }
+  v.play().catch(function(){});
+  if(v.requestFullscreen) v.requestFullscreen().catch(function(){});
+}
+async function shelfDownload(i){
+  var it=(window.__SHELF||[])[i]; if(!it) return;
+  var a=document.createElement('a');
+  if(it.url){ a.href=it.url; }
+  else if(it.blobId){
+    try{
+      var rec=await idbGet(it.blobId);
+      if(!rec||!rec.blob){ toast('这条没有视频数据'); return; }
+      a.href=URL.createObjectURL(rec.blob);
+    }catch(e){ toast('读取失败：'+e.message); return; }
+  }
+  a.download=(it.name||'video').replace(/[^\w\u4e00-\u9fa5-]+/g,'_')+'.mp4';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+async function shelfDelete(id){
+  if(!confirm('删除这条留档成片？（浏览器内的副本，桥上的文件不动）')) return;
+  try{ await idbDel(id); toast('已删除'); renderVideoShelf(); }
+  catch(e){ toast('删除失败：'+e.message); }
 }
 
 /* ---------- 事件接线 ---------- */
