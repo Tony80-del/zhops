@@ -50,7 +50,9 @@ textarea{resize:vertical;min-height:64px;line-height:1.5}
 .empty{color:var(--mut);text-align:center;padding:40px;font-size:13px}
 /* ★ 2026-11-25：成品架网格（留档成片回看） */
 .shelfGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.shelfItem{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.shelfItem{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;position:relative}
+.shelfPick{position:absolute;top:12px;left:12px;z-index:2;background:rgba(0,0,0,.6);border-radius:6px;padding:2px 6px;font-size:10px;display:flex;align-items:center;gap:3px;cursor:pointer}
+.shelfPick input{cursor:pointer;margin:0}
 .shelfItem video{width:100%;aspect-ratio:9/16;max-height:300px;object-fit:contain;border-radius:8px;background:#000}
 .shelfMeta{display:flex;flex-direction:column;gap:2px;min-width:0}
 .shelfMeta b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1195,8 +1197,16 @@ function renderFinished(){
   /* ★ 2026-11-25：成品台账升级 —— 视频留在工作台内，能直接看能听。
      先渲染登记表，再异步把每条的播放器挂上（视频来自桥磁盘或 IndexedDB）。 */
   var head='<div class="card" style="margin-bottom:12px"><h3>🎬 工作台内的成片</h3>'+
-    '<div class="hint">导出的片子自动留在这里，点播放即可回看，不用去 Downloads 找。</div>'+
-    '<div id="finVideos" style="margin-top:10px"><div class="empty">读取中…</div></div></div>';
+    '<div class="hint">导出的片子自动留在这里，点播放即可回看，不用去 Downloads 找。勾选后可批量删除。</div>'+
+    '<div id="shelfBar" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<span class="hint" id="shelfStat">统计中…</span>'+
+      '<span style="flex:1"></span>'+
+      '<button class="btn" onclick="shelfToggleAll()">☑ 全选/取消</button>'+
+      '<button class="btn bad" onclick="shelfDeleteChecked()">🗑 删除选中</button>'+
+    '</div>'+
+    '<div id="finVideos" style="margin-top:10px"><div class="empty">读取中…</div></div>'+
+    '<details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;color:var(--mut)">🧹 清理整个项目（连图片和配音一起删，最省地方）</summary>'+
+      '<div id="cleanList" style="margin-top:10px"><div class="empty">读取中…</div></div></details></div>';
   var table=mine.length?('<table><tr><th>成品</th><th>平台</th><th>状态</th><th>成本</th><th>凭证</th><th>时间</th></tr>'+mine.map(function(f){
     return '<tr><td>'+esc(f.name)+'</td><td>'+esc(f.platform)+'</td><td>'+statusTag(f.status)+'</td><td>'+f.amount+' VND</td><td>'+
       (f.voucherId?'<span class="tag ok">'+esc(f.voucherId)+'</span>':'—')+'</td><td>'+dtLocal(f.at)+'</td></tr>';
@@ -1205,7 +1215,12 @@ function renderFinished(){
   renderVideoShelf();
 }
 /* 成片架：列出所有留档视频（桥 + IndexedDB 合并去重），每条一个内嵌播放器 */
+/* ★ 2026-11-25：加序号守卫。renderFinished() 可能被并发调用两次（nav + 提交后），
+   第一次的 await 回来时 DOM 节点已被第二次 innerHTML 换掉，往里写就等于写进空气，
+   界面上永远停在「读取中」。只让最新一次渲染落地。 */
+var RVS_SEQ=0;
 async function renderVideoShelf(){
+  var seq=++RVS_SEQ;
   var box=document.getElementById('finVideos'); if(!box) return;
   var items=[];
   /* ① 桥上的成片 */
@@ -1213,7 +1228,7 @@ async function renderVideoShelf(){
     var r=await fetch(BRIDGE+'/api/videos');
     var d=await r.json();
     if(d&&d.ok&&d.items) d.items.forEach(function(it){
-      items.push({key:'bridge:'+it.url,name:it.name,url:BRIDGE+it.url,size:it.size,at:it.at,src:'桥'});
+      items.push({key:'bridge:'+it.url,name:it.name,url:BRIDGE+it.url,rawUrl:it.url,size:it.size,at:it.at,src:'桥'});
     });
   }catch(e){}
   /* ② IndexedDB 里的成片 */
@@ -1226,11 +1241,34 @@ async function renderVideoShelf(){
       items.push({key:'idb:'+rec.id,name:rec.projectName,url:'',blobId:rec.id,size:rec.size,at:rec.at,src:'浏览器'});
     }
   }catch(e){}
+  /* ③ 占用统计 + 项目清理列表 */
+  if(seq!==RVS_SEQ) return;              /* 已有更新的渲染在跑，这次作废 */
+  box=document.getElementById('finVideos'); if(!box) return;
+  try{
+    var sr=await fetch(BRIDGE+'/api/stats');
+    var sd=await sr.json();
+    var st=document.getElementById('shelfStat');
+    if(st&&sd&&sd.ok){
+      st.textContent='桥上共 '+sd.count+' 个项目 · '+(sd.total/1048576).toFixed(1)+' MB · 本页 '+items.length+' 条成片';
+    }
+    var pl=document.getElementById('cleanList');
+    if(pl&&sd&&sd.ok){
+      pl.innerHTML=sd.items.length?('<table><tr><th>项目</th><th>占用</th><th>成片</th><th></th></tr>'+
+        sd.items.map(function(it){
+          return '<tr><td>'+esc(it.name)+'</td><td>'+(it.size/1048576).toFixed(1)+' MB</td><td>'+it.videos+' 条</td>'+
+            '<td><button class="btn bad" onclick="shelfDeleteProject(\''+esc(it.name).replace(/'/g,"\\'")+'\','+it.size+')">🗑 整项目删除</button></td></tr>';
+        }).join('')+'</table>'):'<div class="empty">没有项目。</div>';
+    }
+  }catch(e){}
   if(!items.length){ box.innerHTML='<div class="empty">还没有留档成片。导出一次后就会出现在这里。</div>'; return; }
   items.sort(function(a,b){ return a.at<b.at?1:-1; });
   box.innerHTML='<div class="shelfGrid">'+items.map(function(it,i){
     var mb=(it.size/1048576).toFixed(1);
+    var delBtn=it.rawUrl
+      ? '<button class="btn bad" onclick="shelfDeleteBridge(\''+esc(it.rawUrl)+'\',\''+esc(it.name)+'\')" title="删除这条成片">🗑</button>'
+      : '<button class="btn bad" onclick="shelfDelete(\''+it.blobId+'\')" title="删除这条成片">🗑</button>';
     return '<div class="shelfItem">'+
+      '<label class="shelfPick"><input type="checkbox" class="shelfChk" data-i="'+i+'"> <span>选</span></label>'+
       '<video id="shelf-v'+i+'" controls playsinline preload="metadata" data-key="'+esc(it.key)+'" data-blob="'+(it.blobId||'')+'"'+
         (it.url?' src="'+esc(it.url)+'"':'')+'></video>'+
       '<div class="shelfMeta"><b title="'+esc(it.name)+'">'+esc(it.name)+'</b>'+
@@ -1238,11 +1276,66 @@ async function renderVideoShelf(){
       '<div class="shelfBtns">'+
         '<button class="btn" onclick="shelfPlay('+i+')">▶ 播放</button>'+
         '<button class="btn" onclick="shelfDownload('+i+')">⬇ 下载</button>'+
-        (it.blobId?'<button class="btn bad" onclick="shelfDelete(\''+it.blobId+'\')">🗑</button>':'')+
+        delBtn+
       '</div>'+
     '</div>';
   }).join('')+'</div>';
   window.__SHELF=items;
+}
+/* 勾选：全选 / 取消全选 */
+function shelfToggleAll(){
+  var cs=document.querySelectorAll('.shelfChk');
+  if(!cs.length) return;
+  var allOn=Array.prototype.every.call(cs,function(c){ return c.checked; });
+  Array.prototype.forEach.call(cs,function(c){ c.checked=!allOn; });
+}
+/* 批量删除勾选的成片 */
+async function shelfDeleteChecked(){
+  var cs=Array.prototype.filter.call(document.querySelectorAll('.shelfChk'),function(c){ return c.checked; });
+  if(!cs.length){ toast('先勾选要删的片子'); return; }
+  var items=window.__SHELF||[];
+  var picked=cs.map(function(c){ return items[+c.dataset.i]; }).filter(Boolean);
+  var totalMB=picked.reduce(function(a,b){ return a+b.size; },0)/1048576;
+  if(!confirm('删除选中的 '+picked.length+' 条成片？可释放约 '+totalMB.toFixed(1)+' MB。\n（桥上的文件会被真删除，不可恢复）')) return;
+  var okN=0,failN=0;
+  for(var i=0;i<picked.length;i++){
+    var it=picked[i];
+    try{
+      if(it.rawUrl){
+        var r=await fetch(BRIDGE+'/api/delete-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:it.rawUrl})});
+        var d=await r.json();
+        if(!d.ok) throw new Error(d.error||'删除失败');
+      }else if(it.blobId){
+        await idbDel(it.blobId);
+      }
+      okN++;
+    }catch(e){ failN++; }
+  }
+  toast('已删 '+okN+' 条'+(failN?' · 失败 '+failN+' 条':'')+' · 释放约 '+totalMB.toFixed(1)+' MB');
+  renderVideoShelf();
+}
+/* 删整个项目（视频 + 图 + 配音全清） */
+async function shelfDeleteProject(name,size){
+  var mb=(size/1048576).toFixed(1);
+  if(!confirm('删除整个项目「'+name+'」？\n会删掉成片 + 图片 + 配音全部文件，释放约 '+mb+' MB，不可恢复。')) return;
+  try{
+    var r=await fetch(BRIDGE+'/api/delete-project',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})});
+    var d=await r.json();
+    if(!d.ok) throw new Error(d.error||'删除失败');
+    toast('已删除「'+name+'」，释放 '+(d.size/1048576).toFixed(1)+' MB');
+    renderVideoShelf();
+  }catch(e){ toast('删除失败：'+e.message); }
+}
+/* 删桥上的单个成片 */
+async function shelfDeleteBridge(rawUrl,name){
+  if(!confirm('删除成片「'+name+'」？\n文件会从磁盘真删除，不可恢复。\n（只删视频，图/配音还留着，以后能重新渲染）')) return;
+  try{
+    var r=await fetch(BRIDGE+'/api/delete-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:rawUrl})});
+    var d=await r.json();
+    if(!d.ok) throw new Error(d.error||'删除失败');
+    toast('已删除，释放 '+(d.size/1048576).toFixed(2)+' MB');
+    renderVideoShelf();
+  }catch(e){ toast('删除失败：'+e.message); }
 }
 async function shelfPlay(i){
   var it=(window.__SHELF||[])[i]; if(!it) return;
