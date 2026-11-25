@@ -448,16 +448,36 @@ function genScript(){
   var p=needProject(); if(!p) return;
   var tp=document.getElementById('f-topic'); var topic=tp?tp.value.trim():p.topic;
   if(!topic){ toast('先写主题 / 商品，再让 AI 写脚本'); return; }
-  toast('正在调 AI 写越南语脚本（约 10–20 秒）…');
+  toast('正在写脚本（约 10–20 秒）…');
   var body={ mode:'script', topic:topic, platform:p.platform, duration:p.duration };
-  fetch('https://zhops-poster.tony80cheong.workers.dev',{
+  /* ★ 2026-11-25（P-216）：线上 Worker 部署的是旧版，mode:'script' 仍回
+     「缺少 image（base64）」；本机又没有 Cloudflare 凭据重新部署。
+     所以改成两级：① 本机桥 /api/script（它会先试 Worker，失败用本地模板）
+                ② 桥没开 → 再直连 Worker（万一哪天重新部署了就能用）
+                ③ 都失败 → 提示用内置脚本按钮。 */
+  function applyText(t,src){
+    var sc=document.getElementById('f-script'); if(sc) sc.value=t||'';
+    toast(src==='worker'?'AI 脚本已生成，请核对越南语后再保存'
+      :'已用本机模板生成脚本（线上 AI 暂时不可用），可直接改字后再保存');
+  }
+  function tryWorker(){
+    return fetch('https://zhops-poster.tony80cheong.workers.dev',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(x){
+        if(!x.ok||!x.d.ok) throw new Error((x.d&&x.d.error)||('HTTP '+x.ok));
+        applyText(x.d.text,'worker');
+      });
+  }
+  fetch(BRIDGE+'/api/script',{
     method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
-  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
-    .then(function(x){
-      if(!x.ok || !x.d.ok) throw new Error((x.d&&x.d.error)||('HTTP '+x.ok));
-      var sc=document.getElementById('f-script'); if(sc) sc.value=x.d.text||'';
-      toast('AI 脚本已生成，请核对越南语后再保存');
-    }).catch(function(e){ toast('AI 生成失败：'+e.message+'（可手写脚本）'); });
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d&&d.ok&&d.text){ applyText(d.text,d.source); return; }
+      return tryWorker();
+    })
+    .catch(function(){ return tryWorker(); })
+    .catch(function(e){ toast('AI 生成失败：'+e.message+'（可点「📘 一键填入中文招生广告脚本」或手写）'); });
 }
 
 /* ====== ✨ 让技能一键做片（本机桥，2026-11-24） ======

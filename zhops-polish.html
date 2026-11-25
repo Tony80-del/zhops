@@ -165,7 +165,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
 
   <!-- ============ 日期切换 ============ -->
   <div class="days">
-    <button class="on" data-day="2026-11-25">2026-11-25 · 今天<span class="c">1</span></button>
+    <button class="on" data-day="2026-11-25">2026-11-25 · 今天<span class="c">2</span></button>
     <button data-day="2026-11-24">2026-11-24<span class="c">1</span></button>
     <button data-day="2026-11-23">2026-11-23<span class="c">4</span></button>
     <button data-day="2026-11-18">2026-11-18<span class="c">41</span></button>
@@ -561,7 +561,7 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
   <!-- ============ 2026-11-25 ============ -->
   <div class="day-panel on" data-day="2026-11-25">
     <div class="card">
-      <h2>2026-11-25 · 打磨记录<span class="n">1 行 · 已打磨 1 · 待打磨 0</span><span class="sp"></span>
+      <h2>2026-11-25 · 打磨记录<span class="n">2 行 · 已打磨 2 · 待打磨 0</span><span class="sp"></span>
         <span class="hint">✅已打磨 · ⏳打磨中 · ⬜待打磨 · ⛔搁置 · 等验收</span></h2>
       <div class="bd">
         <table>
@@ -577,6 +577,15 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:
               <td class="mono nw">11-24</td>
               <td class="mono nw">11-25</td>
               <td>新增 <code>build/video/gen-images.js</code>：每镜画面描述 → 英文 prompt → Pollinations 免费生图（无需 key）→ 576×1024 竖图存 <code>out/&lt;slug&gt;/images/</code> → <code>scene.image</code> 换成站内 URL。<code>server.js</code> 在 runMake 前调它，<code>auto-make.js</code> 加 <code>/build/video/out/</code> 静态路由供无头浏览器贴图。★ 限流实测 <b>1 张 / 45 秒 / IP</b>（402 + retry-after），脚本读 retry-after 精确等待 + 4 次重试；单镜失败保留渐变底不阻断。<b>★ 关键坑</b>：图片 URL 必须用<b>相对路径</b> <code>/build/...</code>（由 auto-make 自己的 8941 服务响应），不能用 8977 绝对地址 —— server.js 被 spawnSync 阻塞时 8977 无法响应图片请求。★ 中文线：<code>server.js</code> VOICES 与 <code>tts.py</code> VOICES 同扩 <code>zh-CN-YunxiNeural</code> / <code>zh-CN-XiaoxiaoNeural</code>；<code>makeProject</code> 支持 <code>input.script</code>（内置脚本，来源标 <code>builtin</code>，绕过报 <code>{"error":"缺少 image（base64）"}</code> 的线上 Worker）；<code>video.html</code> 加「📘 一键填入中文招生广告脚本」按钮 + 中文声线下拉 + <code>BUILTIN_SCRIPTS.cnAdmission</code>（4 镜：画面|字幕|旁白|秒）。<b>★ 修复致命 bug</b>：<code>serveStatic</code> 缺 <code>/out/</code> → VDIR 映射，桥回传的播放 URL <code>/out/&lt;slug&gt;/final.mp4</code> 全部 404（Tony 看不到成片的真正原因）→ 加 <code>else if(p.startsWith('/out/')) fp=path.join(VDIR,p.slice(5))</code>，验证返回 <b>206 Partial Content</b>。★ 桌面启动器 cd 修为 <code>$HOME/Desktop/ZH-System</code>。<b>★ 上线路径纠正</b>：Tony 打开的 <code>https://tony80-del.github.io/zhops/video.html</code> 来自 <b>~/zhops 仓库</b>（GitHub Pages），不是 <code>~/Desktop/ZH-System/docs/video.html</code>，改本地不发布 = 白改；已同步并 push。端到端：4 镜全贴图（抽帧 21073 色）+ 4 mp3 + 成片 826,713 B + 播放 URL 206。四闸门仍 0/4，不上云、不发布、不花钱。</td>
+            </tr>
+            <tr>
+              <td class="mono nw">P-216</td>
+              <td><b>T11 · 修好「✨ AI 写脚本」+ 本机桥真出一条中文新片</b><br><span style="color:#8899aa;font-size:12px">Tony 点名先做三件事（A 提交 / B 修 AI 写脚本 / C 起桥出片）。B 的根因不是代码写错，是<b>线上 Worker 部署的是旧版</b>。</span></td>
+              <td class="nw">宣传视频 · 脚本 + 出片</td>
+              <td><span class="b done">✅已打磨</span></td>
+              <td class="mono nw">11-25</td>
+              <td class="mono nw">11-25</td>
+              <td><b>B 根因</b>：<code>build/market/worker/index.js</code> 里 <code>mode:'script'</code> 分支早已存在（1d643c1 就提交了），但线上 Worker 跑的是更早的部署，所以仍回 <code>{"error":"缺少 image（base64）"}</code>；本机 <code>wrangler whoami</code> = 未登录、也没有 <code>CLOUDFLARE_API_TOKEN</code>，<b>无法自行重新部署</b>。<b>改法（不依赖云端）</b>：<code>server.js</code> 新增 <code>POST /api/script</code> + <code>makeScript()</code>（先试线上 Worker，失败用 <code>localScript()</code> 越南语模板），<code>/api/ping</code> 加 <code>script:true</code> 让网页能探测；<code>video.html</code> 的 <code>genScript()</code> 改成三级：① 先问 <code>BRIDGE+'/api/script'</code> ② 桥没开再直连 Worker（万一以后重新部署就能用）③ 都失败提示点「📘 一键填入中文招生广告脚本」。探针 <code>check-video-bridge.js</code> 加 <code>[2b]</code> 六项 → <b>32/32</b>。<b>C 验收</b>：桥起在 127.0.0.1:8977，POST <code>/api/auto-make</code> 跑「中文招生广告 v2」→ 4 镜全贴 Pollinations 图（576×1024，44–64KB）+ 4 个中文 mp3（zh-CN-YunxiNeural）+ 成片 <b>826,897 B</b>，<code>/out/.../final.mp4</code> 返回 <b>206</b>。四闸门仍 0/4，不上云、不发布、不花钱。</td>
             </tr>
           </tbody>
         </table>
